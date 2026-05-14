@@ -52,7 +52,7 @@ Recommended delivery order:
 - [ ] ARKit via `arkit_plugin` for iOS
 - [ ] On-device VADER sentiment analysis
 - [ ] BLoC for state management
-- [ ] Clean Architecture split into data, domain, and presentation layers
+- [x] Clean Architecture split into data, domain, and presentation layers
 
 ### Recommended Project Structure
 
@@ -137,8 +137,8 @@ integration_test/
 ### User
 
 - [x] Create `AppUser` domain entity.
-- [ ] Create user Firestore DTO.
-- [ ] Create user repository.
+- [x] Create user Firestore DTO.
+- [x] Create user repository.
 - [ ] Create user profile creation flow after signup.
 
 Required fields:
@@ -160,8 +160,8 @@ class AppUser {
 ### Memory
 
 - [x] Create `Memory` domain entity.
-- [ ] Create memory Firestore DTO.
-- [ ] Create memory repository.
+- [x] Create memory Firestore DTO.
+- [x] Create memory repository.
 - [ ] Add create, read, update, and soft-delete operations.
 - [ ] Prevent editing location and timestamp after creation.
 
@@ -193,8 +193,8 @@ class Memory {
 ### Place
 
 - [x] Create `Place` domain entity.
-- [ ] Create place Firestore DTO.
-- [ ] Create place repository.
+- [x] Create place Firestore DTO.
+- [x] Create place repository.
 - [ ] Add nearby place lookup.
 - [ ] Add place creation when first memory is added.
 - [ ] Add first-memory creator as initial custodian.
@@ -243,12 +243,12 @@ class AuraZone {
 - [x] Create `Community` domain entity.
 - [ ] Create membership model.
 - [x] Add role model for owner, guardian, member, and visitor.
-- [ ] Add community repository.
+- [x] Add community repository.
 
 ### Legacy Transfer
 
 - [x] Create `LegacyTransfer` domain entity.
-- [ ] Create transfer repository.
+- [x] Create transfer repository.
 - [ ] Add transfer state machine.
 - [ ] Add transfer history.
 
