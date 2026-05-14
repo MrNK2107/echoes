@@ -48,6 +48,23 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
     emit(state.copyWith(privacy: privacy));
   }
 
+  void setTaggedUsers(String value) {
+    final taggedUsers = value
+        .split(',')
+        .map((tag) => tag.trim())
+        .where((tag) => tag.isNotEmpty)
+        .toList();
+    emit(state.copyWith(taggedUserIds: taggedUsers));
+  }
+
+  void setReleaseDate(DateTime releaseDate) {
+    emit(state.copyWith(releaseDate: releaseDate));
+  }
+
+  void setCommunity(String? communityId) {
+    emit(state.copyWith(communityId: communityId));
+  }
+
   Future<void> pickFromCamera() async {
     await _pickImage(_mediaPickerService.pickFromCamera);
   }
@@ -109,6 +126,16 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
     required String textContent,
   }) async {
     final location = state.location;
+    final privacyError = _validatePrivacy();
+    if (privacyError != null) {
+      emit(
+        state.copyWith(
+          status: AddMemoryStatus.failure,
+          errorMessage: privacyError,
+        ),
+      );
+      return;
+    }
     if (location == null) {
       emit(
         state.copyWith(
@@ -164,7 +191,9 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
         ),
         sentiment: sentiment,
         privacy: state.privacy,
-        taggedUserIds: const [],
+        taggedUserIds: state.taggedUserIds,
+        communityId: state.communityId,
+        releaseDate: state.releaseDate,
         isDeleted: false,
         createdAt: now,
         updatedAt: now,
@@ -207,5 +236,20 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
         ),
       );
     }
+  }
+
+  String? _validatePrivacy() {
+    return switch (state.privacy) {
+      PrivacyType.tagged when state.taggedUserIds.isEmpty =>
+        'Add at least one tagged user.',
+      PrivacyType.timeRelease when state.releaseDate == null =>
+        'Choose a release date.',
+      PrivacyType.timeRelease
+          when !state.releaseDate!.isAfter(DateTime.now()) =>
+        'Choose a future release date.',
+      PrivacyType.community when state.communityId == null =>
+        'Choose a community.',
+      _ => null,
+    };
   }
 }

@@ -3,6 +3,8 @@ import 'package:echoes/core/location/location_service.dart';
 import 'package:echoes/core/media/media_picker_service.dart';
 import 'package:echoes/features/aura/domain/sentiment_analyzer.dart';
 import 'package:echoes/features/auth/presentation/auth_cubit.dart';
+import 'package:echoes/features/communities/domain/community.dart';
+import 'package:echoes/features/communities/domain/community_repository.dart';
 import 'package:echoes/features/memories/domain/memory_repository.dart';
 import 'package:echoes/features/memories/presentation/add_memory_cubit.dart';
 import 'package:echoes/features/memories/presentation/add_memory_state.dart';
@@ -105,6 +107,7 @@ class _AddMemoryViewState extends State<_AddMemoryView> {
                 ),
                 const SizedBox(height: 16),
                 const _PrivacySelector(),
+                const _PrivacyOptions(),
                 const SizedBox(height: 16),
                 const _LocationCapture(),
                 const SizedBox(height: 16),
@@ -244,11 +247,145 @@ class _PrivacySelector extends StatelessWidget {
               icon: Icon(Icons.lock_outline),
               label: Text('Private'),
             ),
+            ButtonSegment(
+              value: PrivacyType.tagged,
+              icon: Icon(Icons.alternate_email),
+              label: Text('Tagged'),
+            ),
+            ButtonSegment(
+              value: PrivacyType.timeRelease,
+              icon: Icon(Icons.schedule),
+              label: Text('Later'),
+            ),
+            ButtonSegment(
+              value: PrivacyType.community,
+              icon: Icon(Icons.groups_outlined),
+              label: Text('Group'),
+            ),
           ],
           selected: {state.privacy},
           onSelectionChanged: (selection) {
             context.read<AddMemoryCubit>().setPrivacy(selection.first);
           },
+        );
+      },
+    );
+  }
+}
+
+class _PrivacyOptions extends StatelessWidget {
+  const _PrivacyOptions();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<AddMemoryCubit, AddMemoryState>(
+      builder: (context, state) {
+        return switch (state.privacy) {
+          PrivacyType.tagged => const _TaggedUserInput(),
+          PrivacyType.timeRelease => const _ReleaseDateInput(),
+          PrivacyType.community => const _CommunityPicker(),
+          _ => const SizedBox.shrink(),
+        };
+      },
+    );
+  }
+}
+
+class _TaggedUserInput extends StatelessWidget {
+  const _TaggedUserInput();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: TextFormField(
+        key: const ValueKey('taggedUsersField'),
+        onChanged: context.read<AddMemoryCubit>().setTaggedUsers,
+        decoration: const InputDecoration(
+          labelText: 'Tagged user IDs',
+          helperText: 'Separate multiple user IDs with commas',
+          prefixIcon: Icon(Icons.alternate_email),
+        ),
+      ),
+    );
+  }
+}
+
+class _ReleaseDateInput extends StatelessWidget {
+  const _ReleaseDateInput();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<AddMemoryCubit, AddMemoryState>(
+      builder: (context, state) {
+        final releaseDate = state.releaseDate;
+
+        return Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: OutlinedButton.icon(
+            key: const ValueKey('releaseDateButton'),
+            onPressed: () async {
+              final now = DateTime.now();
+              final selected = await showDatePicker(
+                context: context,
+                initialDate: now.add(const Duration(days: 1)),
+                firstDate: now.add(const Duration(days: 1)),
+                lastDate: now.add(const Duration(days: 3650)),
+              );
+              if (selected != null && context.mounted) {
+                context.read<AddMemoryCubit>().setReleaseDate(selected);
+              }
+            },
+            icon: const Icon(Icons.event_outlined),
+            label: Text(
+              releaseDate == null
+                  ? 'Choose release date'
+                  : 'Release on ${releaseDate.day}/${releaseDate.month}/${releaseDate.year}',
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _CommunityPicker extends StatelessWidget {
+  const _CommunityPicker();
+
+  @override
+  Widget build(BuildContext context) {
+    final session = context.read<AuthCubit>().state.session;
+    if (session == null) {
+      return const SizedBox.shrink();
+    }
+
+    return StreamBuilder<List<Community>>(
+      stream: context.read<CommunityRepository>().watchUserCommunities(
+        session.userId,
+      ),
+      builder: (context, snapshot) {
+        final communities = snapshot.data ?? const <Community>[];
+
+        return Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: DropdownButtonFormField<String>(
+            key: const ValueKey('communityPicker'),
+            initialValue: context.watch<AddMemoryCubit>().state.communityId,
+            decoration: const InputDecoration(
+              labelText: 'Community',
+              prefixIcon: Icon(Icons.groups_outlined),
+            ),
+            items: [
+              for (final community in communities)
+                DropdownMenuItem(
+                  value: community.id,
+                  child: Text(community.name),
+                ),
+            ],
+            onChanged: communities.isEmpty
+                ? null
+                : context.read<AddMemoryCubit>().setCommunity,
+          ),
         );
       },
     );

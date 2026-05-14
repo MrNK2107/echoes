@@ -8,6 +8,7 @@ import 'package:echoes/features/memories/data/local_memory_repository.dart';
 import 'package:echoes/features/memories/presentation/add_memory_cubit.dart';
 import 'package:echoes/features/memories/presentation/add_memory_status.dart';
 import 'package:echoes/features/places/data/local_place_repository.dart';
+import 'package:echoes/features/privacy/domain/privacy_type.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -99,6 +100,78 @@ void main() {
       expect(cubit.state.imagePath, '/tmp/camera-memory.jpg');
       await cubit.close();
     });
+
+    test('requires tagged users for tagged memories', () async {
+      final cubit = AddMemoryCubit(
+        locationService: _FakeLocationService(
+          permission: LocationPermissionState.granted,
+        ),
+        mediaPickerService: _FakeMediaPickerService(),
+        sentimentAnalyzer: LexiconSentimentAnalyzer(),
+        placeRepository: LocalPlaceRepository(now: DateTime.utc(2026, 5, 14)),
+        memoryRepository: LocalMemoryRepository(),
+      )..setPrivacy(PrivacyType.tagged);
+
+      await cubit.captureLocation();
+      await cubit.submit(userId: 'user-1', textContent: 'Tagged memory');
+
+      expect(cubit.state.status, AddMemoryStatus.failure);
+      expect(cubit.state.errorMessage, 'Add at least one tagged user.');
+      await cubit.close();
+    });
+
+    test('requires future release date for time-release memories', () async {
+      final cubit = AddMemoryCubit(
+        locationService: _FakeLocationService(
+          permission: LocationPermissionState.granted,
+        ),
+        mediaPickerService: _FakeMediaPickerService(),
+        sentimentAnalyzer: LexiconSentimentAnalyzer(),
+        placeRepository: LocalPlaceRepository(now: DateTime.utc(2026, 5, 14)),
+        memoryRepository: LocalMemoryRepository(),
+      )..setPrivacy(PrivacyType.timeRelease);
+
+      await cubit.captureLocation();
+      await cubit.submit(userId: 'user-1', textContent: 'Later memory');
+
+      expect(cubit.state.status, AddMemoryStatus.failure);
+      expect(cubit.state.errorMessage, 'Choose a release date.');
+      await cubit.close();
+    });
+
+    test(
+      'creates community-scoped memory when community is selected',
+      () async {
+        final memoryRepository = LocalMemoryRepository();
+        final cubit =
+            AddMemoryCubit(
+                locationService: _FakeLocationService(
+                  permission: LocationPermissionState.granted,
+                ),
+                mediaPickerService: _FakeMediaPickerService(),
+                sentimentAnalyzer: LexiconSentimentAnalyzer(),
+                placeRepository: LocalPlaceRepository(
+                  now: DateTime.utc(2026, 5, 14),
+                ),
+                memoryRepository: memoryRepository,
+              )
+              ..setPrivacy(PrivacyType.community)
+              ..setCommunity('campus-keepers');
+
+        await cubit.captureLocation();
+        await cubit.submit(userId: 'user-1', textContent: 'Community memory');
+
+        final memories = await memoryRepository
+            .watchMemoriesForUser('user-1')
+            .first;
+
+        expect(cubit.state.status, AddMemoryStatus.success);
+        expect(memories.single.privacy, PrivacyType.community);
+        expect(memories.single.communityId, 'campus-keepers');
+        await cubit.close();
+        memoryRepository.dispose();
+      },
+    );
   });
 }
 

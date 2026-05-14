@@ -464,26 +464,26 @@ Deliverable:
 
 Goal: implement the full privacy model described in the spec.
 
-- [ ] Add `Tagged` privacy type.
+- [x] Add `Tagged` privacy type.
 - [ ] Add tagged user search.
-- [ ] Add tagged user selection during memory creation.
-- [ ] Add tagged memory visibility.
-- [ ] Add `Time-release` privacy type.
-- [ ] Add release date selector.
-- [ ] Add release date validation.
-- [ ] Add time-release visibility.
-- [ ] Add `Community` privacy type.
-- [ ] Add community picker.
-- [ ] Add community visibility checks.
+- [x] Add tagged user selection during memory creation.
+- [x] Add tagged memory visibility.
+- [x] Add `Time-release` privacy type.
+- [x] Add release date selector.
+- [x] Add release date validation.
+- [x] Add time-release visibility.
+- [x] Add `Community` privacy type.
+- [x] Add community picker.
+- [x] Add community visibility checks.
 - [ ] Add default privacy preference handling.
 - [ ] Update Firestore rules for all privacy modes.
 
 Tests:
 
-- [ ] Unit test tagged visibility.
-- [ ] Unit test time-release visibility before release date.
-- [ ] Unit test time-release visibility after release date.
-- [ ] Unit test community visibility.
+- [x] Unit test tagged visibility.
+- [x] Unit test time-release visibility before release date.
+- [x] Unit test time-release visibility after release date.
+- [x] Unit test community visibility.
 - [ ] Security rules tests for all privacy modes.
 
 Deliverable:

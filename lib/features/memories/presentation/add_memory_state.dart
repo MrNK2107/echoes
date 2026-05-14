@@ -8,6 +8,9 @@ class AddMemoryState extends Equatable {
     required this.status,
     this.privacy = PrivacyType.public,
     this.imagePath,
+    this.taggedUserIds = const [],
+    this.releaseDate,
+    this.communityId,
     this.location,
     this.errorMessage,
   });
@@ -17,6 +20,9 @@ class AddMemoryState extends Equatable {
   final AddMemoryStatus status;
   final PrivacyType privacy;
   final String? imagePath;
+  final List<String> taggedUserIds;
+  final DateTime? releaseDate;
+  final String? communityId;
   final DeviceLocation? location;
   final String? errorMessage;
 
@@ -24,6 +30,9 @@ class AddMemoryState extends Equatable {
     AddMemoryStatus? status,
     PrivacyType? privacy,
     String? imagePath,
+    List<String>? taggedUserIds,
+    DateTime? releaseDate,
+    String? communityId,
     DeviceLocation? location,
     String? errorMessage,
   }) {
@@ -31,6 +40,9 @@ class AddMemoryState extends Equatable {
       status: status ?? this.status,
       privacy: privacy ?? this.privacy,
       imagePath: imagePath ?? this.imagePath,
+      taggedUserIds: taggedUserIds ?? this.taggedUserIds,
+      releaseDate: releaseDate ?? this.releaseDate,
+      communityId: communityId ?? this.communityId,
       location: location ?? this.location,
       errorMessage: errorMessage,
     );
@@ -41,6 +53,9 @@ class AddMemoryState extends Equatable {
     status,
     privacy,
     imagePath,
+    taggedUserIds,
+    releaseDate,
+    communityId,
     location,
     errorMessage,
   ];
