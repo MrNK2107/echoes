@@ -2,6 +2,8 @@ import 'package:echoes/shared/widgets/feature_placeholder.dart';
 import 'package:echoes/app/theme.dart';
 import 'package:echoes/features/auth/presentation/auth_cubit.dart';
 import 'package:echoes/features/auth/presentation/auth_state.dart';
+import 'package:echoes/features/legacy/domain/legacy_transfer.dart';
+import 'package:echoes/features/legacy/domain/legacy_transfer_repository.dart';
 import 'package:echoes/features/memories/domain/memory.dart';
 import 'package:echoes/features/memories/domain/memory_repository.dart';
 import 'package:echoes/features/memories/presentation/edit_memory_sheet.dart';
@@ -68,6 +70,8 @@ class ProfilePlaceholderScreen extends StatelessWidget {
                   const SizedBox(height: 24),
                   _ProfileStatRow(userId: session.userId),
                   const SizedBox(height: 24),
+                  _PendingTransfers(userId: session.userId),
+                  const SizedBox(height: 24),
                   Text(
                     'Your memories',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -85,6 +89,84 @@ class ProfilePlaceholderScreen extends StatelessWidget {
                     label: const Text('Sign out'),
                   ),
                 ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _PendingTransfers extends StatelessWidget {
+  const _PendingTransfers({required this.userId});
+
+  final String userId;
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<List<LegacyTransfer>>(
+      stream: context
+          .read<LegacyTransferRepository>()
+          .watchPendingTransfersForUser(userId),
+      builder: (context, snapshot) {
+        final transfers = snapshot.data ?? const <LegacyTransfer>[];
+        if (transfers.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        final transfer = transfers.first;
+        return DecoratedBox(
+          decoration: BoxDecoration(
+            color: EchoesColors.surface,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: EchoesColors.elevatedSurface),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  'Pending custodianship',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: EchoesColors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Place transfer from ${transfer.fromUserId}',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: EchoesColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        key: const ValueKey('acceptTransferButton'),
+                        onPressed: () => context
+                            .read<LegacyTransferRepository>()
+                            .accept(transfer.id),
+                        icon: const Icon(Icons.check),
+                        label: const Text('Accept'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        key: const ValueKey('rejectTransferButton'),
+                        onPressed: () => context
+                            .read<LegacyTransferRepository>()
+                            .reject(transfer.id),
+                        icon: const Icon(Icons.close),
+                        label: const Text('Reject'),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),

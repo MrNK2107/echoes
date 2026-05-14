@@ -13,6 +13,8 @@ import 'package:echoes/features/auth/presentation/auth_cubit.dart';
 import 'package:echoes/features/auth/presentation/auth_gate.dart';
 import 'package:echoes/features/communities/data/local_community_repository.dart';
 import 'package:echoes/features/communities/domain/community_repository.dart';
+import 'package:echoes/features/legacy/data/local_legacy_transfer_repository.dart';
+import 'package:echoes/features/legacy/domain/legacy_transfer_repository.dart';
 import 'package:echoes/features/memories/data/local_memory_repository.dart';
 import 'package:echoes/features/memories/domain/memory_repository.dart';
 import 'package:echoes/features/places/data/local_place_repository.dart';
@@ -54,6 +56,9 @@ class EchoesApp extends StatelessWidget {
           ),
           RepositoryProvider<CommunityRepository>(
             create: (_) => LocalCommunityRepository(),
+          ),
+          RepositoryProvider<LegacyTransferRepository>(
+            create: (_) => LocalLegacyTransferRepository(),
           ),
         ],
         child: BlocProvider(

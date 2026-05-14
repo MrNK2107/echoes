@@ -576,11 +576,11 @@ Goal: implement place custodianship and legacy transfer.
 - [ ] Allow custodian to invite another custodian.
 - [ ] Allow custodian to initiate transfer.
 - [ ] Create pending transfer document.
-- [ ] Notify recipient in app.
-- [ ] Allow recipient to accept transfer.
-- [ ] Allow recipient to reject transfer.
-- [ ] Allow initiator to revoke transfer within 7 days.
-- [ ] Log transfer history.
+- [x] Notify recipient in app.
+- [x] Allow recipient to accept transfer.
+- [x] Allow recipient to reject transfer.
+- [x] Allow initiator to revoke transfer within 7 days.
+- [x] Log transfer history.
 - [ ] Allow multiple custodians per place.
 - [ ] Add guardian reassignment placeholder.
 
@@ -594,7 +594,7 @@ Transfer states:
 
 Tests:
 
-- [ ] Unit test transfer state machine.
+- [x] Unit test transfer state machine.
 - [ ] Unit test revoke window.
 - [ ] Security rules test transfer initiation.
 - [ ] Security rules test transfer acceptance.
