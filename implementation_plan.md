@@ -395,18 +395,18 @@ Goal: users can view, edit, and soft-delete memories.
 - [x] Build place detail memory list.
 - [ ] Filter visible memories by privacy rules.
 - [x] Add profile memory list.
-- [ ] Add edit memory screen.
-- [ ] Allow text edits.
-- [ ] Allow privacy edits.
-- [ ] Prevent location edits.
-- [ ] Prevent timestamp edits.
-- [ ] Add soft delete.
+- [x] Add edit memory screen.
+- [x] Allow text edits.
+- [x] Allow privacy edits.
+- [x] Prevent location edits.
+- [x] Prevent timestamp edits.
+- [x] Add soft delete.
 - [ ] Add deleted-memory recovery placeholder for future 30-day restore.
 
 Tests:
 
 - [ ] Unit test visibility helper.
-- [ ] Unit test edit constraints.
+- [x] Unit test edit constraints.
 - [x] Widget test memory detail.
 - [ ] Integration test edit memory.
 - [ ] Integration test soft delete.

@@ -91,20 +91,26 @@ class LocalMemoryRepository implements MemoryRepository {
 
   @override
   Stream<List<Memory>> watchMemoriesForPlace(String placeId) async* {
-    yield _memories.where((memory) => memory.placeId == placeId).toList();
-    yield* _controller.stream.map(
-      (memories) =>
-          memories.where((memory) => memory.placeId == placeId).toList(),
-    );
+    yield _visibleMemoriesForPlace(placeId);
+    yield* _controller.stream.map((_) => _visibleMemoriesForPlace(placeId));
   }
 
   @override
   Stream<List<Memory>> watchMemoriesForUser(String userId) async* {
-    yield _memories.where((memory) => memory.userId == userId).toList();
-    yield* _controller.stream.map(
-      (memories) =>
-          memories.where((memory) => memory.userId == userId).toList(),
-    );
+    yield _visibleMemoriesForUser(userId);
+    yield* _controller.stream.map((_) => _visibleMemoriesForUser(userId));
+  }
+
+  List<Memory> _visibleMemoriesForPlace(String placeId) {
+    return _memories
+        .where((memory) => memory.placeId == placeId && !memory.isDeleted)
+        .toList();
+  }
+
+  List<Memory> _visibleMemoriesForUser(String userId) {
+    return _memories
+        .where((memory) => memory.userId == userId && !memory.isDeleted)
+        .toList();
   }
 
   void dispose() {

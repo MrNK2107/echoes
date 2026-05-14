@@ -4,9 +4,16 @@ import 'package:echoes/features/privacy/domain/privacy_type.dart';
 import 'package:flutter/material.dart';
 
 class MemoryDetailSheet extends StatelessWidget {
-  const MemoryDetailSheet({required this.memory, super.key});
+  const MemoryDetailSheet({
+    required this.memory,
+    this.onEdit,
+    this.onDelete,
+    super.key,
+  });
 
   final Memory memory;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -57,6 +64,33 @@ class MemoryDetailSheet extends StatelessWidget {
               context,
             ).textTheme.bodySmall?.copyWith(color: EchoesColors.textSecondary),
           ),
+          if (onEdit != null || onDelete != null) ...[
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                if (onEdit != null)
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      key: const ValueKey('editMemoryButton'),
+                      onPressed: onEdit,
+                      icon: const Icon(Icons.edit_outlined),
+                      label: const Text('Edit'),
+                    ),
+                  ),
+                if (onEdit != null && onDelete != null)
+                  const SizedBox(width: 12),
+                if (onDelete != null)
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      key: const ValueKey('deleteMemoryButton'),
+                      onPressed: onDelete,
+                      icon: const Icon(Icons.delete_outline),
+                      label: const Text('Delete'),
+                    ),
+                  ),
+              ],
+            ),
+          ],
         ],
       ),
     );

@@ -4,6 +4,7 @@ import 'package:echoes/features/auth/presentation/auth_cubit.dart';
 import 'package:echoes/features/auth/presentation/auth_state.dart';
 import 'package:echoes/features/memories/domain/memory.dart';
 import 'package:echoes/features/memories/domain/memory_repository.dart';
+import 'package:echoes/features/memories/presentation/edit_memory_sheet.dart';
 import 'package:echoes/features/memories/presentation/memory_card.dart';
 import 'package:echoes/features/memories/presentation/memory_detail_sheet.dart';
 import 'package:flutter/material.dart';
@@ -195,7 +196,25 @@ class _UserMemoryList extends StatelessWidget {
               onTap: () => showModalBottomSheet<void>(
                 context: context,
                 showDragHandle: true,
-                builder: (_) => MemoryDetailSheet(memory: memory),
+                builder: (_) => MemoryDetailSheet(
+                  memory: memory,
+                  onEdit: () {
+                    Navigator.of(context).pop();
+                    showModalBottomSheet<void>(
+                      context: context,
+                      isScrollControlled: true,
+                      showDragHandle: true,
+                      builder: (_) => EditMemorySheet(memory: memory),
+                    );
+                  },
+                  onDelete: () async {
+                    Navigator.of(context).pop();
+                    await context.read<MemoryRepository>().softDelete(
+                      memoryId: memory.id,
+                      deletedAt: DateTime.now().toUtc(),
+                    );
+                  },
+                ),
               ),
             );
           },
