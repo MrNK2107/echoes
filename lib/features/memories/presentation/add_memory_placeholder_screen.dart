@@ -1,5 +1,6 @@
 import 'package:echoes/app/theme.dart';
 import 'package:echoes/core/location/location_service.dart';
+import 'package:echoes/core/media/media_picker_service.dart';
 import 'package:echoes/features/auth/presentation/auth_cubit.dart';
 import 'package:echoes/features/memories/domain/memory_repository.dart';
 import 'package:echoes/features/memories/presentation/add_memory_cubit.dart';
@@ -19,6 +20,7 @@ class AddMemoryPlaceholderScreen extends StatelessWidget {
     return BlocProvider(
       create: (context) => AddMemoryCubit(
         locationService: context.read<LocationService>(),
+        mediaPickerService: context.read<MediaPickerService>(),
         placeRepository: context.read<PlaceRepository>(),
         memoryRepository: context.read<MemoryRepository>(),
       ),
@@ -85,6 +87,8 @@ class _AddMemoryViewState extends State<_AddMemoryView> {
                   ),
                 ),
                 const SizedBox(height: 24),
+                const _PhotoSelector(),
+                const SizedBox(height: 16),
                 TextFormField(
                   key: const ValueKey('memoryTextField'),
                   controller: _textController,
@@ -101,6 +105,8 @@ class _AddMemoryViewState extends State<_AddMemoryView> {
                 const _PrivacySelector(),
                 const SizedBox(height: 16),
                 const _LocationCapture(),
+                const SizedBox(height: 16),
+                _MemoryPreview(textController: _textController),
                 const SizedBox(height: 24),
                 BlocBuilder<AddMemoryCubit, AddMemoryState>(
                   builder: (context, state) {
@@ -142,6 +148,76 @@ class _AddMemoryViewState extends State<_AddMemoryView> {
     context.read<AddMemoryCubit>().submit(
       userId: session.userId,
       textContent: _textController.text,
+    );
+  }
+}
+
+class _PhotoSelector extends StatelessWidget {
+  const _PhotoSelector();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<AddMemoryCubit, AddMemoryState>(
+      builder: (context, state) {
+        return DecoratedBox(
+          decoration: BoxDecoration(
+            color: EchoesColors.surface,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: EchoesColors.elevatedSurface),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  state.imagePath == null
+                      ? 'No photo selected'
+                      : 'Photo selected',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: EchoesColors.textPrimary,
+                  ),
+                ),
+                if (state.imagePath != null) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    state.imagePath!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: EchoesColors.textSecondary,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        key: const ValueKey('capturePhotoButton'),
+                        onPressed: () =>
+                            context.read<AddMemoryCubit>().pickFromCamera(),
+                        icon: const Icon(Icons.photo_camera_outlined),
+                        label: const Text('Camera'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        key: const ValueKey('pickGalleryPhotoButton'),
+                        onPressed: () =>
+                            context.read<AddMemoryCubit>().pickFromGallery(),
+                        icon: const Icon(Icons.photo_library_outlined),
+                        label: const Text('Gallery'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -216,6 +292,79 @@ class _LocationCapture extends StatelessWidget {
                     state.status == AddMemoryStatus.locating
                         ? 'Capturing...'
                         : 'Capture current location',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _MemoryPreview extends StatefulWidget {
+  const _MemoryPreview({required this.textController});
+
+  final TextEditingController textController;
+
+  @override
+  State<_MemoryPreview> createState() => _MemoryPreviewState();
+}
+
+class _MemoryPreviewState extends State<_MemoryPreview> {
+  @override
+  void initState() {
+    super.initState();
+    widget.textController.addListener(_refresh);
+  }
+
+  @override
+  void dispose() {
+    widget.textController.removeListener(_refresh);
+    super.dispose();
+  }
+
+  void _refresh() => setState(() {});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<AddMemoryCubit, AddMemoryState>(
+      builder: (context, state) {
+        final text = widget.textController.text.trim();
+
+        return DecoratedBox(
+          decoration: BoxDecoration(
+            color: EchoesColors.surface,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: EchoesColors.elevatedSurface),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Preview',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: EchoesColors.textPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  text.isEmpty ? 'Your memory text will appear here.' : text,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: EchoesColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  state.privacy == PrivacyType.public ? 'Public' : 'Private',
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    color: EchoesColors.sunsetGold,
                   ),
                 ),
               ],

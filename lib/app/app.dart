@@ -1,6 +1,8 @@
 import 'package:echoes/app/theme.dart';
 import 'package:echoes/core/location/geolocator_location_service.dart';
 import 'package:echoes/core/location/location_service.dart';
+import 'package:echoes/core/media/image_picker_media_service.dart';
+import 'package:echoes/core/media/media_picker_service.dart';
 import 'package:echoes/features/auth/data/local_auth_repository.dart';
 import 'package:echoes/features/auth/domain/auth_repository.dart';
 import 'package:echoes/features/auth/presentation/auth_cubit.dart';
@@ -28,6 +30,9 @@ class EchoesApp extends StatelessWidget {
           ),
           RepositoryProvider<LocationService>(
             create: (_) => GeolocatorLocationService(),
+          ),
+          RepositoryProvider<MediaPickerService>(
+            create: (_) => ImagePickerMediaService(),
           ),
           RepositoryProvider<PlaceRepository>(
             create: (_) => LocalPlaceRepository(),

@@ -359,11 +359,11 @@ Goal: users can create photo and text memories at their current location.
 
 - [x] Build add memory screen.
 - [x] Add text input with 1-2000 character validation.
-- [ ] Add photo capture.
-- [ ] Add gallery selection.
+- [x] Add photo capture.
+- [x] Add gallery selection.
 - [x] Add current GPS capture.
 - [x] Add public/private privacy selector.
-- [ ] Add preview before save.
+- [x] Add preview before save.
 - [ ] Compress image to max 1MB.
 - [ ] Upload image to Firebase Storage.
 - [ ] Create memory Firestore document.

@@ -1,6 +1,8 @@
 import 'package:echoes/core/geo/geohash.dart';
 import 'package:echoes/core/location/location_permission_state.dart';
 import 'package:echoes/core/location/location_service.dart';
+import 'package:echoes/core/media/media_picker_service.dart';
+import 'package:echoes/core/media/selected_media.dart';
 import 'package:echoes/features/aura/domain/aura_zone.dart';
 import 'package:echoes/features/aura/domain/sentiment_result.dart';
 import 'package:echoes/features/memories/domain/memory.dart';
@@ -16,10 +18,12 @@ import 'package:uuid/uuid.dart';
 class AddMemoryCubit extends Cubit<AddMemoryState> {
   AddMemoryCubit({
     required LocationService locationService,
+    required MediaPickerService mediaPickerService,
     required PlaceRepository placeRepository,
     required MemoryRepository memoryRepository,
     Uuid? uuid,
   }) : _locationService = locationService,
+       _mediaPickerService = mediaPickerService,
        _placeRepository = placeRepository,
        _memoryRepository = memoryRepository,
        _uuid = uuid ?? const Uuid(),
@@ -28,12 +32,37 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
   static const placeMatchRadiusMeters = 100.0;
 
   final LocationService _locationService;
+  final MediaPickerService _mediaPickerService;
   final PlaceRepository _placeRepository;
   final MemoryRepository _memoryRepository;
   final Uuid _uuid;
 
   void setPrivacy(PrivacyType privacy) {
     emit(state.copyWith(privacy: privacy));
+  }
+
+  Future<void> pickFromCamera() async {
+    await _pickImage(_mediaPickerService.pickFromCamera);
+  }
+
+  Future<void> pickFromGallery() async {
+    await _pickImage(_mediaPickerService.pickFromGallery);
+  }
+
+  Future<void> _pickImage(Future<SelectedMedia?> Function() pick) async {
+    try {
+      final media = await pick();
+      if (media != null) {
+        emit(state.copyWith(imagePath: media.path));
+      }
+    } on Object catch (error) {
+      emit(
+        state.copyWith(
+          status: AddMemoryStatus.failure,
+          errorMessage: error.toString(),
+        ),
+      );
+    }
   }
 
   Future<void> captureLocation() async {
@@ -117,6 +146,7 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
         id: _uuid.v4(),
         userId: userId,
         placeId: place.id,
+        imageUrl: state.imagePath,
         textContent: textContent.trim(),
         latitude: location.latitude,
         longitude: location.longitude,
