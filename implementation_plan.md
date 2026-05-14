@@ -494,10 +494,10 @@ Deliverable:
 
 Goal: implement the first AR experience with aura zones and memory orbs.
 
-- [ ] Add AR availability detection.
-- [ ] Add non-AR fallback to 2D map.
+- [x] Add AR availability detection.
+- [x] Add non-AR fallback to 2D map.
 - [ ] Add AR permissions flow.
-- [ ] Add AR screen.
+- [x] Add AR screen.
 - [ ] Start and stop AR sessions safely.
 - [ ] Query nearby places for AR display.
 - [ ] Convert nearby place positions into AR anchors or relative scene positions.

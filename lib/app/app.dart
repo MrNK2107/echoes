@@ -3,6 +3,8 @@ import 'package:echoes/core/location/geolocator_location_service.dart';
 import 'package:echoes/core/location/location_service.dart';
 import 'package:echoes/core/media/image_picker_media_service.dart';
 import 'package:echoes/core/media/media_picker_service.dart';
+import 'package:echoes/features/ar/data/local_ar_availability_service.dart';
+import 'package:echoes/features/ar/domain/ar_availability_service.dart';
 import 'package:echoes/features/aura/data/lexicon_sentiment_analyzer.dart';
 import 'package:echoes/features/aura/domain/sentiment_analyzer.dart';
 import 'package:echoes/features/auth/data/local_auth_repository.dart';
@@ -40,6 +42,9 @@ class EchoesApp extends StatelessWidget {
           ),
           RepositoryProvider<SentimentAnalyzer>(
             create: (_) => LexiconSentimentAnalyzer(),
+          ),
+          RepositoryProvider<ArAvailabilityService>(
+            create: (_) => const LocalArAvailabilityService(),
           ),
           RepositoryProvider<PlaceRepository>(
             create: (_) => LocalPlaceRepository(),
