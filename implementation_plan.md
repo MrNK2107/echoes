@@ -310,7 +310,7 @@ Goal: users can sign up, sign in, and have a profile document.
 - [x] Implement splash/auth gate.
 - [x] Implement login screen.
 - [x] Implement register screen.
-- [ ] Implement logout.
+- [x] Implement logout.
 - [ ] Create user document after signup.
 - [ ] Load user profile after auth state changes.
 - [ ] Add profile screen with user information.
