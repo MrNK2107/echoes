@@ -5,6 +5,8 @@ import 'package:echoes/features/auth/data/local_auth_repository.dart';
 import 'package:echoes/features/auth/domain/auth_repository.dart';
 import 'package:echoes/features/auth/presentation/auth_cubit.dart';
 import 'package:echoes/features/auth/presentation/auth_gate.dart';
+import 'package:echoes/features/memories/data/local_memory_repository.dart';
+import 'package:echoes/features/memories/domain/memory_repository.dart';
 import 'package:echoes/features/places/data/local_place_repository.dart';
 import 'package:echoes/features/places/domain/place_repository.dart';
 import 'package:flutter/material.dart';
@@ -29,6 +31,9 @@ class EchoesApp extends StatelessWidget {
           ),
           RepositoryProvider<PlaceRepository>(
             create: (_) => LocalPlaceRepository(),
+          ),
+          RepositoryProvider<MemoryRepository>(
+            create: (_) => LocalMemoryRepository(),
           ),
         ],
         child: BlocProvider(

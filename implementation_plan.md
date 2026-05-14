@@ -357,25 +357,25 @@ Deliverable:
 
 Goal: users can create photo and text memories at their current location.
 
-- [ ] Build add memory screen.
-- [ ] Add text input with 1-2000 character validation.
+- [x] Build add memory screen.
+- [x] Add text input with 1-2000 character validation.
 - [ ] Add photo capture.
 - [ ] Add gallery selection.
-- [ ] Add current GPS capture.
-- [ ] Add public/private privacy selector.
+- [x] Add current GPS capture.
+- [x] Add public/private privacy selector.
 - [ ] Add preview before save.
 - [ ] Compress image to max 1MB.
 - [ ] Upload image to Firebase Storage.
 - [ ] Create memory Firestore document.
-- [ ] Find nearby place within configured radius.
-- [ ] Create place if no nearby place exists.
-- [ ] Attach memory to place.
-- [ ] Assign first custodian when place is created.
-- [ ] Update place memory count.
+- [x] Find nearby place within configured radius.
+- [x] Create place if no nearby place exists.
+- [x] Attach memory to place.
+- [x] Assign first custodian when place is created.
+- [x] Update place memory count.
 
 Tests:
 
-- [ ] Unit test memory validation.
+- [x] Unit test memory validation.
 - [ ] Unit test place matching radius.
 - [ ] Widget test add memory form.
 - [ ] Integration test create-memory happy path.
