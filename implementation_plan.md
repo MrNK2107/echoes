@@ -331,9 +331,9 @@ Deliverable:
 
 Goal: users can see their location and nearby memory places on a map.
 
-- [ ] Add foreground location permission flow.
-- [ ] Add permission denied state.
-- [ ] Add current location fetch.
+- [x] Add foreground location permission flow.
+- [x] Add permission denied state.
+- [x] Add current location fetch.
 - [ ] Add Google Map screen.
 - [ ] Add current location marker.
 - [ ] Add geohash support.
@@ -345,7 +345,7 @@ Goal: users can see their location and nearby memory places on a map.
 
 Tests:
 
-- [ ] Unit test location permission states.
+- [x] Unit test location permission states.
 - [ ] Unit test nearby query parameter generation.
 - [ ] Widget test map permission states.
 

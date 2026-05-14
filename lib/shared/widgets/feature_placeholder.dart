@@ -7,6 +7,7 @@ class FeaturePlaceholder extends StatelessWidget {
     required this.title,
     required this.description,
     required this.nextStep,
+    this.action,
     super.key,
   });
 
@@ -14,6 +15,7 @@ class FeaturePlaceholder extends StatelessWidget {
   final String title;
   final String description;
   final String nextStep;
+  final Widget? action;
 
   @override
   Widget build(BuildContext context) {
@@ -50,6 +52,7 @@ class FeaturePlaceholder extends StatelessWidget {
                 height: 1.45,
               ),
             ),
+            if (action != null) ...[const SizedBox(height: 24), action!],
             const Spacer(),
             DecoratedBox(
               decoration: BoxDecoration(
