@@ -4,6 +4,10 @@ import 'package:echoes/core/location/location_service.dart';
 import 'package:echoes/features/map/presentation/map_cubit.dart';
 import 'package:echoes/features/map/presentation/map_state.dart';
 import 'package:echoes/features/map/presentation/map_status.dart';
+import 'package:echoes/features/memories/domain/memory.dart';
+import 'package:echoes/features/memories/domain/memory_repository.dart';
+import 'package:echoes/features/memories/presentation/memory_card.dart';
+import 'package:echoes/features/memories/presentation/memory_detail_sheet.dart';
 import 'package:echoes/features/places/domain/place.dart';
 import 'package:echoes/features/places/domain/place_repository.dart';
 import 'package:flutter/material.dart';
@@ -174,6 +178,8 @@ class _ReadyMapPlaceholder extends StatelessWidget {
   }
 
   void _showPlaceDetails(BuildContext context, Place place) {
+    final memoryRepository = context.read<MemoryRepository>();
+
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -203,6 +209,50 @@ class _ReadyMapPlaceholder extends StatelessWidget {
                 value: place.aura.intensity,
                 color: place.aura.color,
                 backgroundColor: EchoesColors.elevatedSurface,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Memories',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: EchoesColors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              StreamBuilder<List<Memory>>(
+                stream: memoryRepository.watchMemoriesForPlace(place.id),
+                builder: (context, snapshot) {
+                  final memories = snapshot.data ?? const <Memory>[];
+
+                  if (memories.isEmpty) {
+                    return Text(
+                      'No memories saved here yet.',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: EchoesColors.textSecondary,
+                      ),
+                    );
+                  }
+
+                  return ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 260),
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: memories.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 8),
+                      itemBuilder: (context, index) {
+                        final memory = memories[index];
+                        return MemoryCard(
+                          memory: memory,
+                          onTap: () => showModalBottomSheet<void>(
+                            context: context,
+                            showDragHandle: true,
+                            builder: (_) => MemoryDetailSheet(memory: memory),
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
               ),
             ],
           ),

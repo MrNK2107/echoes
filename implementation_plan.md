@@ -388,13 +388,13 @@ Deliverable:
 
 Goal: users can view, edit, and soft-delete memories.
 
-- [ ] Build memory card component.
-- [ ] Build memory detail screen.
-- [ ] Show image, text, timestamp, location, and creator visibility.
+- [x] Build memory card component.
+- [x] Build memory detail screen.
+- [x] Show image, text, timestamp, location, and creator visibility.
 - [ ] Hide creator info when privacy requires it.
-- [ ] Build place detail memory list.
+- [x] Build place detail memory list.
 - [ ] Filter visible memories by privacy rules.
-- [ ] Add profile memory list.
+- [x] Add profile memory list.
 - [ ] Add edit memory screen.
 - [ ] Allow text edits.
 - [ ] Allow privacy edits.
@@ -407,7 +407,7 @@ Tests:
 
 - [ ] Unit test visibility helper.
 - [ ] Unit test edit constraints.
-- [ ] Widget test memory detail.
+- [x] Widget test memory detail.
 - [ ] Integration test edit memory.
 - [ ] Integration test soft delete.
 

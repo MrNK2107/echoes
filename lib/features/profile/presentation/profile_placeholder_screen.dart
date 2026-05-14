@@ -2,6 +2,10 @@ import 'package:echoes/shared/widgets/feature_placeholder.dart';
 import 'package:echoes/app/theme.dart';
 import 'package:echoes/features/auth/presentation/auth_cubit.dart';
 import 'package:echoes/features/auth/presentation/auth_state.dart';
+import 'package:echoes/features/memories/domain/memory.dart';
+import 'package:echoes/features/memories/domain/memory_repository.dart';
+import 'package:echoes/features/memories/presentation/memory_card.dart';
+import 'package:echoes/features/memories/presentation/memory_detail_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -61,8 +65,18 @@ class ProfilePlaceholderScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  const _ProfileStatRow(),
-                  const Spacer(),
+                  _ProfileStatRow(userId: session.userId),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Your memories',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: EchoesColors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Expanded(child: _UserMemoryList(userId: session.userId)),
+                  const SizedBox(height: 16),
                   OutlinedButton.icon(
                     key: const ValueKey('signOutButton'),
                     onPressed: () => context.read<AuthCubit>().signOut(),
@@ -80,20 +94,32 @@ class ProfilePlaceholderScreen extends StatelessWidget {
 }
 
 class _ProfileStatRow extends StatelessWidget {
-  const _ProfileStatRow();
+  const _ProfileStatRow({required this.userId});
+
+  final String userId;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: const [
-        Expanded(
-          child: _ProfileStat(label: 'Memories', value: '0'),
-        ),
-        SizedBox(width: 12),
-        Expanded(
-          child: _ProfileStat(label: 'Places', value: '0'),
-        ),
-      ],
+    return StreamBuilder<List<Memory>>(
+      stream: context.read<MemoryRepository>().watchMemoriesForUser(userId),
+      builder: (context, snapshot) {
+        final memories = snapshot.data ?? const <Memory>[];
+
+        return Row(
+          children: [
+            Expanded(
+              child: _ProfileStat(
+                label: 'Memories',
+                value: '${memories.length}',
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: _ProfileStat(label: 'Places', value: '0'),
+            ),
+          ],
+        );
+      },
     );
   }
 }
@@ -134,6 +160,47 @@ class _ProfileStat extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _UserMemoryList extends StatelessWidget {
+  const _UserMemoryList({required this.userId});
+
+  final String userId;
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<List<Memory>>(
+      stream: context.read<MemoryRepository>().watchMemoriesForUser(userId),
+      builder: (context, snapshot) {
+        final memories = snapshot.data ?? const <Memory>[];
+
+        if (memories.isEmpty) {
+          return Text(
+            'No memories yet.',
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: EchoesColors.textSecondary),
+          );
+        }
+
+        return ListView.separated(
+          itemCount: memories.length,
+          separatorBuilder: (_, _) => const SizedBox(height: 8),
+          itemBuilder: (context, index) {
+            final memory = memories[index];
+            return MemoryCard(
+              memory: memory,
+              onTap: () => showModalBottomSheet<void>(
+                context: context,
+                showDragHandle: true,
+                builder: (_) => MemoryDetailSheet(memory: memory),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
