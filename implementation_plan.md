@@ -1,0 +1,857 @@
+# ECHOES Implementation Plan
+
+## Planning Progress
+
+- [x] Reviewed `SPEC.md`
+- [x] Confirmed current repository state
+- [x] Identified project as greenfield Flutter implementation
+- [x] Drafted implementation plan
+- [x] Bootstrap Flutter project
+- [ ] Begin MVP implementation
+
+## Current Repository State
+
+The repository currently contains only the product specification:
+
+- `SPEC.md`
+- `implementation_plan.md`
+
+No Flutter project, Firebase configuration, application source code, tests, or platform folders exist yet. All implementation work should therefore begin from project bootstrap.
+
+## Implementation Strategy
+
+ECHOES should be built in progressive layers. The core product promise is place-based memory preservation with privacy and emotional aura visualization. AR is a signature feature, but it should not be the first technical dependency because the data model, privacy model, place discovery, and memory creation flows need to be reliable before AR rendering is useful.
+
+Recommended delivery order:
+
+1. Build the Flutter/Firebase foundation.
+2. Implement authentication and user profiles.
+3. Implement map-based place discovery.
+4. Implement memory creation and viewing.
+5. Implement privacy enforcement.
+6. Implement sentiment and 2D aura visualization.
+7. Implement AR aura zones and memory orbs.
+8. Implement advanced privacy, communities, and legacy transfer.
+9. Add offline support, performance hardening, and accessibility polish.
+
+## Technical Foundation
+
+### Target Stack
+
+- [x] Flutter 3.x
+- [x] Dart
+- [ ] Firebase Auth
+- [ ] Cloud Firestore
+- [ ] Firebase Storage
+- [ ] Firebase Cloud Functions, where server-side validation or denormalized updates are needed
+- [ ] Google Maps SDK
+- [ ] ARCore via `arcore_flutter_plus` for Android
+- [ ] ARKit via `arkit_plugin` for iOS
+- [ ] On-device VADER sentiment analysis
+- [ ] BLoC for state management
+- [ ] Clean Architecture split into data, domain, and presentation layers
+
+### Recommended Project Structure
+
+```text
+lib/
+  app/
+    app.dart
+    router.dart
+    theme.dart
+  core/
+    config/
+    constants/
+    errors/
+    location/
+    permissions/
+    services/
+    utils/
+  features/
+    auth/
+      data/
+      domain/
+      presentation/
+    users/
+      data/
+      domain/
+      presentation/
+    memories/
+      data/
+      domain/
+      presentation/
+    places/
+      data/
+      domain/
+      presentation/
+    map/
+      data/
+      domain/
+      presentation/
+    aura/
+      data/
+      domain/
+      presentation/
+    ar/
+      data/
+      domain/
+      presentation/
+    privacy/
+      domain/
+      presentation/
+    communities/
+      data/
+      domain/
+      presentation/
+    legacy/
+      data/
+      domain/
+      presentation/
+  shared/
+    widgets/
+    models/
+    extensions/
+test/
+integration_test/
+```
+
+### Bootstrap Tasks
+
+- [x] Create Flutter application in the repository.
+- [x] Add Android and iOS platform folders.
+- [ ] Configure Firebase project.
+- [ ] Add Firebase config files for Android and iOS.
+- [ ] Add base dependencies.
+- [ ] Configure linting.
+- [ ] Configure app flavors or environment files for development and production.
+- [x] Add dark theme defaults.
+- [x] Add root navigation shell.
+- [ ] Add basic app startup and error boundary handling.
+- [ ] Add CI-ready test commands.
+
+## Core Domain Model
+
+### User
+
+- [ ] Create `AppUser` domain entity.
+- [ ] Create user Firestore DTO.
+- [ ] Create user repository.
+- [ ] Create user profile creation flow after signup.
+
+Required fields:
+
+```dart
+class AppUser {
+  final String id;
+  final String? displayName;
+  final String? email;
+  final String? photoUrl;
+  final PrivacyType defaultPrivacy;
+  final List<String> managedPlaceIds;
+  final List<String> communityIds;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+}
+```
+
+### Memory
+
+- [ ] Create `Memory` domain entity.
+- [ ] Create memory Firestore DTO.
+- [ ] Create memory repository.
+- [ ] Add create, read, update, and soft-delete operations.
+- [ ] Prevent editing location and timestamp after creation.
+
+Required fields:
+
+```dart
+class Memory {
+  final String id;
+  final String userId;
+  final String placeId;
+  final String? imageUrl;
+  final String? audioUrl;
+  final String textContent;
+  final double latitude;
+  final double longitude;
+  final String geohash;
+  final SentimentResult sentiment;
+  final PrivacyType privacy;
+  final List<String> taggedUserIds;
+  final String? communityId;
+  final DateTime? releaseDate;
+  final bool isDeleted;
+  final DateTime? deletedAt;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+}
+```
+
+### Place
+
+- [ ] Create `Place` domain entity.
+- [ ] Create place Firestore DTO.
+- [ ] Create place repository.
+- [ ] Add nearby place lookup.
+- [ ] Add place creation when first memory is added.
+- [ ] Add first-memory creator as initial custodian.
+
+Required fields:
+
+```dart
+class Place {
+  final String id;
+  final String name;
+  final double latitude;
+  final double longitude;
+  final String geohash;
+  final String? communityId;
+  final List<String> custodianIds;
+  final AuraZone aura;
+  final int memoryCount;
+  final int publicMemoryCount;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+}
+```
+
+### Aura Zone
+
+- [ ] Create `AuraZone` value object.
+- [ ] Implement sentiment-to-color mapping.
+- [ ] Implement intensity calculation from memory count.
+- [ ] Implement recency-weighted aura calculation.
+
+Required fields:
+
+```dart
+class AuraZone {
+  final SentimentCategory dominantSentiment;
+  final double compoundScore;
+  final double intensity;
+  final int memoryCount;
+  final String colorHex;
+  final DateTime updatedAt;
+}
+```
+
+### Community
+
+- [ ] Create `Community` domain entity.
+- [ ] Create membership model.
+- [ ] Add role model for owner, guardian, member, and visitor.
+- [ ] Add community repository.
+
+### Legacy Transfer
+
+- [ ] Create `LegacyTransfer` domain entity.
+- [ ] Create transfer repository.
+- [ ] Add transfer state machine.
+- [ ] Add transfer history.
+
+## Firestore Collections
+
+- [ ] `users/{userId}`
+- [ ] `places/{placeId}`
+- [ ] `memories/{memoryId}`
+- [ ] `communities/{communityId}`
+- [ ] `communities/{communityId}/members/{userId}`
+- [ ] `transfers/{transferId}`
+
+## Firebase Security Rules
+
+Privacy is a core product requirement and must be implemented early.
+
+- [ ] Authenticated users can read public memories.
+- [ ] Users can read their own private memories.
+- [ ] Users can read memories where their ID is present in `taggedUserIds`.
+- [ ] Users can read community memories only when they are members of that community.
+- [ ] Time-release memories become public only after `releaseDate`.
+- [ ] Deleted memories are excluded from normal reads.
+- [ ] Users can create memories only for themselves.
+- [ ] Users can edit only allowed mutable fields on their own memories.
+- [ ] Users cannot edit memory location or original timestamp.
+- [ ] Users can soft-delete their own memories.
+- [ ] Place custodians can soft-delete memories attached to their managed places.
+- [ ] Only custodians can initiate custodianship transfers.
+- [ ] Only transfer recipients can accept transfers.
+
+## Phase 0: Project Bootstrap
+
+Goal: establish a working Flutter application with Firebase-ready structure.
+
+- [x] Generate Flutter project.
+- [ ] Confirm app runs on Android emulator.
+- [ ] Confirm app runs on iOS simulator, if available.
+- [ ] Add package dependencies.
+- [ ] Configure Firebase.
+- [x] Add app theme.
+- [x] Add app router.
+- [x] Add bottom navigation shell with placeholder tabs:
+  - [x] Map
+  - [x] AR
+  - [x] Add
+  - [x] Communities
+  - [x] Profile
+- [x] Add basic loading, empty, and error UI widgets.
+- [x] Add first smoke test.
+
+Deliverable:
+
+- A runnable Flutter app with empty navigable screens and Firebase initialized.
+
+## Phase 1: Authentication and Profile
+
+Goal: users can sign up, sign in, and have a profile document.
+
+- [ ] Implement splash/auth gate.
+- [ ] Implement login screen.
+- [ ] Implement register screen.
+- [ ] Implement logout.
+- [ ] Create user document after signup.
+- [ ] Load user profile after auth state changes.
+- [ ] Add profile screen with user information.
+- [ ] Add default privacy preference.
+- [ ] Add account deletion placeholder.
+
+Tests:
+
+- [ ] Unit test auth repository behavior with mocks.
+- [ ] Widget test login validation.
+- [ ] Widget test register validation.
+
+Deliverable:
+
+- Authenticated users can enter the app and see their profile.
+
+## Phase 2: Location and Map Foundation
+
+Goal: users can see their location and nearby memory places on a map.
+
+- [ ] Add foreground location permission flow.
+- [ ] Add permission denied state.
+- [ ] Add current location fetch.
+- [ ] Add Google Map screen.
+- [ ] Add current location marker.
+- [ ] Add geohash support.
+- [ ] Add nearby place query.
+- [ ] Render place markers.
+- [ ] Color markers using aura color.
+- [ ] Add marker tap behavior.
+- [ ] Open place detail bottom sheet or screen.
+
+Tests:
+
+- [ ] Unit test location permission states.
+- [ ] Unit test nearby query parameter generation.
+- [ ] Widget test map permission states.
+
+Deliverable:
+
+- Map home displays nearby places and opens place details.
+
+## Phase 3: Memory Creation MVP
+
+Goal: users can create photo and text memories at their current location.
+
+- [ ] Build add memory screen.
+- [ ] Add text input with 1-2000 character validation.
+- [ ] Add photo capture.
+- [ ] Add gallery selection.
+- [ ] Add current GPS capture.
+- [ ] Add public/private privacy selector.
+- [ ] Add preview before save.
+- [ ] Compress image to max 1MB.
+- [ ] Upload image to Firebase Storage.
+- [ ] Create memory Firestore document.
+- [ ] Find nearby place within configured radius.
+- [ ] Create place if no nearby place exists.
+- [ ] Attach memory to place.
+- [ ] Assign first custodian when place is created.
+- [ ] Update place memory count.
+
+Tests:
+
+- [ ] Unit test memory validation.
+- [ ] Unit test place matching radius.
+- [ ] Widget test add memory form.
+- [ ] Integration test create-memory happy path.
+
+Deliverable:
+
+- Users can add a public or private memory with photo, text, and GPS location.
+
+## Phase 4: Memory Viewing and Management
+
+Goal: users can view, edit, and soft-delete memories.
+
+- [ ] Build memory card component.
+- [ ] Build memory detail screen.
+- [ ] Show image, text, timestamp, location, and creator visibility.
+- [ ] Hide creator info when privacy requires it.
+- [ ] Build place detail memory list.
+- [ ] Filter visible memories by privacy rules.
+- [ ] Add profile memory list.
+- [ ] Add edit memory screen.
+- [ ] Allow text edits.
+- [ ] Allow privacy edits.
+- [ ] Prevent location edits.
+- [ ] Prevent timestamp edits.
+- [ ] Add soft delete.
+- [ ] Add deleted-memory recovery placeholder for future 30-day restore.
+
+Tests:
+
+- [ ] Unit test visibility helper.
+- [ ] Unit test edit constraints.
+- [ ] Widget test memory detail.
+- [ ] Integration test edit memory.
+- [ ] Integration test soft delete.
+
+Deliverable:
+
+- Users can browse visible memories and manage their own memories.
+
+## Phase 5: Sentiment and Aura MVP
+
+Goal: places develop a visible emotional aura based on public memories.
+
+- [ ] Add on-device VADER sentiment package or implementation.
+- [ ] Analyze memory text during creation.
+- [ ] Store sentiment result on memory.
+- [ ] Implement aura calculation service.
+- [ ] Weight memories by recency.
+- [ ] Calculate dominant sentiment.
+- [ ] Map dominant sentiment to color.
+- [ ] Calculate intensity from memory count.
+- [ ] Persist aura summary on place.
+- [ ] Show aura color on map markers.
+- [ ] Show aura preview in place detail.
+- [ ] Add aura history data model placeholder.
+
+Suggested sentiment thresholds:
+
+- Positive: compound score `>= 0.35`
+- Peaceful: compound score `>= 0.1` and `< 0.35`
+- Neutral: compound score `> -0.1` and `< 0.1`
+- Mixed: broad distribution across positive and negative memories
+- Heavy: compound score `<= -0.35`
+
+Aura colors:
+
+- Positive or joyful: `#FFB347`
+- Peaceful or calm: `#77DD77` or `#77B5FE`
+- Heavy or sad: `#9B59B6` or `#5D6D7E`
+- Mixed or complex: layered `#DDA0DD` and `#87CEEB`
+- Neutral: `#C0C0C0`
+
+Tests:
+
+- [ ] Unit test VADER wrapper.
+- [ ] Unit test sentiment category thresholds.
+- [ ] Unit test aura color mapping.
+- [ ] Unit test recency weighting.
+- [ ] Unit test aura intensity.
+
+Deliverable:
+
+- Every place has a 2D aura preview that updates when public memories are added.
+
+## Phase 6: Advanced Privacy
+
+Goal: implement the full privacy model described in the spec.
+
+- [ ] Add `Tagged` privacy type.
+- [ ] Add tagged user search.
+- [ ] Add tagged user selection during memory creation.
+- [ ] Add tagged memory visibility.
+- [ ] Add `Time-release` privacy type.
+- [ ] Add release date selector.
+- [ ] Add release date validation.
+- [ ] Add time-release visibility.
+- [ ] Add `Community` privacy type.
+- [ ] Add community picker.
+- [ ] Add community visibility checks.
+- [ ] Add default privacy preference handling.
+- [ ] Update Firestore rules for all privacy modes.
+
+Tests:
+
+- [ ] Unit test tagged visibility.
+- [ ] Unit test time-release visibility before release date.
+- [ ] Unit test time-release visibility after release date.
+- [ ] Unit test community visibility.
+- [ ] Security rules tests for all privacy modes.
+
+Deliverable:
+
+- Users can choose public, private, tagged, time-release, or community memory visibility.
+
+## Phase 7: AR Prototype
+
+Goal: implement the first AR experience with aura zones and memory orbs.
+
+- [ ] Add AR availability detection.
+- [ ] Add non-AR fallback to 2D map.
+- [ ] Add AR permissions flow.
+- [ ] Add AR screen.
+- [ ] Start and stop AR sessions safely.
+- [ ] Query nearby places for AR display.
+- [ ] Convert nearby place positions into AR anchors or relative scene positions.
+- [ ] Render aura dome or sphere.
+- [ ] Apply aura color and transparency.
+- [ ] Add aura pulse animation.
+- [ ] Render memory orbs inside aura.
+- [ ] Limit visible orbs for performance.
+- [ ] Add tap handling on aura.
+- [ ] Add tap handling on memory orb.
+- [ ] Open memory detail from orb tap.
+- [ ] Add distance and direction indicators.
+
+Performance requirements:
+
+- [ ] Maintain 30 FPS on target Android devices.
+- [ ] Avoid rendering too many places at once.
+- [ ] Avoid rendering too many memory orbs at once.
+- [ ] Cache thumbnails and metadata.
+
+Tests:
+
+- [ ] Manual test on ARCore-supported Android device.
+- [ ] Manual test on non-AR device.
+- [ ] Manual test app lifecycle during AR session.
+- [ ] Performance test with multiple nearby places.
+
+Deliverable:
+
+- Users can enter AR mode and see aura zones and memory orbs near real places.
+
+## Phase 8: Communities
+
+Goal: add shared memory spaces and community-based access.
+
+- [ ] Implement community list screen.
+- [ ] Implement community detail screen.
+- [ ] Implement thematic community creation.
+- [ ] Implement membership join flow.
+- [ ] Implement owner role.
+- [ ] Implement guardian role.
+- [ ] Implement member role.
+- [ ] Implement visitor role.
+- [ ] Implement community feed.
+- [ ] Add community badge component.
+- [ ] Add community privacy to memory creation.
+- [ ] Add geographic community placeholder.
+- [ ] Add time-based community placeholder.
+- [ ] Add institution zone placeholder.
+
+Later community automation:
+
+- [ ] Auto-create geographic communities when 5+ memories exist in 100m radius.
+- [ ] Auto-create time-based communities based on memory timestamps.
+- [ ] Add verified institution admin flow.
+- [ ] Add alumni domain validation.
+- [ ] Add campus building sub-zones.
+- [ ] Add era groups.
+
+Tests:
+
+- [ ] Unit test community role permissions.
+- [ ] Widget test community creation.
+- [ ] Integration test joining community.
+- [ ] Integration test community memory visibility.
+
+Deliverable:
+
+- Users can create, join, and view thematic communities with role-aware permissions.
+
+## Phase 9: Custodianship and Legacy
+
+Goal: implement place custodianship and legacy transfer.
+
+- [ ] Show custodians on place detail.
+- [ ] Allow custodian to invite another custodian.
+- [ ] Allow custodian to initiate transfer.
+- [ ] Create pending transfer document.
+- [ ] Notify recipient in app.
+- [ ] Allow recipient to accept transfer.
+- [ ] Allow recipient to reject transfer.
+- [ ] Allow initiator to revoke transfer within 7 days.
+- [ ] Log transfer history.
+- [ ] Allow multiple custodians per place.
+- [ ] Add guardian reassignment placeholder.
+
+Transfer states:
+
+- `pending`
+- `accepted`
+- `rejected`
+- `revoked`
+- `expired`
+
+Tests:
+
+- [ ] Unit test transfer state machine.
+- [ ] Unit test revoke window.
+- [ ] Security rules test transfer initiation.
+- [ ] Security rules test transfer acceptance.
+- [ ] Integration test successful transfer.
+
+Deliverable:
+
+- Custodianship can be passed from one user to another with history.
+
+## Phase 10: Offline Cache and Sync
+
+Goal: improve reliability on mobile networks.
+
+- [ ] Enable Firebase offline persistence where supported.
+- [ ] Cache nearby places.
+- [ ] Cache recent memories.
+- [ ] Cache profile and settings.
+- [ ] Add local image caching.
+- [ ] Add pending upload queue.
+- [ ] Retry failed memory uploads.
+- [ ] Add sync status indicators.
+- [ ] Add cache management settings.
+
+Recommended local storage:
+
+- Use Firebase local persistence for basic Firestore caching.
+- Add `drift` or `isar` only when richer offline querying is needed.
+
+Tests:
+
+- [ ] Manual offline browsing test.
+- [ ] Manual failed upload retry test.
+- [ ] Unit test sync queue state.
+
+Deliverable:
+
+- Users can browse recently loaded content and recover from failed uploads.
+
+## Phase 11: Notifications
+
+Goal: support transfer and community workflows.
+
+- [ ] Add Firebase Cloud Messaging.
+- [ ] Request notification permissions.
+- [ ] Notify users of transfer requests.
+- [ ] Notify users of accepted transfers.
+- [ ] Notify users when tagged in memories.
+- [ ] Notify users of community invitations.
+- [ ] Add notification settings.
+
+Deliverable:
+
+- Users receive useful notifications for collaboration and legacy flows.
+
+## Phase 12: Accessibility and UX Polish
+
+Goal: make the app comfortable, legible, and accessible.
+
+- [ ] Verify 44x44dp minimum touch targets.
+- [ ] Add semantic labels.
+- [ ] Support text scaling.
+- [ ] Add high contrast support.
+- [ ] Verify screen reader navigation.
+- [ ] Add empty states.
+- [ ] Add loading states.
+- [ ] Add error recovery states.
+- [ ] Polish dark theme.
+- [ ] Polish aura animations.
+- [ ] Reduce UI chrome in AR mode.
+
+Deliverable:
+
+- App meets baseline accessibility and usability expectations.
+
+## Phase 13: Performance and Hardening
+
+Goal: make the app reliable on target devices.
+
+- [ ] Measure app launch time.
+- [ ] Keep launch under 3 seconds.
+- [ ] Measure memory load time.
+- [ ] Keep memory load under 2 seconds.
+- [ ] Measure location update time.
+- [ ] Keep location updates under 1 second.
+- [ ] Measure AR frame rate.
+- [ ] Keep AR at 30+ FPS.
+- [ ] Test on mid-range Android devices.
+- [ ] Optimize image compression.
+- [ ] Optimize Firestore query counts.
+- [ ] Add crash reporting.
+- [ ] Add analytics with privacy review.
+
+Deliverable:
+
+- App meets the non-functional requirements in the spec.
+
+## Testing Plan
+
+### Unit Tests
+
+- [ ] Auth repository
+- [ ] Memory validation
+- [ ] Privacy visibility
+- [ ] Place matching
+- [ ] Sentiment classification
+- [ ] Aura calculation
+- [ ] Community role permissions
+- [ ] Legacy transfer state machine
+
+### Widget Tests
+
+- [ ] Login screen
+- [ ] Register screen
+- [ ] Add memory screen
+- [ ] Privacy selector
+- [ ] Memory card
+- [ ] Memory detail
+- [ ] Place detail
+- [ ] Community detail
+
+### Integration Tests
+
+- [ ] Sign up
+- [ ] Sign in
+- [ ] Add memory
+- [ ] View place
+- [ ] View memory detail
+- [ ] Edit memory
+- [ ] Soft delete memory
+- [ ] Join community
+- [ ] Create community memory
+- [ ] Transfer custodianship
+
+### Security Rules Tests
+
+- [ ] Public memory read
+- [ ] Private memory read denied to other users
+- [ ] Private memory read allowed to creator
+- [ ] Tagged memory read allowed to tagged user
+- [ ] Tagged memory read denied to untagged user
+- [ ] Time-release memory hidden before release
+- [ ] Time-release memory public after release
+- [ ] Community memory restricted to members
+- [ ] Memory location update denied
+- [ ] Custodian moderation allowed
+
+### Manual Device Tests
+
+- [ ] Android emulator smoke test
+- [ ] Android physical device test
+- [ ] Target mid-range Android performance test
+- [ ] iOS simulator smoke test
+- [ ] iOS physical device test, if available
+- [ ] ARCore supported-device test
+- [ ] Non-AR fallback test
+- [ ] Camera permission test
+- [ ] Gallery permission test
+- [ ] Location permission test
+- [ ] Notification permission test
+
+## Main Risks and Mitigations
+
+### AR Plugin Risk
+
+AR dependencies may behave differently across Android and iOS.
+
+Mitigation:
+
+- [ ] Build AR only after MVP is stable.
+- [ ] Add AR availability detection.
+- [ ] Keep 2D map as complete fallback.
+- [ ] Test on real target Android hardware.
+
+### Privacy Query Complexity
+
+Firestore queries can become difficult when combining public, private, tagged, community, and time-release visibility.
+
+Mitigation:
+
+- [ ] Keep separate query paths for each visibility type.
+- [ ] Enforce access with security rules.
+- [ ] Add security rules tests before broad feature work.
+- [ ] Avoid relying only on client-side filtering.
+
+### Sentiment Package Risk
+
+The Dart VADER package may not fully match project requirements.
+
+Mitigation:
+
+- [ ] Wrap sentiment analysis behind an interface.
+- [ ] Add deterministic unit tests.
+- [ ] Allow replacing the implementation without touching feature code.
+
+### Place Matching Risk
+
+Nearby memories may attach to the wrong place if radius logic is too simple.
+
+Mitigation:
+
+- [ ] Start with conservative radius matching.
+- [ ] Store geohash and exact coordinates.
+- [ ] Add custodian merge/split tools later.
+
+### Performance Risk
+
+AR, image loading, and Firestore queries can strain mid-range phones.
+
+Mitigation:
+
+- [ ] Cap rendered AR objects.
+- [ ] Compress images.
+- [ ] Cache aggressively.
+- [ ] Profile on physical devices early.
+
+## Release Milestones
+
+### Internal Alpha
+
+- [ ] Auth
+- [ ] Profile
+- [ ] Map
+- [ ] Add memory
+- [ ] Place detail
+- [ ] Public/private privacy
+- [ ] Basic aura preview
+
+### Private Beta
+
+- [ ] Advanced privacy
+- [ ] AR prototype
+- [ ] Memory editing
+- [ ] Soft delete
+- [ ] Initial community support
+- [ ] Firebase security rules test coverage
+
+### Public MVP
+
+- [ ] Stable AR fallback
+- [ ] Thematic communities
+- [ ] Custodianship basics
+- [ ] Offline cache basics
+- [ ] Accessibility pass
+- [ ] Performance pass on target devices
+
+### Post-MVP
+
+- [ ] Institution zones
+- [ ] Era groups
+- [ ] Legacy transfer polish
+- [ ] Community analytics
+- [ ] Discussion board, if requested
+- [ ] Audio playback in AR
+- [ ] Multi-language support
+- [ ] Web portal
+
+## Immediate Next Steps
+
+- [ ] Create Flutter project.
+- [ ] Add Firebase dependencies.
+- [ ] Configure app theme and routing.
+- [ ] Implement auth shell.
+- [ ] Add first tests.
