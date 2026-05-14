@@ -334,19 +334,19 @@ Goal: users can see their location and nearby memory places on a map.
 - [x] Add foreground location permission flow.
 - [x] Add permission denied state.
 - [x] Add current location fetch.
-- [ ] Add Google Map screen.
-- [ ] Add current location marker.
-- [ ] Add geohash support.
-- [ ] Add nearby place query.
-- [ ] Render place markers.
-- [ ] Color markers using aura color.
-- [ ] Add marker tap behavior.
-- [ ] Open place detail bottom sheet or screen.
+- [x] Add Google Map screen.
+- [x] Add current location marker.
+- [x] Add geohash support.
+- [x] Add nearby place query.
+- [x] Render place markers.
+- [x] Color markers using aura color.
+- [x] Add marker tap behavior.
+- [x] Open place detail bottom sheet or screen.
 
 Tests:
 
 - [x] Unit test location permission states.
-- [ ] Unit test nearby query parameter generation.
+- [x] Unit test nearby query parameter generation.
 - [ ] Widget test map permission states.
 
 Deliverable:

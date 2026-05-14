@@ -2,14 +2,21 @@ import 'package:echoes/core/location/location_permission_state.dart';
 import 'package:echoes/core/location/location_service.dart';
 import 'package:echoes/features/map/presentation/map_state.dart';
 import 'package:echoes/features/map/presentation/map_status.dart';
+import 'package:echoes/features/places/domain/place_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class MapCubit extends Cubit<MapState> {
-  MapCubit({required LocationService locationService})
-    : _locationService = locationService,
-      super(const MapState.initial());
+  static const nearbyRadiusMeters = 1500.0;
+
+  MapCubit({
+    required LocationService locationService,
+    required PlaceRepository placeRepository,
+  }) : _locationService = locationService,
+       _placeRepository = placeRepository,
+       super(const MapState.initial());
 
   final LocationService _locationService;
+  final PlaceRepository _placeRepository;
 
   Future<void> requestLocation() async {
     emit(state.copyWith(status: MapStatus.loadingLocation));
@@ -31,7 +38,20 @@ class MapCubit extends Cubit<MapState> {
       }
 
       final location = await _locationService.getCurrentLocation();
-      emit(state.copyWith(status: MapStatus.ready, location: location));
+      final places = await _placeRepository
+          .watchNearbyPlaces(
+            latitude: location.latitude,
+            longitude: location.longitude,
+            radiusMeters: nearbyRadiusMeters,
+          )
+          .first;
+      emit(
+        state.copyWith(
+          status: MapStatus.ready,
+          location: location,
+          places: places,
+        ),
+      );
     } on Object catch (error) {
       emit(
         state.copyWith(

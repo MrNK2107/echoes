@@ -4,8 +4,11 @@ import 'package:echoes/core/location/location_service.dart';
 import 'package:echoes/features/map/presentation/map_cubit.dart';
 import 'package:echoes/features/map/presentation/map_state.dart';
 import 'package:echoes/features/map/presentation/map_status.dart';
+import 'package:echoes/features/places/domain/place.dart';
+import 'package:echoes/features/places/domain/place_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class MapPlaceholderScreen extends StatelessWidget {
   const MapPlaceholderScreen({super.key});
@@ -13,8 +16,10 @@ class MapPlaceholderScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) =>
-          MapCubit(locationService: context.read<LocationService>()),
+      create: (context) => MapCubit(
+        locationService: context.read<LocationService>(),
+        placeRepository: context.read<PlaceRepository>(),
+      ),
       child: const _MapView(),
     );
   }
@@ -103,7 +108,32 @@ class _ReadyMapPlaceholder extends StatelessWidget {
                 color: EchoesColors.textSecondary,
               ),
             ),
-            const Spacer(),
+            const SizedBox(height: 16),
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: GoogleMap(
+                  initialCameraPosition: CameraPosition(
+                    target: LatLng(location.latitude, location.longitude),
+                    zoom: 15,
+                  ),
+                  markers: _markersFor(context, state.places),
+                  myLocationEnabled: true,
+                  myLocationButtonEnabled: false,
+                  zoomControlsEnabled: false,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              state.places.isEmpty
+                  ? 'No memory places nearby yet.'
+                  : '${state.places.length} memory places nearby',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: EchoesColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 16),
             FilledButton.icon(
               onPressed: () => context.read<MapCubit>().requestLocation(),
               icon: const Icon(Icons.my_location),
@@ -112,6 +142,72 @@ class _ReadyMapPlaceholder extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Set<Marker> _markersFor(BuildContext context, List<Place> places) {
+    return places.map((place) {
+      return Marker(
+        markerId: MarkerId(place.id),
+        position: LatLng(place.latitude, place.longitude),
+        infoWindow: InfoWindow(
+          title: place.name,
+          snippet: '${place.memoryCount} memories',
+          onTap: () => _showPlaceDetails(context, place),
+        ),
+        icon: BitmapDescriptor.defaultMarkerWithHue(
+          _markerHueFor(place.aura.colorHex),
+        ),
+        onTap: () => _showPlaceDetails(context, place),
+      );
+    }).toSet();
+  }
+
+  double _markerHueFor(String colorHex) {
+    return switch (colorHex.toUpperCase()) {
+      '#FFB347' => BitmapDescriptor.hueYellow,
+      '#77B5FE' => BitmapDescriptor.hueAzure,
+      '#9B59B6' => BitmapDescriptor.hueViolet,
+      '#DDA0DD' => BitmapDescriptor.hueMagenta,
+      _ => BitmapDescriptor.hueRose,
+    };
+  }
+
+  void _showPlaceDetails(BuildContext context, Place place) {
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                place.name,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  color: EchoesColors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '${place.memoryCount} memories',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: EchoesColors.textSecondary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              LinearProgressIndicator(
+                value: place.aura.intensity,
+                color: place.aura.color,
+                backgroundColor: EchoesColors.elevatedSurface,
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
