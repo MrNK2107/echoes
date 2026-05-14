@@ -129,8 +129,8 @@ integration_test/
 - [ ] Configure app flavors or environment files for development and production.
 - [x] Add dark theme defaults.
 - [x] Add root navigation shell.
-- [ ] Add basic app startup and error boundary handling.
-- [ ] Add CI-ready test commands.
+- [x] Add basic app startup and error boundary handling.
+- [x] Add CI-ready test commands.
 
 ## Core Domain Model
 

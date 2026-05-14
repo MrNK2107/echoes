@@ -1,6 +1,6 @@
 import 'package:echoes/app/app.dart';
-import 'package:flutter/material.dart';
+import 'package:echoes/app/bootstrap.dart';
 
 void main() {
-  runApp(const EchoesApp());
+  bootstrap(() => const EchoesApp());
 }
