@@ -533,15 +533,15 @@ Deliverable:
 
 Goal: add shared memory spaces and community-based access.
 
-- [ ] Implement community list screen.
-- [ ] Implement community detail screen.
-- [ ] Implement thematic community creation.
-- [ ] Implement membership join flow.
-- [ ] Implement owner role.
+- [x] Implement community list screen.
+- [x] Implement community detail screen.
+- [x] Implement thematic community creation.
+- [x] Implement membership join flow.
+- [x] Implement owner role.
 - [ ] Implement guardian role.
-- [ ] Implement member role.
+- [x] Implement member role.
 - [ ] Implement visitor role.
-- [ ] Implement community feed.
+- [x] Implement community feed.
 - [ ] Add community badge component.
 - [ ] Add community privacy to memory creation.
 - [ ] Add geographic community placeholder.

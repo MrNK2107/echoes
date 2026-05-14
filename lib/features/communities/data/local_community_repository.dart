@@ -37,6 +37,12 @@ class LocalCommunityRepository implements CommunityRepository {
   }
 
   @override
+  Stream<List<Community>> watchCommunities() async* {
+    yield List.unmodifiable(_communities);
+    yield* _controller.stream;
+  }
+
+  @override
   Stream<List<Community>> watchUserCommunities(String userId) async* {
     yield _communities
         .where((community) => _isMember(community.id, userId))
