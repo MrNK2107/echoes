@@ -43,15 +43,15 @@ Recommended delivery order:
 
 - [x] Flutter 3.x
 - [x] Dart
-- [ ] Firebase Auth
-- [ ] Cloud Firestore
-- [ ] Firebase Storage
+- [x] Firebase Auth
+- [x] Cloud Firestore
+- [x] Firebase Storage
 - [ ] Firebase Cloud Functions, where server-side validation or denormalized updates are needed
-- [ ] Google Maps SDK
+- [x] Google Maps SDK
 - [ ] ARCore via `arcore_flutter_plus` for Android
 - [ ] ARKit via `arkit_plugin` for iOS
 - [ ] On-device VADER sentiment analysis
-- [ ] BLoC for state management
+- [x] BLoC for state management
 - [x] Clean Architecture split into data, domain, and presentation layers
 
 ### Recommended Project Structure
@@ -124,7 +124,7 @@ integration_test/
 - [x] Add Android and iOS platform folders.
 - [ ] Configure Firebase project.
 - [ ] Add Firebase config files for Android and iOS.
-- [ ] Add base dependencies.
+- [x] Add base dependencies.
 - [ ] Configure linting.
 - [ ] Configure app flavors or environment files for development and production.
 - [x] Add dark theme defaults.
@@ -286,7 +286,7 @@ Goal: establish a working Flutter application with Firebase-ready structure.
 - [x] Generate Flutter project.
 - [ ] Confirm app runs on Android emulator.
 - [ ] Confirm app runs on iOS simulator, if available.
-- [ ] Add package dependencies.
+- [x] Add package dependencies.
 - [ ] Configure Firebase.
 - [x] Add app theme.
 - [x] Add app router.
