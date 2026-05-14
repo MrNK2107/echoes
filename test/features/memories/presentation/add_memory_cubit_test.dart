@@ -3,6 +3,7 @@ import 'package:echoes/core/location/location_permission_state.dart';
 import 'package:echoes/core/location/location_service.dart';
 import 'package:echoes/core/media/media_picker_service.dart';
 import 'package:echoes/core/media/selected_media.dart';
+import 'package:echoes/features/aura/data/lexicon_sentiment_analyzer.dart';
 import 'package:echoes/features/memories/data/local_memory_repository.dart';
 import 'package:echoes/features/memories/presentation/add_memory_cubit.dart';
 import 'package:echoes/features/memories/presentation/add_memory_status.dart';
@@ -18,6 +19,7 @@ void main() {
           permission: LocationPermissionState.granted,
         ),
         mediaPickerService: _FakeMediaPickerService(),
+        sentimentAnalyzer: LexiconSentimentAnalyzer(),
         placeRepository: LocalPlaceRepository(now: DateTime.utc(2026, 5, 14)),
         memoryRepository: memoryRepository,
       );
@@ -48,6 +50,7 @@ void main() {
           permission: LocationPermissionState.granted,
         ),
         mediaPickerService: _FakeMediaPickerService(),
+        sentimentAnalyzer: LexiconSentimentAnalyzer(),
         placeRepository: LocalPlaceRepository(now: DateTime.utc(2026, 5, 14)),
         memoryRepository: LocalMemoryRepository(),
       );
@@ -67,6 +70,7 @@ void main() {
         mediaPickerService: _FakeMediaPickerService(
           galleryPath: '/tmp/memory.jpg',
         ),
+        sentimentAnalyzer: LexiconSentimentAnalyzer(),
         placeRepository: LocalPlaceRepository(now: DateTime.utc(2026, 5, 14)),
         memoryRepository: LocalMemoryRepository(),
       );
@@ -85,6 +89,7 @@ void main() {
         mediaPickerService: _FakeMediaPickerService(
           cameraPath: '/tmp/camera-memory.jpg',
         ),
+        sentimentAnalyzer: LexiconSentimentAnalyzer(),
         placeRepository: LocalPlaceRepository(now: DateTime.utc(2026, 5, 14)),
         memoryRepository: LocalMemoryRepository(),
       );

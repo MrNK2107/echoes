@@ -50,7 +50,7 @@ Recommended delivery order:
 - [x] Google Maps SDK
 - [ ] ARCore via `arcore_flutter_plus` for Android
 - [ ] ARKit via `arkit_plugin` for iOS
-- [ ] On-device VADER sentiment analysis
+- [x] On-device sentiment analysis foundation with swappable VADER interface
 - [x] BLoC for state management
 - [x] Clean Architecture split into data, domain, and presentation layers
 
@@ -419,15 +419,15 @@ Deliverable:
 
 Goal: places develop a visible emotional aura based on public memories.
 
-- [ ] Add on-device VADER sentiment package or implementation.
-- [ ] Analyze memory text during creation.
-- [ ] Store sentiment result on memory.
-- [ ] Implement aura calculation service.
-- [ ] Weight memories by recency.
-- [ ] Calculate dominant sentiment.
-- [ ] Map dominant sentiment to color.
-- [ ] Calculate intensity from memory count.
-- [ ] Persist aura summary on place.
+- [x] Add on-device sentiment implementation.
+- [x] Analyze memory text during creation.
+- [x] Store sentiment result on memory.
+- [x] Implement aura calculation service.
+- [x] Weight memories by recency.
+- [x] Calculate dominant sentiment.
+- [x] Map dominant sentiment to color.
+- [x] Calculate intensity from memory count.
+- [x] Persist aura summary on place.
 - [ ] Show aura color on map markers.
 - [ ] Show aura preview in place detail.
 - [ ] Add aura history data model placeholder.
@@ -450,11 +450,11 @@ Aura colors:
 
 Tests:
 
-- [ ] Unit test VADER wrapper.
-- [ ] Unit test sentiment category thresholds.
-- [ ] Unit test aura color mapping.
-- [ ] Unit test recency weighting.
-- [ ] Unit test aura intensity.
+- [x] Unit test sentiment analyzer wrapper.
+- [x] Unit test sentiment category thresholds.
+- [x] Unit test aura color mapping.
+- [x] Unit test recency weighting.
+- [x] Unit test aura intensity.
 
 Deliverable:
 
@@ -700,7 +700,7 @@ Deliverable:
 - [x] Privacy visibility
 - [ ] Place matching
 - [x] Sentiment classification
-- [ ] Aura calculation
+- [x] Aura calculation
 - [x] Community role permissions
 - [x] Legacy transfer state machine
 
@@ -785,7 +785,7 @@ The Dart VADER package may not fully match project requirements.
 
 Mitigation:
 
-- [ ] Wrap sentiment analysis behind an interface.
+- [x] Wrap sentiment analysis behind an interface.
 - [ ] Add deterministic unit tests.
 - [ ] Allow replacing the implementation without touching feature code.
 

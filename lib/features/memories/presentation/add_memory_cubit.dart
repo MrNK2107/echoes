@@ -3,8 +3,9 @@ import 'package:echoes/core/location/location_permission_state.dart';
 import 'package:echoes/core/location/location_service.dart';
 import 'package:echoes/core/media/media_picker_service.dart';
 import 'package:echoes/core/media/selected_media.dart';
+import 'package:echoes/features/aura/domain/aura_calculator.dart';
 import 'package:echoes/features/aura/domain/aura_zone.dart';
-import 'package:echoes/features/aura/domain/sentiment_result.dart';
+import 'package:echoes/features/aura/domain/sentiment_analyzer.dart';
 import 'package:echoes/features/memories/domain/memory.dart';
 import 'package:echoes/features/memories/domain/memory_repository.dart';
 import 'package:echoes/features/memories/presentation/add_memory_state.dart';
@@ -19,11 +20,15 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
   AddMemoryCubit({
     required LocationService locationService,
     required MediaPickerService mediaPickerService,
+    required SentimentAnalyzer sentimentAnalyzer,
     required PlaceRepository placeRepository,
     required MemoryRepository memoryRepository,
+    AuraCalculator? auraCalculator,
     Uuid? uuid,
   }) : _locationService = locationService,
        _mediaPickerService = mediaPickerService,
+       _sentimentAnalyzer = sentimentAnalyzer,
+       _auraCalculator = auraCalculator ?? AuraCalculator(),
        _placeRepository = placeRepository,
        _memoryRepository = memoryRepository,
        _uuid = uuid ?? const Uuid(),
@@ -33,6 +38,8 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
 
   final LocationService _locationService;
   final MediaPickerService _mediaPickerService;
+  final SentimentAnalyzer _sentimentAnalyzer;
+  final AuraCalculator _auraCalculator;
   final PlaceRepository _placeRepository;
   final MemoryRepository _memoryRepository;
   final Uuid _uuid;
@@ -142,6 +149,7 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
         await _placeRepository.create(place);
       }
 
+      final sentiment = _sentimentAnalyzer.analyze(textContent);
       final memory = Memory(
         id: _uuid.v4(),
         userId: userId,
@@ -154,12 +162,7 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
           latitude: location.latitude,
           longitude: location.longitude,
         ),
-        sentiment: const SentimentResult(
-          compound: 0,
-          positive: 0,
-          neutral: 1,
-          negative: 0,
-        ),
+        sentiment: sentiment,
         privacy: state.privacy,
         taggedUserIds: const [],
         isDeleted: false,
@@ -168,6 +171,14 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
       );
 
       await _memoryRepository.create(memory);
+      final publicMemories =
+          (await _memoryRepository.watchMemoriesForPlace(place.id).first)
+              .where((memory) => memory.privacy == PrivacyType.public)
+              .toList();
+      final aura = _auraCalculator.calculate(
+        memories: publicMemories,
+        now: now,
+      );
       await _placeRepository.save(
         Place(
           id: place.id,
@@ -177,7 +188,7 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
           geohash: place.geohash,
           communityId: place.communityId,
           custodianIds: place.custodianIds,
-          aura: place.aura,
+          aura: aura,
           memoryCount: place.memoryCount + 1,
           publicMemoryCount:
               place.publicMemoryCount +
