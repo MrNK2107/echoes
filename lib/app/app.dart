@@ -1,6 +1,10 @@
 import 'package:echoes/app/theme.dart';
-import 'package:echoes/features/home/presentation/echoes_home_shell.dart';
+import 'package:echoes/features/auth/data/local_auth_repository.dart';
+import 'package:echoes/features/auth/domain/auth_repository.dart';
+import 'package:echoes/features/auth/presentation/auth_cubit.dart';
+import 'package:echoes/features/auth/presentation/auth_gate.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class EchoesApp extends StatelessWidget {
   const EchoesApp({super.key});
@@ -11,7 +15,14 @@ class EchoesApp extends StatelessWidget {
       title: 'ECHOES',
       debugShowCheckedModeBanner: false,
       theme: EchoesTheme.dark,
-      home: const EchoesHomeShell(),
+      home: RepositoryProvider<AuthRepository>(
+        create: (_) => LocalAuthRepository(),
+        child: BlocProvider(
+          create: (context) =>
+              AuthCubit(repository: context.read<AuthRepository>())..start(),
+          child: const AuthGate(),
+        ),
+      ),
     );
   }
 }

@@ -7,7 +7,7 @@
 - [x] Identified project as greenfield Flutter implementation
 - [x] Drafted implementation plan
 - [x] Bootstrap Flutter project
-- [ ] Begin MVP implementation
+- [x] Begin MVP implementation
 
 ## Current Repository State
 
@@ -307,9 +307,9 @@ Deliverable:
 
 Goal: users can sign up, sign in, and have a profile document.
 
-- [ ] Implement splash/auth gate.
-- [ ] Implement login screen.
-- [ ] Implement register screen.
+- [x] Implement splash/auth gate.
+- [x] Implement login screen.
+- [x] Implement register screen.
 - [ ] Implement logout.
 - [ ] Create user document after signup.
 - [ ] Load user profile after auth state changes.
@@ -320,8 +320,8 @@ Goal: users can sign up, sign in, and have a profile document.
 Tests:
 
 - [ ] Unit test auth repository behavior with mocks.
-- [ ] Widget test login validation.
-- [ ] Widget test register validation.
+- [x] Widget test login validation.
+- [x] Widget test register validation.
 
 Deliverable:
 
@@ -706,8 +706,8 @@ Deliverable:
 
 ### Widget Tests
 
-- [ ] Login screen
-- [ ] Register screen
+- [x] Login screen
+- [x] Register screen
 - [ ] Add memory screen
 - [ ] Privacy selector
 - [ ] Memory card
