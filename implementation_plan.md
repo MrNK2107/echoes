@@ -11,12 +11,15 @@
 
 ## Current Repository State
 
-The repository currently contains only the product specification:
+The repository now contains the product specification, implementation plan, and a bootstrapped Flutter application foundation:
 
 - `SPEC.md`
 - `implementation_plan.md`
+- Flutter app source in `lib/`
+- Platform folders for Android, iOS, web, desktop
+- Initial widget tests
 
-No Flutter project, Firebase configuration, application source code, tests, or platform folders exist yet. All implementation work should therefore begin from project bootstrap.
+Firebase configuration, real feature services, and production screens still need to be implemented.
 
 ## Implementation Strategy
 
@@ -133,7 +136,7 @@ integration_test/
 
 ### User
 
-- [ ] Create `AppUser` domain entity.
+- [x] Create `AppUser` domain entity.
 - [ ] Create user Firestore DTO.
 - [ ] Create user repository.
 - [ ] Create user profile creation flow after signup.
@@ -156,7 +159,7 @@ class AppUser {
 
 ### Memory
 
-- [ ] Create `Memory` domain entity.
+- [x] Create `Memory` domain entity.
 - [ ] Create memory Firestore DTO.
 - [ ] Create memory repository.
 - [ ] Add create, read, update, and soft-delete operations.
@@ -189,7 +192,7 @@ class Memory {
 
 ### Place
 
-- [ ] Create `Place` domain entity.
+- [x] Create `Place` domain entity.
 - [ ] Create place Firestore DTO.
 - [ ] Create place repository.
 - [ ] Add nearby place lookup.
@@ -217,8 +220,8 @@ class Place {
 
 ### Aura Zone
 
-- [ ] Create `AuraZone` value object.
-- [ ] Implement sentiment-to-color mapping.
+- [x] Create `AuraZone` value object.
+- [x] Implement sentiment-to-color mapping.
 - [ ] Implement intensity calculation from memory count.
 - [ ] Implement recency-weighted aura calculation.
 
@@ -237,14 +240,14 @@ class AuraZone {
 
 ### Community
 
-- [ ] Create `Community` domain entity.
+- [x] Create `Community` domain entity.
 - [ ] Create membership model.
-- [ ] Add role model for owner, guardian, member, and visitor.
+- [x] Add role model for owner, guardian, member, and visitor.
 - [ ] Add community repository.
 
 ### Legacy Transfer
 
-- [ ] Create `LegacyTransfer` domain entity.
+- [x] Create `LegacyTransfer` domain entity.
 - [ ] Create transfer repository.
 - [ ] Add transfer state machine.
 - [ ] Add transfer history.
@@ -694,12 +697,12 @@ Deliverable:
 
 - [ ] Auth repository
 - [ ] Memory validation
-- [ ] Privacy visibility
+- [x] Privacy visibility
 - [ ] Place matching
-- [ ] Sentiment classification
+- [x] Sentiment classification
 - [ ] Aura calculation
-- [ ] Community role permissions
-- [ ] Legacy transfer state machine
+- [x] Community role permissions
+- [x] Legacy transfer state machine
 
 ### Widget Tests
 
