@@ -1,0 +1,5 @@
+{
+  "projects": {
+    "default": "your-echoes-firebase-project-id"
+  }
+}

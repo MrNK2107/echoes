@@ -254,30 +254,30 @@ class AuraZone {
 
 ## Firestore Collections
 
-- [ ] `users/{userId}`
-- [ ] `places/{placeId}`
-- [ ] `memories/{memoryId}`
-- [ ] `communities/{communityId}`
-- [ ] `communities/{communityId}/members/{userId}`
-- [ ] `transfers/{transferId}`
+- [x] `users/{userId}`
+- [x] `places/{placeId}`
+- [x] `memories/{memoryId}`
+- [x] `communities/{communityId}`
+- [x] `communities/{communityId}/members/{userId}`
+- [x] `transfers/{transferId}`
 
 ## Firebase Security Rules
 
 Privacy is a core product requirement and must be implemented early.
 
-- [ ] Authenticated users can read public memories.
-- [ ] Users can read their own private memories.
-- [ ] Users can read memories where their ID is present in `taggedUserIds`.
-- [ ] Users can read community memories only when they are members of that community.
-- [ ] Time-release memories become public only after `releaseDate`.
-- [ ] Deleted memories are excluded from normal reads.
-- [ ] Users can create memories only for themselves.
-- [ ] Users can edit only allowed mutable fields on their own memories.
-- [ ] Users cannot edit memory location or original timestamp.
-- [ ] Users can soft-delete their own memories.
-- [ ] Place custodians can soft-delete memories attached to their managed places.
-- [ ] Only custodians can initiate custodianship transfers.
-- [ ] Only transfer recipients can accept transfers.
+- [x] Authenticated users can read public memories.
+- [x] Users can read their own private memories.
+- [x] Users can read memories where their ID is present in `taggedUserIds`.
+- [x] Users can read community memories only when they are members of that community.
+- [x] Time-release memories become public only after `releaseDate`.
+- [x] Deleted memories are excluded from normal reads.
+- [x] Users can create memories only for themselves.
+- [x] Users can edit only allowed mutable fields on their own memories.
+- [x] Users cannot edit memory location or original timestamp.
+- [x] Users can soft-delete their own memories.
+- [x] Place custodians can soft-delete memories attached to their managed places.
+- [x] Only custodians can initiate custodianship transfers.
+- [x] Only transfer recipients can accept transfers.
 
 ## Phase 0: Project Bootstrap
 
@@ -477,7 +477,7 @@ Goal: implement the full privacy model described in the spec.
 - [x] Add community picker.
 - [x] Add community visibility checks.
 - [ ] Add default privacy preference handling.
-- [ ] Update Firestore rules for all privacy modes.
+- [x] Update Firestore rules for all privacy modes.
 
 Tests:
 

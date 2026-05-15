@@ -1,0 +1,123 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    function isCommunityMember(communityId) {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/communities/$(communityId)/members/$(request.auth.uid));
+    }
+
+    function isPlaceCustodian(placeId) {
+      return signedIn() &&
+        request.auth.uid in get(/databases/$(database)/documents/places/$(placeId)).data.custodianIds;
+    }
+
+    function isVisibleMemory(memory) {
+      return signedIn() &&
+        memory.isDeleted == false &&
+        (
+          memory.privacy == 'public' ||
+          memory.userId == request.auth.uid ||
+          (memory.privacy == 'tagged' && request.auth.uid in memory.taggedUserIds) ||
+          (memory.privacy == 'timeRelease' && memory.releaseDate <= request.time) ||
+          (memory.privacy == 'community' && isCommunityMember(memory.communityId))
+        );
+    }
+
+    function immutableMemoryFieldsUnchanged() {
+      return request.resource.data.userId == resource.data.userId &&
+        request.resource.data.placeId == resource.data.placeId &&
+        request.resource.data.latitude == resource.data.latitude &&
+        request.resource.data.longitude == resource.data.longitude &&
+        request.resource.data.geohash == resource.data.geohash &&
+        request.resource.data.createdAt == resource.data.createdAt;
+    }
+
+    function mutableMemoryEditOnly() {
+      return request.resource.data.diff(resource.data).changedKeys()
+        .hasOnly([
+          'textContent',
+          'privacy',
+          'taggedUserIds',
+          'communityId',
+          'releaseDate',
+          'updatedAt'
+        ]);
+    }
+
+    function softDeleteOnly() {
+      return request.resource.data.diff(resource.data).changedKeys()
+        .hasOnly(['isDeleted', 'deletedAt', 'updatedAt']) &&
+        resource.data.isDeleted == false &&
+        request.resource.data.isDeleted == true;
+    }
+
+    match /users/{userId} {
+      allow create: if isSelf(userId);
+      allow read, update, delete: if isSelf(userId);
+    }
+
+    match /places/{placeId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.auth.uid in request.resource.data.custodianIds;
+      allow update: if isPlaceCustodian(placeId);
+      allow delete: if false;
+    }
+
+    match /memories/{memoryId} {
+      allow read: if isVisibleMemory(resource.data);
+      allow create: if signedIn() &&
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.isDeleted == false;
+      allow update: if signedIn() &&
+        immutableMemoryFieldsUnchanged() &&
+        (
+          (
+            resource.data.userId == request.auth.uid &&
+            mutableMemoryEditOnly()
+          ) ||
+          (
+            (resource.data.userId == request.auth.uid || isPlaceCustodian(resource.data.placeId)) &&
+            softDeleteOnly()
+          )
+        );
+      allow delete: if false;
+    }
+
+    match /communities/{communityId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid;
+      allow update: if isCommunityMember(communityId);
+      allow delete: if false;
+
+      match /members/{userId} {
+        allow read: if isCommunityMember(communityId) || isSelf(userId);
+        allow create: if isSelf(userId) || get(/databases/$(database)/documents/communities/$(communityId)).data.ownerId == request.auth.uid;
+        allow update: if get(/databases/$(database)/documents/communities/$(communityId)).data.ownerId == request.auth.uid;
+        allow delete: if isSelf(userId) || get(/databases/$(database)/documents/communities/$(communityId)).data.ownerId == request.auth.uid;
+      }
+    }
+
+    match /transfers/{transferId} {
+      allow read: if signedIn() &&
+        (resource.data.fromUserId == request.auth.uid || resource.data.toUserId == request.auth.uid);
+      allow create: if signedIn() &&
+        request.resource.data.fromUserId == request.auth.uid &&
+        isPlaceCustodian(request.resource.data.placeId);
+      allow update: if signedIn() &&
+        (
+          resource.data.toUserId == request.auth.uid ||
+          resource.data.fromUserId == request.auth.uid
+        );
+      allow delete: if false;
+    }
+  }
+}
