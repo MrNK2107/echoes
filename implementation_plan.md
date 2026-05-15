@@ -497,7 +497,7 @@ Goal: implement the first AR experience with aura zones and memory orbs.
 
 - [x] Add AR availability detection.
 - [x] Add non-AR fallback to 2D map.
-- [ ] Add AR permissions flow.
+- [x] Add AR permissions flow.
 - [x] Add AR screen.
 - [ ] Start and stop AR sessions safely.
 - [ ] Query nearby places for AR display.

@@ -9,7 +9,9 @@ import 'package:echoes/core/media/local_media_upload_service.dart';
 import 'package:echoes/core/media/media_picker_service.dart';
 import 'package:echoes/core/media/media_upload_service.dart';
 import 'package:echoes/features/ar/data/local_ar_availability_service.dart';
+import 'package:echoes/features/ar/data/local_ar_permission_service.dart';
 import 'package:echoes/features/ar/domain/ar_availability_service.dart';
+import 'package:echoes/features/ar/domain/ar_permission_service.dart';
 import 'package:echoes/features/aura/data/lexicon_sentiment_analyzer.dart';
 import 'package:echoes/features/aura/domain/sentiment_analyzer.dart';
 import 'package:echoes/features/auth/data/local_auth_repository.dart';
@@ -67,6 +69,9 @@ class EchoesApp extends StatelessWidget {
           ),
           RepositoryProvider<ArAvailabilityService>(
             create: (_) => const LocalArAvailabilityService(),
+          ),
+          RepositoryProvider<ArPermissionService>(
+            create: (_) => const LocalArPermissionService(),
           ),
           RepositoryProvider<PlaceRepository>(
             create: (_) => LocalPlaceRepository(),

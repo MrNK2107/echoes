@@ -1,5 +1,6 @@
 import 'package:echoes/app/theme.dart';
 import 'package:echoes/features/ar/domain/ar_availability_service.dart';
+import 'package:echoes/features/ar/domain/ar_permission_service.dart';
 import 'package:echoes/features/ar/presentation/ar_cubit.dart';
 import 'package:echoes/features/ar/presentation/ar_state.dart';
 import 'package:echoes/features/ar/presentation/ar_status.dart';
@@ -13,9 +14,10 @@ class ArPlaceholderScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) =>
-          ArCubit(availabilityService: context.read<ArAvailabilityService>())
-            ..checkAvailability(),
+      create: (context) => ArCubit(
+        availabilityService: context.read<ArAvailabilityService>(),
+        permissionService: context.read<ArPermissionService>(),
+      )..checkAvailability(),
       child: const _ArView(),
     );
   }
@@ -31,6 +33,10 @@ class _ArView extends StatelessWidget {
         return switch (state.status) {
           ArStatus.initial ||
           ArStatus.checking => const Center(child: CircularProgressIndicator()),
+          ArStatus.permissionRequired => const _ArPermissionPrompt(),
+          ArStatus.permissionDenied => _ArPermissionPrompt(
+            isPermanentlyDenied: state.isPermissionPermanentlyDenied,
+          ),
           ArStatus.ready => const _ArReadyPlaceholder(),
           ArStatus.unsupported => FeaturePlaceholder(
             icon: Icons.map_outlined,
@@ -59,6 +65,36 @@ class _ArView extends StatelessWidget {
           ),
         };
       },
+    );
+  }
+}
+
+class _ArPermissionPrompt extends StatelessWidget {
+  const _ArPermissionPrompt({this.isPermanentlyDenied = false});
+
+  final bool isPermanentlyDenied;
+
+  @override
+  Widget build(BuildContext context) {
+    return FeaturePlaceholder(
+      icon: Icons.photo_camera_outlined,
+      title: isPermanentlyDenied
+          ? 'Camera access is blocked.'
+          : 'Camera access unlocks AR.',
+      description: isPermanentlyDenied
+          ? 'Enable camera access in system settings to use aura view.'
+          : 'ECHOES uses the camera to place aura zones and memory orbs around nearby places.',
+      nextStep: isPermanentlyDenied
+          ? 'Next: open system settings, then return to aura view.'
+          : 'Next: grant camera access, then start the AR scene.',
+      action: FilledButton.icon(
+        key: const ValueKey('requestArPermissionButton'),
+        onPressed: isPermanentlyDenied
+            ? null
+            : () => context.read<ArCubit>().requestPermission(),
+        icon: const Icon(Icons.photo_camera_outlined),
+        label: const Text('Allow camera'),
+      ),
     );
   }
 }
