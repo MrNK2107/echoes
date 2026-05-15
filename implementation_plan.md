@@ -17,7 +17,7 @@ The repository now contains the product specification, implementation plan, and 
 - `implementation_plan.md`
 - Flutter app source in `lib/`
 - Platform folders for Android, iOS, web, desktop
-- Initial widget tests
+- Unit and widget tests for the current local MVP
 
 Firebase configuration, real feature services, and production screens still need to be implemented.
 
@@ -311,15 +311,16 @@ Goal: users can sign up, sign in, and have a profile document.
 - [x] Implement login screen.
 - [x] Implement register screen.
 - [x] Implement logout.
-- [ ] Create user document after signup.
-- [ ] Load user profile after auth state changes.
-- [ ] Add profile screen with user information.
-- [ ] Add default privacy preference.
+- [x] Create user document after signup.
+- [x] Load user profile after auth state changes.
+- [x] Add profile screen with user information.
+- [x] Add default privacy preference.
 - [ ] Add account deletion placeholder.
 
 Tests:
 
 - [ ] Unit test auth repository behavior with mocks.
+- [x] Unit test local user profile repository.
 - [x] Widget test login validation.
 - [x] Widget test register validation.
 
@@ -853,8 +854,8 @@ Mitigation:
 
 ## Immediate Next Steps
 
-- [ ] Create Flutter project.
-- [ ] Add Firebase dependencies.
-- [ ] Configure app theme and routing.
-- [ ] Implement auth shell.
-- [ ] Add first tests.
+- [ ] Add account deletion placeholder to profile.
+- [x] Add profile-backed default privacy coverage in add-memory tests.
+- [ ] Add widget test for map permission states.
+- [ ] Add image compression boundary before Firebase Storage upload.
+- [ ] Start Firebase service adapters behind existing repositories.

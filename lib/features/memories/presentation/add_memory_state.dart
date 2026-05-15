@@ -15,7 +15,8 @@ class AddMemoryState extends Equatable {
     this.errorMessage,
   });
 
-  const AddMemoryState.initial() : this(status: AddMemoryStatus.initial);
+  const AddMemoryState.initial({PrivacyType privacy = PrivacyType.public})
+    : this(status: AddMemoryStatus.initial, privacy: privacy);
 
   final AddMemoryStatus status;
   final PrivacyType privacy;

@@ -9,6 +9,8 @@ import 'package:echoes/features/memories/domain/memory_repository.dart';
 import 'package:echoes/features/memories/presentation/edit_memory_sheet.dart';
 import 'package:echoes/features/memories/presentation/memory_card.dart';
 import 'package:echoes/features/memories/presentation/memory_detail_sheet.dart';
+import 'package:echoes/features/privacy/domain/privacy_type.dart';
+import 'package:echoes/features/users/domain/app_user_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -38,57 +40,8 @@ class ProfilePlaceholderScreen extends StatelessWidget {
                           'Next: implement Firebase Auth and create user profile documents after signup.',
                     ),
                   )
-                else ...[
-                  Container(
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      color: EchoesColors.celestialBlue.withValues(alpha: 0.14),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.account_circle_outlined,
-                      color: EchoesColors.celestialBlue,
-                      size: 34,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    session.displayName ?? 'Echoes custodian',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: EchoesColors.textPrimary,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    session.email,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: EchoesColors.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  _ProfileStatRow(userId: session.userId),
-                  const SizedBox(height: 24),
-                  _PendingTransfers(userId: session.userId),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Your memories',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: EchoesColors.textPrimary,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Expanded(child: _UserMemoryList(userId: session.userId)),
-                  const SizedBox(height: 16),
-                  OutlinedButton.icon(
-                    key: const ValueKey('signOutButton'),
-                    onPressed: () => context.read<AuthCubit>().signOut(),
-                    icon: const Icon(Icons.logout),
-                    label: const Text('Sign out'),
-                  ),
-                ],
+                else
+                  Expanded(child: _ProfileContent(userId: session.userId)),
               ],
             ),
           ),
@@ -96,6 +49,129 @@ class ProfilePlaceholderScreen extends StatelessWidget {
       },
     );
   }
+}
+
+class _ProfileContent extends StatelessWidget {
+  const _ProfileContent({required this.userId});
+
+  final String userId;
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder(
+      stream: context.read<AppUserRepository>().watchCurrentUser(),
+      builder: (context, snapshot) {
+        final user = snapshot.data;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: EchoesColors.celestialBlue.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.account_circle_outlined,
+                    color: EchoesColors.celestialBlue,
+                    size: 30,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        user?.displayName ?? 'Echoes custodian',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: EchoesColors.textPrimary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        user?.email ?? userId,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: EchoesColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            _ProfileStatRow(userId: userId),
+            const SizedBox(height: 16),
+            _DefaultPrivacySelector(
+              selectedPrivacy: user?.defaultPrivacy ?? PrivacyType.public,
+            ),
+            const SizedBox(height: 16),
+            _PendingTransfers(userId: userId),
+            const SizedBox(height: 16),
+            Text(
+              'Your memories',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: EchoesColors.textPrimary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Expanded(child: _UserMemoryList(userId: userId)),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              key: const ValueKey('signOutButton'),
+              onPressed: () => context.read<AuthCubit>().signOut(),
+              icon: const Icon(Icons.logout),
+              label: const Text('Sign out'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _DefaultPrivacySelector extends StatelessWidget {
+  const _DefaultPrivacySelector({required this.selectedPrivacy});
+
+  final PrivacyType selectedPrivacy;
+
+  @override
+  Widget build(BuildContext context) {
+    return DropdownButtonFormField<PrivacyType>(
+      key: const ValueKey('defaultPrivacySelector'),
+      initialValue: selectedPrivacy,
+      decoration: const InputDecoration(
+        labelText: 'Default memory privacy',
+        prefixIcon: Icon(Icons.shield_outlined),
+      ),
+      items: [
+        for (final privacy in PrivacyType.values)
+          DropdownMenuItem(value: privacy, child: Text(_privacyLabel(privacy))),
+      ],
+      onChanged: (privacy) {
+        if (privacy != null) {
+          context.read<AppUserRepository>().updateDefaultPrivacy(privacy);
+        }
+      },
+    );
+  }
+}
+
+String _privacyLabel(PrivacyType privacy) {
+  return switch (privacy) {
+    PrivacyType.public => 'Public',
+    PrivacyType.private => 'Private',
+    PrivacyType.tagged => 'Tagged',
+    PrivacyType.timeRelease => 'Time-release',
+    PrivacyType.community => 'Community',
+  };
 }
 
 class _PendingTransfers extends StatelessWidget {

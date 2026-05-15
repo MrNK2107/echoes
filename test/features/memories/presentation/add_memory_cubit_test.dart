@@ -101,6 +101,22 @@ void main() {
       await cubit.close();
     });
 
+    test('uses provided default privacy as initial privacy', () async {
+      final cubit = AddMemoryCubit(
+        locationService: _FakeLocationService(
+          permission: LocationPermissionState.granted,
+        ),
+        mediaPickerService: _FakeMediaPickerService(),
+        sentimentAnalyzer: LexiconSentimentAnalyzer(),
+        placeRepository: LocalPlaceRepository(now: DateTime.utc(2026, 5, 14)),
+        memoryRepository: LocalMemoryRepository(),
+        initialPrivacy: PrivacyType.private,
+      );
+
+      expect(cubit.state.privacy, PrivacyType.private);
+      await cubit.close();
+    });
+
     test('requires tagged users for tagged memories', () async {
       final cubit = AddMemoryCubit(
         locationService: _FakeLocationService(

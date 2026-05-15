@@ -23,6 +23,7 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
     required SentimentAnalyzer sentimentAnalyzer,
     required PlaceRepository placeRepository,
     required MemoryRepository memoryRepository,
+    PrivacyType initialPrivacy = PrivacyType.public,
     AuraCalculator? auraCalculator,
     Uuid? uuid,
   }) : _locationService = locationService,
@@ -32,7 +33,7 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
        _placeRepository = placeRepository,
        _memoryRepository = memoryRepository,
        _uuid = uuid ?? const Uuid(),
-       super(const AddMemoryState.initial());
+       super(AddMemoryState.initial(privacy: initialPrivacy));
 
   static const placeMatchRadiusMeters = 100.0;
 

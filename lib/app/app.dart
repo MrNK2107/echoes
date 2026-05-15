@@ -19,6 +19,8 @@ import 'package:echoes/features/memories/data/local_memory_repository.dart';
 import 'package:echoes/features/memories/domain/memory_repository.dart';
 import 'package:echoes/features/places/data/local_place_repository.dart';
 import 'package:echoes/features/places/domain/place_repository.dart';
+import 'package:echoes/features/users/data/local_app_user_repository.dart';
+import 'package:echoes/features/users/domain/app_user_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -35,6 +37,9 @@ class EchoesApp extends StatelessWidget {
         providers: [
           RepositoryProvider<AuthRepository>(
             create: (_) => LocalAuthRepository(),
+          ),
+          RepositoryProvider<AppUserRepository>(
+            create: (_) => LocalAppUserRepository(),
           ),
           RepositoryProvider<LocationService>(
             create: (_) => GeolocatorLocationService(),
@@ -62,8 +67,10 @@ class EchoesApp extends StatelessWidget {
           ),
         ],
         child: BlocProvider(
-          create: (context) =>
-              AuthCubit(repository: context.read<AuthRepository>())..start(),
+          create: (context) => AuthCubit(
+            repository: context.read<AuthRepository>(),
+            userRepository: context.read<AppUserRepository>(),
+          )..start(),
           child: const AuthGate(),
         ),
       ),

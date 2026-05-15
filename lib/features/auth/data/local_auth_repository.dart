@@ -14,16 +14,17 @@ class LocalAuthRepository implements AuthRepository {
   }
 
   @override
-  Future<void> signInWithEmail({
+  Future<AuthSession> signInWithEmail({
     required String email,
     required String password,
   }) async {
     _session = AuthSession(userId: email, email: email);
     _controller.add(_session);
+    return _session!;
   }
 
   @override
-  Future<void> registerWithEmail({
+  Future<AuthSession> registerWithEmail({
     required String email,
     required String password,
     required String displayName,
@@ -34,6 +35,7 @@ class LocalAuthRepository implements AuthRepository {
       displayName: displayName,
     );
     _controller.add(_session);
+    return _session!;
   }
 
   @override

@@ -12,6 +12,7 @@ import 'package:echoes/features/memories/presentation/add_memory_status.dart';
 import 'package:echoes/features/memories/presentation/memory_validators.dart';
 import 'package:echoes/features/places/domain/place_repository.dart';
 import 'package:echoes/features/privacy/domain/privacy_type.dart';
+import 'package:echoes/features/users/domain/app_user_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -20,15 +21,22 @@ class AddMemoryPlaceholderScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => AddMemoryCubit(
-        locationService: context.read<LocationService>(),
-        mediaPickerService: context.read<MediaPickerService>(),
-        sentimentAnalyzer: context.read<SentimentAnalyzer>(),
-        placeRepository: context.read<PlaceRepository>(),
-        memoryRepository: context.read<MemoryRepository>(),
-      ),
-      child: const _AddMemoryView(),
+    return StreamBuilder(
+      stream: context.read<AppUserRepository>().watchCurrentUser(),
+      builder: (context, snapshot) {
+        return BlocProvider(
+          key: ValueKey(snapshot.data?.defaultPrivacy),
+          create: (context) => AddMemoryCubit(
+            locationService: context.read<LocationService>(),
+            mediaPickerService: context.read<MediaPickerService>(),
+            sentimentAnalyzer: context.read<SentimentAnalyzer>(),
+            placeRepository: context.read<PlaceRepository>(),
+            memoryRepository: context.read<MemoryRepository>(),
+            initialPrivacy: snapshot.data?.defaultPrivacy ?? PrivacyType.public,
+          ),
+          child: const _AddMemoryView(),
+        );
+      },
     );
   }
 }

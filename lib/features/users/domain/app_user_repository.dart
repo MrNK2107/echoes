@@ -6,6 +6,8 @@ abstract interface class AppUserRepository {
 
   Future<AppUser?> findById(String id);
 
+  Future<void> setCurrentUserId(String? userId);
+
   Future<void> create(AppUser user);
 
   Future<void> updateDefaultPrivacy(PrivacyType privacy);
