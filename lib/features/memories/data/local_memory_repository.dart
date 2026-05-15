@@ -96,6 +96,29 @@ class LocalMemoryRepository implements MemoryRepository {
   }
 
   @override
+  Stream<List<Memory>> watchVisibleMemoriesForPlace({
+    required String placeId,
+    required String viewerId,
+    required Set<String> viewerCommunityIds,
+    required DateTime now,
+  }) async* {
+    yield _visibleMemoriesForPlaceAndViewer(
+      placeId: placeId,
+      viewerId: viewerId,
+      viewerCommunityIds: viewerCommunityIds,
+      now: now,
+    );
+    yield* _controller.stream.map(
+      (_) => _visibleMemoriesForPlaceAndViewer(
+        placeId: placeId,
+        viewerId: viewerId,
+        viewerCommunityIds: viewerCommunityIds,
+        now: now,
+      ),
+    );
+  }
+
+  @override
   Stream<List<Memory>> watchMemoriesForUser(String userId) async* {
     yield _visibleMemoriesForUser(userId);
     yield* _controller.stream.map((_) => _visibleMemoriesForUser(userId));
@@ -105,6 +128,24 @@ class LocalMemoryRepository implements MemoryRepository {
     return _memories
         .where((memory) => memory.placeId == placeId && !memory.isDeleted)
         .toList();
+  }
+
+  List<Memory> _visibleMemoriesForPlaceAndViewer({
+    required String placeId,
+    required String viewerId,
+    required Set<String> viewerCommunityIds,
+    required DateTime now,
+  }) {
+    return _memories.where((memory) {
+      final communityId = memory.communityId;
+      return memory.placeId == placeId &&
+          memory.isVisibleTo(
+            viewerId: viewerId,
+            viewerIsCommunityMember:
+                communityId != null && viewerCommunityIds.contains(communityId),
+            now: now,
+          );
+    }).toList();
   }
 
   List<Memory> _visibleMemoriesForUser(String userId) {

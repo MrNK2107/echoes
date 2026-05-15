@@ -73,12 +73,59 @@ void main() {
       expect(deleted?.isDeleted, isTrue);
       repository.dispose();
     });
+
+    test('filters place memories by viewer privacy rules', () async {
+      final repository = LocalMemoryRepository();
+      final now = DateTime.utc(2026, 5, 14);
+      await repository.create(_memory(id: 'public', createdAt: now));
+      await repository.create(
+        _memory(id: 'private', createdAt: now, privacy: PrivacyType.private),
+      );
+      await repository.create(
+        _memory(
+          id: 'tagged',
+          createdAt: now,
+          privacy: PrivacyType.tagged,
+          taggedUserIds: const ['viewer'],
+        ),
+      );
+      await repository.create(
+        _memory(
+          id: 'community',
+          createdAt: now,
+          privacy: PrivacyType.community,
+          communityId: 'campus-keepers',
+        ),
+      );
+
+      final visible = await repository
+          .watchVisibleMemoriesForPlace(
+            placeId: 'place-1',
+            viewerId: 'viewer',
+            viewerCommunityIds: const {'campus-keepers'},
+            now: now,
+          )
+          .first;
+
+      expect(visible.map((memory) => memory.id), [
+        'public',
+        'tagged',
+        'community',
+      ]);
+      repository.dispose();
+    });
   });
 }
 
-Memory _memory({required DateTime createdAt}) {
+Memory _memory({
+  String id = 'memory-1',
+  required DateTime createdAt,
+  PrivacyType privacy = PrivacyType.public,
+  List<String> taggedUserIds = const [],
+  String? communityId,
+}) {
   return Memory(
-    id: 'memory-1',
+    id: id,
     userId: 'user-1',
     placeId: 'place-1',
     textContent: 'Original memory',
@@ -91,8 +138,9 @@ Memory _memory({required DateTime createdAt}) {
       neutral: 1,
       negative: 0,
     ),
-    privacy: PrivacyType.public,
-    taggedUserIds: const [],
+    privacy: privacy,
+    taggedUserIds: taggedUserIds,
+    communityId: communityId,
     isDeleted: false,
     createdAt: createdAt,
     updatedAt: createdAt,

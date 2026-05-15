@@ -394,7 +394,7 @@ Goal: users can view, edit, and soft-delete memories.
 - [x] Show image, text, timestamp, location, and creator visibility.
 - [ ] Hide creator info when privacy requires it.
 - [x] Build place detail memory list.
-- [ ] Filter visible memories by privacy rules.
+- [x] Filter visible memories by privacy rules.
 - [x] Add profile memory list.
 - [x] Add edit memory screen.
 - [x] Allow text edits.
@@ -406,7 +406,7 @@ Goal: users can view, edit, and soft-delete memories.
 
 Tests:
 
-- [ ] Unit test visibility helper.
+- [x] Unit test visibility helper.
 - [x] Unit test edit constraints.
 - [x] Widget test memory detail.
 - [ ] Integration test edit memory.

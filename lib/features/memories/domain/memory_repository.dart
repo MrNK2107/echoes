@@ -4,6 +4,13 @@ import 'package:echoes/features/privacy/domain/privacy_type.dart';
 abstract interface class MemoryRepository {
   Stream<List<Memory>> watchMemoriesForPlace(String placeId);
 
+  Stream<List<Memory>> watchVisibleMemoriesForPlace({
+    required String placeId,
+    required String viewerId,
+    required Set<String> viewerCommunityIds,
+    required DateTime now,
+  });
+
   Stream<List<Memory>> watchMemoriesForUser(String userId);
 
   Future<Memory?> findById(String id);
