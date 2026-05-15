@@ -68,6 +68,10 @@ void main() {
 
     expect(find.text('Profile'), findsWidgets);
     expect(find.text('nanda@example.com'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('deleteAccountPlaceholderButton')),
+      findsOneWidget,
+    );
     expect(find.byKey(const ValueKey('signOutButton')), findsOneWidget);
     expect(find.byIcon(Icons.account_circle_outlined), findsOneWidget);
   });

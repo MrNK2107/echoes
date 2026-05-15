@@ -124,11 +124,26 @@ class _ProfileContent extends StatelessWidget {
             const SizedBox(height: 8),
             Expanded(child: _UserMemoryList(userId: userId)),
             const SizedBox(height: 16),
-            OutlinedButton.icon(
-              key: const ValueKey('signOutButton'),
-              onPressed: () => context.read<AuthCubit>().signOut(),
-              icon: const Icon(Icons.logout),
-              label: const Text('Sign out'),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    key: const ValueKey('deleteAccountPlaceholderButton'),
+                    onPressed: null,
+                    icon: const Icon(Icons.delete_outline),
+                    label: const Text('Delete account'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    key: const ValueKey('signOutButton'),
+                    onPressed: () => context.read<AuthCubit>().signOut(),
+                    icon: const Icon(Icons.logout),
+                    label: const Text('Sign out'),
+                  ),
+                ),
+              ],
             ),
           ],
         );

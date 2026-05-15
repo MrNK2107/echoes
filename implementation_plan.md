@@ -315,7 +315,7 @@ Goal: users can sign up, sign in, and have a profile document.
 - [x] Load user profile after auth state changes.
 - [x] Add profile screen with user information.
 - [x] Add default privacy preference.
-- [ ] Add account deletion placeholder.
+- [x] Add account deletion placeholder.
 
 Tests:
 
@@ -854,7 +854,6 @@ Mitigation:
 
 ## Immediate Next Steps
 
-- [ ] Add account deletion placeholder to profile.
 - [x] Add profile-backed default privacy coverage in add-memory tests.
 - [ ] Add widget test for map permission states.
 - [ ] Add image compression boundary before Firebase Storage upload.
