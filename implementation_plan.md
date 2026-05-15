@@ -545,9 +545,9 @@ Goal: add shared memory spaces and community-based access.
 - [x] Implement community feed.
 - [x] Add community badge component.
 - [x] Add community privacy to memory creation.
-- [ ] Add geographic community placeholder.
-- [ ] Add time-based community placeholder.
-- [ ] Add institution zone placeholder.
+- [x] Add geographic community placeholder.
+- [x] Add time-based community placeholder.
+- [x] Add institution zone placeholder.
 
 Later community automation:
 

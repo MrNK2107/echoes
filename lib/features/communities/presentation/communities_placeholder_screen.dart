@@ -57,10 +57,87 @@ class CommunitiesPlaceholderScreen extends StatelessWidget {
                 color: EchoesColors.textSecondary,
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
+            const _CommunityModePreview(),
+            const SizedBox(height: 20),
             Expanded(child: _CommunityList(userId: session.userId)),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _CommunityModePreview extends StatelessWidget {
+  const _CommunityModePreview();
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: const [
+        _CommunityModeChip(
+          icon: Icons.place_outlined,
+          title: 'Geographic',
+          subtitle: 'Nearby memory clusters',
+        ),
+        _CommunityModeChip(
+          icon: Icons.history_outlined,
+          title: 'Time-based',
+          subtitle: 'Eras and shared seasons',
+        ),
+        _CommunityModeChip(
+          icon: Icons.account_balance_outlined,
+          title: 'Institution',
+          subtitle: 'Schools and venues',
+        ),
+      ],
+    );
+  }
+}
+
+class _CommunityModeChip extends StatelessWidget {
+  const _CommunityModeChip({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 156,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: EchoesColors.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: EchoesColors.elevatedSurface),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: EchoesColors.celestialBlue),
+          const SizedBox(height: 8),
+          Text(
+            title,
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              color: EchoesColors.textPrimary,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: EchoesColors.textSecondary),
+          ),
+        ],
       ),
     );
   }

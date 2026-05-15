@@ -11,6 +11,34 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  testWidgets('renders placeholders for future community modes', (
+    tester,
+  ) async {
+    final authRepository = LocalAuthRepository();
+    final userRepository = LocalAppUserRepository();
+    final communityRepository = LocalCommunityRepository(
+      now: DateTime.utc(2026, 5, 15),
+    );
+
+    await tester.pumpWidget(
+      _TestApp(
+        authRepository: authRepository,
+        userRepository: userRepository,
+        communityRepository: communityRepository,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Geographic'), findsOneWidget);
+    expect(find.text('Time-based'), findsOneWidget);
+    expect(find.text('Institution'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    authRepository.dispose();
+    userRepository.dispose();
+    communityRepository.dispose();
+  });
+
   testWidgets('creates a thematic community from the sheet', (tester) async {
     final authRepository = LocalAuthRepository();
     final userRepository = LocalAppUserRepository();
