@@ -544,7 +544,7 @@ Goal: add shared memory spaces and community-based access.
 - [x] Implement visitor role.
 - [x] Implement community feed.
 - [x] Add community badge component.
-- [ ] Add community privacy to memory creation.
+- [x] Add community privacy to memory creation.
 - [ ] Add geographic community placeholder.
 - [ ] Add time-based community placeholder.
 - [ ] Add institution zone placeholder.
@@ -560,8 +560,8 @@ Later community automation:
 
 Tests:
 
-- [ ] Unit test community role permissions.
-- [ ] Widget test community creation.
+- [x] Unit test community role permissions.
+- [x] Widget test community creation.
 - [ ] Integration test joining community.
 - [ ] Integration test community memory visibility.
 
