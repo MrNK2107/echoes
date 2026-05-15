@@ -1,5 +1,6 @@
 import 'package:echoes/app/theme.dart';
 import 'package:echoes/core/location/location_service.dart';
+import 'package:echoes/features/aura/presentation/aura_preview.dart';
 import 'package:echoes/features/map/presentation/map_cubit.dart';
 import 'package:echoes/features/map/presentation/map_state.dart';
 import 'package:echoes/features/map/presentation/map_status.dart';
@@ -205,11 +206,7 @@ class _ReadyMapPlaceholder extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              LinearProgressIndicator(
-                value: place.aura.intensity,
-                color: place.aura.color,
-                backgroundColor: EchoesColors.elevatedSurface,
-              ),
+              AuraPreview(aura: place.aura),
               const SizedBox(height: 16),
               Text(
                 'Memories',

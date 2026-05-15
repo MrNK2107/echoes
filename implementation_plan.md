@@ -430,7 +430,7 @@ Goal: places develop a visible emotional aura based on public memories.
 - [x] Calculate intensity from memory count.
 - [x] Persist aura summary on place.
 - [ ] Show aura color on map markers.
-- [ ] Show aura preview in place detail.
+- [x] Show aura preview in place detail.
 - [x] Add aura history data model placeholder.
 
 Suggested sentiment thresholds:
