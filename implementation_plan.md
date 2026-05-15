@@ -543,7 +543,7 @@ Goal: add shared memory spaces and community-based access.
 - [x] Implement member role.
 - [x] Implement visitor role.
 - [x] Implement community feed.
-- [ ] Add community badge component.
+- [x] Add community badge component.
 - [ ] Add community privacy to memory creation.
 - [ ] Add geographic community placeholder.
 - [ ] Add time-based community placeholder.

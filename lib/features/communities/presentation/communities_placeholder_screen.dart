@@ -4,6 +4,7 @@ import 'package:echoes/features/communities/domain/community.dart';
 import 'package:echoes/features/communities/domain/community_repository.dart';
 import 'package:echoes/features/communities/domain/community_role.dart';
 import 'package:echoes/features/communities/domain/community_type.dart';
+import 'package:echoes/features/communities/presentation/community_badge.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
@@ -112,7 +113,15 @@ class _CommunityCard extends StatelessWidget {
         contentPadding: const EdgeInsets.all(16),
         leading: const Icon(Icons.groups_outlined),
         title: Text(community.name),
-        subtitle: Text(community.description),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 6),
+            CommunityBadge(community: community),
+            const SizedBox(height: 8),
+            Text(community.description),
+          ],
+        ),
         trailing: const Icon(Icons.chevron_right),
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute<void>(
@@ -152,6 +161,11 @@ class _CommunityDetailScreen extends StatelessWidget {
               style: Theme.of(
                 context,
               ).textTheme.labelLarge?.copyWith(color: EchoesColors.sunsetGold),
+            ),
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: CommunityBadge(community: community),
             ),
             const SizedBox(height: 24),
             OutlinedButton.icon(
