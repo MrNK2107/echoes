@@ -162,8 +162,8 @@ class AppUser {
 - [x] Create `Memory` domain entity.
 - [x] Create memory Firestore DTO.
 - [x] Create memory repository.
-- [ ] Add create, read, update, and soft-delete operations.
-- [ ] Prevent editing location and timestamp after creation.
+- [x] Add create, read, update, and soft-delete operations.
+- [x] Prevent editing location and timestamp after creation.
 
 Required fields:
 

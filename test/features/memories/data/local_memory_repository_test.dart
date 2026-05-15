@@ -6,6 +6,26 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('LocalMemoryRepository', () {
+    test('creates and reads memories by id, user, and place', () async {
+      final repository = LocalMemoryRepository();
+      final memory = _memory(createdAt: DateTime.utc(2026, 5, 14));
+
+      await repository.create(memory);
+
+      final found = await repository.findById(memory.id);
+      final userMemories = await repository
+          .watchMemoriesForUser(memory.userId)
+          .first;
+      final placeMemories = await repository
+          .watchMemoriesForPlace(memory.placeId)
+          .first;
+
+      expect(found?.id, memory.id);
+      expect(userMemories.map((memory) => memory.id), [memory.id]);
+      expect(placeMemories.map((memory) => memory.id), [memory.id]);
+      repository.dispose();
+    });
+
     test(
       'updates text and privacy without changing location or timestamp',
       () async {
