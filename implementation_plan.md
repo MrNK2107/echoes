@@ -348,7 +348,7 @@ Tests:
 
 - [x] Unit test location permission states.
 - [x] Unit test nearby query parameter generation.
-- [ ] Widget test map permission states.
+- [x] Widget test map permission states.
 
 Deliverable:
 
@@ -855,6 +855,5 @@ Mitigation:
 ## Immediate Next Steps
 
 - [x] Add profile-backed default privacy coverage in add-memory tests.
-- [ ] Add widget test for map permission states.
 - [ ] Add image compression boundary before Firebase Storage upload.
 - [ ] Start Firebase service adapters behind existing repositories.
