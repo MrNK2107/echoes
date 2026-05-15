@@ -573,7 +573,7 @@ Deliverable:
 
 Goal: implement place custodianship and legacy transfer.
 
-- [ ] Show custodians on place detail.
+- [x] Show custodians on place detail.
 - [ ] Allow custodian to invite another custodian.
 - [ ] Allow custodian to initiate transfer.
 - [ ] Create pending transfer document.
