@@ -378,7 +378,7 @@ Tests:
 
 - [x] Unit test memory validation.
 - [x] Unit test place matching radius.
-- [ ] Widget test add memory form.
+- [x] Widget test add memory form.
 - [ ] Integration test create-memory happy path.
 
 Deliverable:
@@ -709,8 +709,8 @@ Deliverable:
 
 - [x] Login screen
 - [x] Register screen
-- [ ] Add memory screen
-- [ ] Privacy selector
+- [x] Add memory screen
+- [x] Privacy selector
 - [ ] Memory card
 - [ ] Memory detail
 - [ ] Place detail
