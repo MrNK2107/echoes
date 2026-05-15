@@ -195,9 +195,9 @@ class Memory {
 - [x] Create `Place` domain entity.
 - [x] Create place Firestore DTO.
 - [x] Create place repository.
-- [ ] Add nearby place lookup.
-- [ ] Add place creation when first memory is added.
-- [ ] Add first-memory creator as initial custodian.
+- [x] Add nearby place lookup.
+- [x] Add place creation when first memory is added.
+- [x] Add first-memory creator as initial custodian.
 
 Required fields:
 
@@ -377,7 +377,7 @@ Goal: users can create photo and text memories at their current location.
 Tests:
 
 - [x] Unit test memory validation.
-- [ ] Unit test place matching radius.
+- [x] Unit test place matching radius.
 - [ ] Widget test add memory form.
 - [ ] Integration test create-memory happy path.
 
@@ -699,7 +699,7 @@ Deliverable:
 - [ ] Auth repository
 - [ ] Memory validation
 - [x] Privacy visibility
-- [ ] Place matching
+- [x] Place matching
 - [x] Sentiment classification
 - [x] Aura calculation
 - [x] Community role permissions
