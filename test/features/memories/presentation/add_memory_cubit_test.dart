@@ -3,6 +3,7 @@ import 'package:echoes/core/location/location_permission_state.dart';
 import 'package:echoes/core/location/location_service.dart';
 import 'package:echoes/core/media/image_compression_service.dart';
 import 'package:echoes/core/media/media_picker_service.dart';
+import 'package:echoes/core/media/media_upload_service.dart';
 import 'package:echoes/core/media/selected_media.dart';
 import 'package:echoes/features/aura/data/lexicon_sentiment_analyzer.dart';
 import 'package:echoes/features/memories/data/local_memory_repository.dart';
@@ -22,6 +23,7 @@ void main() {
         ),
         mediaPickerService: _FakeMediaPickerService(),
         imageCompressionService: _NoOpImageCompressionService(),
+        mediaUploadService: _FakeMediaUploadService(),
         sentimentAnalyzer: LexiconSentimentAnalyzer(),
         placeRepository: LocalPlaceRepository(now: DateTime.utc(2026, 5, 14)),
         memoryRepository: memoryRepository,
@@ -54,6 +56,7 @@ void main() {
         ),
         mediaPickerService: _FakeMediaPickerService(),
         imageCompressionService: _NoOpImageCompressionService(),
+        mediaUploadService: _FakeMediaUploadService(),
         sentimentAnalyzer: LexiconSentimentAnalyzer(),
         placeRepository: LocalPlaceRepository(now: DateTime.utc(2026, 5, 14)),
         memoryRepository: LocalMemoryRepository(),
@@ -75,6 +78,7 @@ void main() {
           galleryPath: '/tmp/memory.jpg',
         ),
         imageCompressionService: _NoOpImageCompressionService(),
+        mediaUploadService: _FakeMediaUploadService(),
         sentimentAnalyzer: LexiconSentimentAnalyzer(),
         placeRepository: LocalPlaceRepository(now: DateTime.utc(2026, 5, 14)),
         memoryRepository: LocalMemoryRepository(),
@@ -95,6 +99,7 @@ void main() {
           cameraPath: '/tmp/camera-memory.jpg',
         ),
         imageCompressionService: _NoOpImageCompressionService(),
+        mediaUploadService: _FakeMediaUploadService(),
         sentimentAnalyzer: LexiconSentimentAnalyzer(),
         placeRepository: LocalPlaceRepository(now: DateTime.utc(2026, 5, 14)),
         memoryRepository: LocalMemoryRepository(),
@@ -106,6 +111,39 @@ void main() {
       await cubit.close();
     });
 
+    test('uploads selected image before storing memory URL', () async {
+      final memoryRepository = LocalMemoryRepository();
+      final uploadService = _FakeMediaUploadService(
+        uploadedUrl: 'https://cdn.example.com/memory.jpg',
+      );
+      final cubit = AddMemoryCubit(
+        locationService: _FakeLocationService(
+          permission: LocationPermissionState.granted,
+        ),
+        mediaPickerService: _FakeMediaPickerService(
+          galleryPath: '/tmp/memory.jpg',
+        ),
+        imageCompressionService: _NoOpImageCompressionService(),
+        mediaUploadService: uploadService,
+        sentimentAnalyzer: LexiconSentimentAnalyzer(),
+        placeRepository: LocalPlaceRepository(now: DateTime.utc(2026, 5, 14)),
+        memoryRepository: memoryRepository,
+      );
+
+      await cubit.pickFromGallery();
+      await cubit.captureLocation();
+      await cubit.submit(userId: 'user-1', textContent: 'Photo memory');
+
+      final memories = await memoryRepository
+          .watchMemoriesForUser('user-1')
+          .first;
+
+      expect(uploadService.uploadedImagePaths, ['/tmp/memory.jpg']);
+      expect(memories.single.imageUrl, 'https://cdn.example.com/memory.jpg');
+      await cubit.close();
+      memoryRepository.dispose();
+    });
+
     test('uses provided default privacy as initial privacy', () async {
       final cubit = AddMemoryCubit(
         locationService: _FakeLocationService(
@@ -113,6 +151,7 @@ void main() {
         ),
         mediaPickerService: _FakeMediaPickerService(),
         imageCompressionService: _NoOpImageCompressionService(),
+        mediaUploadService: _FakeMediaUploadService(),
         sentimentAnalyzer: LexiconSentimentAnalyzer(),
         placeRepository: LocalPlaceRepository(now: DateTime.utc(2026, 5, 14)),
         memoryRepository: LocalMemoryRepository(),
@@ -130,6 +169,7 @@ void main() {
         ),
         mediaPickerService: _FakeMediaPickerService(),
         imageCompressionService: _NoOpImageCompressionService(),
+        mediaUploadService: _FakeMediaUploadService(),
         sentimentAnalyzer: LexiconSentimentAnalyzer(),
         placeRepository: LocalPlaceRepository(now: DateTime.utc(2026, 5, 14)),
         memoryRepository: LocalMemoryRepository(),
@@ -150,6 +190,7 @@ void main() {
         ),
         mediaPickerService: _FakeMediaPickerService(),
         imageCompressionService: _NoOpImageCompressionService(),
+        mediaUploadService: _FakeMediaUploadService(),
         sentimentAnalyzer: LexiconSentimentAnalyzer(),
         placeRepository: LocalPlaceRepository(now: DateTime.utc(2026, 5, 14)),
         memoryRepository: LocalMemoryRepository(),
@@ -174,6 +215,7 @@ void main() {
                 ),
                 mediaPickerService: _FakeMediaPickerService(),
                 imageCompressionService: _NoOpImageCompressionService(),
+                mediaUploadService: _FakeMediaUploadService(),
                 sentimentAnalyzer: LexiconSentimentAnalyzer(),
                 placeRepository: LocalPlaceRepository(
                   now: DateTime.utc(2026, 5, 14),
@@ -241,4 +283,21 @@ class _FakeMediaPickerService implements MediaPickerService {
 class _NoOpImageCompressionService implements ImageCompressionService {
   @override
   Future<String> compressToUploadLimit(String imagePath) async => imagePath;
+}
+
+class _FakeMediaUploadService implements MediaUploadService {
+  _FakeMediaUploadService({this.uploadedUrl});
+
+  final String? uploadedUrl;
+  final List<String> uploadedImagePaths = [];
+
+  @override
+  Future<String?> uploadMemoryImage({
+    required String userId,
+    required String imagePath,
+    required String memoryId,
+  }) async {
+    uploadedImagePaths.add(imagePath);
+    return uploadedUrl ?? imagePath;
+  }
 }

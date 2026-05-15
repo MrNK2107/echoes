@@ -4,7 +4,9 @@ import 'package:echoes/core/location/location_service.dart';
 import 'package:echoes/core/media/dart_image_compression_service.dart';
 import 'package:echoes/core/media/image_compression_service.dart';
 import 'package:echoes/core/media/image_picker_media_service.dart';
+import 'package:echoes/core/media/local_media_upload_service.dart';
 import 'package:echoes/core/media/media_picker_service.dart';
+import 'package:echoes/core/media/media_upload_service.dart';
 import 'package:echoes/features/ar/data/local_ar_availability_service.dart';
 import 'package:echoes/features/ar/domain/ar_availability_service.dart';
 import 'package:echoes/features/aura/data/lexicon_sentiment_analyzer.dart';
@@ -51,6 +53,9 @@ class EchoesApp extends StatelessWidget {
           ),
           RepositoryProvider<ImageCompressionService>(
             create: (_) => DartImageCompressionService(),
+          ),
+          RepositoryProvider<MediaUploadService>(
+            create: (_) => const LocalMediaUploadService(),
           ),
           RepositoryProvider<SentimentAnalyzer>(
             create: (_) => LexiconSentimentAnalyzer(),

@@ -3,6 +3,7 @@ import 'package:echoes/core/location/location_permission_state.dart';
 import 'package:echoes/core/location/location_service.dart';
 import 'package:echoes/core/media/image_compression_service.dart';
 import 'package:echoes/core/media/media_picker_service.dart';
+import 'package:echoes/core/media/media_upload_service.dart';
 import 'package:echoes/core/media/selected_media.dart';
 import 'package:echoes/features/aura/domain/aura_calculator.dart';
 import 'package:echoes/features/aura/domain/aura_zone.dart';
@@ -22,6 +23,7 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
     required LocationService locationService,
     required MediaPickerService mediaPickerService,
     required ImageCompressionService imageCompressionService,
+    required MediaUploadService mediaUploadService,
     required SentimentAnalyzer sentimentAnalyzer,
     required PlaceRepository placeRepository,
     required MemoryRepository memoryRepository,
@@ -31,6 +33,7 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
   }) : _locationService = locationService,
        _mediaPickerService = mediaPickerService,
        _imageCompressionService = imageCompressionService,
+       _mediaUploadService = mediaUploadService,
        _sentimentAnalyzer = sentimentAnalyzer,
        _auraCalculator = auraCalculator ?? AuraCalculator(),
        _placeRepository = placeRepository,
@@ -43,6 +46,7 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
   final LocationService _locationService;
   final MediaPickerService _mediaPickerService;
   final ImageCompressionService _imageCompressionService;
+  final MediaUploadService _mediaUploadService;
   final SentimentAnalyzer _sentimentAnalyzer;
   final AuraCalculator _auraCalculator;
   final PlaceRepository _placeRepository;
@@ -155,10 +159,18 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
 
     try {
       final now = DateTime.now().toUtc();
+      final memoryId = _uuid.v4();
       final compressedImagePath = state.imagePath == null
           ? null
           : await _imageCompressionService.compressToUploadLimit(
               state.imagePath!,
+            );
+      final uploadedImageUrl = compressedImagePath == null
+          ? null
+          : await _mediaUploadService.uploadMemoryImage(
+              userId: userId,
+              imagePath: compressedImagePath,
+              memoryId: memoryId,
             );
       var place = await _placeRepository.findNearestPlace(
         latitude: location.latitude,
@@ -188,10 +200,10 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
 
       final sentiment = _sentimentAnalyzer.analyze(textContent);
       final memory = Memory(
-        id: _uuid.v4(),
+        id: memoryId,
         userId: userId,
         placeId: place.id,
-        imageUrl: compressedImagePath,
+        imageUrl: uploadedImageUrl,
         textContent: textContent.trim(),
         latitude: location.latitude,
         longitude: location.longitude,

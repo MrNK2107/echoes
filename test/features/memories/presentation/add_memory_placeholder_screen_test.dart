@@ -3,6 +3,7 @@ import 'package:echoes/core/location/location_permission_state.dart';
 import 'package:echoes/core/location/location_service.dart';
 import 'package:echoes/core/media/image_compression_service.dart';
 import 'package:echoes/core/media/media_picker_service.dart';
+import 'package:echoes/core/media/media_upload_service.dart';
 import 'package:echoes/core/media/selected_media.dart';
 import 'package:echoes/features/aura/data/lexicon_sentiment_analyzer.dart';
 import 'package:echoes/features/aura/domain/sentiment_analyzer.dart';
@@ -87,6 +88,9 @@ class _TestApp extends StatelessWidget {
         RepositoryProvider<ImageCompressionService>(
           create: (_) => const _NoOpImageCompressionService(),
         ),
+        RepositoryProvider<MediaUploadService>(
+          create: (_) => const _NoOpMediaUploadService(),
+        ),
         RepositoryProvider<SentimentAnalyzer>(
           create: (_) => LexiconSentimentAnalyzer(),
         ),
@@ -155,4 +159,17 @@ class _NoOpImageCompressionService implements ImageCompressionService {
 
   @override
   Future<String> compressToUploadLimit(String imagePath) async => imagePath;
+}
+
+class _NoOpMediaUploadService implements MediaUploadService {
+  const _NoOpMediaUploadService();
+
+  @override
+  Future<String?> uploadMemoryImage({
+    required String userId,
+    required String imagePath,
+    required String memoryId,
+  }) async {
+    return imagePath;
+  }
 }
