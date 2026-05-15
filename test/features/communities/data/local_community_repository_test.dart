@@ -25,11 +25,16 @@ void main() {
       final userCommunities = await repository
           .watchUserCommunities('user-1')
           .first;
+      final membership = await repository.findMembership(
+        communityId: community.id,
+        userId: 'user-1',
+      );
 
       expect(
         userCommunities.map((community) => community.id),
         contains('travel-memories'),
       );
+      expect(membership?.role, CommunityRole.owner);
       repository.dispose();
     });
 
@@ -51,6 +56,43 @@ void main() {
         ),
         isTrue,
       );
+      expect(
+        (await repository.findMembership(
+          communityId: 'campus-keepers',
+          userId: 'new-member',
+        ))?.role,
+        CommunityRole.member,
+      );
+      repository.dispose();
+    });
+
+    test('join preserves guardian and visitor roles', () async {
+      final repository = LocalCommunityRepository(
+        now: DateTime.utc(2026, 5, 14),
+      );
+
+      await repository.join(
+        communityId: 'campus-keepers',
+        userId: 'new-guardian',
+        role: CommunityRole.guardian,
+      );
+      await repository.join(
+        communityId: 'campus-keepers',
+        userId: 'new-visitor',
+        role: CommunityRole.visitor,
+      );
+
+      final guardian = await repository.findMembership(
+        communityId: 'campus-keepers',
+        userId: 'new-guardian',
+      );
+      final visitor = await repository.findMembership(
+        communityId: 'campus-keepers',
+        userId: 'new-visitor',
+      );
+
+      expect(guardian?.role, CommunityRole.guardian);
+      expect(visitor?.role, CommunityRole.visitor);
       repository.dispose();
     });
   });

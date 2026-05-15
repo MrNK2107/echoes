@@ -241,7 +241,7 @@ class AuraZone {
 ### Community
 
 - [x] Create `Community` domain entity.
-- [ ] Create membership model.
+- [x] Create membership model.
 - [x] Add role model for owner, guardian, member, and visitor.
 - [x] Add community repository.
 
@@ -539,9 +539,9 @@ Goal: add shared memory spaces and community-based access.
 - [x] Implement thematic community creation.
 - [x] Implement membership join flow.
 - [x] Implement owner role.
-- [ ] Implement guardian role.
+- [x] Implement guardian role.
 - [x] Implement member role.
-- [ ] Implement visitor role.
+- [x] Implement visitor role.
 - [x] Implement community feed.
 - [ ] Add community badge component.
 - [ ] Add community privacy to memory creation.

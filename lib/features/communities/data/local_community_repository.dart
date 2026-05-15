@@ -1,24 +1,36 @@
 import 'dart:async';
 
 import 'package:echoes/features/communities/domain/community.dart';
+import 'package:echoes/features/communities/domain/community_membership.dart';
 import 'package:echoes/features/communities/domain/community_repository.dart';
 import 'package:echoes/features/communities/domain/community_role.dart';
 import 'package:echoes/features/communities/domain/community_type.dart';
 
 class LocalCommunityRepository implements CommunityRepository {
   LocalCommunityRepository({DateTime? now})
-    : _communities = _seedCommunities(now ?? DateTime.now().toUtc());
+    : _now = now ?? DateTime.now().toUtc(),
+      _communities = _seedCommunities(now ?? DateTime.now().toUtc()) {
+    _membershipsByCommunityId.addAll(_seedMemberships(_now));
+  }
 
+  final DateTime _now;
   final List<Community> _communities;
-  final Map<String, Set<String>> _membersByCommunityId = {
-    'campus-keepers': {'local-custodian', 'nanda@example.com'},
-  };
+  final Map<String, Map<String, CommunityMembership>>
+  _membershipsByCommunityId = {};
   final _controller = StreamController<List<Community>>.broadcast();
 
   @override
   Future<void> create(Community community) async {
     _communities.add(community);
-    _membersByCommunityId.putIfAbsent(community.id, () => {community.ownerId});
+    _membershipsByCommunityId.putIfAbsent(community.id, () => {});
+    _membershipsByCommunityId[community.id]![community.ownerId] =
+        CommunityMembership(
+          communityId: community.id,
+          userId: community.ownerId,
+          role: CommunityRole.owner,
+          joinedAt: community.createdAt,
+          updatedAt: community.createdAt,
+        );
     _controller.add(List.unmodifiable(_communities));
   }
 
@@ -28,12 +40,31 @@ class LocalCommunityRepository implements CommunityRepository {
   }
 
   @override
+  Future<CommunityMembership?> findMembership({
+    required String communityId,
+    required String userId,
+  }) async {
+    return _membershipsByCommunityId[communityId]?[userId];
+  }
+
+  @override
   Future<void> join({
     required String communityId,
     required String userId,
     required CommunityRole role,
   }) async {
-    _membersByCommunityId.putIfAbsent(communityId, () => {}).add(userId);
+    final memberships = _membershipsByCommunityId.putIfAbsent(
+      communityId,
+      () => {},
+    );
+    final existing = memberships[userId];
+    memberships[userId] = CommunityMembership(
+      communityId: communityId,
+      userId: userId,
+      role: role,
+      joinedAt: existing?.joinedAt ?? _now,
+      updatedAt: _now,
+    );
   }
 
   @override
@@ -59,7 +90,7 @@ class LocalCommunityRepository implements CommunityRepository {
   }
 
   bool _isMember(String communityId, String userId) {
-    return _membersByCommunityId[communityId]?.contains(userId) ?? false;
+    return _membershipsByCommunityId[communityId]?.containsKey(userId) ?? false;
   }
 
   void dispose() {
@@ -79,5 +110,28 @@ class LocalCommunityRepository implements CommunityRepository {
         updatedAt: now,
       ),
     ];
+  }
+
+  static Map<String, Map<String, CommunityMembership>> _seedMemberships(
+    DateTime now,
+  ) {
+    return {
+      'campus-keepers': {
+        'local-custodian': CommunityMembership(
+          communityId: 'campus-keepers',
+          userId: 'local-custodian',
+          role: CommunityRole.owner,
+          joinedAt: now,
+          updatedAt: now,
+        ),
+        'nanda@example.com': CommunityMembership(
+          communityId: 'campus-keepers',
+          userId: 'nanda@example.com',
+          role: CommunityRole.member,
+          joinedAt: now,
+          updatedAt: now,
+        ),
+      },
+    };
   }
 }
