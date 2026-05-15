@@ -1,4 +1,3 @@
-import 'package:echoes/shared/widgets/feature_placeholder.dart';
 import 'package:echoes/app/theme.dart';
 import 'package:echoes/core/location/location_service.dart';
 import 'package:echoes/features/map/presentation/map_cubit.dart';
@@ -10,6 +9,7 @@ import 'package:echoes/features/memories/presentation/memory_card.dart';
 import 'package:echoes/features/memories/presentation/memory_detail_sheet.dart';
 import 'package:echoes/features/places/domain/place.dart';
 import 'package:echoes/features/places/domain/place_repository.dart';
+import 'package:echoes/shared/widgets/feature_placeholder.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';

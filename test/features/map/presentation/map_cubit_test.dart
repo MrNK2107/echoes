@@ -2,10 +2,10 @@ import 'package:echoes/core/location/device_location.dart';
 import 'package:echoes/core/location/location_permission_state.dart';
 import 'package:echoes/core/location/location_service.dart';
 import 'package:echoes/features/aura/domain/aura_zone.dart';
-import 'package:echoes/features/places/domain/place.dart';
-import 'package:echoes/features/places/domain/place_repository.dart';
 import 'package:echoes/features/map/presentation/map_cubit.dart';
 import 'package:echoes/features/map/presentation/map_status.dart';
+import 'package:echoes/features/places/domain/place.dart';
+import 'package:echoes/features/places/domain/place_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

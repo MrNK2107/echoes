@@ -10,8 +10,8 @@ class Geohash {
     var bit = 0;
     var charIndex = 0;
     final hash = StringBuffer();
-    var latitudeRange = [-90.0, 90.0];
-    var longitudeRange = [-180.0, 180.0];
+    final latitudeRange = [-90.0, 90.0];
+    final longitudeRange = [-180.0, 180.0];
 
     while (hash.length < precision) {
       if (isEven) {

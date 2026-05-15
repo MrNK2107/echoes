@@ -1,4 +1,3 @@
-import 'package:echoes/shared/widgets/feature_placeholder.dart';
 import 'package:echoes/app/theme.dart';
 import 'package:echoes/features/auth/presentation/auth_cubit.dart';
 import 'package:echoes/features/auth/presentation/auth_state.dart';
@@ -11,6 +10,7 @@ import 'package:echoes/features/memories/presentation/memory_card.dart';
 import 'package:echoes/features/memories/presentation/memory_detail_sheet.dart';
 import 'package:echoes/features/privacy/domain/privacy_type.dart';
 import 'package:echoes/features/users/domain/app_user_repository.dart';
+import 'package:echoes/shared/widgets/feature_placeholder.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

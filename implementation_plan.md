@@ -125,7 +125,7 @@ integration_test/
 - [ ] Configure Firebase project.
 - [ ] Add Firebase config files for Android and iOS.
 - [x] Add base dependencies.
-- [ ] Configure linting.
+- [x] Configure linting.
 - [ ] Configure app flavors or environment files for development and production.
 - [x] Add dark theme defaults.
 - [x] Add root navigation shell.

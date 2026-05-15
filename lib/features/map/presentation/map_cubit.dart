@@ -6,14 +6,14 @@ import 'package:echoes/features/places/domain/place_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class MapCubit extends Cubit<MapState> {
-  static const nearbyRadiusMeters = 1500.0;
-
   MapCubit({
     required LocationService locationService,
     required PlaceRepository placeRepository,
   }) : _locationService = locationService,
        _placeRepository = placeRepository,
        super(const MapState.initial());
+
+  static const nearbyRadiusMeters = 1500.0;
 
   final LocationService _locationService;
   final PlaceRepository _placeRepository;
