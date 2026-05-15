@@ -367,7 +367,7 @@ Goal: users can create photo and text memories at their current location.
 - [x] Add preview before save.
 - [x] Compress image to max 1MB.
 - [x] Upload image to Firebase Storage.
-- [ ] Create memory Firestore document.
+- [x] Create memory Firestore document.
 - [x] Find nearby place within configured radius.
 - [x] Create place if no nearby place exists.
 - [x] Attach memory to place.
