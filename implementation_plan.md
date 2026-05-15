@@ -319,7 +319,7 @@ Goal: users can sign up, sign in, and have a profile document.
 
 Tests:
 
-- [ ] Unit test auth repository behavior with mocks.
+- [x] Unit test auth repository behavior with mocks.
 - [x] Unit test local user profile repository.
 - [x] Widget test login validation.
 - [x] Widget test register validation.
@@ -696,7 +696,7 @@ Deliverable:
 
 ### Unit Tests
 
-- [ ] Auth repository
+- [x] Auth repository
 - [ ] Memory validation
 - [x] Privacy visibility
 - [x] Place matching
