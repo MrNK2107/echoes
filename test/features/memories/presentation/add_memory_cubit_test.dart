@@ -1,6 +1,7 @@
 import 'package:echoes/core/location/device_location.dart';
 import 'package:echoes/core/location/location_permission_state.dart';
 import 'package:echoes/core/location/location_service.dart';
+import 'package:echoes/core/media/image_compression_service.dart';
 import 'package:echoes/core/media/media_picker_service.dart';
 import 'package:echoes/core/media/selected_media.dart';
 import 'package:echoes/features/aura/data/lexicon_sentiment_analyzer.dart';
@@ -20,6 +21,7 @@ void main() {
           permission: LocationPermissionState.granted,
         ),
         mediaPickerService: _FakeMediaPickerService(),
+        imageCompressionService: _NoOpImageCompressionService(),
         sentimentAnalyzer: LexiconSentimentAnalyzer(),
         placeRepository: LocalPlaceRepository(now: DateTime.utc(2026, 5, 14)),
         memoryRepository: memoryRepository,
@@ -51,6 +53,7 @@ void main() {
           permission: LocationPermissionState.granted,
         ),
         mediaPickerService: _FakeMediaPickerService(),
+        imageCompressionService: _NoOpImageCompressionService(),
         sentimentAnalyzer: LexiconSentimentAnalyzer(),
         placeRepository: LocalPlaceRepository(now: DateTime.utc(2026, 5, 14)),
         memoryRepository: LocalMemoryRepository(),
@@ -71,6 +74,7 @@ void main() {
         mediaPickerService: _FakeMediaPickerService(
           galleryPath: '/tmp/memory.jpg',
         ),
+        imageCompressionService: _NoOpImageCompressionService(),
         sentimentAnalyzer: LexiconSentimentAnalyzer(),
         placeRepository: LocalPlaceRepository(now: DateTime.utc(2026, 5, 14)),
         memoryRepository: LocalMemoryRepository(),
@@ -90,6 +94,7 @@ void main() {
         mediaPickerService: _FakeMediaPickerService(
           cameraPath: '/tmp/camera-memory.jpg',
         ),
+        imageCompressionService: _NoOpImageCompressionService(),
         sentimentAnalyzer: LexiconSentimentAnalyzer(),
         placeRepository: LocalPlaceRepository(now: DateTime.utc(2026, 5, 14)),
         memoryRepository: LocalMemoryRepository(),
@@ -107,6 +112,7 @@ void main() {
           permission: LocationPermissionState.granted,
         ),
         mediaPickerService: _FakeMediaPickerService(),
+        imageCompressionService: _NoOpImageCompressionService(),
         sentimentAnalyzer: LexiconSentimentAnalyzer(),
         placeRepository: LocalPlaceRepository(now: DateTime.utc(2026, 5, 14)),
         memoryRepository: LocalMemoryRepository(),
@@ -123,6 +129,7 @@ void main() {
           permission: LocationPermissionState.granted,
         ),
         mediaPickerService: _FakeMediaPickerService(),
+        imageCompressionService: _NoOpImageCompressionService(),
         sentimentAnalyzer: LexiconSentimentAnalyzer(),
         placeRepository: LocalPlaceRepository(now: DateTime.utc(2026, 5, 14)),
         memoryRepository: LocalMemoryRepository(),
@@ -142,6 +149,7 @@ void main() {
           permission: LocationPermissionState.granted,
         ),
         mediaPickerService: _FakeMediaPickerService(),
+        imageCompressionService: _NoOpImageCompressionService(),
         sentimentAnalyzer: LexiconSentimentAnalyzer(),
         placeRepository: LocalPlaceRepository(now: DateTime.utc(2026, 5, 14)),
         memoryRepository: LocalMemoryRepository(),
@@ -165,6 +173,7 @@ void main() {
                   permission: LocationPermissionState.granted,
                 ),
                 mediaPickerService: _FakeMediaPickerService(),
+                imageCompressionService: _NoOpImageCompressionService(),
                 sentimentAnalyzer: LexiconSentimentAnalyzer(),
                 placeRepository: LocalPlaceRepository(
                   now: DateTime.utc(2026, 5, 14),
@@ -227,4 +236,9 @@ class _FakeMediaPickerService implements MediaPickerService {
   Future<SelectedMedia?> pickFromGallery() async {
     return galleryPath == null ? null : SelectedMedia(path: galleryPath!);
   }
+}
+
+class _NoOpImageCompressionService implements ImageCompressionService {
+  @override
+  Future<String> compressToUploadLimit(String imagePath) async => imagePath;
 }

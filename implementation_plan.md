@@ -365,7 +365,7 @@ Goal: users can create photo and text memories at their current location.
 - [x] Add current GPS capture.
 - [x] Add public/private privacy selector.
 - [x] Add preview before save.
-- [ ] Compress image to max 1MB.
+- [x] Compress image to max 1MB.
 - [ ] Upload image to Firebase Storage.
 - [ ] Create memory Firestore document.
 - [x] Find nearby place within configured radius.
@@ -855,5 +855,4 @@ Mitigation:
 ## Immediate Next Steps
 
 - [x] Add profile-backed default privacy coverage in add-memory tests.
-- [ ] Add image compression boundary before Firebase Storage upload.
 - [ ] Start Firebase service adapters behind existing repositories.

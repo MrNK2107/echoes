@@ -1,6 +1,8 @@
 import 'package:echoes/app/theme.dart';
 import 'package:echoes/core/location/geolocator_location_service.dart';
 import 'package:echoes/core/location/location_service.dart';
+import 'package:echoes/core/media/dart_image_compression_service.dart';
+import 'package:echoes/core/media/image_compression_service.dart';
 import 'package:echoes/core/media/image_picker_media_service.dart';
 import 'package:echoes/core/media/media_picker_service.dart';
 import 'package:echoes/features/ar/data/local_ar_availability_service.dart';
@@ -46,6 +48,9 @@ class EchoesApp extends StatelessWidget {
           ),
           RepositoryProvider<MediaPickerService>(
             create: (_) => ImagePickerMediaService(),
+          ),
+          RepositoryProvider<ImageCompressionService>(
+            create: (_) => DartImageCompressionService(),
           ),
           RepositoryProvider<SentimentAnalyzer>(
             create: (_) => LexiconSentimentAnalyzer(),

@@ -1,6 +1,7 @@
 import 'package:echoes/core/geo/geohash.dart';
 import 'package:echoes/core/location/location_permission_state.dart';
 import 'package:echoes/core/location/location_service.dart';
+import 'package:echoes/core/media/image_compression_service.dart';
 import 'package:echoes/core/media/media_picker_service.dart';
 import 'package:echoes/core/media/selected_media.dart';
 import 'package:echoes/features/aura/domain/aura_calculator.dart';
@@ -20,6 +21,7 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
   AddMemoryCubit({
     required LocationService locationService,
     required MediaPickerService mediaPickerService,
+    required ImageCompressionService imageCompressionService,
     required SentimentAnalyzer sentimentAnalyzer,
     required PlaceRepository placeRepository,
     required MemoryRepository memoryRepository,
@@ -28,6 +30,7 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
     Uuid? uuid,
   }) : _locationService = locationService,
        _mediaPickerService = mediaPickerService,
+       _imageCompressionService = imageCompressionService,
        _sentimentAnalyzer = sentimentAnalyzer,
        _auraCalculator = auraCalculator ?? AuraCalculator(),
        _placeRepository = placeRepository,
@@ -39,6 +42,7 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
 
   final LocationService _locationService;
   final MediaPickerService _mediaPickerService;
+  final ImageCompressionService _imageCompressionService;
   final SentimentAnalyzer _sentimentAnalyzer;
   final AuraCalculator _auraCalculator;
   final PlaceRepository _placeRepository;
@@ -151,6 +155,11 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
 
     try {
       final now = DateTime.now().toUtc();
+      final compressedImagePath = state.imagePath == null
+          ? null
+          : await _imageCompressionService.compressToUploadLimit(
+              state.imagePath!,
+            );
       var place = await _placeRepository.findNearestPlace(
         latitude: location.latitude,
         longitude: location.longitude,
@@ -182,7 +191,7 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
         id: _uuid.v4(),
         userId: userId,
         placeId: place.id,
-        imageUrl: state.imagePath,
+        imageUrl: compressedImagePath,
         textContent: textContent.trim(),
         latitude: location.latitude,
         longitude: location.longitude,

@@ -1,5 +1,6 @@
 import 'package:echoes/app/theme.dart';
 import 'package:echoes/core/location/location_service.dart';
+import 'package:echoes/core/media/image_compression_service.dart';
 import 'package:echoes/core/media/media_picker_service.dart';
 import 'package:echoes/features/aura/domain/sentiment_analyzer.dart';
 import 'package:echoes/features/auth/presentation/auth_cubit.dart';
@@ -29,6 +30,7 @@ class AddMemoryPlaceholderScreen extends StatelessWidget {
           create: (context) => AddMemoryCubit(
             locationService: context.read<LocationService>(),
             mediaPickerService: context.read<MediaPickerService>(),
+            imageCompressionService: context.read<ImageCompressionService>(),
             sentimentAnalyzer: context.read<SentimentAnalyzer>(),
             placeRepository: context.read<PlaceRepository>(),
             memoryRepository: context.read<MemoryRepository>(),
