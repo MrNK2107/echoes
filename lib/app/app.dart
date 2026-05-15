@@ -1,4 +1,5 @@
 import 'package:echoes/app/theme.dart';
+import 'package:echoes/core/config/app_config.dart';
 import 'package:echoes/core/location/geolocator_location_service.dart';
 import 'package:echoes/core/location/location_service.dart';
 import 'package:echoes/core/media/dart_image_compression_service.dart';
@@ -29,13 +30,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class EchoesApp extends StatelessWidget {
-  const EchoesApp({super.key});
+  const EchoesApp({super.key, this.config});
+
+  final AppConfig? config;
 
   @override
   Widget build(BuildContext context) {
+    final appConfig = config ?? AppConfig.fromEnvironment();
+
     return MaterialApp(
-      title: 'ECHOES',
-      debugShowCheckedModeBanner: false,
+      title: appConfig.appTitle,
+      debugShowCheckedModeBanner: !appConfig.isProduction,
       theme: EchoesTheme.dark,
       home: MultiRepositoryProvider(
         providers: [

@@ -126,7 +126,7 @@ integration_test/
 - [ ] Add Firebase config files for Android and iOS.
 - [x] Add base dependencies.
 - [x] Configure linting.
-- [ ] Configure app flavors or environment files for development and production.
+- [x] Configure app flavors or environment files for development and production.
 - [x] Add dark theme defaults.
 - [x] Add root navigation shell.
 - [x] Add basic app startup and error boundary handling.
