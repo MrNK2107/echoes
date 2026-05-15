@@ -90,6 +90,15 @@ class MemoryDetailSheet extends StatelessWidget {
                   ),
               ],
             ),
+            if (onDelete != null) ...[
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                key: const ValueKey('restoreMemoryPlaceholderButton'),
+                onPressed: null,
+                icon: const Icon(Icons.restore_outlined),
+                label: const Text('30-day restore coming soon'),
+              ),
+            ],
           ],
         ],
       ),

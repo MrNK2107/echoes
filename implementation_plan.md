@@ -402,7 +402,7 @@ Goal: users can view, edit, and soft-delete memories.
 - [x] Prevent location edits.
 - [x] Prevent timestamp edits.
 - [x] Add soft delete.
-- [ ] Add deleted-memory recovery placeholder for future 30-day restore.
+- [x] Add deleted-memory recovery placeholder for future 30-day restore.
 
 Tests:
 
@@ -712,7 +712,7 @@ Deliverable:
 - [x] Add memory screen
 - [x] Privacy selector
 - [ ] Memory card
-- [ ] Memory detail
+- [x] Memory detail
 - [ ] Place detail
 - [ ] Community detail
 
