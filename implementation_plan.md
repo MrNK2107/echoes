@@ -13,7 +13,7 @@
 
 Last updated: 2026-05-16
 
-- Overall checklist completion: 246 / 387 items complete, about 64%.
+- Overall checklist completion: 247 / 387 items complete, about 64%.
 - Internal Alpha feature scope: mostly implemented in code; device smoke testing and security-rules tests remain.
 - Private Beta feature scope: partially implemented; AR rendering, transfer initiation UI, and tagged-user search are in place; rules tests and deeper AR interaction remain.
 - Public MVP feature scope: in progress; offline cache, accessibility, performance, notifications, and production hardening remain.
@@ -638,7 +638,7 @@ Tests:
 
 - [ ] Manual offline browsing test.
 - [ ] Manual failed upload retry test.
-- [ ] Unit test sync queue state.
+- [x] Unit test sync queue state.
 
 Deliverable:
 
