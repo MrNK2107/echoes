@@ -1,3 +1,4 @@
+import 'package:echoes/core/location/location_service.dart';
 import 'package:echoes/features/ar/domain/ar_availability.dart';
 import 'package:echoes/features/ar/domain/ar_availability_service.dart';
 import 'package:echoes/features/ar/domain/ar_permission_service.dart';
@@ -5,6 +6,7 @@ import 'package:echoes/features/ar/domain/ar_permission_state.dart';
 import 'package:echoes/features/ar/domain/ar_session_service.dart';
 import 'package:echoes/features/ar/presentation/ar_state.dart';
 import 'package:echoes/features/ar/presentation/ar_status.dart';
+import 'package:echoes/features/places/domain/place_repository.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class ArCubit extends Cubit<ArState> {
@@ -12,14 +14,22 @@ class ArCubit extends Cubit<ArState> {
     required ArAvailabilityService availabilityService,
     required ArPermissionService permissionService,
     required ArSessionService sessionService,
+    required LocationService locationService,
+    required PlaceRepository placeRepository,
   }) : _sessionService = sessionService,
+       _placeRepository = placeRepository,
+       _locationService = locationService,
        _permissionService = permissionService,
        _availabilityService = availabilityService,
        super(const ArState.initial());
 
+  static const nearbyRadiusMeters = 1000.0;
+
   final ArAvailabilityService _availabilityService;
   final ArPermissionService _permissionService;
   final ArSessionService _sessionService;
+  final LocationService _locationService;
+  final PlaceRepository _placeRepository;
 
   Future<void> checkAvailability() async {
     emit(state.copyWith(status: ArStatus.checking));
@@ -78,8 +88,23 @@ class ArCubit extends Cubit<ArState> {
 
     emit(state.copyWith(status: ArStatus.starting));
     try {
+      final location = await _locationService.getCurrentLocation();
+      final places = await _placeRepository
+          .watchNearbyPlaces(
+            latitude: location.latitude,
+            longitude: location.longitude,
+            radiusMeters: nearbyRadiusMeters,
+          )
+          .first;
       await _sessionService.start();
-      emit(state.copyWith(status: ArStatus.running, isSessionRunning: true));
+      emit(
+        state.copyWith(
+          status: ArStatus.running,
+          isSessionRunning: true,
+          location: location,
+          nearbyPlaces: places,
+        ),
+      );
     } on Object catch (error) {
       emit(
         state.copyWith(

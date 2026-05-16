@@ -1,10 +1,12 @@
 import 'package:echoes/app/theme.dart';
+import 'package:echoes/core/location/location_service.dart';
 import 'package:echoes/features/ar/domain/ar_availability_service.dart';
 import 'package:echoes/features/ar/domain/ar_permission_service.dart';
 import 'package:echoes/features/ar/domain/ar_session_service.dart';
 import 'package:echoes/features/ar/presentation/ar_cubit.dart';
 import 'package:echoes/features/ar/presentation/ar_state.dart';
 import 'package:echoes/features/ar/presentation/ar_status.dart';
+import 'package:echoes/features/places/domain/place_repository.dart';
 import 'package:echoes/shared/widgets/feature_placeholder.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -19,6 +21,8 @@ class ArPlaceholderScreen extends StatelessWidget {
         availabilityService: context.read<ArAvailabilityService>(),
         permissionService: context.read<ArPermissionService>(),
         sessionService: context.read<ArSessionService>(),
+        locationService: context.read<LocationService>(),
+        placeRepository: context.read<PlaceRepository>(),
       )..checkAvailability(),
       child: const _ArView(),
     );
@@ -41,7 +45,7 @@ class _ArView extends StatelessWidget {
           ),
           ArStatus.ready => const _ArReadyPlaceholder(),
           ArStatus.starting => const _ArSessionPlaceholder(isStarting: true),
-          ArStatus.running => const _ArSessionPlaceholder(),
+          ArStatus.running => _ArSessionPlaceholder(state: state),
           ArStatus.stopping => const _ArSessionPlaceholder(isStopping: true),
           ArStatus.unsupported => FeaturePlaceholder(
             icon: Icons.map_outlined,
@@ -145,10 +149,12 @@ class _ArReadyPlaceholder extends StatelessWidget {
 
 class _ArSessionPlaceholder extends StatelessWidget {
   const _ArSessionPlaceholder({
+    this.state,
     this.isStarting = false,
     this.isStopping = false,
   });
 
+  final ArState? state;
   final bool isStarting;
   final bool isStopping;
 
@@ -186,7 +192,7 @@ class _ArSessionPlaceholder extends StatelessWidget {
                   ? 'Starting aura view'
                   : isStopping
                   ? 'Stopping aura view'
-                  : 'Aura view is running',
+                  : _runningLabel,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 color: EchoesColors.textPrimary,
@@ -206,5 +212,15 @@ class _ArSessionPlaceholder extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String get _runningLabel {
+    final places = state?.nearbyPlaces.length ?? 0;
+    if (places == 0) {
+      return 'Aura view is running';
+    }
+    return places == 1
+        ? 'Aura view is tracking 1 nearby place'
+        : 'Aura view is tracking $places nearby places';
   }
 }

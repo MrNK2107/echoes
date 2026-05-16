@@ -1,4 +1,6 @@
+import 'package:echoes/core/location/device_location.dart';
 import 'package:echoes/features/ar/presentation/ar_status.dart';
+import 'package:echoes/features/places/domain/place.dart';
 import 'package:equatable/equatable.dart';
 
 class ArState extends Equatable {
@@ -7,6 +9,8 @@ class ArState extends Equatable {
     this.errorMessage,
     this.isPermissionPermanentlyDenied = false,
     this.isSessionRunning = false,
+    this.location,
+    this.nearbyPlaces = const [],
   });
 
   const ArState.initial() : this(status: ArStatus.initial);
@@ -15,12 +19,16 @@ class ArState extends Equatable {
   final String? errorMessage;
   final bool isPermissionPermanentlyDenied;
   final bool isSessionRunning;
+  final DeviceLocation? location;
+  final List<Place> nearbyPlaces;
 
   ArState copyWith({
     ArStatus? status,
     String? errorMessage,
     bool? isPermissionPermanentlyDenied,
     bool? isSessionRunning,
+    DeviceLocation? location,
+    List<Place>? nearbyPlaces,
   }) {
     return ArState(
       status: status ?? this.status,
@@ -28,6 +36,8 @@ class ArState extends Equatable {
       isPermissionPermanentlyDenied:
           isPermissionPermanentlyDenied ?? this.isPermissionPermanentlyDenied,
       isSessionRunning: isSessionRunning ?? this.isSessionRunning,
+      location: location ?? this.location,
+      nearbyPlaces: nearbyPlaces ?? this.nearbyPlaces,
     );
   }
 
@@ -37,5 +47,7 @@ class ArState extends Equatable {
     errorMessage,
     isPermissionPermanentlyDenied,
     isSessionRunning,
+    location,
+    nearbyPlaces,
   ];
 }

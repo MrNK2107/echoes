@@ -1,3 +1,6 @@
+import 'package:echoes/core/location/device_location.dart';
+import 'package:echoes/core/location/location_permission_state.dart';
+import 'package:echoes/core/location/location_service.dart';
 import 'package:echoes/features/ar/data/local_ar_availability_service.dart';
 import 'package:echoes/features/ar/data/local_ar_permission_service.dart';
 import 'package:echoes/features/ar/data/local_ar_session_service.dart';
@@ -5,6 +8,9 @@ import 'package:echoes/features/ar/domain/ar_availability.dart';
 import 'package:echoes/features/ar/domain/ar_permission_state.dart';
 import 'package:echoes/features/ar/presentation/ar_cubit.dart';
 import 'package:echoes/features/ar/presentation/ar_status.dart';
+import 'package:echoes/features/aura/domain/aura_zone.dart';
+import 'package:echoes/features/places/domain/place.dart';
+import 'package:echoes/features/places/domain/place_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -18,6 +24,8 @@ void main() {
           initialPermission: ArPermissionState.granted,
         ),
         sessionService: LocalArSessionService(),
+        locationService: _FakeLocationService(),
+        placeRepository: _FakePlaceRepository(),
       );
 
       await cubit.checkAvailability();
@@ -31,6 +39,8 @@ void main() {
         availabilityService: const LocalArAvailabilityService(),
         permissionService: const LocalArPermissionService(),
         sessionService: LocalArSessionService(),
+        locationService: _FakeLocationService(),
+        placeRepository: _FakePlaceRepository(),
       );
 
       await cubit.checkAvailability();
@@ -48,6 +58,8 @@ void main() {
           initialPermission: ArPermissionState.denied,
         ),
         sessionService: LocalArSessionService(),
+        locationService: _FakeLocationService(),
+        placeRepository: _FakePlaceRepository(),
       );
 
       await cubit.checkAvailability();
@@ -66,6 +78,8 @@ void main() {
           requestedPermission: ArPermissionState.granted,
         ),
         sessionService: LocalArSessionService(),
+        locationService: _FakeLocationService(),
+        placeRepository: _FakePlaceRepository(),
       );
 
       await cubit.requestPermission();
@@ -84,6 +98,8 @@ void main() {
           initialPermission: ArPermissionState.granted,
         ),
         sessionService: sessionService,
+        locationService: _FakeLocationService(),
+        placeRepository: _FakePlaceRepository(places: [_place()]),
       );
 
       await cubit.checkAvailability();
@@ -91,6 +107,7 @@ void main() {
 
       expect(cubit.state.status, ArStatus.running);
       expect(cubit.state.isSessionRunning, isTrue);
+      expect(cubit.state.nearbyPlaces, hasLength(1));
       expect(sessionService.isRunning, isTrue);
 
       await cubit.stopSession();
@@ -111,6 +128,8 @@ void main() {
           initialPermission: ArPermissionState.granted,
         ),
         sessionService: sessionService,
+        locationService: _FakeLocationService(),
+        placeRepository: _FakePlaceRepository(),
       );
 
       await cubit.checkAvailability();
@@ -120,4 +139,75 @@ void main() {
       expect(sessionService.isRunning, isFalse);
     });
   });
+}
+
+class _FakeLocationService implements LocationService {
+  @override
+  Future<LocationPermissionState> checkPermission() async {
+    return LocationPermissionState.granted;
+  }
+
+  @override
+  Future<DeviceLocation> getCurrentLocation() async {
+    return const DeviceLocation(
+      latitude: 12.9716,
+      longitude: 77.5946,
+      accuracyMeters: 10,
+    );
+  }
+
+  @override
+  Future<LocationPermissionState> requestPermission() async {
+    return LocationPermissionState.granted;
+  }
+}
+
+class _FakePlaceRepository implements PlaceRepository {
+  const _FakePlaceRepository({this.places = const []});
+
+  final List<Place> places;
+
+  @override
+  Future<void> create(Place place) async {}
+
+  @override
+  Future<Place?> findById(String id) async => null;
+
+  @override
+  Future<Place?> findNearestPlace({
+    required double latitude,
+    required double longitude,
+    required double radiusMeters,
+  }) async {
+    return places.isEmpty ? null : places.first;
+  }
+
+  @override
+  Future<void> save(Place place) async {}
+
+  @override
+  Stream<List<Place>> watchNearbyPlaces({
+    required double latitude,
+    required double longitude,
+    required double radiusMeters,
+  }) {
+    return Stream.value(places);
+  }
+}
+
+Place _place() {
+  final now = DateTime.utc(2026, 5, 16);
+  return Place(
+    id: 'place-1',
+    name: 'Old Courtyard',
+    latitude: 12.9717,
+    longitude: 77.5947,
+    geohash: 'tdr1v',
+    custodianIds: const ['user-1'],
+    aura: AuraZone.empty(now),
+    memoryCount: 1,
+    publicMemoryCount: 1,
+    createdAt: now,
+    updatedAt: now,
+  );
 }
