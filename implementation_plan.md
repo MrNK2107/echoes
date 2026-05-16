@@ -13,7 +13,7 @@
 
 Last updated: 2026-05-16
 
-- Overall checklist completion: 241 / 387 items complete, about 62%.
+- Overall checklist completion: 242 / 387 items complete, about 63%.
 - Internal Alpha feature scope: mostly implemented in code; device smoke testing and security-rules tests remain.
 - Private Beta feature scope: partially implemented; AR rendering, transfer initiation UI, and tagged-user search are in place; rules tests and deeper AR interaction remain.
 - Public MVP feature scope: in progress; offline cache, accessibility, performance, notifications, and production hardening remain.
@@ -619,7 +619,7 @@ Deliverable:
 
 Goal: improve reliability on mobile networks.
 
-- [ ] Enable Firebase offline persistence where supported.
+- [x] Enable Firebase offline persistence where supported.
 - [ ] Cache nearby places.
 - [ ] Cache recent memories.
 - [ ] Cache profile and settings.
