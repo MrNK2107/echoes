@@ -3,6 +3,8 @@ import 'package:echoes/features/legacy/domain/legacy_transfer.dart';
 abstract interface class LegacyTransferRepository {
   Stream<List<LegacyTransfer>> watchPendingTransfersForUser(String userId);
 
+  Future<LegacyTransfer?> findById(String transferId);
+
   Future<void> initiate(LegacyTransfer transfer);
 
   Future<void> accept(String transferId);

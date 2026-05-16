@@ -14,6 +14,15 @@ class FirestoreLegacyTransferRepository implements LegacyTransferRepository {
       _firestore.collection('transfers');
 
   @override
+  Future<LegacyTransfer?> findById(String transferId) async {
+    final snapshot = await _collection.doc(transferId).get();
+    final data = snapshot.data();
+    return data == null
+        ? null
+        : LegacyTransferDto.fromMap(snapshot.id, data).toDomain();
+  }
+
+  @override
   Future<void> accept(String transferId) {
     return _collection.doc(transferId).update({
       'status': TransferStatus.accepted.name,
@@ -64,7 +73,8 @@ class FirestoreLegacyTransferRepository implements LegacyTransferRepository {
         .map((snapshot) {
           return snapshot.docs
               .map(
-                (doc) => LegacyTransferDto.fromMap(doc.id, doc.data()).toDomain(),
+                (doc) =>
+                    LegacyTransferDto.fromMap(doc.id, doc.data()).toDomain(),
               )
               .toList();
         });

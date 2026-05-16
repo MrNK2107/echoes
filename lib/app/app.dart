@@ -27,6 +27,7 @@ import 'package:echoes/features/auth/presentation/auth_gate.dart';
 import 'package:echoes/features/communities/data/firestore_community_repository.dart';
 import 'package:echoes/features/communities/data/local_community_repository.dart';
 import 'package:echoes/features/communities/domain/community_repository.dart';
+import 'package:echoes/features/legacy/application/custodianship_transfer_service.dart';
 import 'package:echoes/features/legacy/data/firestore_legacy_transfer_repository.dart';
 import 'package:echoes/features/legacy/data/local_legacy_transfer_repository.dart';
 import 'package:echoes/features/legacy/domain/legacy_transfer_repository.dart';
@@ -120,6 +121,12 @@ class EchoesApp extends StatelessWidget {
           ),
           RepositoryProvider<LegacyTransferRepository>(
             create: (_) => legacyTransferRepository,
+          ),
+          RepositoryProvider<CustodianshipTransferService>(
+            create: (_) => CustodianshipTransferService(
+              transferRepository: legacyTransferRepository,
+              placeRepository: placeRepository,
+            ),
           ),
         ],
         child: BlocProvider(

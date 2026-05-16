@@ -9,6 +9,13 @@ class LocalLegacyTransferRepository implements LegacyTransferRepository {
   final _controller = StreamController<List<LegacyTransfer>>.broadcast();
 
   @override
+  Future<LegacyTransfer?> findById(String transferId) async {
+    return _transfers
+        .where((transfer) => transfer.id == transferId)
+        .firstOrNull;
+  }
+
+  @override
   Future<void> accept(String transferId) async {
     _updateStatus(transferId, TransferStatus.accepted);
   }

@@ -31,4 +31,34 @@ class Place {
   final int publicMemoryCount;
   final DateTime createdAt;
   final DateTime updatedAt;
+
+  Place copyWith({
+    String? id,
+    String? name,
+    double? latitude,
+    double? longitude,
+    String? geohash,
+    String? communityId,
+    List<String>? custodianIds,
+    AuraZone? aura,
+    int? memoryCount,
+    int? publicMemoryCount,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return Place(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      geohash: geohash ?? this.geohash,
+      communityId: communityId ?? this.communityId,
+      custodianIds: custodianIds ?? this.custodianIds,
+      aura: aura ?? this.aura,
+      memoryCount: memoryCount ?? this.memoryCount,
+      publicMemoryCount: publicMemoryCount ?? this.publicMemoryCount,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
 }

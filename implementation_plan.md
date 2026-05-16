@@ -13,7 +13,7 @@
 
 Last updated: 2026-05-16
 
-- Overall checklist completion: 239 / 387 items complete, about 62%.
+- Overall checklist completion: 240 / 387 items complete, about 62%.
 - Internal Alpha feature scope: mostly implemented in code; device smoke testing and security-rules tests remain.
 - Private Beta feature scope: partially implemented; AR rendering, transfer initiation UI, and tagged-user search are in place; rules tests and deeper AR interaction remain.
 - Public MVP feature scope: in progress; offline cache, accessibility, performance, notifications, and production hardening remain.
@@ -592,7 +592,7 @@ Goal: implement place custodianship and legacy transfer.
 - [x] Allow recipient to reject transfer.
 - [x] Allow initiator to revoke transfer within 7 days.
 - [x] Log transfer history.
-- [ ] Allow multiple custodians per place.
+- [x] Allow multiple custodians per place.
 - [ ] Add guardian reassignment placeholder.
 
 Transfer states:

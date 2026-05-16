@@ -1,6 +1,7 @@
 import 'package:echoes/app/theme.dart';
 import 'package:echoes/features/auth/presentation/auth_cubit.dart';
 import 'package:echoes/features/auth/presentation/auth_state.dart';
+import 'package:echoes/features/legacy/application/custodianship_transfer_service.dart';
 import 'package:echoes/features/legacy/domain/legacy_transfer.dart';
 import 'package:echoes/features/legacy/domain/legacy_transfer_repository.dart';
 import 'package:echoes/features/memories/domain/memory.dart';
@@ -91,17 +92,17 @@ class _ProfileContent extends StatelessWidget {
                       children: [
                         Text(
                           user?.displayName ?? 'Echoes custodian',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            color: EchoesColors.textPrimary,
-                            fontWeight: FontWeight.w700,
-                          ),
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(
+                                color: EchoesColors.textPrimary,
+                                fontWeight: FontWeight.w700,
+                              ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           user?.email ?? userId,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: EchoesColors.textSecondary,
-                          ),
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(color: EchoesColors.textSecondary),
                         ),
                       ],
                     ),
@@ -245,8 +246,8 @@ class _PendingTransfers extends StatelessWidget {
                       child: OutlinedButton.icon(
                         key: const ValueKey('acceptTransferButton'),
                         onPressed: () => context
-                            .read<LegacyTransferRepository>()
-                            .accept(transfer.id),
+                            .read<CustodianshipTransferService>()
+                            .acceptTransfer(transfer.id),
                         icon: const Icon(Icons.check),
                         label: const Text('Accept'),
                       ),
