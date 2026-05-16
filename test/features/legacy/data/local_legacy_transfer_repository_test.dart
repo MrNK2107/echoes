@@ -61,5 +61,33 @@ void main() {
         repository.dispose();
       },
     );
+
+    test(
+      'revoke keeps expired transfers pending after revoke window',
+      () async {
+        final repository = LocalLegacyTransferRepository();
+        final now = DateTime.now().toUtc();
+
+        await repository.initiate(
+          LegacyTransfer(
+            id: 'transfer-1',
+            placeId: 'place-1',
+            fromUserId: 'custodian',
+            toUserId: 'recipient',
+            status: TransferStatus.pending,
+            createdAt: now.subtract(const Duration(days: 10)),
+            revokeUntil: now.subtract(const Duration(days: 3)),
+          ),
+        );
+
+        await repository.revoke('transfer-1');
+
+        expect(
+          repository.transferHistory().single.status,
+          TransferStatus.pending,
+        );
+        repository.dispose();
+      },
+    );
   });
 }

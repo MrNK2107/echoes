@@ -13,7 +13,7 @@
 
 Last updated: 2026-05-16
 
-- Overall checklist completion: 240 / 387 items complete, about 62%.
+- Overall checklist completion: 241 / 387 items complete, about 62%.
 - Internal Alpha feature scope: mostly implemented in code; device smoke testing and security-rules tests remain.
 - Private Beta feature scope: partially implemented; AR rendering, transfer initiation UI, and tagged-user search are in place; rules tests and deeper AR interaction remain.
 - Public MVP feature scope: in progress; offline cache, accessibility, performance, notifications, and production hardening remain.
@@ -606,7 +606,7 @@ Transfer states:
 Tests:
 
 - [x] Unit test transfer state machine.
-- [ ] Unit test revoke window.
+- [x] Unit test revoke window.
 - [ ] Security rules test transfer initiation.
 - [ ] Security rules test transfer acceptance.
 - [ ] Integration test successful transfer.
