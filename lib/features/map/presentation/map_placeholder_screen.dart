@@ -1,6 +1,7 @@
 import 'package:echoes/app/theme.dart';
 import 'package:echoes/core/location/location_service.dart';
 import 'package:echoes/features/aura/presentation/aura_preview.dart';
+import 'package:echoes/features/map/presentation/aura_marker_hue.dart';
 import 'package:echoes/features/map/presentation/map_cubit.dart';
 import 'package:echoes/features/map/presentation/map_state.dart';
 import 'package:echoes/features/map/presentation/map_status.dart';
@@ -162,21 +163,11 @@ class _ReadyMapPlaceholder extends StatelessWidget {
           onTap: () => _showPlaceDetails(context, place),
         ),
         icon: BitmapDescriptor.defaultMarkerWithHue(
-          _markerHueFor(place.aura.colorHex),
+          AuraMarkerHue.fromAura(place.aura),
         ),
         onTap: () => _showPlaceDetails(context, place),
       );
     }).toSet();
-  }
-
-  double _markerHueFor(String colorHex) {
-    return switch (colorHex.toUpperCase()) {
-      '#FFB347' => BitmapDescriptor.hueYellow,
-      '#77B5FE' => BitmapDescriptor.hueAzure,
-      '#9B59B6' => BitmapDescriptor.hueViolet,
-      '#DDA0DD' => BitmapDescriptor.hueMagenta,
-      _ => BitmapDescriptor.hueRose,
-    };
   }
 
   void _showPlaceDetails(BuildContext context, Place place) {
