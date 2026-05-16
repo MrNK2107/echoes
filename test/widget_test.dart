@@ -98,6 +98,9 @@ void main() {
 
     expect(find.text('nanda@example.com'), findsOneWidget);
 
+    await tester.ensureVisible(find.byKey(const ValueKey('signOutButton')));
+    await tester.pumpAndSettle();
+
     await tester.tap(find.byKey(const ValueKey('signOutButton')));
     await tester.pumpAndSettle();
 

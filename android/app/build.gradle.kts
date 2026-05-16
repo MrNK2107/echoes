@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.mrnk2107.echoes"
+    namespace = "com.phantom.echoes"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -21,7 +21,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.mrnk2107.echoes"
+        applicationId = "com.phantom.echoes"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

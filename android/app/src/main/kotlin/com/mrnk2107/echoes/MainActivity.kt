@@ -1,4 +1,4 @@
-package com.mrnk2107.echoes
+package com.phantom.echoes
 
 import io.flutter.embedding.android.FlutterActivity
 

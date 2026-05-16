@@ -9,6 +9,7 @@ import 'package:echoes/features/memories/presentation/edit_memory_sheet.dart';
 import 'package:echoes/features/memories/presentation/memory_card.dart';
 import 'package:echoes/features/memories/presentation/memory_detail_sheet.dart';
 import 'package:echoes/features/privacy/domain/privacy_type.dart';
+import 'package:echoes/features/profile/presentation/notification_settings.dart';
 import 'package:echoes/features/users/domain/app_user_repository.dart';
 import 'package:echoes/shared/widgets/feature_placeholder.dart';
 import 'package:flutter/material.dart';
@@ -63,89 +64,94 @@ class _ProfileContent extends StatelessWidget {
       builder: (context, snapshot) {
         final user = snapshot.data;
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: EchoesColors.celestialBlue.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(8),
+        return SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: EchoesColors.celestialBlue.withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.account_circle_outlined,
+                      color: EchoesColors.celestialBlue,
+                      size: 30,
+                    ),
                   ),
-                  child: const Icon(
-                    Icons.account_circle_outlined,
-                    color: EchoesColors.celestialBlue,
-                    size: 30,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        user?.displayName ?? 'Echoes custodian',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: EchoesColors.textPrimary,
-                          fontWeight: FontWeight.w700,
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          user?.displayName ?? 'Echoes custodian',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: EchoesColors.textPrimary,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        user?.email ?? userId,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: EchoesColors.textSecondary,
+                        const SizedBox(height: 4),
+                        Text(
+                          user?.email ?? userId,
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: EchoesColors.textSecondary,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            _ProfileStatRow(userId: userId),
-            const SizedBox(height: 16),
-            _DefaultPrivacySelector(
-              selectedPrivacy: user?.defaultPrivacy ?? PrivacyType.public,
-            ),
-            const SizedBox(height: 16),
-            _PendingTransfers(userId: userId),
-            const SizedBox(height: 16),
-            Text(
-              'Your memories',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: EchoesColors.textPrimary,
-                fontWeight: FontWeight.w700,
+                ],
               ),
-            ),
-            const SizedBox(height: 8),
-            Expanded(child: _UserMemoryList(userId: userId)),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    key: const ValueKey('deleteAccountPlaceholderButton'),
-                    onPressed: null,
-                    icon: const Icon(Icons.delete_outline),
-                    label: const Text('Delete account'),
-                  ),
+              const SizedBox(height: 16),
+              _ProfileStatRow(userId: userId),
+              const SizedBox(height: 16),
+              _DefaultPrivacySelector(
+                selectedPrivacy: user?.defaultPrivacy ?? PrivacyType.public,
+              ),
+              const SizedBox(height: 16),
+              const NotificationSettings(),
+              const SizedBox(height: 16),
+              _PendingTransfers(userId: userId),
+              const SizedBox(height: 16),
+              Text(
+                'Your memories',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: EchoesColors.textPrimary,
+                  fontWeight: FontWeight.w700,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    key: const ValueKey('signOutButton'),
-                    onPressed: () => context.read<AuthCubit>().signOut(),
-                    icon: const Icon(Icons.logout),
-                    label: const Text('Sign out'),
+              ),
+              const SizedBox(height: 8),
+              _UserMemoryList(userId: userId),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      key: const ValueKey('deleteAccountPlaceholderButton'),
+                      onPressed: null,
+                      icon: const Icon(Icons.delete_outline),
+                      label: const Text('Delete account'),
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ],
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      key: const ValueKey('signOutButton'),
+                      onPressed: () => context.read<AuthCubit>().signOut(),
+                      icon: const Icon(Icons.logout),
+                      label: const Text('Sign out'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         );
       },
     );
@@ -361,6 +367,8 @@ class _UserMemoryList extends StatelessWidget {
 
         return ListView.separated(
           itemCount: memories.length,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
           separatorBuilder: (_, _) => const SizedBox(height: 8),
           itemBuilder: (context, index) {
             final memory = memories[index];

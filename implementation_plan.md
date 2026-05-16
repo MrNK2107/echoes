@@ -644,7 +644,7 @@ Goal: support transfer and community workflows.
 - [ ] Notify users of accepted transfers.
 - [ ] Notify users when tagged in memories.
 - [ ] Notify users of community invitations.
-- [ ] Add notification settings.
+- [x] Add notification settings.
 
 Deliverable:
 

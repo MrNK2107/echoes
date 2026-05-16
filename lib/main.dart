@@ -1,6 +1,8 @@
 import 'package:echoes/app/app.dart';
 import 'package:echoes/app/bootstrap.dart';
+import 'package:echoes/core/config/firebase_bootstrap.dart';
 
-void main() {
-  bootstrap(() => const EchoesApp());
+Future<void> main() async {
+  await FirebaseBootstrap.initialize();
+  bootstrap(() => const EchoesApp(useFirebase: true));
 }

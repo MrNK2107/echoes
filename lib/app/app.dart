@@ -3,6 +3,7 @@ import 'package:echoes/core/config/app_config.dart';
 import 'package:echoes/core/location/geolocator_location_service.dart';
 import 'package:echoes/core/location/location_service.dart';
 import 'package:echoes/core/media/dart_image_compression_service.dart';
+import 'package:echoes/core/media/firebase_storage_media_upload_service.dart';
 import 'package:echoes/core/media/image_compression_service.dart';
 import 'package:echoes/core/media/image_picker_media_service.dart';
 import 'package:echoes/core/media/local_media_upload_service.dart';
@@ -14,31 +15,59 @@ import 'package:echoes/features/ar/domain/ar_availability_service.dart';
 import 'package:echoes/features/ar/domain/ar_permission_service.dart';
 import 'package:echoes/features/aura/data/lexicon_sentiment_analyzer.dart';
 import 'package:echoes/features/aura/domain/sentiment_analyzer.dart';
+import 'package:echoes/features/auth/data/firebase_auth_repository.dart';
 import 'package:echoes/features/auth/data/local_auth_repository.dart';
 import 'package:echoes/features/auth/domain/auth_repository.dart';
 import 'package:echoes/features/auth/presentation/auth_cubit.dart';
 import 'package:echoes/features/auth/presentation/auth_gate.dart';
+import 'package:echoes/features/communities/data/firestore_community_repository.dart';
 import 'package:echoes/features/communities/data/local_community_repository.dart';
 import 'package:echoes/features/communities/domain/community_repository.dart';
+import 'package:echoes/features/legacy/data/firestore_legacy_transfer_repository.dart';
 import 'package:echoes/features/legacy/data/local_legacy_transfer_repository.dart';
 import 'package:echoes/features/legacy/domain/legacy_transfer_repository.dart';
+import 'package:echoes/features/memories/data/firestore_memory_repository.dart';
 import 'package:echoes/features/memories/data/local_memory_repository.dart';
 import 'package:echoes/features/memories/domain/memory_repository.dart';
+import 'package:echoes/features/places/data/firestore_place_repository.dart';
 import 'package:echoes/features/places/data/local_place_repository.dart';
 import 'package:echoes/features/places/domain/place_repository.dart';
+import 'package:echoes/features/users/data/firestore_app_user_repository.dart';
 import 'package:echoes/features/users/data/local_app_user_repository.dart';
 import 'package:echoes/features/users/domain/app_user_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class EchoesApp extends StatelessWidget {
-  const EchoesApp({super.key, this.config});
+  const EchoesApp({super.key, this.config, this.useFirebase = false});
 
   final AppConfig? config;
+  final bool useFirebase;
 
   @override
   Widget build(BuildContext context) {
     final appConfig = config ?? AppConfig.fromEnvironment();
+    final authRepository = useFirebase
+        ? FirebaseAuthRepository()
+        : LocalAuthRepository();
+    final appUserRepository = useFirebase
+        ? FirestoreAppUserRepository()
+        : LocalAppUserRepository();
+    final mediaUploadService = useFirebase
+        ? FirebaseStorageMediaUploadService()
+        : const LocalMediaUploadService();
+    final placeRepository = useFirebase
+        ? FirestorePlaceRepository()
+        : LocalPlaceRepository();
+    final memoryRepository = useFirebase
+        ? FirestoreMemoryRepository()
+        : LocalMemoryRepository();
+    final communityRepository = useFirebase
+        ? FirestoreCommunityRepository()
+        : LocalCommunityRepository();
+    final legacyTransferRepository = useFirebase
+        ? FirestoreLegacyTransferRepository()
+        : LocalLegacyTransferRepository();
 
     return MaterialApp(
       title: appConfig.appTitle,
@@ -47,10 +76,10 @@ class EchoesApp extends StatelessWidget {
       home: MultiRepositoryProvider(
         providers: [
           RepositoryProvider<AuthRepository>(
-            create: (_) => LocalAuthRepository(),
+            create: (_) => authRepository,
           ),
           RepositoryProvider<AppUserRepository>(
-            create: (_) => LocalAppUserRepository(),
+            create: (_) => appUserRepository,
           ),
           RepositoryProvider<LocationService>(
             create: (_) => GeolocatorLocationService(),
@@ -62,7 +91,7 @@ class EchoesApp extends StatelessWidget {
             create: (_) => DartImageCompressionService(),
           ),
           RepositoryProvider<MediaUploadService>(
-            create: (_) => const LocalMediaUploadService(),
+            create: (_) => mediaUploadService,
           ),
           RepositoryProvider<SentimentAnalyzer>(
             create: (_) => LexiconSentimentAnalyzer(),
@@ -74,16 +103,16 @@ class EchoesApp extends StatelessWidget {
             create: (_) => const LocalArPermissionService(),
           ),
           RepositoryProvider<PlaceRepository>(
-            create: (_) => LocalPlaceRepository(),
+            create: (_) => placeRepository,
           ),
           RepositoryProvider<MemoryRepository>(
-            create: (_) => LocalMemoryRepository(),
+            create: (_) => memoryRepository,
           ),
           RepositoryProvider<CommunityRepository>(
-            create: (_) => LocalCommunityRepository(),
+            create: (_) => communityRepository,
           ),
           RepositoryProvider<LegacyTransferRepository>(
-            create: (_) => LocalLegacyTransferRepository(),
+            create: (_) => legacyTransferRepository,
           ),
         ],
         child: BlocProvider(
