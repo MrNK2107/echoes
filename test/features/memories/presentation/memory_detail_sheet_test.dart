@@ -22,6 +22,8 @@ void main() {
       );
 
       expect(find.text('Public'), findsOneWidget);
+      expect(find.textContaining('Created 14/05/2026'), findsOneWidget);
+      expect(find.text('Created by user-1'), findsOneWidget);
       expect(find.text('A memory from the old courtyard.'), findsOneWidget);
       expect(find.text('Photo: /tmp/memory.jpg'), findsOneWidget);
       expect(find.byKey(const ValueKey('editMemoryButton')), findsOneWidget);
@@ -32,9 +34,25 @@ void main() {
       );
     },
   );
+
+  testWidgets('MemoryDetailSheet hides creator for private memories', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: MemoryDetailSheet(
+            memory: _memory(privacy: PrivacyType.private),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.textContaining('Created by'), findsNothing);
+  });
 }
 
-Memory _memory() {
+Memory _memory({PrivacyType privacy = PrivacyType.public}) {
   return Memory(
     id: 'memory-1',
     userId: 'user-1',
@@ -50,7 +68,7 @@ Memory _memory() {
       neutral: 0.7,
       negative: 0,
     ),
-    privacy: PrivacyType.public,
+    privacy: privacy,
     taggedUserIds: const [],
     isDeleted: false,
     createdAt: DateTime.utc(2026, 5, 14),

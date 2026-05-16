@@ -41,6 +41,46 @@ class MemoryDetailSheet extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
+          Row(
+            children: [
+              const Icon(
+                Icons.schedule,
+                size: 18,
+                color: EchoesColors.textSecondary,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Created ${_formatTimestamp(memory.createdAt)}',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: EchoesColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+          if (_showsCreator(memory)) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Icon(
+                  Icons.person_outline,
+                  size: 18,
+                  color: EchoesColors.textSecondary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Created by ${memory.userId}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: EchoesColors.textSecondary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+          const SizedBox(height: 16),
           Text(
             memory.textContent,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
@@ -103,5 +143,19 @@ class MemoryDetailSheet extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _formatTimestamp(DateTime dateTime) {
+    final local = dateTime.toLocal();
+    final day = local.day.toString().padLeft(2, '0');
+    final month = local.month.toString().padLeft(2, '0');
+    final hour = local.hour.toString().padLeft(2, '0');
+    final minute = local.minute.toString().padLeft(2, '0');
+    return '$day/$month/${local.year} $hour:$minute';
+  }
+
+  bool _showsCreator(Memory memory) {
+    return memory.privacy == PrivacyType.public ||
+        memory.privacy == PrivacyType.timeRelease;
   }
 }

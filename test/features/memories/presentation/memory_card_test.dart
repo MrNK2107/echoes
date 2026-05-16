@@ -38,5 +38,42 @@ void main() {
     expect(find.text('Private'), findsOneWidget);
     expect(find.text('A memory from the old courtyard.'), findsOneWidget);
     expect(find.text('/tmp/memory.jpg'), findsOneWidget);
+    expect(find.textContaining('Created by'), findsNothing);
   });
+
+  testWidgets('MemoryCard shows creator for public memories', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: MemoryCard(memory: _memory(privacy: PrivacyType.public)),
+        ),
+      ),
+    );
+
+    expect(find.text('Created by user-1'), findsOneWidget);
+  });
+}
+
+Memory _memory({required PrivacyType privacy}) {
+  return Memory(
+    id: 'memory-1',
+    userId: 'user-1',
+    placeId: 'place-1',
+    imageUrl: '/tmp/memory.jpg',
+    textContent: 'A memory from the old courtyard.',
+    latitude: 12.9716,
+    longitude: 77.5946,
+    geohash: 'tdr1v',
+    sentiment: const SentimentResult(
+      compound: 0,
+      positive: 0,
+      neutral: 1,
+      negative: 0,
+    ),
+    privacy: privacy,
+    taggedUserIds: const [],
+    isDeleted: false,
+    createdAt: DateTime.utc(2026, 5, 14),
+    updatedAt: DateTime.utc(2026, 5, 14),
+  );
 }

@@ -45,6 +45,29 @@ class MemoryCard extends StatelessWidget {
                   ),
                 ],
               ),
+              if (_showsCreator(memory)) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.person_outline,
+                      size: 16,
+                      color: EchoesColors.textSecondary,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'Created by ${memory.userId}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: EchoesColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 12),
               Text(
                 memory.textContent,
@@ -88,5 +111,10 @@ class MemoryCard extends StatelessWidget {
   String _formatDate(DateTime dateTime) {
     final local = dateTime.toLocal();
     return '${local.day.toString().padLeft(2, '0')}/${local.month.toString().padLeft(2, '0')}/${local.year}';
+  }
+
+  bool _showsCreator(Memory memory) {
+    return memory.privacy == PrivacyType.public ||
+        memory.privacy == PrivacyType.timeRelease;
   }
 }

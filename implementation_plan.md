@@ -392,7 +392,7 @@ Goal: users can view, edit, and soft-delete memories.
 - [x] Build memory card component.
 - [x] Build memory detail screen.
 - [x] Show image, text, timestamp, location, and creator visibility.
-- [ ] Hide creator info when privacy requires it.
+- [x] Hide creator info when privacy requires it.
 - [x] Build place detail memory list.
 - [x] Filter visible memories by privacy rules.
 - [x] Add profile memory list.
