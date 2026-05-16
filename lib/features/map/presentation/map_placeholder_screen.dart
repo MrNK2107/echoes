@@ -13,6 +13,7 @@ import 'package:echoes/features/memories/presentation/memory_detail_sheet.dart';
 import 'package:echoes/features/places/domain/place.dart';
 import 'package:echoes/features/places/domain/place_repository.dart';
 import 'package:echoes/features/places/presentation/custodianship_transfer_button.dart';
+import 'package:echoes/features/places/presentation/guardian_reassignment_placeholder.dart';
 import 'package:echoes/features/places/presentation/place_custodians.dart';
 import 'package:echoes/shared/widgets/feature_placeholder.dart';
 import 'package:flutter/material.dart';
@@ -207,6 +208,11 @@ class _ReadyMapPlaceholder extends StatelessWidget {
               if (currentUserId != null) ...[
                 const SizedBox(height: 12),
                 CustodianshipTransferButton(
+                  place: place,
+                  currentUserId: currentUserId,
+                ),
+                const SizedBox(height: 12),
+                GuardianReassignmentPlaceholder(
                   place: place,
                   currentUserId: currentUserId,
                 ),
