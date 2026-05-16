@@ -9,17 +9,27 @@
 - [x] Bootstrap Flutter project
 - [x] Begin MVP implementation
 
+## Completion Snapshot
+
+Last updated: 2026-05-16
+
+- Overall checklist completion: 225 / 387 items complete, about 58%.
+- Internal Alpha feature scope: mostly implemented in code; device smoke testing and security-rules tests remain.
+- Private Beta feature scope: partially implemented; AR rendering, rules tests, and transfer initiation UI remain.
+- Public MVP feature scope: in progress; offline cache, accessibility, performance, notifications, and production hardening remain.
+
 ## Current Repository State
 
-The repository now contains the product specification, implementation plan, and a bootstrapped Flutter application foundation:
+The repository now contains the product specification, implementation plan, and a Flutter/Firebase application foundation:
 
 - `SPEC.md`
 - `implementation_plan.md`
 - Flutter app source in `lib/`
 - Platform folders for Android, iOS, web, desktop
-- Unit and widget tests for the current local MVP
+- Firebase Auth, Firestore, Storage, Google Maps, and AR dependencies wired behind repository/service abstractions
+- Unit and widget tests for the current local MVP and AR lifecycle foundation
 
-Firebase configuration, real feature services, and production screens still need to be implemented.
+Native Firebase config files are present locally but ignored by git for GitHub safety. Production hardening, Firebase Cloud Functions, security-rules tests, notification delivery, offline sync, and full AR rendering remain to be implemented.
 
 ## Implementation Strategy
 
@@ -139,7 +149,7 @@ integration_test/
 - [x] Create `AppUser` domain entity.
 - [x] Create user Firestore DTO.
 - [x] Create user repository.
-- [ ] Create user profile creation flow after signup.
+- [x] Create user profile creation flow after signup.
 
 Required fields:
 
@@ -222,8 +232,8 @@ class Place {
 
 - [x] Create `AuraZone` value object.
 - [x] Implement sentiment-to-color mapping.
-- [ ] Implement intensity calculation from memory count.
-- [ ] Implement recency-weighted aura calculation.
+- [x] Implement intensity calculation from memory count.
+- [x] Implement recency-weighted aura calculation.
 
 Required fields:
 
@@ -249,8 +259,8 @@ class AuraZone {
 
 - [x] Create `LegacyTransfer` domain entity.
 - [x] Create transfer repository.
-- [ ] Add transfer state machine.
-- [ ] Add transfer history.
+- [x] Add transfer state machine.
+- [x] Add transfer history.
 
 ## Firestore Collections
 
@@ -476,7 +486,7 @@ Goal: implement the full privacy model described in the spec.
 - [x] Add `Community` privacy type.
 - [x] Add community picker.
 - [x] Add community visibility checks.
-- [ ] Add default privacy preference handling.
+- [x] Add default privacy preference handling.
 - [x] Update Firestore rules for all privacy modes.
 
 Tests:
@@ -697,7 +707,7 @@ Deliverable:
 ### Unit Tests
 
 - [x] Auth repository
-- [ ] Memory validation
+- [x] Memory validation
 - [x] Privacy visibility
 - [x] Place matching
 - [x] Sentiment classification
@@ -711,7 +721,7 @@ Deliverable:
 - [x] Register screen
 - [x] Add memory screen
 - [x] Privacy selector
-- [ ] Memory card
+- [x] Memory card
 - [x] Memory detail
 - [ ] Place detail
 - [ ] Community detail
