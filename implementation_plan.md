@@ -48,8 +48,8 @@ Recommended delivery order:
 - [x] Firebase Storage
 - [ ] Firebase Cloud Functions, where server-side validation or denormalized updates are needed
 - [x] Google Maps SDK
-- [ ] ARCore via `arcore_flutter_plus` for Android
-- [ ] ARKit via `arkit_plugin` for iOS
+- [x] ARCore via `arcore_flutter_plus` for Android
+- [x] ARKit via `arkit_plugin` for iOS
 - [x] On-device sentiment analysis foundation with swappable VADER interface
 - [x] BLoC for state management
 - [x] Clean Architecture split into data, domain, and presentation layers
@@ -499,7 +499,7 @@ Goal: implement the first AR experience with aura zones and memory orbs.
 - [x] Add non-AR fallback to 2D map.
 - [x] Add AR permissions flow.
 - [x] Add AR screen.
-- [ ] Start and stop AR sessions safely.
+- [x] Start and stop AR sessions safely.
 - [ ] Query nearby places for AR display.
 - [ ] Convert nearby place positions into AR anchors or relative scene positions.
 - [ ] Render aura dome or sphere.

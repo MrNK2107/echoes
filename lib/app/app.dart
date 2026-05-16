@@ -9,10 +9,14 @@ import 'package:echoes/core/media/image_picker_media_service.dart';
 import 'package:echoes/core/media/local_media_upload_service.dart';
 import 'package:echoes/core/media/media_picker_service.dart';
 import 'package:echoes/core/media/media_upload_service.dart';
+import 'package:echoes/features/ar/data/device_ar_availability_service.dart';
+import 'package:echoes/features/ar/data/device_ar_permission_service.dart';
 import 'package:echoes/features/ar/data/local_ar_availability_service.dart';
 import 'package:echoes/features/ar/data/local_ar_permission_service.dart';
+import 'package:echoes/features/ar/data/local_ar_session_service.dart';
 import 'package:echoes/features/ar/domain/ar_availability_service.dart';
 import 'package:echoes/features/ar/domain/ar_permission_service.dart';
+import 'package:echoes/features/ar/domain/ar_session_service.dart';
 import 'package:echoes/features/aura/data/lexicon_sentiment_analyzer.dart';
 import 'package:echoes/features/aura/domain/sentiment_analyzer.dart';
 import 'package:echoes/features/auth/data/firebase_auth_repository.dart';
@@ -68,6 +72,12 @@ class EchoesApp extends StatelessWidget {
     final legacyTransferRepository = useFirebase
         ? FirestoreLegacyTransferRepository()
         : LocalLegacyTransferRepository();
+    final arAvailabilityService = useFirebase
+        ? const DeviceArAvailabilityService()
+        : const LocalArAvailabilityService();
+    final arPermissionService = useFirebase
+        ? const DeviceArPermissionService()
+        : const LocalArPermissionService();
 
     return MaterialApp(
       title: appConfig.appTitle,
@@ -75,9 +85,7 @@ class EchoesApp extends StatelessWidget {
       theme: EchoesTheme.dark,
       home: MultiRepositoryProvider(
         providers: [
-          RepositoryProvider<AuthRepository>(
-            create: (_) => authRepository,
-          ),
+          RepositoryProvider<AuthRepository>(create: (_) => authRepository),
           RepositoryProvider<AppUserRepository>(
             create: (_) => appUserRepository,
           ),
@@ -97,17 +105,16 @@ class EchoesApp extends StatelessWidget {
             create: (_) => LexiconSentimentAnalyzer(),
           ),
           RepositoryProvider<ArAvailabilityService>(
-            create: (_) => const LocalArAvailabilityService(),
+            create: (_) => arAvailabilityService,
           ),
           RepositoryProvider<ArPermissionService>(
-            create: (_) => const LocalArPermissionService(),
+            create: (_) => arPermissionService,
           ),
-          RepositoryProvider<PlaceRepository>(
-            create: (_) => placeRepository,
+          RepositoryProvider<ArSessionService>(
+            create: (_) => LocalArSessionService(),
           ),
-          RepositoryProvider<MemoryRepository>(
-            create: (_) => memoryRepository,
-          ),
+          RepositoryProvider<PlaceRepository>(create: (_) => placeRepository),
+          RepositoryProvider<MemoryRepository>(create: (_) => memoryRepository),
           RepositoryProvider<CommunityRepository>(
             create: (_) => communityRepository,
           ),

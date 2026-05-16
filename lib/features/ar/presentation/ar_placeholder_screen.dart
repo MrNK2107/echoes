@@ -1,6 +1,7 @@
 import 'package:echoes/app/theme.dart';
 import 'package:echoes/features/ar/domain/ar_availability_service.dart';
 import 'package:echoes/features/ar/domain/ar_permission_service.dart';
+import 'package:echoes/features/ar/domain/ar_session_service.dart';
 import 'package:echoes/features/ar/presentation/ar_cubit.dart';
 import 'package:echoes/features/ar/presentation/ar_state.dart';
 import 'package:echoes/features/ar/presentation/ar_status.dart';
@@ -17,6 +18,7 @@ class ArPlaceholderScreen extends StatelessWidget {
       create: (context) => ArCubit(
         availabilityService: context.read<ArAvailabilityService>(),
         permissionService: context.read<ArPermissionService>(),
+        sessionService: context.read<ArSessionService>(),
       )..checkAvailability(),
       child: const _ArView(),
     );
@@ -38,6 +40,9 @@ class _ArView extends StatelessWidget {
             isPermanentlyDenied: state.isPermissionPermanentlyDenied,
           ),
           ArStatus.ready => const _ArReadyPlaceholder(),
+          ArStatus.starting => const _ArSessionPlaceholder(isStarting: true),
+          ArStatus.running => const _ArSessionPlaceholder(),
+          ArStatus.stopping => const _ArSessionPlaceholder(isStopping: true),
           ArStatus.unsupported => FeaturePlaceholder(
             icon: Icons.map_outlined,
             title: 'AR is not available here.',
@@ -119,10 +124,83 @@ class _ArReadyPlaceholder extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'AR support is available. The next slice will start the camera session and render nearby aura zones.',
+              'AR support is available. Start the camera session to prepare the aura scene.',
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                 color: EchoesColors.textSecondary,
               ),
+            ),
+            const SizedBox(height: 24),
+            FilledButton.icon(
+              key: const ValueKey('startArSessionButton'),
+              onPressed: () => context.read<ArCubit>().startSession(),
+              icon: const Icon(Icons.view_in_ar_outlined),
+              label: const Text('Start aura view'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ArSessionPlaceholder extends StatelessWidget {
+  const _ArSessionPlaceholder({
+    this.isStarting = false,
+    this.isStopping = false,
+  });
+
+  final bool isStarting;
+  final bool isStopping;
+
+  @override
+  Widget build(BuildContext context) {
+    final isBusy = isStarting || isStopping;
+
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: EchoesColors.surface,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: EchoesColors.elevatedSurface),
+                ),
+                child: Center(
+                  child: isBusy
+                      ? const CircularProgressIndicator()
+                      : Icon(
+                          Icons.view_in_ar_outlined,
+                          color: EchoesColors.sunsetGold,
+                          size: 72,
+                        ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              isStarting
+                  ? 'Starting aura view'
+                  : isStopping
+                  ? 'Stopping aura view'
+                  : 'Aura view is running',
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                color: EchoesColors.textPrimary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              key: const ValueKey('stopArSessionButton'),
+              onPressed: isBusy
+                  ? null
+                  : () => context.read<ArCubit>().stopSession(),
+              icon: const Icon(Icons.close_fullscreen),
+              label: const Text('Stop aura view'),
             ),
           ],
         ),

@@ -1,5 +1,6 @@
 import 'package:echoes/features/ar/data/local_ar_availability_service.dart';
 import 'package:echoes/features/ar/data/local_ar_permission_service.dart';
+import 'package:echoes/features/ar/data/local_ar_session_service.dart';
 import 'package:echoes/features/ar/domain/ar_availability.dart';
 import 'package:echoes/features/ar/domain/ar_permission_state.dart';
 import 'package:echoes/features/ar/presentation/ar_cubit.dart';
@@ -16,6 +17,7 @@ void main() {
         permissionService: const LocalArPermissionService(
           initialPermission: ArPermissionState.granted,
         ),
+        sessionService: LocalArSessionService(),
       );
 
       await cubit.checkAvailability();
@@ -28,6 +30,7 @@ void main() {
       final cubit = ArCubit(
         availabilityService: const LocalArAvailabilityService(),
         permissionService: const LocalArPermissionService(),
+        sessionService: LocalArSessionService(),
       );
 
       await cubit.checkAvailability();
@@ -44,6 +47,7 @@ void main() {
         permissionService: const LocalArPermissionService(
           initialPermission: ArPermissionState.denied,
         ),
+        sessionService: LocalArSessionService(),
       );
 
       await cubit.checkAvailability();
@@ -61,12 +65,59 @@ void main() {
           initialPermission: ArPermissionState.denied,
           requestedPermission: ArPermissionState.granted,
         ),
+        sessionService: LocalArSessionService(),
       );
 
       await cubit.requestPermission();
 
       expect(cubit.state.status, ArStatus.ready);
       await cubit.close();
+    });
+
+    test('starts and stops an AR session safely', () async {
+      final sessionService = LocalArSessionService();
+      final cubit = ArCubit(
+        availabilityService: const LocalArAvailabilityService(
+          availability: ArAvailability.supported,
+        ),
+        permissionService: const LocalArPermissionService(
+          initialPermission: ArPermissionState.granted,
+        ),
+        sessionService: sessionService,
+      );
+
+      await cubit.checkAvailability();
+      await cubit.startSession();
+
+      expect(cubit.state.status, ArStatus.running);
+      expect(cubit.state.isSessionRunning, isTrue);
+      expect(sessionService.isRunning, isTrue);
+
+      await cubit.stopSession();
+
+      expect(cubit.state.status, ArStatus.ready);
+      expect(cubit.state.isSessionRunning, isFalse);
+      expect(sessionService.isRunning, isFalse);
+      await cubit.close();
+    });
+
+    test('stops a running AR session when closed', () async {
+      final sessionService = LocalArSessionService();
+      final cubit = ArCubit(
+        availabilityService: const LocalArAvailabilityService(
+          availability: ArAvailability.supported,
+        ),
+        permissionService: const LocalArPermissionService(
+          initialPermission: ArPermissionState.granted,
+        ),
+        sessionService: sessionService,
+      );
+
+      await cubit.checkAvailability();
+      await cubit.startSession();
+      await cubit.close();
+
+      expect(sessionService.isRunning, isFalse);
     });
   });
 }

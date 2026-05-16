@@ -4,6 +4,9 @@ enum ArStatus {
   permissionRequired,
   permissionDenied,
   ready,
+  starting,
+  running,
+  stopping,
   unsupported,
   failure,
 }
