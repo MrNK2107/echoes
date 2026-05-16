@@ -12,9 +12,11 @@ import 'package:echoes/features/auth/domain/auth_repository.dart';
 import 'package:echoes/features/auth/presentation/auth_cubit.dart';
 import 'package:echoes/features/communities/data/local_community_repository.dart';
 import 'package:echoes/features/communities/domain/community_repository.dart';
+import 'package:echoes/features/memories/application/pending_memory_upload_sync.dart';
 import 'package:echoes/features/memories/data/local_memory_repository.dart';
 import 'package:echoes/features/memories/data/local_pending_memory_upload_queue.dart';
 import 'package:echoes/features/memories/domain/memory_repository.dart';
+import 'package:echoes/features/memories/domain/pending_memory_upload.dart';
 import 'package:echoes/features/memories/domain/pending_memory_upload_queue.dart';
 import 'package:echoes/features/memories/presentation/add_memory_placeholder_screen.dart';
 import 'package:echoes/features/places/data/local_place_repository.dart';
@@ -88,14 +90,49 @@ void main() {
 
       expect(find.text('friend'), findsOneWidget);
     });
+
+    testWidgets('shows pending upload status and retries queued uploads', (
+      tester,
+    ) async {
+      final uploadQueue = LocalPendingMemoryUploadQueue();
+      await uploadQueue.enqueue(
+        PendingMemoryUpload(
+          memoryId: 'memory-1',
+          userId: 'user-1',
+          imagePath: '/tmp/memory.jpg',
+          createdAt: DateTime.utc(2026, 5, 16),
+        ),
+      );
+
+      await tester.pumpWidget(_TestApp(uploadQueue: uploadQueue));
+      await tester.pumpAndSettle();
+
+      expect(find.text('1 image upload pending'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('retryPendingUploadsButton')),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byKey(const ValueKey('retryPendingUploadsButton')));
+      await tester.pumpAndSettle();
+
+      expect(await uploadQueue.pendingUploads(), isEmpty);
+      uploadQueue.dispose();
+    });
   });
 }
 
 class _TestApp extends StatelessWidget {
-  const _TestApp();
+  const _TestApp({this.uploadQueue});
+
+  final LocalPendingMemoryUploadQueue? uploadQueue;
 
   @override
   Widget build(BuildContext context) {
+    final memoryRepository = LocalMemoryRepository();
+    final pendingUploadQueue = uploadQueue ?? LocalPendingMemoryUploadQueue();
+    const mediaUploadService = _NoOpMediaUploadService();
+
     return MultiRepositoryProvider(
       providers: [
         RepositoryProvider<AuthRepository>(
@@ -114,7 +151,7 @@ class _TestApp extends StatelessWidget {
           create: (_) => const _NoOpImageCompressionService(),
         ),
         RepositoryProvider<MediaUploadService>(
-          create: (_) => const _NoOpMediaUploadService(),
+          create: (_) => mediaUploadService,
         ),
         RepositoryProvider<SentimentAnalyzer>(
           create: (_) => LexiconSentimentAnalyzer(),
@@ -122,11 +159,16 @@ class _TestApp extends StatelessWidget {
         RepositoryProvider<PlaceRepository>(
           create: (_) => LocalPlaceRepository(now: DateTime.utc(2026, 5, 15)),
         ),
-        RepositoryProvider<MemoryRepository>(
-          create: (_) => LocalMemoryRepository(),
-        ),
+        RepositoryProvider<MemoryRepository>(create: (_) => memoryRepository),
         RepositoryProvider<PendingMemoryUploadQueue>(
-          create: (_) => LocalPendingMemoryUploadQueue(),
+          create: (_) => pendingUploadQueue,
+        ),
+        RepositoryProvider<PendingMemoryUploadSync>(
+          create: (_) => PendingMemoryUploadSync(
+            queue: pendingUploadQueue,
+            mediaUploadService: mediaUploadService,
+            memoryRepository: memoryRepository,
+          ),
         ),
         RepositoryProvider<CommunityRepository>(
           create: (_) => LocalCommunityRepository(),

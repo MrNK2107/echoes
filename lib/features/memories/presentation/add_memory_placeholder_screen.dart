@@ -7,7 +7,9 @@ import 'package:echoes/features/aura/domain/sentiment_analyzer.dart';
 import 'package:echoes/features/auth/presentation/auth_cubit.dart';
 import 'package:echoes/features/communities/domain/community.dart';
 import 'package:echoes/features/communities/domain/community_repository.dart';
+import 'package:echoes/features/memories/application/pending_memory_upload_sync.dart';
 import 'package:echoes/features/memories/domain/memory_repository.dart';
+import 'package:echoes/features/memories/domain/pending_memory_upload.dart';
 import 'package:echoes/features/memories/domain/pending_memory_upload_queue.dart';
 import 'package:echoes/features/memories/presentation/add_memory_cubit.dart';
 import 'package:echoes/features/memories/presentation/add_memory_state.dart';
@@ -106,6 +108,8 @@ class _AddMemoryViewState extends State<_AddMemoryView> {
                   ),
                 ),
                 const SizedBox(height: 24),
+                const _PendingUploadStatusBanner(),
+                const SizedBox(height: 16),
                 const _PhotoSelector(),
                 const SizedBox(height: 16),
                 TextFormField(
@@ -168,6 +172,58 @@ class _AddMemoryViewState extends State<_AddMemoryView> {
     context.read<AddMemoryCubit>().submit(
       userId: session.userId,
       textContent: _textController.text,
+    );
+  }
+}
+
+class _PendingUploadStatusBanner extends StatelessWidget {
+  const _PendingUploadStatusBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<List<PendingMemoryUpload>>(
+      stream: context.read<PendingMemoryUploadQueue>().watchPendingUploads(),
+      builder: (context, snapshot) {
+        final pendingUploads = snapshot.data ?? const <PendingMemoryUpload>[];
+        if (pendingUploads.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        return DecoratedBox(
+          decoration: BoxDecoration(
+            color: EchoesColors.elevatedSurface,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: EchoesColors.surface),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                const Icon(Icons.sync_problem_outlined),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    '${pendingUploads.length} image upload pending',
+                    key: const ValueKey('pendingUploadStatusText'),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: EchoesColors.textPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                TextButton.icon(
+                  key: const ValueKey('retryPendingUploadsButton'),
+                  onPressed: () => context
+                      .read<PendingMemoryUploadSync>()
+                      .retryPendingUploads(),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Retry'),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

@@ -13,7 +13,7 @@
 
 Last updated: 2026-05-16
 
-- Overall checklist completion: 245 / 387 items complete, about 63%.
+- Overall checklist completion: 246 / 387 items complete, about 64%.
 - Internal Alpha feature scope: mostly implemented in code; device smoke testing and security-rules tests remain.
 - Private Beta feature scope: partially implemented; AR rendering, transfer initiation UI, and tagged-user search are in place; rules tests and deeper AR interaction remain.
 - Public MVP feature scope: in progress; offline cache, accessibility, performance, notifications, and production hardening remain.
@@ -626,7 +626,7 @@ Goal: improve reliability on mobile networks.
 - [ ] Add local image caching.
 - [x] Add pending upload queue.
 - [x] Retry failed memory uploads.
-- [ ] Add sync status indicators.
+- [x] Add sync status indicators.
 - [ ] Add cache management settings.
 
 Recommended local storage:
