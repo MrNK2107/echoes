@@ -517,7 +517,7 @@ Goal: implement the first AR experience with aura zones and memory orbs.
 - [x] Add aura pulse animation.
 - [x] Render memory orbs inside aura.
 - [x] Limit visible orbs for performance.
-- [ ] Add tap handling on aura.
+- [x] Add tap handling on aura.
 - [ ] Add tap handling on memory orb.
 - [ ] Open memory detail from orb tap.
 - [x] Add distance and direction indicators.

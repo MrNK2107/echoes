@@ -111,10 +111,16 @@ void main() {
       expect(cubit.state.scenePlaces, hasLength(1));
       expect(sessionService.isRunning, isTrue);
 
+      cubit.selectScenePlace('place-1');
+
+      expect(cubit.state.selectedScenePlaceId, 'place-1');
+      expect(cubit.state.selectedScenePlace?.place.name, 'Old Courtyard');
+
       await cubit.stopSession();
 
       expect(cubit.state.status, ArStatus.ready);
       expect(cubit.state.isSessionRunning, isFalse);
+      expect(cubit.state.selectedScenePlaceId, isNull);
       expect(sessionService.isRunning, isFalse);
       await cubit.close();
     });

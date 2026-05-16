@@ -112,6 +112,7 @@ class ArCubit extends Cubit<ArState> {
           location: location,
           nearbyPlaces: places,
           scenePlaces: scenePlaces,
+          clearSelectedScenePlace: true,
         ),
       );
     } on Object catch (error) {
@@ -133,7 +134,13 @@ class ArCubit extends Cubit<ArState> {
     emit(state.copyWith(status: ArStatus.stopping));
     try {
       await _sessionService.stop();
-      emit(state.copyWith(status: ArStatus.ready, isSessionRunning: false));
+      emit(
+        state.copyWith(
+          status: ArStatus.ready,
+          isSessionRunning: false,
+          clearSelectedScenePlace: true,
+        ),
+      );
     } on Object catch (error) {
       emit(
         state.copyWith(
@@ -142,6 +149,19 @@ class ArCubit extends Cubit<ArState> {
         ),
       );
     }
+  }
+
+  void selectScenePlace(String placeId) {
+    if (state.status != ArStatus.running) {
+      return;
+    }
+    final exists = state.scenePlaces.any(
+      (scenePlace) => scenePlace.place.id == placeId,
+    );
+    if (!exists) {
+      return;
+    }
+    emit(state.copyWith(selectedScenePlaceId: placeId));
   }
 
   @override

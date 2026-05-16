@@ -13,6 +13,7 @@ class ArState extends Equatable {
     this.location,
     this.nearbyPlaces = const [],
     this.scenePlaces = const [],
+    this.selectedScenePlaceId,
   });
 
   const ArState.initial() : this(status: ArStatus.initial);
@@ -24,6 +25,16 @@ class ArState extends Equatable {
   final DeviceLocation? location;
   final List<Place> nearbyPlaces;
   final List<ArScenePlace> scenePlaces;
+  final String? selectedScenePlaceId;
+
+  ArScenePlace? get selectedScenePlace {
+    for (final scenePlace in scenePlaces) {
+      if (scenePlace.place.id == selectedScenePlaceId) {
+        return scenePlace;
+      }
+    }
+    return null;
+  }
 
   ArState copyWith({
     ArStatus? status,
@@ -33,6 +44,8 @@ class ArState extends Equatable {
     DeviceLocation? location,
     List<Place>? nearbyPlaces,
     List<ArScenePlace>? scenePlaces,
+    String? selectedScenePlaceId,
+    bool clearSelectedScenePlace = false,
   }) {
     return ArState(
       status: status ?? this.status,
@@ -43,6 +56,9 @@ class ArState extends Equatable {
       location: location ?? this.location,
       nearbyPlaces: nearbyPlaces ?? this.nearbyPlaces,
       scenePlaces: scenePlaces ?? this.scenePlaces,
+      selectedScenePlaceId: clearSelectedScenePlace
+          ? null
+          : selectedScenePlaceId ?? this.selectedScenePlaceId,
     );
   }
 
@@ -55,5 +71,6 @@ class ArState extends Equatable {
     location,
     nearbyPlaces,
     scenePlaces,
+    selectedScenePlaceId,
   ];
 }

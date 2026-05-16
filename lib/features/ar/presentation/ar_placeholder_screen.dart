@@ -171,7 +171,13 @@ class _ArSessionPlaceholder extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
-              child: _ArScenePreview(scenePlaces: scenePlaces, isBusy: isBusy),
+              child: _ArScenePreview(
+                scenePlaces: scenePlaces,
+                selectedPlaceId: state?.selectedScenePlaceId,
+                isBusy: isBusy,
+                onScenePlaceTap: (placeId) =>
+                    context.read<ArCubit>().selectScenePlace(placeId),
+              ),
             ),
             const SizedBox(height: 16),
             Text(
@@ -188,19 +194,7 @@ class _ArSessionPlaceholder extends StatelessWidget {
             ),
             if (scenePlaces.isNotEmpty) ...[
               const SizedBox(height: 12),
-              Text(
-                scenePlaces
-                    .map(
-                      (scenePlace) =>
-                          '${scenePlace.place.name} · ${scenePlace.distanceLabel}',
-                    )
-                    .join('\n'),
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: EchoesColors.textSecondary,
-                  height: 1.35,
-                ),
-              ),
+              _SelectedScenePlaceSummary(state: state),
             ],
             const SizedBox(height: 16),
             OutlinedButton.icon(
@@ -229,10 +223,17 @@ class _ArSessionPlaceholder extends StatelessWidget {
 }
 
 class _ArScenePreview extends StatefulWidget {
-  const _ArScenePreview({required this.scenePlaces, required this.isBusy});
+  const _ArScenePreview({
+    required this.scenePlaces,
+    required this.isBusy,
+    required this.onScenePlaceTap,
+    this.selectedPlaceId,
+  });
 
   final List<ArScenePlace> scenePlaces;
   final bool isBusy;
+  final String? selectedPlaceId;
+  final ValueChanged<String> onScenePlaceTap;
 
   @override
   State<_ArScenePreview> createState() => _ArScenePreviewState();
@@ -267,27 +268,65 @@ class _ArScenePreviewState extends State<_ArScenePreview>
       ),
       child: widget.isBusy
           ? const Center(child: CircularProgressIndicator())
-          : AnimatedBuilder(
-              animation: _pulseController,
-              builder: (context, _) {
-                return CustomPaint(
-                  painter: _ArScenePainter(
-                    scenePlaces: widget.scenePlaces,
-                    pulse: _pulseController.value,
+          : LayoutBuilder(
+              builder: (context, constraints) {
+                final size = constraints.biggest;
+                return GestureDetector(
+                  key: const ValueKey('arSceneTapLayer'),
+                  behavior: HitTestBehavior.opaque,
+                  onTapDown: (details) {
+                    final hitPlaceId = _hitTestScenePlace(
+                      details.localPosition,
+                      size,
+                    );
+                    if (hitPlaceId != null) {
+                      widget.onScenePlaceTap(hitPlaceId);
+                    }
+                  },
+                  child: AnimatedBuilder(
+                    animation: _pulseController,
+                    builder: (context, _) {
+                      return CustomPaint(
+                        painter: _ArScenePainter(
+                          scenePlaces: widget.scenePlaces,
+                          selectedPlaceId: widget.selectedPlaceId,
+                          pulse: _pulseController.value,
+                        ),
+                        child: const SizedBox.expand(),
+                      );
+                    },
                   ),
-                  child: const SizedBox.expand(),
                 );
               },
             ),
     );
   }
+
+  String? _hitTestScenePlace(Offset point, Size size) {
+    final center = Offset(size.width / 2, size.height * 0.72);
+    final unit = size.shortestSide / 54;
+    for (final scenePlace in widget.scenePlaces.reversed) {
+      final position =
+          center + Offset(scenePlace.sceneX * unit, scenePlace.sceneZ * unit);
+      final radius = scenePlace.auraRadius * unit * 1.12;
+      if ((point - position).distance <= radius) {
+        return scenePlace.place.id;
+      }
+    }
+    return null;
+  }
 }
 
 class _ArScenePainter extends CustomPainter {
-  const _ArScenePainter({required this.scenePlaces, required this.pulse});
+  const _ArScenePainter({
+    required this.scenePlaces,
+    required this.pulse,
+    this.selectedPlaceId,
+  });
 
   final List<ArScenePlace> scenePlaces;
   final double pulse;
+  final String? selectedPlaceId;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -328,9 +367,11 @@ class _ArScenePainter extends CustomPainter {
       final opacity = scenePlace.auraOpacity;
       final auraPaint = Paint()..color = color.withValues(alpha: opacity);
       final auraStrokePaint = Paint()
-        ..color = color.withValues(alpha: 0.75)
+        ..color = color.withValues(
+          alpha: scenePlace.place.id == selectedPlaceId ? 1 : 0.75,
+        )
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 2;
+        ..strokeWidth = scenePlace.place.id == selectedPlaceId ? 4 : 2;
 
       canvas.drawCircle(position, radius, auraPaint);
       canvas.drawCircle(position, radius, auraStrokePaint);
@@ -385,6 +426,37 @@ class _ArScenePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _ArScenePainter oldDelegate) {
-    return oldDelegate.pulse != pulse || oldDelegate.scenePlaces != scenePlaces;
+    return oldDelegate.pulse != pulse ||
+        oldDelegate.selectedPlaceId != selectedPlaceId ||
+        oldDelegate.scenePlaces != scenePlaces;
+  }
+}
+
+class _SelectedScenePlaceSummary extends StatelessWidget {
+  const _SelectedScenePlaceSummary({required this.state});
+
+  final ArState? state;
+
+  @override
+  Widget build(BuildContext context) {
+    final selected = state?.selectedScenePlace;
+    final scenePlaces = state?.scenePlaces ?? const <ArScenePlace>[];
+    final lines = selected == null
+        ? scenePlaces
+              .map(
+                (scenePlace) =>
+                    '${scenePlace.place.name} - ${scenePlace.directionLabel} - ${scenePlace.distanceLabel}',
+              )
+              .join('\n')
+        : '${selected.place.name}\n${selected.directionLabel} - ${selected.distanceLabel} - ${selected.visibleOrbCount} visible orbs';
+
+    return Text(
+      lines,
+      textAlign: TextAlign.center,
+      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+        color: EchoesColors.textSecondary,
+        height: 1.35,
+      ),
+    );
   }
 }
