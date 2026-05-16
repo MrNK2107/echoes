@@ -108,6 +108,7 @@ void main() {
       expect(cubit.state.status, ArStatus.running);
       expect(cubit.state.isSessionRunning, isTrue);
       expect(cubit.state.nearbyPlaces, hasLength(1));
+      expect(cubit.state.scenePlaces, hasLength(1));
       expect(sessionService.isRunning, isTrue);
 
       await cubit.stopSession();

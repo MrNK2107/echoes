@@ -511,7 +511,7 @@ Goal: implement the first AR experience with aura zones and memory orbs.
 - [x] Add AR screen.
 - [x] Start and stop AR sessions safely.
 - [x] Query nearby places for AR display.
-- [ ] Convert nearby place positions into AR anchors or relative scene positions.
+- [x] Convert nearby place positions into AR anchors or relative scene positions.
 - [ ] Render aura dome or sphere.
 - [ ] Apply aura color and transparency.
 - [ ] Add aura pulse animation.

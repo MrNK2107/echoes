@@ -3,6 +3,7 @@ import 'package:echoes/features/ar/domain/ar_availability.dart';
 import 'package:echoes/features/ar/domain/ar_availability_service.dart';
 import 'package:echoes/features/ar/domain/ar_permission_service.dart';
 import 'package:echoes/features/ar/domain/ar_permission_state.dart';
+import 'package:echoes/features/ar/domain/ar_scene_mapper.dart';
 import 'package:echoes/features/ar/domain/ar_session_service.dart';
 import 'package:echoes/features/ar/presentation/ar_state.dart';
 import 'package:echoes/features/ar/presentation/ar_status.dart';
@@ -16,7 +17,9 @@ class ArCubit extends Cubit<ArState> {
     required ArSessionService sessionService,
     required LocationService locationService,
     required PlaceRepository placeRepository,
+    ArSceneMapper sceneMapper = const ArSceneMapper(),
   }) : _sessionService = sessionService,
+       _sceneMapper = sceneMapper,
        _placeRepository = placeRepository,
        _locationService = locationService,
        _permissionService = permissionService,
@@ -30,6 +33,7 @@ class ArCubit extends Cubit<ArState> {
   final ArSessionService _sessionService;
   final LocationService _locationService;
   final PlaceRepository _placeRepository;
+  final ArSceneMapper _sceneMapper;
 
   Future<void> checkAvailability() async {
     emit(state.copyWith(status: ArStatus.checking));
@@ -96,6 +100,10 @@ class ArCubit extends Cubit<ArState> {
             radiusMeters: nearbyRadiusMeters,
           )
           .first;
+      final scenePlaces = _sceneMapper.mapPlaces(
+        origin: location,
+        places: places,
+      );
       await _sessionService.start();
       emit(
         state.copyWith(
@@ -103,6 +111,7 @@ class ArCubit extends Cubit<ArState> {
           isSessionRunning: true,
           location: location,
           nearbyPlaces: places,
+          scenePlaces: scenePlaces,
         ),
       );
     } on Object catch (error) {

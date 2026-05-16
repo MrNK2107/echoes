@@ -161,6 +161,7 @@ class _ArSessionPlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isBusy = isStarting || isStopping;
+    final scenePlaces = state?.scenePlaces ?? const [];
 
     return SafeArea(
       child: Padding(
@@ -199,6 +200,22 @@ class _ArSessionPlaceholder extends StatelessWidget {
                 fontWeight: FontWeight.w700,
               ),
             ),
+            if (scenePlaces.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                scenePlaces
+                    .map(
+                      (scenePlace) =>
+                          '${scenePlace.place.name} · ${scenePlace.distanceLabel}',
+                    )
+                    .join('\n'),
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: EchoesColors.textSecondary,
+                  height: 1.35,
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
             OutlinedButton.icon(
               key: const ValueKey('stopArSessionButton'),

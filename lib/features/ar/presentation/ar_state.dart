@@ -1,4 +1,5 @@
 import 'package:echoes/core/location/device_location.dart';
+import 'package:echoes/features/ar/domain/ar_scene_place.dart';
 import 'package:echoes/features/ar/presentation/ar_status.dart';
 import 'package:echoes/features/places/domain/place.dart';
 import 'package:equatable/equatable.dart';
@@ -11,6 +12,7 @@ class ArState extends Equatable {
     this.isSessionRunning = false,
     this.location,
     this.nearbyPlaces = const [],
+    this.scenePlaces = const [],
   });
 
   const ArState.initial() : this(status: ArStatus.initial);
@@ -21,6 +23,7 @@ class ArState extends Equatable {
   final bool isSessionRunning;
   final DeviceLocation? location;
   final List<Place> nearbyPlaces;
+  final List<ArScenePlace> scenePlaces;
 
   ArState copyWith({
     ArStatus? status,
@@ -29,6 +32,7 @@ class ArState extends Equatable {
     bool? isSessionRunning,
     DeviceLocation? location,
     List<Place>? nearbyPlaces,
+    List<ArScenePlace>? scenePlaces,
   }) {
     return ArState(
       status: status ?? this.status,
@@ -38,6 +42,7 @@ class ArState extends Equatable {
       isSessionRunning: isSessionRunning ?? this.isSessionRunning,
       location: location ?? this.location,
       nearbyPlaces: nearbyPlaces ?? this.nearbyPlaces,
+      scenePlaces: scenePlaces ?? this.scenePlaces,
     );
   }
 
@@ -49,5 +54,6 @@ class ArState extends Equatable {
     isSessionRunning,
     location,
     nearbyPlaces,
+    scenePlaces,
   ];
 }
