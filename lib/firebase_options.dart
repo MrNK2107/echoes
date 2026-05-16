@@ -3,47 +3,87 @@ import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
 
 class DefaultFirebaseOptions {
-  static FirebaseOptions get currentPlatform {
+  static FirebaseOptions? get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        'Firebase options for web are not configured yet. '
-        'Run FlutterFire CLI for web support.',
-      );
+      return null;
     }
 
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
-        return android;
+        return androidFromEnvironment;
       case TargetPlatform.iOS:
-        throw UnsupportedError(
-          'Firebase options for iOS are not configured yet. '
-          'Run FlutterFire CLI for iOS support.',
-        );
+        return iosFromEnvironment;
       case TargetPlatform.macOS:
-        throw UnsupportedError(
-          'Firebase options for macOS are not configured yet. '
-          'Run FlutterFire CLI for macOS support.',
-        );
+        return null;
       case TargetPlatform.windows:
-        throw UnsupportedError(
-          'Firebase options for Windows are not configured yet. '
-          'Run FlutterFire CLI for Windows support.',
-        );
+        return null;
       case TargetPlatform.linux:
-        throw UnsupportedError(
-          'Firebase options for Linux are not configured yet. '
-          'Run FlutterFire CLI for Linux support.',
-        );
+        return null;
       case TargetPlatform.fuchsia:
-        throw UnsupportedError('Firebase is not configured for Fuchsia.');
+        return null;
     }
   }
 
-  static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyCs9zKv84D957Lu4309vrViA8OMsxAIW-0',
-    appId: '1:1078284126632:android:173f8d5f27ef790edaf59d',
-    messagingSenderId: '1078284126632',
-    projectId: 'echoes-d0cef',
-    storageBucket: 'echoes-d0cef.firebasestorage.app',
+  static FirebaseOptions? get androidFromEnvironment => _fromEnvironment(
+    apiKey: _androidApiKey,
+    appId: _androidAppId,
+    messagingSenderId: _projectNumber,
+    projectId: _projectId,
+    storageBucket: _storageBucket,
   );
+
+  static FirebaseOptions? get iosFromEnvironment => _fromEnvironment(
+    apiKey: _iosApiKey,
+    appId: _iosAppId,
+    messagingSenderId: _projectNumber,
+    projectId: _projectId,
+    storageBucket: _storageBucket,
+    iosBundleId: _iosBundleId,
+  );
+
+  static FirebaseOptions? _fromEnvironment({
+    required String apiKey,
+    required String appId,
+    required String messagingSenderId,
+    required String projectId,
+    required String storageBucket,
+    String? iosBundleId,
+  }) {
+    final requiredValues = [
+      apiKey,
+      appId,
+      messagingSenderId,
+      projectId,
+      storageBucket,
+    ];
+    if (requiredValues.any((value) => value.isEmpty)) {
+      return null;
+    }
+
+    return FirebaseOptions(
+      apiKey: apiKey,
+      appId: appId,
+      messagingSenderId: messagingSenderId,
+      projectId: projectId,
+      storageBucket: storageBucket,
+      iosBundleId: iosBundleId,
+    );
+  }
+
+  static const _projectNumber = String.fromEnvironment(
+    'FIREBASE_PROJECT_NUMBER',
+  );
+  static const _projectId = String.fromEnvironment('FIREBASE_PROJECT_ID');
+  static const _storageBucket = String.fromEnvironment(
+    'FIREBASE_STORAGE_BUCKET',
+  );
+  static const _androidAppId = String.fromEnvironment(
+    'FIREBASE_ANDROID_APP_ID',
+  );
+  static const _androidApiKey = String.fromEnvironment(
+    'FIREBASE_ANDROID_API_KEY',
+  );
+  static const _iosAppId = String.fromEnvironment('FIREBASE_IOS_APP_ID');
+  static const _iosBundleId = String.fromEnvironment('FIREBASE_IOS_BUNDLE_ID');
+  static const _iosApiKey = String.fromEnvironment('FIREBASE_IOS_API_KEY');
 }

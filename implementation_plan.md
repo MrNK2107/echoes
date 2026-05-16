@@ -122,8 +122,8 @@ integration_test/
 
 - [x] Create Flutter application in the repository.
 - [x] Add Android and iOS platform folders.
-- [ ] Configure Firebase project.
-- [ ] Add Firebase config files for Android and iOS.
+- [x] Configure Firebase project.
+- [x] Add Firebase config files for Android and iOS.
 - [x] Add base dependencies.
 - [x] Configure linting.
 - [x] Configure app flavors or environment files for development and production.
@@ -287,7 +287,7 @@ Goal: establish a working Flutter application with Firebase-ready structure.
 - [ ] Confirm app runs on Android emulator.
 - [ ] Confirm app runs on iOS simulator, if available.
 - [x] Add package dependencies.
-- [ ] Configure Firebase.
+- [x] Configure Firebase.
 - [x] Add app theme.
 - [x] Add app router.
 - [x] Add bottom navigation shell with placeholder tabs:
@@ -856,3 +856,4 @@ Mitigation:
 
 - [x] Add profile-backed default privacy coverage in add-memory tests.
 - [x] Start Firebase service adapters behind existing repositories.
+- [x] Move Firebase native config files into platform folders and keep private/admin keys out of git.

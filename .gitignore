@@ -36,6 +36,16 @@ migrate_working_dir/
 .env
 .env.*
 !.env.example
+google-services.json
+GoogleService-Info.plist
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+*firebase-adminsdk*.json
+serviceAccount*.json
+*-service-account*.json
+*.pem
+*.p12
+*.key
 
 # Symbolication related
 app.*.symbols

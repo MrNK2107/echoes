@@ -5,8 +5,12 @@ import 'package:flutter/widgets.dart';
 class FirebaseBootstrap {
   static Future<void> initialize() async {
     WidgetsFlutterBinding.ensureInitialized();
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
+    final options = DefaultFirebaseOptions.currentPlatform;
+    if (options == null) {
+      await Firebase.initializeApp();
+      return;
+    }
+
+    await Firebase.initializeApp(options: options);
   }
 }
