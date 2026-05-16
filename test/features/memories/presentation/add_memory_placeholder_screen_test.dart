@@ -13,7 +13,9 @@ import 'package:echoes/features/auth/presentation/auth_cubit.dart';
 import 'package:echoes/features/communities/data/local_community_repository.dart';
 import 'package:echoes/features/communities/domain/community_repository.dart';
 import 'package:echoes/features/memories/data/local_memory_repository.dart';
+import 'package:echoes/features/memories/data/local_pending_memory_upload_queue.dart';
 import 'package:echoes/features/memories/domain/memory_repository.dart';
+import 'package:echoes/features/memories/domain/pending_memory_upload_queue.dart';
 import 'package:echoes/features/memories/presentation/add_memory_placeholder_screen.dart';
 import 'package:echoes/features/places/data/local_place_repository.dart';
 import 'package:echoes/features/places/domain/place_repository.dart';
@@ -122,6 +124,9 @@ class _TestApp extends StatelessWidget {
         ),
         RepositoryProvider<MemoryRepository>(
           create: (_) => LocalMemoryRepository(),
+        ),
+        RepositoryProvider<PendingMemoryUploadQueue>(
+          create: (_) => LocalPendingMemoryUploadQueue(),
         ),
         RepositoryProvider<CommunityRepository>(
           create: (_) => LocalCommunityRepository(),

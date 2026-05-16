@@ -65,4 +65,46 @@ class Memory {
       PrivacyType.community => viewerIsCommunityMember,
     };
   }
+
+  Memory copyWith({
+    String? id,
+    String? userId,
+    String? placeId,
+    String? imageUrl,
+    String? audioUrl,
+    String? textContent,
+    double? latitude,
+    double? longitude,
+    String? geohash,
+    SentimentResult? sentiment,
+    PrivacyType? privacy,
+    List<String>? taggedUserIds,
+    String? communityId,
+    DateTime? releaseDate,
+    bool? isDeleted,
+    DateTime? deletedAt,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return Memory(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      placeId: placeId ?? this.placeId,
+      imageUrl: imageUrl ?? this.imageUrl,
+      audioUrl: audioUrl ?? this.audioUrl,
+      textContent: textContent ?? this.textContent,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      geohash: geohash ?? this.geohash,
+      sentiment: sentiment ?? this.sentiment,
+      privacy: privacy ?? this.privacy,
+      taggedUserIds: taggedUserIds ?? this.taggedUserIds,
+      communityId: communityId ?? this.communityId,
+      releaseDate: releaseDate ?? this.releaseDate,
+      isDeleted: isDeleted ?? this.isDeleted,
+      deletedAt: deletedAt ?? this.deletedAt,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
 }

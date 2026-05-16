@@ -10,6 +10,8 @@ import 'package:echoes/features/aura/domain/aura_zone.dart';
 import 'package:echoes/features/aura/domain/sentiment_analyzer.dart';
 import 'package:echoes/features/memories/domain/memory.dart';
 import 'package:echoes/features/memories/domain/memory_repository.dart';
+import 'package:echoes/features/memories/domain/pending_memory_upload.dart';
+import 'package:echoes/features/memories/domain/pending_memory_upload_queue.dart';
 import 'package:echoes/features/memories/presentation/add_memory_state.dart';
 import 'package:echoes/features/memories/presentation/add_memory_status.dart';
 import 'package:echoes/features/places/domain/place.dart';
@@ -27,6 +29,7 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
     required SentimentAnalyzer sentimentAnalyzer,
     required PlaceRepository placeRepository,
     required MemoryRepository memoryRepository,
+    PendingMemoryUploadQueue? pendingUploadQueue,
     PrivacyType initialPrivacy = PrivacyType.public,
     AuraCalculator? auraCalculator,
     Uuid? uuid,
@@ -38,6 +41,7 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
        _auraCalculator = auraCalculator ?? AuraCalculator(),
        _placeRepository = placeRepository,
        _memoryRepository = memoryRepository,
+       _pendingUploadQueue = pendingUploadQueue,
        _uuid = uuid ?? const Uuid(),
        super(AddMemoryState.initial(privacy: initialPrivacy));
 
@@ -51,6 +55,7 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
   final AuraCalculator _auraCalculator;
   final PlaceRepository _placeRepository;
   final MemoryRepository _memoryRepository;
+  final PendingMemoryUploadQueue? _pendingUploadQueue;
   final Uuid _uuid;
 
   void setPrivacy(PrivacyType privacy) {
@@ -183,13 +188,25 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
           : await _imageCompressionService.compressToUploadLimit(
               state.imagePath!,
             );
-      final uploadedImageUrl = compressedImagePath == null
-          ? null
-          : await _mediaUploadService.uploadMemoryImage(
+      String? uploadedImageUrl;
+      if (compressedImagePath != null) {
+        try {
+          uploadedImageUrl = await _mediaUploadService.uploadMemoryImage(
+            userId: userId,
+            imagePath: compressedImagePath,
+            memoryId: memoryId,
+          );
+        } on Object {
+          await _pendingUploadQueue?.enqueue(
+            PendingMemoryUpload(
+              memoryId: memoryId,
               userId: userId,
               imagePath: compressedImagePath,
-              memoryId: memoryId,
-            );
+              createdAt: now,
+            ),
+          );
+        }
+      }
       var place = await _placeRepository.findNearestPlace(
         latitude: location.latitude,
         longitude: location.longitude,

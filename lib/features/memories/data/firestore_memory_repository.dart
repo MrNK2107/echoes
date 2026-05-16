@@ -59,6 +59,18 @@ class FirestoreMemoryRepository implements MemoryRepository {
   }
 
   @override
+  Future<void> updateImageUrl({
+    required String memoryId,
+    required String imageUrl,
+    required DateTime updatedAt,
+  }) async {
+    await _collection.doc(memoryId).update({
+      'imageUrl': imageUrl,
+      'updatedAt': updatedAt.toUtc().toIso8601String(),
+    });
+  }
+
+  @override
   Stream<List<Memory>> watchMemoriesForPlace(String placeId) {
     return _collection
         .where('placeId', isEqualTo: placeId)

@@ -7,6 +7,7 @@ import 'package:echoes/core/media/media_upload_service.dart';
 import 'package:echoes/core/media/selected_media.dart';
 import 'package:echoes/features/aura/data/lexicon_sentiment_analyzer.dart';
 import 'package:echoes/features/memories/data/local_memory_repository.dart';
+import 'package:echoes/features/memories/data/local_pending_memory_upload_queue.dart';
 import 'package:echoes/features/memories/presentation/add_memory_cubit.dart';
 import 'package:echoes/features/memories/presentation/add_memory_status.dart';
 import 'package:echoes/features/places/data/local_place_repository.dart';
@@ -142,6 +143,43 @@ void main() {
       expect(memories.single.imageUrl, 'https://cdn.example.com/memory.jpg');
       await cubit.close();
       memoryRepository.dispose();
+    });
+
+    test('queues image upload when media upload fails', () async {
+      final memoryRepository = LocalMemoryRepository();
+      final uploadQueue = LocalPendingMemoryUploadQueue();
+      final cubit = AddMemoryCubit(
+        locationService: _FakeLocationService(
+          permission: LocationPermissionState.granted,
+        ),
+        mediaPickerService: _FakeMediaPickerService(
+          galleryPath: '/tmp/memory.jpg',
+        ),
+        imageCompressionService: _NoOpImageCompressionService(),
+        mediaUploadService: _FailingMediaUploadService(),
+        sentimentAnalyzer: LexiconSentimentAnalyzer(),
+        placeRepository: LocalPlaceRepository(now: DateTime.utc(2026, 5, 14)),
+        memoryRepository: memoryRepository,
+        pendingUploadQueue: uploadQueue,
+      );
+
+      await cubit.pickFromGallery();
+      await cubit.captureLocation();
+      await cubit.submit(userId: 'user-1', textContent: 'Queued photo memory');
+
+      final memories = await memoryRepository
+          .watchMemoriesForUser('user-1')
+          .first;
+      final pendingUploads = await uploadQueue.pendingUploads();
+
+      expect(cubit.state.status, AddMemoryStatus.success);
+      expect(memories.single.imageUrl, isNull);
+      expect(pendingUploads.single.imagePath, '/tmp/memory.jpg');
+      expect(pendingUploads.single.userId, 'user-1');
+
+      await cubit.close();
+      memoryRepository.dispose();
+      uploadQueue.dispose();
     });
 
     test('uses provided default privacy as initial privacy', () async {
@@ -299,5 +337,16 @@ class _FakeMediaUploadService implements MediaUploadService {
   }) async {
     uploadedImagePaths.add(imagePath);
     return uploadedUrl ?? imagePath;
+  }
+}
+
+class _FailingMediaUploadService implements MediaUploadService {
+  @override
+  Future<String?> uploadMemoryImage({
+    required String userId,
+    required String imagePath,
+    required String memoryId,
+  }) async {
+    throw StateError('offline');
   }
 }

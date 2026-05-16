@@ -90,6 +90,24 @@ class LocalMemoryRepository implements MemoryRepository {
   }
 
   @override
+  Future<void> updateImageUrl({
+    required String memoryId,
+    required String imageUrl,
+    required DateTime updatedAt,
+  }) async {
+    final index = _memories.indexWhere((memory) => memory.id == memoryId);
+    if (index == -1) {
+      return;
+    }
+
+    _memories[index] = _memories[index].copyWith(
+      imageUrl: imageUrl,
+      updatedAt: updatedAt,
+    );
+    _controller.add(List.unmodifiable(_memories));
+  }
+
+  @override
   Stream<List<Memory>> watchMemoriesForPlace(String placeId) async* {
     yield _visibleMemoriesForPlace(placeId);
     yield* _controller.stream.map((_) => _visibleMemoriesForPlace(placeId));

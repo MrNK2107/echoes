@@ -26,6 +26,12 @@ abstract interface class MemoryRepository {
     required String? communityId,
   });
 
+  Future<void> updateImageUrl({
+    required String memoryId,
+    required String imageUrl,
+    required DateTime updatedAt,
+  });
+
   Future<void> softDelete({
     required String memoryId,
     required DateTime deletedAt,

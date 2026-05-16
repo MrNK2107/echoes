@@ -31,9 +31,12 @@ import 'package:echoes/features/legacy/application/custodianship_transfer_servic
 import 'package:echoes/features/legacy/data/firestore_legacy_transfer_repository.dart';
 import 'package:echoes/features/legacy/data/local_legacy_transfer_repository.dart';
 import 'package:echoes/features/legacy/domain/legacy_transfer_repository.dart';
+import 'package:echoes/features/memories/application/pending_memory_upload_sync.dart';
 import 'package:echoes/features/memories/data/firestore_memory_repository.dart';
 import 'package:echoes/features/memories/data/local_memory_repository.dart';
+import 'package:echoes/features/memories/data/local_pending_memory_upload_queue.dart';
 import 'package:echoes/features/memories/domain/memory_repository.dart';
+import 'package:echoes/features/memories/domain/pending_memory_upload_queue.dart';
 import 'package:echoes/features/places/data/firestore_place_repository.dart';
 import 'package:echoes/features/places/data/local_place_repository.dart';
 import 'package:echoes/features/places/domain/place_repository.dart';
@@ -67,6 +70,7 @@ class EchoesApp extends StatelessWidget {
     final memoryRepository = useFirebase
         ? FirestoreMemoryRepository()
         : LocalMemoryRepository();
+    final pendingMemoryUploadQueue = LocalPendingMemoryUploadQueue();
     final communityRepository = useFirebase
         ? FirestoreCommunityRepository()
         : LocalCommunityRepository();
@@ -116,6 +120,16 @@ class EchoesApp extends StatelessWidget {
           ),
           RepositoryProvider<PlaceRepository>(create: (_) => placeRepository),
           RepositoryProvider<MemoryRepository>(create: (_) => memoryRepository),
+          RepositoryProvider<PendingMemoryUploadQueue>(
+            create: (_) => pendingMemoryUploadQueue,
+          ),
+          RepositoryProvider<PendingMemoryUploadSync>(
+            create: (_) => PendingMemoryUploadSync(
+              queue: pendingMemoryUploadQueue,
+              mediaUploadService: mediaUploadService,
+              memoryRepository: memoryRepository,
+            ),
+          ),
           RepositoryProvider<CommunityRepository>(
             create: (_) => communityRepository,
           ),
