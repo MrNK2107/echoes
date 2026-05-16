@@ -7,11 +7,13 @@ import 'package:echoes/features/places/domain/place.dart';
 class ArSceneMapper {
   const ArSceneMapper({
     this.maxPlaces = 5,
+    this.maxOrbsPerPlace = 8,
     this.metersPerSceneUnit = 12,
     this.maxSceneDistance = 24,
   });
 
   final int maxPlaces;
+  final int maxOrbsPerPlace;
   final double metersPerSceneUnit;
   final double maxSceneDistance;
 
@@ -45,6 +47,9 @@ class ArSceneMapper {
         bearingDegrees: bearing,
         sceneX: rawX * scale,
         sceneZ: rawZ * scale,
+        auraRadius: 1.8 + place.aura.intensity * 3.2,
+        auraOpacity: 0.18 + place.aura.intensity * 0.32,
+        visibleOrbCount: min(place.publicMemoryCount, maxOrbsPerPlace),
       );
     }).toList()..sort((a, b) => a.distanceMeters.compareTo(b.distanceMeters));
 

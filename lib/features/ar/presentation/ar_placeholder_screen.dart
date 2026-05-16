@@ -2,6 +2,7 @@ import 'package:echoes/app/theme.dart';
 import 'package:echoes/core/location/location_service.dart';
 import 'package:echoes/features/ar/domain/ar_availability_service.dart';
 import 'package:echoes/features/ar/domain/ar_permission_service.dart';
+import 'package:echoes/features/ar/domain/ar_scene_place.dart';
 import 'package:echoes/features/ar/domain/ar_session_service.dart';
 import 'package:echoes/features/ar/presentation/ar_cubit.dart';
 import 'package:echoes/features/ar/presentation/ar_state.dart';
@@ -170,22 +171,7 @@ class _ArSessionPlaceholder extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: EchoesColors.surface,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: EchoesColors.elevatedSurface),
-                ),
-                child: Center(
-                  child: isBusy
-                      ? const CircularProgressIndicator()
-                      : Icon(
-                          Icons.view_in_ar_outlined,
-                          color: EchoesColors.sunsetGold,
-                          size: 72,
-                        ),
-                ),
-              ),
+              child: _ArScenePreview(scenePlaces: scenePlaces, isBusy: isBusy),
             ),
             const SizedBox(height: 16),
             Text(
@@ -239,5 +225,166 @@ class _ArSessionPlaceholder extends StatelessWidget {
     return places == 1
         ? 'Aura view is tracking 1 nearby place'
         : 'Aura view is tracking $places nearby places';
+  }
+}
+
+class _ArScenePreview extends StatefulWidget {
+  const _ArScenePreview({required this.scenePlaces, required this.isBusy});
+
+  final List<ArScenePlace> scenePlaces;
+  final bool isBusy;
+
+  @override
+  State<_ArScenePreview> createState() => _ArScenePreviewState();
+}
+
+class _ArScenePreviewState extends State<_ArScenePreview>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulseController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: EchoesColors.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: EchoesColors.elevatedSurface),
+      ),
+      child: widget.isBusy
+          ? const Center(child: CircularProgressIndicator())
+          : AnimatedBuilder(
+              animation: _pulseController,
+              builder: (context, _) {
+                return CustomPaint(
+                  painter: _ArScenePainter(
+                    scenePlaces: widget.scenePlaces,
+                    pulse: _pulseController.value,
+                  ),
+                  child: const SizedBox.expand(),
+                );
+              },
+            ),
+    );
+  }
+}
+
+class _ArScenePainter extends CustomPainter {
+  const _ArScenePainter({required this.scenePlaces, required this.pulse});
+
+  final List<ArScenePlace> scenePlaces;
+  final double pulse;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height * 0.72);
+    final unit = size.shortestSide / 54;
+    final horizonPaint = Paint()
+      ..color = EchoesColors.elevatedSurface
+      ..strokeWidth = 1;
+    canvas.drawLine(
+      Offset(0, size.height * 0.72),
+      Offset(size.width, size.height * 0.72),
+      horizonPaint,
+    );
+
+    final originPaint = Paint()..color = EchoesColors.sunsetGold;
+    canvas.drawCircle(center, 5, originPaint);
+
+    if (scenePlaces.isEmpty) {
+      final textPainter = TextPainter(
+        text: const TextSpan(
+          text: 'No nearby aura zones',
+          style: TextStyle(color: EchoesColors.textSecondary, fontSize: 14),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout(maxWidth: size.width);
+      textPainter.paint(
+        canvas,
+        Offset((size.width - textPainter.width) / 2, size.height / 2),
+      );
+      return;
+    }
+
+    for (final scenePlace in scenePlaces) {
+      final position =
+          center + Offset(scenePlace.sceneX * unit, scenePlace.sceneZ * unit);
+      final color = scenePlace.place.aura.color;
+      final radius = scenePlace.auraRadius * unit * (1 + pulse * 0.08);
+      final opacity = scenePlace.auraOpacity;
+      final auraPaint = Paint()..color = color.withValues(alpha: opacity);
+      final auraStrokePaint = Paint()
+        ..color = color.withValues(alpha: 0.75)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2;
+
+      canvas.drawCircle(position, radius, auraPaint);
+      canvas.drawCircle(position, radius, auraStrokePaint);
+      _drawOrbs(canvas, position, radius, color, scenePlace.visibleOrbCount);
+      _drawLabel(canvas, position, scenePlace.place.name);
+    }
+  }
+
+  void _drawOrbs(
+    Canvas canvas,
+    Offset center,
+    double radius,
+    Color color,
+    int count,
+  ) {
+    final orbPaint = Paint()..color = color.withValues(alpha: 0.95);
+    for (var index = 0; index < count; index++) {
+      final orbitRadius = radius * 0.45;
+      final offset = Offset(
+        center.dx +
+            orbitRadius *
+                0.75 *
+                (index.isEven ? 1 : -1) *
+                (0.5 + index / count),
+        center.dy + orbitRadius * 0.5 * (index % 3 - 1),
+      );
+      canvas.drawCircle(offset, 3.5, orbPaint);
+    }
+  }
+
+  void _drawLabel(Canvas canvas, Offset position, String label) {
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: label,
+        style: const TextStyle(
+          color: EchoesColors.textPrimary,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      textAlign: TextAlign.center,
+      textDirection: TextDirection.ltr,
+    )..layout(maxWidth: 120);
+    textPainter.paint(
+      canvas,
+      Offset(
+        position.dx - textPainter.width / 2,
+        position.dy - textPainter.height / 2,
+      ),
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _ArScenePainter oldDelegate) {
+    return oldDelegate.pulse != pulse || oldDelegate.scenePlaces != scenePlaces;
   }
 }

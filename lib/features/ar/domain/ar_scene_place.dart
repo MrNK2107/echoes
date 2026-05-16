@@ -9,6 +9,9 @@ class ArScenePlace {
     required this.bearingDegrees,
     required this.sceneX,
     required this.sceneZ,
+    required this.auraRadius,
+    required this.auraOpacity,
+    required this.visibleOrbCount,
   });
 
   final Place place;
@@ -18,11 +21,20 @@ class ArScenePlace {
   final double bearingDegrees;
   final double sceneX;
   final double sceneZ;
+  final double auraRadius;
+  final double auraOpacity;
+  final int visibleOrbCount;
 
   String get distanceLabel {
     if (distanceMeters < 1000) {
       return '${distanceMeters.round()} m';
     }
     return '${(distanceMeters / 1000).toStringAsFixed(1)} km';
+  }
+
+  String get directionLabel {
+    const labels = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+    final index = ((bearingDegrees + 22.5) ~/ 45) % labels.length;
+    return labels[index];
   }
 }

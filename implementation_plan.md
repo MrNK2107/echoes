@@ -512,21 +512,21 @@ Goal: implement the first AR experience with aura zones and memory orbs.
 - [x] Start and stop AR sessions safely.
 - [x] Query nearby places for AR display.
 - [x] Convert nearby place positions into AR anchors or relative scene positions.
-- [ ] Render aura dome or sphere.
-- [ ] Apply aura color and transparency.
-- [ ] Add aura pulse animation.
-- [ ] Render memory orbs inside aura.
-- [ ] Limit visible orbs for performance.
+- [x] Render aura dome or sphere.
+- [x] Apply aura color and transparency.
+- [x] Add aura pulse animation.
+- [x] Render memory orbs inside aura.
+- [x] Limit visible orbs for performance.
 - [ ] Add tap handling on aura.
 - [ ] Add tap handling on memory orb.
 - [ ] Open memory detail from orb tap.
-- [ ] Add distance and direction indicators.
+- [x] Add distance and direction indicators.
 
 Performance requirements:
 
 - [ ] Maintain 30 FPS on target Android devices.
-- [ ] Avoid rendering too many places at once.
-- [ ] Avoid rendering too many memory orbs at once.
+- [x] Avoid rendering too many places at once.
+- [x] Avoid rendering too many memory orbs at once.
 - [ ] Cache thumbnails and metadata.
 
 Tests:
