@@ -13,9 +13,9 @@
 
 Last updated: 2026-05-16
 
-- Overall checklist completion: 225 / 387 items complete, about 58%.
+- Overall checklist completion: 239 / 387 items complete, about 62%.
 - Internal Alpha feature scope: mostly implemented in code; device smoke testing and security-rules tests remain.
-- Private Beta feature scope: partially implemented; AR rendering, rules tests, and transfer initiation UI remain.
+- Private Beta feature scope: partially implemented; AR rendering, transfer initiation UI, and tagged-user search are in place; rules tests and deeper AR interaction remain.
 - Public MVP feature scope: in progress; offline cache, accessibility, performance, notifications, and production hardening remain.
 
 ## Current Repository State
@@ -584,9 +584,9 @@ Deliverable:
 Goal: implement place custodianship and legacy transfer.
 
 - [x] Show custodians on place detail.
-- [ ] Allow custodian to invite another custodian.
-- [ ] Allow custodian to initiate transfer.
-- [ ] Create pending transfer document.
+- [x] Allow custodian to invite another custodian.
+- [x] Allow custodian to initiate transfer.
+- [x] Create pending transfer document.
 - [x] Notify recipient in app.
 - [x] Allow recipient to accept transfer.
 - [x] Allow recipient to reject transfer.

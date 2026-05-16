@@ -1,6 +1,7 @@
 import 'package:echoes/app/theme.dart';
 import 'package:echoes/core/location/location_service.dart';
 import 'package:echoes/features/aura/presentation/aura_preview.dart';
+import 'package:echoes/features/auth/presentation/auth_cubit.dart';
 import 'package:echoes/features/map/presentation/aura_marker_hue.dart';
 import 'package:echoes/features/map/presentation/map_cubit.dart';
 import 'package:echoes/features/map/presentation/map_state.dart';
@@ -11,6 +12,7 @@ import 'package:echoes/features/memories/presentation/memory_card.dart';
 import 'package:echoes/features/memories/presentation/memory_detail_sheet.dart';
 import 'package:echoes/features/places/domain/place.dart';
 import 'package:echoes/features/places/domain/place_repository.dart';
+import 'package:echoes/features/places/presentation/custodianship_transfer_button.dart';
 import 'package:echoes/features/places/presentation/place_custodians.dart';
 import 'package:echoes/shared/widgets/feature_placeholder.dart';
 import 'package:flutter/material.dart';
@@ -172,6 +174,7 @@ class _ReadyMapPlaceholder extends StatelessWidget {
 
   void _showPlaceDetails(BuildContext context, Place place) {
     final memoryRepository = context.read<MemoryRepository>();
+    final currentUserId = context.read<AuthCubit>().state.session?.userId;
 
     showModalBottomSheet<void>(
       context: context,
@@ -201,6 +204,13 @@ class _ReadyMapPlaceholder extends StatelessWidget {
               AuraPreview(aura: place.aura),
               const SizedBox(height: 16),
               PlaceCustodians(custodianIds: place.custodianIds),
+              if (currentUserId != null) ...[
+                const SizedBox(height: 12),
+                CustodianshipTransferButton(
+                  place: place,
+                  currentUserId: currentUserId,
+                ),
+              ],
               const SizedBox(height: 16),
               Text(
                 'Memories',
