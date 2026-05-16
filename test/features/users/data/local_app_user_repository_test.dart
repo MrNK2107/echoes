@@ -34,14 +34,30 @@ void main() {
       expect(userTwo?.defaultPrivacy, PrivacyType.public);
       repository.dispose();
     });
+
+    test('searches users by display name, email, and id', () async {
+      final repository = LocalAppUserRepository();
+
+      await repository.create(_user(id: 'nanda', displayName: 'Nanda'));
+      await repository.create(_user(id: 'friend', displayName: 'Old Friend'));
+
+      final nameResults = await repository.searchUsers('nan');
+      final emailResults = await repository.searchUsers('friend@example');
+      final idResults = await repository.searchUsers('nanda');
+
+      expect(nameResults.single.id, 'nanda');
+      expect(emailResults.single.id, 'friend');
+      expect(idResults.single.id, 'nanda');
+      repository.dispose();
+    });
   });
 }
 
-AppUser _user({required String id}) {
+AppUser _user({required String id, String displayName = 'Nanda'}) {
   final now = DateTime.utc(2026, 5, 15);
   return AppUser(
     id: id,
-    displayName: 'Nanda',
+    displayName: displayName,
     email: '$id@example.com',
     defaultPrivacy: PrivacyType.public,
     managedPlaceIds: const [],

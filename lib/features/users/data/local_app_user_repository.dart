@@ -21,6 +21,23 @@ class LocalAppUserRepository implements AppUserRepository {
   }
 
   @override
+  Future<List<AppUser>> searchUsers(String query, {int limit = 10}) async {
+    final normalized = query.trim().toLowerCase();
+    if (normalized.isEmpty) {
+      return const [];
+    }
+
+    return _users.values
+        .where((user) {
+          return user.id.toLowerCase().contains(normalized) ||
+              (user.email?.toLowerCase().contains(normalized) ?? false) ||
+              (user.displayName?.toLowerCase().contains(normalized) ?? false);
+        })
+        .take(limit)
+        .toList(growable: false);
+  }
+
+  @override
   Future<void> setCurrentUserId(String? userId) async {
     _currentUserId = userId;
     _controller.add(_currentUser);

@@ -66,6 +66,24 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
     emit(state.copyWith(taggedUserIds: taggedUsers));
   }
 
+  void addTaggedUser(String userId) {
+    final trimmed = userId.trim();
+    if (trimmed.isEmpty || state.taggedUserIds.contains(trimmed)) {
+      return;
+    }
+    emit(state.copyWith(taggedUserIds: [...state.taggedUserIds, trimmed]));
+  }
+
+  void removeTaggedUser(String userId) {
+    emit(
+      state.copyWith(
+        taggedUserIds: state.taggedUserIds
+            .where((taggedUserId) => taggedUserId != userId)
+            .toList(growable: false),
+      ),
+    );
+  }
+
   void setReleaseDate(DateTime releaseDate) {
     emit(state.copyWith(releaseDate: releaseDate));
   }

@@ -476,7 +476,7 @@ Deliverable:
 Goal: implement the full privacy model described in the spec.
 
 - [x] Add `Tagged` privacy type.
-- [ ] Add tagged user search.
+- [x] Add tagged user search.
 - [x] Add tagged user selection during memory creation.
 - [x] Add tagged memory visibility.
 - [x] Add `Time-release` privacy type.

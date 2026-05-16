@@ -41,6 +41,25 @@ class FirestoreAppUserRepository implements AppUserRepository {
   }
 
   @override
+  Future<List<AppUser>> searchUsers(String query, {int limit = 10}) async {
+    final normalized = query.trim().toLowerCase();
+    if (normalized.isEmpty) {
+      return const [];
+    }
+
+    final snapshot = await _collection.limit(limit * 3).get();
+    return snapshot.docs
+        .map((doc) => AppUserDto.fromMap(doc.id, doc.data()).toDomain())
+        .where((user) {
+          return user.id.toLowerCase().contains(normalized) ||
+              (user.email?.toLowerCase().contains(normalized) ?? false) ||
+              (user.displayName?.toLowerCase().contains(normalized) ?? false);
+        })
+        .take(limit)
+        .toList(growable: false);
+  }
+
+  @override
   Future<void> setCurrentUserId(String? userId) async {
     if (_currentUserId == userId) {
       return;

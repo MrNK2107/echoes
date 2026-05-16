@@ -14,6 +14,7 @@ import 'package:echoes/features/memories/presentation/add_memory_status.dart';
 import 'package:echoes/features/memories/presentation/memory_validators.dart';
 import 'package:echoes/features/places/domain/place_repository.dart';
 import 'package:echoes/features/privacy/domain/privacy_type.dart';
+import 'package:echoes/features/users/domain/app_user.dart';
 import 'package:echoes/features/users/domain/app_user_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -303,21 +304,114 @@ class _PrivacyOptions extends StatelessWidget {
   }
 }
 
-class _TaggedUserInput extends StatelessWidget {
+class _TaggedUserInput extends StatefulWidget {
   const _TaggedUserInput();
+
+  @override
+  State<_TaggedUserInput> createState() => _TaggedUserInputState();
+}
+
+class _TaggedUserInputState extends State<_TaggedUserInput> {
+  final _controller = TextEditingController();
+  Future<List<AppUser>>? _search;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(top: 12),
-      child: TextFormField(
-        key: const ValueKey('taggedUsersField'),
-        onChanged: context.read<AddMemoryCubit>().setTaggedUsers,
-        decoration: const InputDecoration(
-          labelText: 'Tagged user IDs',
-          helperText: 'Separate multiple user IDs with commas',
-          prefixIcon: Icon(Icons.alternate_email),
-        ),
+      child: BlocBuilder<AddMemoryCubit, AddMemoryState>(
+        builder: (context, state) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TextFormField(
+                key: const ValueKey('taggedUsersField'),
+                controller: _controller,
+                onChanged: (value) {
+                  setState(() {
+                    _search = context.read<AppUserRepository>().searchUsers(
+                      value,
+                    );
+                  });
+                },
+                onFieldSubmitted: (value) {
+                  context.read<AddMemoryCubit>().addTaggedUser(value);
+                  _controller.clear();
+                  setState(() => _search = null);
+                },
+                decoration: InputDecoration(
+                  labelText: 'Search tagged users',
+                  helperText: 'Tap a result, or submit a user ID directly',
+                  prefixIcon: const Icon(Icons.alternate_email),
+                  suffixIcon: IconButton(
+                    tooltip: 'Add typed user ID',
+                    onPressed: () {
+                      context.read<AddMemoryCubit>().addTaggedUser(
+                        _controller.text,
+                      );
+                      _controller.clear();
+                      setState(() => _search = null);
+                    },
+                    icon: const Icon(Icons.add),
+                  ),
+                ),
+              ),
+              if (state.taggedUserIds.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final userId in state.taggedUserIds)
+                      InputChip(
+                        label: Text(userId),
+                        onDeleted: () => context
+                            .read<AddMemoryCubit>()
+                            .removeTaggedUser(userId),
+                      ),
+                  ],
+                ),
+              ],
+              FutureBuilder<List<AppUser>>(
+                future: _search,
+                builder: (context, snapshot) {
+                  final users = snapshot.data ?? const <AppUser>[];
+                  if (users.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Column(
+                      children: [
+                        for (final user in users)
+                          ListTile(
+                            key: ValueKey('taggedUserResult-${user.id}'),
+                            leading: const Icon(Icons.person_outline),
+                            title: Text(user.displayName ?? user.id),
+                            subtitle: Text(user.email ?? user.id),
+                            onTap: () {
+                              context.read<AddMemoryCubit>().addTaggedUser(
+                                user.id,
+                              );
+                              _controller.clear();
+                              setState(() => _search = null);
+                            },
+                          ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ],
+          );
+        },
       ),
     );
   }

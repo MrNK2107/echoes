@@ -17,7 +17,9 @@ import 'package:echoes/features/memories/domain/memory_repository.dart';
 import 'package:echoes/features/memories/presentation/add_memory_placeholder_screen.dart';
 import 'package:echoes/features/places/data/local_place_repository.dart';
 import 'package:echoes/features/places/domain/place_repository.dart';
+import 'package:echoes/features/privacy/domain/privacy_type.dart';
 import 'package:echoes/features/users/data/local_app_user_repository.dart';
+import 'package:echoes/features/users/domain/app_user.dart';
 import 'package:echoes/features/users/domain/app_user_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -63,6 +65,27 @@ void main() {
 
       expect(find.byKey(const ValueKey('taggedUsersField')), findsOneWidget);
     });
+
+    testWidgets('searches and selects tagged users', (tester) async {
+      await tester.pumpWidget(const _TestApp());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Tagged'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('taggedUsersField')),
+        'friend',
+      );
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('taggedUserResult-friend')),
+      );
+      await tester.tap(find.byKey(const ValueKey('taggedUserResult-friend')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('friend'), findsOneWidget);
+    });
   });
 }
 
@@ -77,7 +100,7 @@ class _TestApp extends StatelessWidget {
           create: (_) => LocalAuthRepository(),
         ),
         RepositoryProvider<AppUserRepository>(
-          create: (_) => LocalAppUserRepository(),
+          create: (_) => _SeededAppUserRepository(),
         ),
         RepositoryProvider<LocationService>(
           create: (_) => const _FakeLocationService(),
@@ -112,6 +135,24 @@ class _TestApp extends StatelessWidget {
         child: const MaterialApp(
           home: Scaffold(body: AddMemoryPlaceholderScreen()),
         ),
+      ),
+    );
+  }
+}
+
+class _SeededAppUserRepository extends LocalAppUserRepository {
+  _SeededAppUserRepository() {
+    final now = DateTime.utc(2026, 5, 15);
+    create(
+      AppUser(
+        id: 'friend',
+        displayName: 'Old Friend',
+        email: 'friend@example.com',
+        defaultPrivacy: PrivacyType.public,
+        managedPlaceIds: const [],
+        communityIds: const [],
+        createdAt: now,
+        updatedAt: now,
       ),
     );
   }

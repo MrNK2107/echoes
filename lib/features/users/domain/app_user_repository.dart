@@ -6,6 +6,8 @@ abstract interface class AppUserRepository {
 
   Future<AppUser?> findById(String id);
 
+  Future<List<AppUser>> searchUsers(String query, {int limit = 10});
+
   Future<void> setCurrentUserId(String? userId);
 
   Future<void> create(AppUser user);
