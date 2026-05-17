@@ -7,10 +7,18 @@ import 'package:echoes/features/communities/domain/community_repository.dart';
 import 'package:echoes/features/communities/domain/community_role.dart';
 
 class FirestoreCommunityRepository implements CommunityRepository {
-  FirestoreCommunityRepository({FirebaseFirestore? firestore})
-    : _firestore = firestore ?? FirebaseFirestore.instance;
+  FirestoreCommunityRepository({
+    FirebaseFirestore? firestore,
+    this.communityLimit = defaultCommunityLimit,
+    this.userMembershipLimit = defaultUserMembershipLimit,
+  }) : _firestore = firestore ?? FirebaseFirestore.instance;
+
+  static const defaultCommunityLimit = 50;
+  static const defaultUserMembershipLimit = 50;
 
   final FirebaseFirestore _firestore;
+  final int communityLimit;
+  final int userMembershipLimit;
 
   CollectionReference<Map<String, dynamic>> get _communities =>
       _firestore.collection('communities');
@@ -76,7 +84,10 @@ class FirestoreCommunityRepository implements CommunityRepository {
     required CommunityRole role,
   }) async {
     final communityRef = _communities.doc(communityId);
-    final membershipRef = _membershipRef(communityId: communityId, userId: userId);
+    final membershipRef = _membershipRef(
+      communityId: communityId,
+      userId: userId,
+    );
     final now = DateTime.now().toUtc();
 
     await _firestore.runTransaction((transaction) async {
@@ -117,7 +128,7 @@ class FirestoreCommunityRepository implements CommunityRepository {
 
   @override
   Stream<List<Community>> watchCommunities() {
-    return _communities.snapshots().map((snapshot) {
+    return _communities.limit(communityLimit).snapshots().map((snapshot) {
       return snapshot.docs
           .map((doc) => CommunityDto.fromMap(doc.id, doc.data()).toDomain())
           .toList();
@@ -129,6 +140,7 @@ class FirestoreCommunityRepository implements CommunityRepository {
     return _firestore
         .collectionGroup('members')
         .where(FieldPath.documentId, isEqualTo: userId)
+        .limit(userMembershipLimit)
         .snapshots()
         .asyncMap((membershipSnapshot) async {
           final futures = membershipSnapshot.docs.map((membershipDoc) async {

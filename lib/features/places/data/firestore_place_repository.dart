@@ -6,10 +6,15 @@ import 'package:echoes/features/places/domain/place.dart';
 import 'package:echoes/features/places/domain/place_repository.dart';
 
 class FirestorePlaceRepository implements PlaceRepository {
-  FirestorePlaceRepository({FirebaseFirestore? firestore})
-    : _firestore = firestore ?? FirebaseFirestore.instance;
+  FirestorePlaceRepository({
+    FirebaseFirestore? firestore,
+    this.nearbyCandidateLimit = defaultNearbyCandidateLimit,
+  }) : _firestore = firestore ?? FirebaseFirestore.instance;
+
+  static const defaultNearbyCandidateLimit = 100;
 
   final FirebaseFirestore _firestore;
+  final int nearbyCandidateLimit;
 
   CollectionReference<Map<String, dynamic>> get _collection =>
       _firestore.collection('places');
@@ -32,23 +37,24 @@ class FirestorePlaceRepository implements PlaceRepository {
     required double longitude,
     required double radiusMeters,
   }) async {
-    final snapshot = await _collection.get();
-    final matches = snapshot.docs
-        .map((doc) => PlaceDto.fromMap(doc.id, doc.data()).toDomain())
-        .map(
-          (place) => (
-            place: place,
-            distance: _distanceMeters(
-              latitude,
-              longitude,
-              place.latitude,
-              place.longitude,
-            ),
-          ),
-        )
-        .where((entry) => entry.distance <= radiusMeters)
-        .toList()
-      ..sort((a, b) => a.distance.compareTo(b.distance));
+    final snapshot = await _collection.limit(nearbyCandidateLimit).get();
+    final matches =
+        snapshot.docs
+            .map((doc) => PlaceDto.fromMap(doc.id, doc.data()).toDomain())
+            .map(
+              (place) => (
+                place: place,
+                distance: _distanceMeters(
+                  latitude,
+                  longitude,
+                  place.latitude,
+                  place.longitude,
+                ),
+              ),
+            )
+            .where((entry) => entry.distance <= radiusMeters)
+            .toList()
+          ..sort((a, b) => a.distance.compareTo(b.distance));
 
     return matches.firstOrNull?.place;
   }
@@ -64,7 +70,7 @@ class FirestorePlaceRepository implements PlaceRepository {
     required double longitude,
     required double radiusMeters,
   }) {
-    return _collection.snapshots().map((snapshot) {
+    return _collection.limit(nearbyCandidateLimit).snapshots().map((snapshot) {
       return snapshot.docs
           .map((doc) => PlaceDto.fromMap(doc.id, doc.data()).toDomain())
           .where(

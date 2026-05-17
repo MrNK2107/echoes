@@ -5,10 +5,18 @@ import 'package:echoes/features/memories/domain/memory_repository.dart';
 import 'package:echoes/features/privacy/domain/privacy_type.dart';
 
 class FirestoreMemoryRepository implements MemoryRepository {
-  FirestoreMemoryRepository({FirebaseFirestore? firestore})
-    : _firestore = firestore ?? FirebaseFirestore.instance;
+  FirestoreMemoryRepository({
+    FirebaseFirestore? firestore,
+    this.placeMemoryLimit = defaultPlaceMemoryLimit,
+    this.userMemoryLimit = defaultUserMemoryLimit,
+  }) : _firestore = firestore ?? FirebaseFirestore.instance;
+
+  static const defaultPlaceMemoryLimit = 50;
+  static const defaultUserMemoryLimit = 50;
 
   final FirebaseFirestore _firestore;
+  final int placeMemoryLimit;
+  final int userMemoryLimit;
 
   CollectionReference<Map<String, dynamic>> get _collection =>
       _firestore.collection('memories');
@@ -75,6 +83,8 @@ class FirestoreMemoryRepository implements MemoryRepository {
     return _collection
         .where('placeId', isEqualTo: placeId)
         .where('isDeleted', isEqualTo: false)
+        .orderBy('createdAt', descending: true)
+        .limit(placeMemoryLimit)
         .snapshots()
         .map(_memoriesFromSnapshot);
   }
@@ -84,6 +94,8 @@ class FirestoreMemoryRepository implements MemoryRepository {
     return _collection
         .where('userId', isEqualTo: userId)
         .where('isDeleted', isEqualTo: false)
+        .orderBy('createdAt', descending: true)
+        .limit(userMemoryLimit)
         .snapshots()
         .map(_memoriesFromSnapshot);
   }

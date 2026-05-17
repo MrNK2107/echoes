@@ -13,7 +13,7 @@
 
 Last updated: 2026-05-17
 
-- Overall checklist completion: 266 / 387 items complete, about 69%.
+- Overall checklist completion: 267 / 387 items complete, about 69%.
 - Internal Alpha feature scope: mostly implemented in code; device smoke testing and security-rules tests remain.
 - Private Beta feature scope: partially implemented; AR rendering, transfer initiation UI, and tagged-user search are in place; rules tests and deeper AR interaction remain.
 - Public MVP feature scope: in progress; nearby-place, recent-memory, profile/settings warm caches, local image caching, and cache management settings are now implemented; accessibility, performance, notifications, and production hardening remain.
@@ -43,6 +43,7 @@ The repository now contains the product specification, implementation plan, and 
 - Animated aura preview glow and intensity transitions
 - Reduced AR running-mode UI chrome with overlay controls
 - Dimension-aware image compression before upload encoding
+- Bounded Firestore list and nearby candidate queries
 - Profile cache management control for clearing local warm caches
 - Unit and widget tests for the current local MVP and AR lifecycle foundation
 
@@ -711,7 +712,7 @@ Goal: make the app reliable on target devices.
 - [ ] Keep AR at 30+ FPS.
 - [ ] Test on mid-range Android devices.
 - [x] Optimize image compression.
-- [ ] Optimize Firestore query counts.
+- [x] Optimize Firestore query counts.
 - [ ] Add crash reporting.
 - [ ] Add analytics with privacy review.
 
