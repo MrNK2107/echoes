@@ -1,8 +1,13 @@
+import 'dart:async';
+
 import 'package:echoes/features/auth/data/local_auth_repository.dart';
 import 'package:echoes/features/auth/domain/auth_repository.dart';
 import 'package:echoes/features/auth/presentation/auth_cubit.dart';
 import 'package:echoes/features/communities/data/local_community_repository.dart';
+import 'package:echoes/features/communities/domain/community.dart';
+import 'package:echoes/features/communities/domain/community_membership.dart';
 import 'package:echoes/features/communities/domain/community_repository.dart';
+import 'package:echoes/features/communities/domain/community_role.dart';
 import 'package:echoes/features/communities/presentation/communities_placeholder_screen.dart';
 import 'package:echoes/features/users/data/local_app_user_repository.dart';
 import 'package:echoes/features/users/domain/app_user_repository.dart';
@@ -88,6 +93,29 @@ void main() {
     userRepository.dispose();
     communityRepository.dispose();
   });
+
+  testWidgets('renders loading state while communities load', (tester) async {
+    final authRepository = LocalAuthRepository();
+    final userRepository = LocalAppUserRepository();
+    final communityRepository = _LoadingCommunityRepository();
+
+    await tester.pumpWidget(
+      _TestApp(
+        authRepository: authRepository,
+        userRepository: userRepository,
+        communityRepository: communityRepository,
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('Loading communities'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    authRepository.dispose();
+    userRepository.dispose();
+    communityRepository.dispose();
+  });
 }
 
 class _TestApp extends StatelessWidget {
@@ -124,5 +152,44 @@ class _TestApp extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _LoadingCommunityRepository implements CommunityRepository {
+  final _controller = StreamController<List<Community>>();
+
+  void dispose() {
+    _controller.close();
+  }
+
+  @override
+  Future<void> create(Community community) async {}
+
+  @override
+  Future<Community?> findById(String id) async => null;
+
+  @override
+  Future<CommunityMembership?> findMembership({
+    required String communityId,
+    required String userId,
+  }) async {
+    return null;
+  }
+
+  @override
+  Future<void> join({
+    required String communityId,
+    required String userId,
+    required CommunityRole role,
+  }) async {}
+
+  @override
+  Stream<List<Community>> watchCommunities() {
+    return _controller.stream;
+  }
+
+  @override
+  Stream<List<Community>> watchUserCommunities(String userId) {
+    return const Stream.empty();
   }
 }

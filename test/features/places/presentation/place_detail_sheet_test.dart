@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:echoes/features/aura/domain/aura_zone.dart';
 import 'package:echoes/features/aura/domain/sentiment_result.dart';
 import 'package:echoes/features/memories/domain/memory.dart';
@@ -19,6 +21,7 @@ void main() {
         child: PlaceDetailSheet(place: _place(memoryCount: 0)),
       ),
     );
+    await tester.pump();
 
     expect(find.text('Old Courtyard'), findsOneWidget);
     expect(find.text('0 memories'), findsOneWidget);
@@ -43,6 +46,27 @@ void main() {
     expect(find.text('A quiet afternoon under the rain tree.'), findsOneWidget);
     expect(find.text('Public'), findsOneWidget);
   });
+
+  testWidgets('PlaceDetailSheet renders loading state while memories load', (
+    tester,
+  ) async {
+    final controller = StreamController<List<Memory>>();
+    addTearDown(controller.close);
+
+    await tester.pumpWidget(
+      _TestApp(
+        memoryRepository: _FakeMemoryRepository.fromStream(controller.stream),
+        child: PlaceDetailSheet(place: _place(memoryCount: 1)),
+      ),
+    );
+
+    expect(find.text('Loading place memories'), findsOneWidget);
+
+    controller.add([_memory()]);
+    await tester.pump();
+
+    expect(find.text('A quiet afternoon under the rain tree.'), findsOneWidget);
+  });
 }
 
 class _TestApp extends StatelessWidget {
@@ -61,9 +85,13 @@ class _TestApp extends StatelessWidget {
 }
 
 class _FakeMemoryRepository implements MemoryRepository {
-  const _FakeMemoryRepository(this.memories);
+  const _FakeMemoryRepository(this.memories) : _memoryStream = null;
+
+  const _FakeMemoryRepository.fromStream(this._memoryStream)
+    : memories = const [];
 
   final List<Memory> memories;
+  final Stream<List<Memory>>? _memoryStream;
 
   @override
   Future<void> create(Memory memory) async {}
@@ -96,6 +124,10 @@ class _FakeMemoryRepository implements MemoryRepository {
 
   @override
   Stream<List<Memory>> watchMemoriesForPlace(String placeId) {
+    final memoryStream = _memoryStream;
+    if (memoryStream != null) {
+      return memoryStream;
+    }
     return Stream.value(memories);
   }
 

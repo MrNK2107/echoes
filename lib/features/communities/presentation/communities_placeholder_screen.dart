@@ -5,6 +5,7 @@ import 'package:echoes/features/communities/domain/community_repository.dart';
 import 'package:echoes/features/communities/domain/community_type.dart';
 import 'package:echoes/features/communities/presentation/community_badge.dart';
 import 'package:echoes/features/communities/presentation/community_detail_screen.dart';
+import 'package:echoes/shared/widgets/loading_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:uuid/uuid.dart';
@@ -153,6 +154,10 @@ class _CommunityList extends StatelessWidget {
     return StreamBuilder<List<Community>>(
       stream: context.read<CommunityRepository>().watchCommunities(),
       builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const LoadingState(label: 'Loading communities');
+        }
+
         final communities = snapshot.data ?? const <Community>[];
 
         if (communities.isEmpty) {

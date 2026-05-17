@@ -8,6 +8,7 @@ import 'package:echoes/features/places/domain/place.dart';
 import 'package:echoes/features/places/presentation/custodianship_transfer_button.dart';
 import 'package:echoes/features/places/presentation/guardian_reassignment_placeholder.dart';
 import 'package:echoes/features/places/presentation/place_custodians.dart';
+import 'package:echoes/shared/widgets/loading_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -69,6 +70,10 @@ class PlaceDetailSheet extends StatelessWidget {
           StreamBuilder<List<Memory>>(
             stream: memoryRepository.watchMemoriesForPlace(place.id),
             builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const LoadingState(label: 'Loading place memories');
+              }
+
               final memories = snapshot.data ?? const <Memory>[];
 
               if (memories.isEmpty) {
