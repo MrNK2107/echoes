@@ -32,11 +32,13 @@ import 'package:echoes/features/legacy/data/firestore_legacy_transfer_repository
 import 'package:echoes/features/legacy/data/local_legacy_transfer_repository.dart';
 import 'package:echoes/features/legacy/domain/legacy_transfer_repository.dart';
 import 'package:echoes/features/memories/application/pending_memory_upload_sync.dart';
+import 'package:echoes/features/memories/data/cached_memory_repository.dart';
 import 'package:echoes/features/memories/data/firestore_memory_repository.dart';
 import 'package:echoes/features/memories/data/local_memory_repository.dart';
 import 'package:echoes/features/memories/data/local_pending_memory_upload_queue.dart';
 import 'package:echoes/features/memories/domain/memory_repository.dart';
 import 'package:echoes/features/memories/domain/pending_memory_upload_queue.dart';
+import 'package:echoes/features/places/data/cached_place_repository.dart';
 import 'package:echoes/features/places/data/firestore_place_repository.dart';
 import 'package:echoes/features/places/data/local_place_repository.dart';
 import 'package:echoes/features/places/domain/place_repository.dart';
@@ -64,12 +66,12 @@ class EchoesApp extends StatelessWidget {
     final mediaUploadService = useFirebase
         ? FirebaseStorageMediaUploadService()
         : const LocalMediaUploadService();
-    final placeRepository = useFirebase
-        ? FirestorePlaceRepository()
-        : LocalPlaceRepository();
-    final memoryRepository = useFirebase
-        ? FirestoreMemoryRepository()
-        : LocalMemoryRepository();
+    final placeRepository = CachedPlaceRepository(
+      useFirebase ? FirestorePlaceRepository() : LocalPlaceRepository(),
+    );
+    final memoryRepository = CachedMemoryRepository(
+      useFirebase ? FirestoreMemoryRepository() : LocalMemoryRepository(),
+    );
     final pendingMemoryUploadQueue = LocalPendingMemoryUploadQueue();
     final communityRepository = useFirebase
         ? FirestoreCommunityRepository()

@@ -11,12 +11,12 @@
 
 ## Completion Snapshot
 
-Last updated: 2026-05-16
+Last updated: 2026-05-17
 
-- Overall checklist completion: 247 / 387 items complete, about 64%.
+- Overall checklist completion: 249 / 387 items complete, about 64%.
 - Internal Alpha feature scope: mostly implemented in code; device smoke testing and security-rules tests remain.
 - Private Beta feature scope: partially implemented; AR rendering, transfer initiation UI, and tagged-user search are in place; rules tests and deeper AR interaction remain.
-- Public MVP feature scope: in progress; offline cache, accessibility, performance, notifications, and production hardening remain.
+- Public MVP feature scope: in progress; nearby-place and recent-memory warm caches are now implemented; accessibility, performance, notifications, cache settings, and production hardening remain.
 
 ## Current Repository State
 
@@ -27,6 +27,7 @@ The repository now contains the product specification, implementation plan, and 
 - Flutter app source in `lib/`
 - Platform folders for Android, iOS, web, desktop
 - Firebase Auth, Firestore, Storage, Google Maps, and AR dependencies wired behind repository/service abstractions
+- Warm repository caches for nearby places and recently loaded memories
 - Unit and widget tests for the current local MVP and AR lifecycle foundation
 
 Native Firebase config files are present locally but ignored by git for GitHub safety. Production hardening, Firebase Cloud Functions, security-rules tests, notification delivery, offline sync, and full AR rendering remain to be implemented.
@@ -620,8 +621,8 @@ Deliverable:
 Goal: improve reliability on mobile networks.
 
 - [x] Enable Firebase offline persistence where supported.
-- [ ] Cache nearby places.
-- [ ] Cache recent memories.
+- [x] Cache nearby places.
+- [x] Cache recent memories.
 - [ ] Cache profile and settings.
 - [ ] Add local image caching.
 - [x] Add pending upload queue.
