@@ -8,6 +8,7 @@ import 'package:echoes/features/places/domain/place.dart';
 import 'package:echoes/features/places/presentation/custodianship_transfer_button.dart';
 import 'package:echoes/features/places/presentation/guardian_reassignment_placeholder.dart';
 import 'package:echoes/features/places/presentation/place_custodians.dart';
+import 'package:echoes/shared/widgets/empty_state.dart';
 import 'package:echoes/shared/widgets/loading_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -77,11 +78,11 @@ class PlaceDetailSheet extends StatelessWidget {
               final memories = snapshot.data ?? const <Memory>[];
 
               if (memories.isEmpty) {
-                return Text(
-                  'No memories saved here yet.',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: EchoesColors.textSecondary,
-                  ),
+                return const EmptyState(
+                  icon: Icons.auto_stories_outlined,
+                  title: 'No memories saved here yet.',
+                  description:
+                      'Add the first memory nearby to start this place archive.',
                 );
               }
 

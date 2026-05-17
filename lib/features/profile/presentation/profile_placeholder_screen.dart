@@ -13,6 +13,7 @@ import 'package:echoes/features/privacy/domain/privacy_type.dart';
 import 'package:echoes/features/profile/presentation/cache_management_settings.dart';
 import 'package:echoes/features/profile/presentation/notification_settings.dart';
 import 'package:echoes/features/users/domain/app_user_repository.dart';
+import 'package:echoes/shared/widgets/empty_state.dart';
 import 'package:echoes/shared/widgets/feature_placeholder.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -361,11 +362,11 @@ class _UserMemoryList extends StatelessWidget {
         final memories = snapshot.data ?? const <Memory>[];
 
         if (memories.isEmpty) {
-          return Text(
-            'No memories yet.',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: EchoesColors.textSecondary),
+          return const EmptyState(
+            icon: Icons.auto_stories_outlined,
+            title: 'No memories yet.',
+            description:
+                'Saved memories will appear here after you capture them.',
           );
         }
 

@@ -5,6 +5,7 @@ import 'package:echoes/features/communities/domain/community_repository.dart';
 import 'package:echoes/features/communities/domain/community_type.dart';
 import 'package:echoes/features/communities/presentation/community_badge.dart';
 import 'package:echoes/features/communities/presentation/community_detail_screen.dart';
+import 'package:echoes/shared/widgets/empty_state.dart';
 import 'package:echoes/shared/widgets/loading_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -161,11 +162,11 @@ class _CommunityList extends StatelessWidget {
         final communities = snapshot.data ?? const <Community>[];
 
         if (communities.isEmpty) {
-          return Text(
-            'No communities yet.',
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: EchoesColors.textSecondary),
+          return const EmptyState(
+            icon: Icons.groups_outlined,
+            title: 'No communities yet.',
+            description:
+                'Create a thematic archive to collect memories with others.',
           );
         }
 

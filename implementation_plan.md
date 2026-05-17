@@ -13,7 +13,7 @@
 
 Last updated: 2026-05-17
 
-- Overall checklist completion: 260 / 387 items complete, about 67%.
+- Overall checklist completion: 261 / 387 items complete, about 67%.
 - Internal Alpha feature scope: mostly implemented in code; device smoke testing and security-rules tests remain.
 - Private Beta feature scope: partially implemented; AR rendering, transfer initiation UI, and tagged-user search are in place; rules tests and deeper AR interaction remain.
 - Public MVP feature scope: in progress; nearby-place, recent-memory, profile/settings warm caches, local image caching, and cache management settings are now implemented; accessibility, performance, notifications, and production hardening remain.
@@ -37,6 +37,7 @@ The repository now contains the product specification, implementation plan, and 
 - Large text scaling support for shared placeholder layouts
 - Inline add-memory error recovery state
 - Shared loading state for async community and place detail content
+- Shared empty state for memory and community list surfaces
 - Profile cache management control for clearing local warm caches
 - Unit and widget tests for the current local MVP and AR lifecycle foundation
 
@@ -680,7 +681,7 @@ Goal: make the app comfortable, legible, and accessible.
 - [x] Support text scaling.
 - [x] Add high contrast support.
 - [ ] Verify screen reader navigation.
-- [ ] Add empty states.
+- [x] Add empty states.
 - [x] Add loading states.
 - [x] Add error recovery states.
 - [ ] Polish dark theme.

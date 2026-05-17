@@ -28,6 +28,10 @@ void main() {
     expect(find.text('Custodians'), findsOneWidget);
     expect(find.text('custodian-1'), findsOneWidget);
     expect(find.text('No memories saved here yet.'), findsOneWidget);
+    expect(
+      find.text('Add the first memory nearby to start this place archive.'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('PlaceDetailSheet renders memories for the place', (
