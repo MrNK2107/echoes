@@ -13,7 +13,7 @@
 
 Last updated: 2026-05-17
 
-- Overall checklist completion: 267 / 387 items complete, about 69%.
+- Overall checklist completion: 269 / 387 items complete, about 70%.
 - Internal Alpha feature scope: mostly implemented in code; device smoke testing and security-rules tests remain.
 - Private Beta feature scope: partially implemented; AR rendering, transfer initiation UI, and tagged-user search are in place; rules tests and deeper AR interaction remain.
 - Public MVP feature scope: in progress; nearby-place, recent-memory, profile/settings warm caches, local image caching, and cache management settings are now implemented; accessibility, performance, notifications, and production hardening remain.
@@ -42,6 +42,7 @@ The repository now contains the product specification, implementation plan, and 
 - Polished shared dark component theme styles
 - Animated aura preview glow and intensity transitions
 - Reduced AR running-mode UI chrome with overlay controls
+- AR memory orb tap handling opens memory details
 - Dimension-aware image compression before upload encoding
 - Bounded Firestore list and nearby candidate queries
 - Profile cache management control for clearing local warm caches
@@ -536,8 +537,8 @@ Goal: implement the first AR experience with aura zones and memory orbs.
 - [x] Render memory orbs inside aura.
 - [x] Limit visible orbs for performance.
 - [x] Add tap handling on aura.
-- [ ] Add tap handling on memory orb.
-- [ ] Open memory detail from orb tap.
+- [x] Add tap handling on memory orb.
+- [x] Open memory detail from orb tap.
 - [x] Add distance and direction indicators.
 
 Performance requirements:

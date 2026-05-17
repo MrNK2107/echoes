@@ -7,6 +7,8 @@ import 'package:echoes/features/ar/domain/ar_session_service.dart';
 import 'package:echoes/features/ar/presentation/ar_cubit.dart';
 import 'package:echoes/features/ar/presentation/ar_state.dart';
 import 'package:echoes/features/ar/presentation/ar_status.dart';
+import 'package:echoes/features/memories/domain/memory_repository.dart';
+import 'package:echoes/features/memories/presentation/memory_detail_sheet.dart';
 import 'package:echoes/features/places/domain/place_repository.dart';
 import 'package:echoes/shared/widgets/feature_placeholder.dart';
 import 'package:flutter/material.dart';
@@ -176,6 +178,8 @@ class _ArSessionPlaceholder extends StatelessWidget {
                 isBusy: isBusy,
                 onScenePlaceTap: (placeId) =>
                     context.read<ArCubit>().selectScenePlace(placeId),
+                onMemoryOrbTap: (placeId, orbIndex) =>
+                    _openMemoryFromOrb(context, placeId, orbIndex),
               ),
             ),
             Positioned(
@@ -221,6 +225,28 @@ class _ArSessionPlaceholder extends StatelessWidget {
       return 'Running';
     }
     return places == 1 ? 'Tracking 1 place' : 'Tracking $places places';
+  }
+
+  Future<void> _openMemoryFromOrb(
+    BuildContext context,
+    String placeId,
+    int orbIndex,
+  ) async {
+    context.read<ArCubit>().selectScenePlace(placeId);
+    final memories = await context
+        .read<MemoryRepository>()
+        .watchMemoriesForPlace(placeId)
+        .first;
+    if (!context.mounted || memories.isEmpty) {
+      return;
+    }
+
+    final memory = memories[orbIndex.clamp(0, memories.length - 1)];
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (_) => MemoryDetailSheet(memory: memory),
+    );
   }
 }
 
@@ -272,6 +298,7 @@ class _ArScenePreview extends StatefulWidget {
     required this.scenePlaces,
     required this.isBusy,
     required this.onScenePlaceTap,
+    required this.onMemoryOrbTap,
     this.selectedPlaceId,
   });
 
@@ -279,6 +306,7 @@ class _ArScenePreview extends StatefulWidget {
   final bool isBusy;
   final String? selectedPlaceId;
   final ValueChanged<String> onScenePlaceTap;
+  final void Function(String placeId, int orbIndex) onMemoryOrbTap;
 
   @override
   State<_ArScenePreview> createState() => _ArScenePreviewState();
@@ -320,12 +348,14 @@ class _ArScenePreviewState extends State<_ArScenePreview>
                   key: const ValueKey('arSceneTapLayer'),
                   behavior: HitTestBehavior.opaque,
                   onTapDown: (details) {
-                    final hitPlaceId = _hitTestScenePlace(
-                      details.localPosition,
-                      size,
-                    );
-                    if (hitPlaceId != null) {
-                      widget.onScenePlaceTap(hitPlaceId);
+                    final hit = _hitTestScene(details.localPosition, size);
+                    if (hit == null) {
+                      return;
+                    }
+                    if (hit.orbIndex == null) {
+                      widget.onScenePlaceTap(hit.placeId);
+                    } else {
+                      widget.onMemoryOrbTap(hit.placeId, hit.orbIndex!);
                     }
                   },
                   child: AnimatedBuilder(
@@ -347,19 +377,64 @@ class _ArScenePreviewState extends State<_ArScenePreview>
     );
   }
 
-  String? _hitTestScenePlace(Offset point, Size size) {
+  _ArSceneHit? _hitTestScene(Offset point, Size size) {
     final center = Offset(size.width / 2, size.height * 0.72);
     final unit = size.shortestSide / 54;
     for (final scenePlace in widget.scenePlaces.reversed) {
       final position =
           center + Offset(scenePlace.sceneX * unit, scenePlace.sceneZ * unit);
       final radius = scenePlace.auraRadius * unit * 1.12;
+      final orbIndex = _hitTestMemoryOrb(point, position, radius, scenePlace);
+      if (orbIndex != null) {
+        return _ArSceneHit(placeId: scenePlace.place.id, orbIndex: orbIndex);
+      }
       if ((point - position).distance <= radius) {
-        return scenePlace.place.id;
+        return _ArSceneHit(placeId: scenePlace.place.id);
       }
     }
     return null;
   }
+
+  int? _hitTestMemoryOrb(
+    Offset point,
+    Offset center,
+    double radius,
+    ArScenePlace scenePlace,
+  ) {
+    for (var index = 0; index < scenePlace.visibleOrbCount; index++) {
+      final orbPosition = _orbPosition(
+        center: center,
+        radius: radius,
+        index: index,
+        count: scenePlace.visibleOrbCount,
+      );
+      if ((point - orbPosition).distance <= (radius * 0.18).clamp(14, 22)) {
+        return index;
+      }
+    }
+    return null;
+  }
+}
+
+class _ArSceneHit {
+  const _ArSceneHit({required this.placeId, this.orbIndex});
+
+  final String placeId;
+  final int? orbIndex;
+}
+
+Offset _orbPosition({
+  required Offset center,
+  required double radius,
+  required int index,
+  required int count,
+}) {
+  final orbitRadius = radius * 0.45;
+  return Offset(
+    center.dx +
+        orbitRadius * 0.75 * (index.isEven ? 1 : -1) * (0.5 + index / count),
+    center.dy + orbitRadius * 0.5 * (index % 3 - 1),
+  );
 }
 
 class _ArScenePainter extends CustomPainter {
@@ -434,16 +509,16 @@ class _ArScenePainter extends CustomPainter {
   ) {
     final orbPaint = Paint()..color = color.withValues(alpha: 0.95);
     for (var index = 0; index < count; index++) {
-      final orbitRadius = radius * 0.45;
-      final offset = Offset(
-        center.dx +
-            orbitRadius *
-                0.75 *
-                (index.isEven ? 1 : -1) *
-                (0.5 + index / count),
-        center.dy + orbitRadius * 0.5 * (index % 3 - 1),
+      canvas.drawCircle(
+        _orbPosition(
+          center: center,
+          radius: radius,
+          index: index,
+          count: count,
+        ),
+        3.5,
+        orbPaint,
       );
-      canvas.drawCircle(offset, 3.5, orbPaint);
     }
   }
 
