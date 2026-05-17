@@ -33,6 +33,17 @@ class EchoesTheme {
       primary: highContrast ? Colors.white : EchoesColors.celestialBlue,
       secondary: EchoesColors.sunsetGold,
     );
+    final primaryColor = highContrast
+        ? Colors.white
+        : EchoesColors.celestialBlue;
+    final textColor = highContrast ? Colors.white : EchoesColors.textPrimary;
+    final secondaryTextColor = highContrast
+        ? const Color(0xFFE6EDF3)
+        : EchoesColors.textSecondary;
+    final surfaceColor = highContrast ? Colors.black : EchoesColors.surface;
+    final borderColor = highContrast
+        ? Colors.white
+        : EchoesColors.elevatedSurface;
 
     return ThemeData(
       useMaterial3: true,
@@ -43,46 +54,86 @@ class EchoesTheme {
           ? Colors.black
           : EchoesColors.deepSpace,
       colorScheme: colorScheme,
+      textTheme: ThemeData.dark().textTheme.apply(
+        bodyColor: textColor,
+        displayColor: textColor,
+      ),
       appBarTheme: AppBarTheme(
         backgroundColor: highContrast ? Colors.black : EchoesColors.deepSpace,
-        foregroundColor: highContrast ? Colors.white : EchoesColors.textPrimary,
+        foregroundColor: textColor,
         centerTitle: false,
         elevation: 0,
       ),
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
-        backgroundColor: highContrast ? Colors.black : EchoesColors.surface,
-        selectedItemColor: highContrast
-            ? Colors.white
-            : EchoesColors.celestialBlue,
-        unselectedItemColor: highContrast
-            ? const Color(0xFFE6EDF3)
-            : EchoesColors.textSecondary,
+        backgroundColor: surfaceColor,
+        selectedItemColor: primaryColor,
+        unselectedItemColor: secondaryTextColor,
         type: BottomNavigationBarType.fixed,
       ),
       cardTheme: CardThemeData(
-        color: highContrast ? Colors.black : EchoesColors.surface,
+        color: surfaceColor,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
-          side: BorderSide(
-            color: highContrast ? Colors.white : Colors.transparent,
-          ),
+          side: BorderSide(color: highContrast ? Colors.white : borderColor),
         ),
+      ),
+      dividerTheme: DividerThemeData(color: borderColor, thickness: 1),
+      progressIndicatorTheme: ProgressIndicatorThemeData(color: primaryColor),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: primaryColor,
+          foregroundColor: highContrast ? Colors.black : EchoesColors.deepSpace,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          minimumSize: const Size(48, 48),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: primaryColor,
+          side: BorderSide(color: borderColor),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          minimumSize: const Size(48, 48),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: primaryColor,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          minimumSize: const Size(48, 48),
+        ),
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: surfaceColor,
+        selectedColor: highContrast
+            ? Colors.white
+            : EchoesColors.celestialBlue.withValues(alpha: 0.18),
+        disabledColor: surfaceColor,
+        labelStyle: TextStyle(color: textColor),
+        secondaryLabelStyle: TextStyle(
+          color: highContrast ? Colors.black : textColor,
+        ),
+        side: BorderSide(color: borderColor),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: EchoesColors.elevatedSurface,
+        contentTextStyle: TextStyle(color: textColor),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: highContrast ? Colors.black : EchoesColors.surface,
+        fillColor: surfaceColor,
+        labelStyle: TextStyle(color: secondaryTextColor),
+        helperStyle: TextStyle(color: secondaryTextColor),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(
-            color: highContrast ? Colors.white : EchoesColors.elevatedSurface,
-          ),
+          borderSide: BorderSide(color: borderColor),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(
-            color: highContrast ? Colors.white : EchoesColors.elevatedSurface,
-          ),
+          borderSide: BorderSide(color: borderColor),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),

@@ -18,4 +18,25 @@ void main() {
     expect(theme.bottomNavigationBarTheme.selectedItemColor, Colors.white);
     expect(theme.inputDecorationTheme.focusedBorder, isA<OutlineInputBorder>());
   });
+
+  test('EchoesTheme polishes shared dark component styles', () {
+    final theme = EchoesTheme.dark;
+
+    expect(theme.cardTheme.shape, isA<RoundedRectangleBorder>());
+    expect(
+      theme.filledButtonTheme.style?.minimumSize?.resolve({}),
+      const Size(48, 48),
+    );
+    expect(
+      theme.outlinedButtonTheme.style?.shape?.resolve({}),
+      isA<RoundedRectangleBorder>(),
+    );
+    expect(
+      theme.textButtonTheme.style?.shape?.resolve({}),
+      isA<RoundedRectangleBorder>(),
+    );
+    expect(theme.snackBarTheme.behavior, SnackBarBehavior.floating);
+    expect(theme.chipTheme.shape, isA<RoundedRectangleBorder>());
+    expect(theme.progressIndicatorTheme.color, EchoesColors.celestialBlue);
+  });
 }
