@@ -13,7 +13,7 @@
 
 Last updated: 2026-05-17
 
-- Overall checklist completion: 253 / 387 items complete, about 65%.
+- Overall checklist completion: 254 / 387 items complete, about 66%.
 - Internal Alpha feature scope: mostly implemented in code; device smoke testing and security-rules tests remain.
 - Private Beta feature scope: partially implemented; AR rendering, transfer initiation UI, and tagged-user search are in place; rules tests and deeper AR interaction remain.
 - Public MVP feature scope: in progress; nearby-place, recent-memory, profile/settings warm caches, local image caching, and cache management settings are now implemented; accessibility, performance, notifications, and production hardening remain.
@@ -30,6 +30,7 @@ The repository now contains the product specification, implementation plan, and 
 - Warm repository caches for nearby places, recently loaded memories, and profile/settings snapshots
 - Local image cache-backed memory photo previews
 - Extracted place detail sheet with widget coverage
+- Extracted community detail screen with join-flow widget coverage
 - Profile cache management control for clearing local warm caches
 - Unit and widget tests for the current local MVP and AR lifecycle foundation
 
@@ -729,7 +730,7 @@ Deliverable:
 - [x] Memory card
 - [x] Memory detail
 - [x] Place detail
-- [ ] Community detail
+- [x] Community detail
 
 ### Integration Tests
 
