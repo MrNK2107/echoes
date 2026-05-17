@@ -29,6 +29,8 @@ class EchoesTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
+      materialTapTargetSize: MaterialTapTargetSize.padded,
+      visualDensity: VisualDensity.standard,
       scaffoldBackgroundColor: EchoesColors.deepSpace,
       colorScheme: colorScheme,
       appBarTheme: const AppBarTheme(

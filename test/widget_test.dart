@@ -79,6 +79,41 @@ void main() {
     semantics.dispose();
   });
 
+  testWidgets('primary touch targets are at least 44dp', (tester) async {
+    await tester.pumpWidget(const EchoesApp());
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('emailField')),
+      'nanda@example.com',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('passwordField')),
+      'password123',
+    );
+    await tester.tap(find.byKey(const ValueKey('authSubmitButton')));
+    await tester.pumpAndSettle();
+
+    _expectMinTouchTarget(tester, find.byType(BottomNavigationBar));
+    _expectMinTouchTarget(
+      tester,
+      find.byKey(const ValueKey('requestLocationButton')),
+    );
+
+    await tester.tap(find.text('Communities'));
+    await tester.pumpAndSettle();
+    _expectMinTouchTarget(
+      tester,
+      find.byKey(const ValueKey('createCommunityButton')),
+    );
+
+    await tester.tap(find.text('Profile'));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const ValueKey('signOutButton')));
+    await tester.pumpAndSettle();
+    _expectMinTouchTarget(tester, find.byKey(const ValueKey('signOutButton')));
+  });
+
   testWidgets('switches between bottom navigation destinations', (
     tester,
   ) async {
@@ -145,4 +180,11 @@ void main() {
 
     expect(find.text('Sign in'), findsOneWidget);
   });
+}
+
+void _expectMinTouchTarget(WidgetTester tester, Finder finder) {
+  final size = tester.getSize(finder);
+
+  expect(size.width, greaterThanOrEqualTo(44));
+  expect(size.height, greaterThanOrEqualTo(44));
 }

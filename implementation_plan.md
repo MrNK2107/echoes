@@ -13,7 +13,7 @@
 
 Last updated: 2026-05-17
 
-- Overall checklist completion: 255 / 387 items complete, about 66%.
+- Overall checklist completion: 256 / 387 items complete, about 66%.
 - Internal Alpha feature scope: mostly implemented in code; device smoke testing and security-rules tests remain.
 - Private Beta feature scope: partially implemented; AR rendering, transfer initiation UI, and tagged-user search are in place; rules tests and deeper AR interaction remain.
 - Public MVP feature scope: in progress; nearby-place, recent-memory, profile/settings warm caches, local image caching, and cache management settings are now implemented; accessibility, performance, notifications, and production hardening remain.
@@ -32,6 +32,7 @@ The repository now contains the product specification, implementation plan, and 
 - Extracted place detail sheet with widget coverage
 - Extracted community detail screen with join-flow widget coverage
 - Semantic labels for primary app navigation
+- Explicit padded Material touch targets with widget verification
 - Profile cache management control for clearing local warm caches
 - Unit and widget tests for the current local MVP and AR lifecycle foundation
 
@@ -670,7 +671,7 @@ Deliverable:
 
 Goal: make the app comfortable, legible, and accessible.
 
-- [ ] Verify 44x44dp minimum touch targets.
+- [x] Verify 44x44dp minimum touch targets.
 - [x] Add semantic labels.
 - [ ] Support text scaling.
 - [ ] Add high contrast support.
