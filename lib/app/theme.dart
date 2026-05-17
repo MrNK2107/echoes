@@ -18,11 +18,19 @@ class EchoesColors {
 
 class EchoesTheme {
   static ThemeData get dark {
+    return _buildDarkTheme(highContrast: false);
+  }
+
+  static ThemeData get highContrastDark {
+    return _buildDarkTheme(highContrast: true);
+  }
+
+  static ThemeData _buildDarkTheme({required bool highContrast}) {
     final colorScheme = ColorScheme.fromSeed(
       seedColor: EchoesColors.celestialBlue,
       brightness: Brightness.dark,
-      surface: EchoesColors.surface,
-      primary: EchoesColors.celestialBlue,
+      surface: highContrast ? Colors.black : EchoesColors.surface,
+      primary: highContrast ? Colors.white : EchoesColors.celestialBlue,
       secondary: EchoesColors.sunsetGold,
     );
 
@@ -31,39 +39,59 @@ class EchoesTheme {
       brightness: Brightness.dark,
       materialTapTargetSize: MaterialTapTargetSize.padded,
       visualDensity: VisualDensity.standard,
-      scaffoldBackgroundColor: EchoesColors.deepSpace,
+      scaffoldBackgroundColor: highContrast
+          ? Colors.black
+          : EchoesColors.deepSpace,
       colorScheme: colorScheme,
-      appBarTheme: const AppBarTheme(
-        backgroundColor: EchoesColors.deepSpace,
-        foregroundColor: EchoesColors.textPrimary,
+      appBarTheme: AppBarTheme(
+        backgroundColor: highContrast ? Colors.black : EchoesColors.deepSpace,
+        foregroundColor: highContrast ? Colors.white : EchoesColors.textPrimary,
         centerTitle: false,
         elevation: 0,
       ),
-      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: EchoesColors.surface,
-        selectedItemColor: EchoesColors.celestialBlue,
-        unselectedItemColor: EchoesColors.textSecondary,
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        backgroundColor: highContrast ? Colors.black : EchoesColors.surface,
+        selectedItemColor: highContrast
+            ? Colors.white
+            : EchoesColors.celestialBlue,
+        unselectedItemColor: highContrast
+            ? const Color(0xFFE6EDF3)
+            : EchoesColors.textSecondary,
         type: BottomNavigationBarType.fixed,
       ),
       cardTheme: CardThemeData(
-        color: EchoesColors.surface,
+        color: highContrast ? Colors.black : EchoesColors.surface,
         elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+          side: BorderSide(
+            color: highContrast ? Colors.white : Colors.transparent,
+          ),
+        ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: EchoesColors.surface,
+        fillColor: highContrast ? Colors.black : EchoesColors.surface,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: EchoesColors.elevatedSurface),
+          borderSide: BorderSide(
+            color: highContrast ? Colors.white : EchoesColors.elevatedSurface,
+          ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: EchoesColors.elevatedSurface),
+          borderSide: BorderSide(
+            color: highContrast ? Colors.white : EchoesColors.elevatedSurface,
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: EchoesColors.celestialBlue),
+          borderSide: BorderSide(
+            color: highContrast
+                ? EchoesColors.sunsetGold
+                : EchoesColors.celestialBlue,
+            width: highContrast ? 2 : 1,
+          ),
         ),
       ),
     );

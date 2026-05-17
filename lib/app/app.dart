@@ -99,6 +99,7 @@ class EchoesApp extends StatelessWidget {
       title: appConfig.appTitle,
       debugShowCheckedModeBanner: !appConfig.isProduction,
       theme: EchoesTheme.dark,
+      highContrastTheme: EchoesTheme.highContrastDark,
       home: MultiRepositoryProvider(
         providers: [
           RepositoryProvider<AuthRepository>(create: (_) => authRepository),

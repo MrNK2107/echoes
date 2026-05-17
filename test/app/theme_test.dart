@@ -9,4 +9,13 @@ void main() {
     expect(theme.materialTapTargetSize, MaterialTapTargetSize.padded);
     expect(theme.visualDensity, VisualDensity.standard);
   });
+
+  test('EchoesTheme exposes a high contrast dark theme', () {
+    final theme = EchoesTheme.highContrastDark;
+
+    expect(theme.scaffoldBackgroundColor, Colors.black);
+    expect(theme.colorScheme.primary, Colors.white);
+    expect(theme.bottomNavigationBarTheme.selectedItemColor, Colors.white);
+    expect(theme.inputDecorationTheme.focusedBorder, isA<OutlineInputBorder>());
+  });
 }
