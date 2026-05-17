@@ -109,6 +109,7 @@ class _AddMemoryViewState extends State<_AddMemoryView> {
                 ),
                 const SizedBox(height: 24),
                 const _PendingUploadStatusBanner(),
+                const _ErrorRecoveryBanner(),
                 const SizedBox(height: 16),
                 const _PhotoSelector(),
                 const SizedBox(height: 16),
@@ -172,6 +173,85 @@ class _AddMemoryViewState extends State<_AddMemoryView> {
     context.read<AddMemoryCubit>().submit(
       userId: session.userId,
       textContent: _textController.text,
+    );
+  }
+}
+
+class _ErrorRecoveryBanner extends StatelessWidget {
+  const _ErrorRecoveryBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<AddMemoryCubit, AddMemoryState>(
+      builder: (context, state) {
+        final errorMessage = state.errorMessage;
+        if (state.status != AddMemoryStatus.failure || errorMessage == null) {
+          return const SizedBox.shrink();
+        }
+
+        return Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: DecoratedBox(
+            key: const ValueKey('addMemoryErrorRecoveryBanner'),
+            decoration: BoxDecoration(
+              color: EchoesColors.elevatedSurface,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: EchoesColors.sunsetGold),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        color: EchoesColors.sunsetGold,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          errorMessage,
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(
+                                color: EchoesColors.textPrimary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          key: const ValueKey('retryAddMemoryRecoveryButton'),
+                          onPressed: () =>
+                              context.read<AddMemoryCubit>().captureLocation(),
+                          icon: const Icon(Icons.my_location),
+                          label: const Text('Retry location'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextButton(
+                          key: const ValueKey('dismissAddMemoryErrorButton'),
+                          onPressed: () =>
+                              context.read<AddMemoryCubit>().clearFailure(),
+                          child: const Text('Dismiss'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

@@ -70,6 +70,27 @@ void main() {
       await cubit.close();
     });
 
+    test('clears failure into the nearest non-error state', () async {
+      final cubit = AddMemoryCubit(
+        locationService: _FakeLocationService(
+          permission: LocationPermissionState.granted,
+        ),
+        mediaPickerService: _FakeMediaPickerService(),
+        imageCompressionService: _NoOpImageCompressionService(),
+        mediaUploadService: _FakeMediaUploadService(),
+        sentimentAnalyzer: LexiconSentimentAnalyzer(),
+        placeRepository: LocalPlaceRepository(now: DateTime.utc(2026, 5, 14)),
+        memoryRepository: LocalMemoryRepository(),
+      );
+
+      await cubit.submit(userId: 'user-1', textContent: 'No place yet');
+      cubit.clearFailure();
+
+      expect(cubit.state.status, AddMemoryStatus.initial);
+      expect(cubit.state.errorMessage, isNull);
+      await cubit.close();
+    });
+
     test('stores selected gallery image path', () async {
       final cubit = AddMemoryCubit(
         locationService: _FakeLocationService(

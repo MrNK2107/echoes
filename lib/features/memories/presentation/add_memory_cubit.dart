@@ -97,6 +97,20 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
     emit(state.copyWith(communityId: communityId));
   }
 
+  void clearFailure() {
+    if (state.status != AddMemoryStatus.failure) {
+      return;
+    }
+
+    emit(
+      state.copyWith(
+        status: state.location == null
+            ? AddMemoryStatus.initial
+            : AddMemoryStatus.ready,
+      ),
+    );
+  }
+
   Future<void> pickFromCamera() async {
     await _pickImage(_mediaPickerService.pickFromCamera);
   }

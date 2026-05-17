@@ -119,13 +119,59 @@ void main() {
       expect(await uploadQueue.pendingUploads(), isEmpty);
       uploadQueue.dispose();
     });
+
+    testWidgets('shows persistent recovery after location failure', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const _TestApp(locationService: _DeniedLocationService()),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('captureMemoryLocationButton')),
+      );
+      await tester.tap(
+        find.byKey(const ValueKey('captureMemoryLocationButton')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('addMemoryErrorRecoveryBanner')),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Location permission is required to add a memory.'),
+        findsWidgets,
+      );
+      expect(
+        find.byKey(const ValueKey('retryAddMemoryRecoveryButton')),
+        findsOneWidget,
+      );
+
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('dismissAddMemoryErrorButton')),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(
+        find.byKey(const ValueKey('dismissAddMemoryErrorButton')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('addMemoryErrorRecoveryBanner')),
+        findsNothing,
+      );
+    });
   });
 }
 
 class _TestApp extends StatelessWidget {
-  const _TestApp({this.uploadQueue});
+  const _TestApp({this.uploadQueue, this.locationService});
 
   final LocalPendingMemoryUploadQueue? uploadQueue;
+  final LocationService? locationService;
 
   @override
   Widget build(BuildContext context) {
@@ -142,7 +188,7 @@ class _TestApp extends StatelessWidget {
           create: (_) => _SeededAppUserRepository(),
         ),
         RepositoryProvider<LocationService>(
-          create: (_) => const _FakeLocationService(),
+          create: (_) => locationService ?? const _FakeLocationService(),
         ),
         RepositoryProvider<MediaPickerService>(
           create: (_) => const _FakeMediaPickerService(),
@@ -225,6 +271,25 @@ class _FakeLocationService implements LocationService {
   @override
   Future<LocationPermissionState> requestPermission() async {
     return LocationPermissionState.granted;
+  }
+}
+
+class _DeniedLocationService implements LocationService {
+  const _DeniedLocationService();
+
+  @override
+  Future<LocationPermissionState> checkPermission() async {
+    return LocationPermissionState.denied;
+  }
+
+  @override
+  Future<DeviceLocation> getCurrentLocation() async {
+    throw StateError('Location should not be requested when denied.');
+  }
+
+  @override
+  Future<LocationPermissionState> requestPermission() async {
+    return LocationPermissionState.denied;
   }
 }
 
