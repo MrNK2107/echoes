@@ -166,11 +166,10 @@ class _ArSessionPlaceholder extends StatelessWidget {
 
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        padding: const EdgeInsets.all(12),
+        child: Stack(
           children: [
-            Expanded(
+            Positioned.fill(
               child: _ArScenePreview(
                 scenePlaces: scenePlaces,
                 selectedPlaceId: state?.selectedScenePlaceId,
@@ -179,32 +178,37 @@ class _ArSessionPlaceholder extends StatelessWidget {
                     context.read<ArCubit>().selectScenePlace(placeId),
               ),
             ),
-            const SizedBox(height: 16),
-            Text(
-              isStarting
-                  ? 'Starting aura view'
-                  : isStopping
-                  ? 'Stopping aura view'
-                  : _runningLabel,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: EchoesColors.textPrimary,
-                fontWeight: FontWeight.w700,
+            Positioned(
+              left: 12,
+              top: 12,
+              right: 76,
+              child: _ArStatusPill(
+                label: isStarting
+                    ? 'Starting'
+                    : isStopping
+                    ? 'Stopping'
+                    : _runningLabel,
               ),
             ),
-            if (scenePlaces.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              _SelectedScenePlaceSummary(state: state),
-            ],
-            const SizedBox(height: 16),
-            OutlinedButton.icon(
-              key: const ValueKey('stopArSessionButton'),
-              onPressed: isBusy
-                  ? null
-                  : () => context.read<ArCubit>().stopSession(),
-              icon: const Icon(Icons.close_fullscreen),
-              label: const Text('Stop aura view'),
+            Positioned(
+              right: 12,
+              top: 12,
+              child: IconButton.filledTonal(
+                key: const ValueKey('stopArSessionButton'),
+                tooltip: 'Stop aura view',
+                onPressed: isBusy
+                    ? null
+                    : () => context.read<ArCubit>().stopSession(),
+                icon: const Icon(Icons.close_fullscreen),
+              ),
             ),
+            if (scenePlaces.isNotEmpty)
+              Positioned(
+                left: 12,
+                right: 12,
+                bottom: 12,
+                child: _SelectedScenePlaceSummary(state: state),
+              ),
           ],
         ),
       ),
@@ -214,11 +218,52 @@ class _ArSessionPlaceholder extends StatelessWidget {
   String get _runningLabel {
     final places = state?.nearbyPlaces.length ?? 0;
     if (places == 0) {
-      return 'Aura view is running';
+      return 'Running';
     }
-    return places == 1
-        ? 'Aura view is tracking 1 nearby place'
-        : 'Aura view is tracking $places nearby places';
+    return places == 1 ? 'Tracking 1 place' : 'Tracking $places places';
+  }
+}
+
+class _ArStatusPill extends StatelessWidget {
+  const _ArStatusPill({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      key: const ValueKey('arStatusPill'),
+      decoration: BoxDecoration(
+        color: EchoesColors.deepSpace.withValues(alpha: 0.82),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: EchoesColors.elevatedSurface),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.view_in_ar_outlined,
+              size: 18,
+              color: EchoesColors.celestialBlue,
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: EchoesColors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -450,12 +495,23 @@ class _SelectedScenePlaceSummary extends StatelessWidget {
               .join('\n')
         : '${selected.place.name}\n${selected.directionLabel} - ${selected.distanceLabel} - ${selected.visibleOrbCount} visible orbs';
 
-    return Text(
-      lines,
-      textAlign: TextAlign.center,
-      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-        color: EchoesColors.textSecondary,
-        height: 1.35,
+    return DecoratedBox(
+      key: const ValueKey('arSceneSummary'),
+      decoration: BoxDecoration(
+        color: EchoesColors.deepSpace.withValues(alpha: 0.82),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: EchoesColors.elevatedSurface),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Text(
+          lines,
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: EchoesColors.textPrimary,
+            height: 1.35,
+          ),
+        ),
       ),
     );
   }
