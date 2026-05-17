@@ -19,4 +19,17 @@ void main() {
 
     expect(cache.cachedItemCount, 0);
   });
+
+  test('LocalImageCache stores thumbnail metadata with cached providers', () {
+    final cache = LocalImageCache();
+
+    final entry = cache.entryFor('https://example.com/memory.jpg');
+    final repeatedEntry = cache.entryFor('https://example.com/memory.jpg');
+
+    expect(entry, same(repeatedEntry));
+    expect(entry.imageUrl, 'https://example.com/memory.jpg');
+    expect(entry.thumbnailKey, isNotEmpty);
+    expect(entry.cachedAt.isUtc, isTrue);
+    expect(cache.providerFor('https://example.com/memory.jpg'), entry.provider);
+  });
 }

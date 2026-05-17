@@ -13,7 +13,7 @@
 
 Last updated: 2026-05-17
 
-- Overall checklist completion: 269 / 387 items complete, about 70%.
+- Overall checklist completion: 270 / 387 items complete, about 70%.
 - Internal Alpha feature scope: mostly implemented in code; device smoke testing and security-rules tests remain.
 - Private Beta feature scope: partially implemented; AR rendering, transfer initiation UI, and tagged-user search are in place; rules tests and deeper AR interaction remain.
 - Public MVP feature scope: in progress; nearby-place, recent-memory, profile/settings warm caches, local image caching, and cache management settings are now implemented; accessibility, performance, notifications, and production hardening remain.
@@ -43,6 +43,7 @@ The repository now contains the product specification, implementation plan, and 
 - Animated aura preview glow and intensity transitions
 - Reduced AR running-mode UI chrome with overlay controls
 - AR memory orb tap handling opens memory details
+- Thumbnail metadata entries in the local image cache
 - Dimension-aware image compression before upload encoding
 - Bounded Firestore list and nearby candidate queries
 - Profile cache management control for clearing local warm caches
@@ -546,7 +547,7 @@ Performance requirements:
 - [ ] Maintain 30 FPS on target Android devices.
 - [x] Avoid rendering too many places at once.
 - [x] Avoid rendering too many memory orbs at once.
-- [ ] Cache thumbnails and metadata.
+- [x] Cache thumbnails and metadata.
 
 Tests:
 
