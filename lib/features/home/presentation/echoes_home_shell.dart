@@ -18,17 +18,27 @@ class _EchoesHomeShellState extends State<EchoesHomeShell> {
     return Scaffold(
       appBar: AppBar(title: Text(destination.title)),
       body: destination.screen,
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) => setState(() => _selectedIndex = index),
-        items: [
-          for (final destination in homeDestinations)
-            BottomNavigationBarItem(
-              icon: Icon(destination.icon),
-              activeIcon: Icon(destination.activeIcon),
-              label: destination.label,
-            ),
-        ],
+      bottomNavigationBar: Semantics(
+        label: 'Primary app navigation',
+        child: BottomNavigationBar(
+          currentIndex: _selectedIndex,
+          onTap: (index) => setState(() => _selectedIndex = index),
+          items: [
+            for (final destination in homeDestinations)
+              BottomNavigationBarItem(
+                icon: Icon(
+                  destination.icon,
+                  semanticLabel: destination.semanticLabel,
+                ),
+                activeIcon: Icon(
+                  destination.activeIcon,
+                  semanticLabel: destination.semanticLabel,
+                ),
+                label: destination.label,
+                tooltip: destination.semanticLabel,
+              ),
+          ],
+        ),
       ),
     );
   }

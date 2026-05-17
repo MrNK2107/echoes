@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 class HomeDestination {
   const HomeDestination({
     required this.label,
+    required this.semanticLabel,
     required this.title,
     required this.icon,
     required this.activeIcon,
@@ -15,6 +16,7 @@ class HomeDestination {
   });
 
   final String label;
+  final String semanticLabel;
   final String title;
   final IconData icon;
   final IconData activeIcon;
@@ -24,6 +26,7 @@ class HomeDestination {
 const homeDestinations = [
   HomeDestination(
     label: 'Map',
+    semanticLabel: 'Open map tab',
     title: 'Nearby Echoes',
     icon: Icons.map_outlined,
     activeIcon: Icons.map,
@@ -31,6 +34,7 @@ const homeDestinations = [
   ),
   HomeDestination(
     label: 'AR',
+    semanticLabel: 'Open AR tab',
     title: 'Aura View',
     icon: Icons.view_in_ar_outlined,
     activeIcon: Icons.view_in_ar,
@@ -38,6 +42,7 @@ const homeDestinations = [
   ),
   HomeDestination(
     label: 'Add',
+    semanticLabel: 'Open add memory tab',
     title: 'Add Memory',
     icon: Icons.add_circle_outline,
     activeIcon: Icons.add_circle,
@@ -45,6 +50,7 @@ const homeDestinations = [
   ),
   HomeDestination(
     label: 'Communities',
+    semanticLabel: 'Open communities tab',
     title: 'Communities',
     icon: Icons.groups_outlined,
     activeIcon: Icons.groups,
@@ -52,6 +58,7 @@ const homeDestinations = [
   ),
   HomeDestination(
     label: 'Profile',
+    semanticLabel: 'Open profile tab',
     title: 'Profile',
     icon: Icons.person_outline,
     activeIcon: Icons.person,

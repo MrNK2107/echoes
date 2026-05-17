@@ -40,6 +40,45 @@ void main() {
     }
   });
 
+  testWidgets('home shell exposes semantic labels for navigation tabs', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+
+    await tester.pumpWidget(const EchoesApp());
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('emailField')),
+      'nanda@example.com',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('passwordField')),
+      'password123',
+    );
+    await tester.tap(find.byKey(const ValueKey('authSubmitButton')));
+    await tester.pumpAndSettle();
+
+    expect(find.bySemanticsLabel('Primary app navigation'), findsOneWidget);
+
+    for (final label in [
+      'Open map tab',
+      'Open AR tab',
+      'Open add memory tab',
+      'Open communities tab',
+      'Open profile tab',
+    ]) {
+      expect(
+        find.byWidgetPredicate(
+          (widget) => widget is Icon && widget.semanticLabel == label,
+        ),
+        findsWidgets,
+      );
+    }
+
+    semantics.dispose();
+  });
+
   testWidgets('switches between bottom navigation destinations', (
     tester,
   ) async {
