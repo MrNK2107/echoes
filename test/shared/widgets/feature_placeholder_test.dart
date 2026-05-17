@@ -34,5 +34,15 @@ void main() {
     expect(find.byType(SingleChildScrollView), findsOneWidget);
     expect(find.text('Places remember first.'), findsOneWidget);
     expect(find.text('Enable location'), findsOneWidget);
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Semantics &&
+            widget.properties.header == true &&
+            widget.child is Text &&
+            (widget.child! as Text).data == 'Places remember first.',
+      ),
+      findsOneWidget,
+    );
   });
 }

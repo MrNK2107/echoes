@@ -21,5 +21,15 @@ void main() {
     expect(find.byIcon(Icons.auto_stories_outlined), findsOneWidget);
     expect(find.text('No memories yet.'), findsOneWidget);
     expect(find.text('Saved memories will appear here.'), findsOneWidget);
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Semantics &&
+            widget.properties.header == true &&
+            widget.child is Text &&
+            (widget.child! as Text).data == 'No memories yet.',
+      ),
+      findsOneWidget,
+    );
   });
 }

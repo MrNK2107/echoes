@@ -50,11 +50,14 @@ class FeaturePlaceholder extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 24),
-                    Text(
-                      title,
-                      style: textTheme.headlineMedium?.copyWith(
-                        color: EchoesColors.textPrimary,
-                        fontWeight: FontWeight.w700,
+                    Semantics(
+                      header: true,
+                      child: Text(
+                        title,
+                        style: textTheme.headlineMedium?.copyWith(
+                          color: EchoesColors.textPrimary,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 12),

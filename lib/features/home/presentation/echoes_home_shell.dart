@@ -16,7 +16,9 @@ class _EchoesHomeShellState extends State<EchoesHomeShell> {
     final destination = homeDestinations[_selectedIndex];
 
     return Scaffold(
-      appBar: AppBar(title: Text(destination.title)),
+      appBar: AppBar(
+        title: Semantics(header: true, child: Text(destination.title)),
+      ),
       body: destination.screen,
       bottomNavigationBar: Semantics(
         label: 'Primary app navigation',

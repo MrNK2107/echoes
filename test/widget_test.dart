@@ -60,6 +60,16 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.bySemanticsLabel('Primary app navigation'), findsOneWidget);
+    expect(
+      find.byWidgetPredicate(
+        (widget) =>
+            widget is Semantics &&
+            widget.properties.header == true &&
+            widget.child is Text &&
+            (widget.child! as Text).data == 'Nearby Echoes',
+      ),
+      findsOneWidget,
+    );
 
     for (final label in [
       'Open map tab',
