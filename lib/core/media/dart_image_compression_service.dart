@@ -7,10 +7,12 @@ import 'package:image/image.dart' as image;
 class DartImageCompressionService implements ImageCompressionService {
   DartImageCompressionService({
     this.maxBytes = 1024 * 1024,
+    this.maxDimension = 1600,
     Directory? outputDirectory,
   }) : _outputDirectory = outputDirectory;
 
   final int maxBytes;
+  final int maxDimension;
   final Directory? _outputDirectory;
 
   @override
@@ -26,7 +28,7 @@ class DartImageCompressionService implements ImageCompressionService {
       throw const ImageCompressionException('Unsupported image format.');
     }
 
-    var current = decoded;
+    var current = _resizeToMaxDimension(decoded);
     for (final quality in const [85, 75, 65, 55, 45, 35]) {
       final encoded = image.encodeJpg(current, quality: quality);
       if (encoded.length <= maxBytes) {
@@ -52,6 +54,21 @@ class DartImageCompressionService implements ImageCompressionService {
 
     throw ImageCompressionException(
       'Could not compress image below ${maxBytes ~/ 1024}KB.',
+    );
+  }
+
+  image.Image _resizeToMaxDimension(image.Image decoded) {
+    final longestSide = max(decoded.width, decoded.height);
+    if (longestSide <= maxDimension) {
+      return decoded;
+    }
+
+    final scale = maxDimension / longestSide;
+    return image.copyResize(
+      decoded,
+      width: max(1, (decoded.width * scale).round()),
+      height: max(1, (decoded.height * scale).round()),
+      interpolation: image.Interpolation.average,
     );
   }
 

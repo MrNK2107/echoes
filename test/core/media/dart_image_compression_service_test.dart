@@ -48,6 +48,31 @@ void main() {
       expect(await compressed.length(), lessThanOrEqualTo(50 * 1024));
       await tempDir.delete(recursive: true);
     });
+
+    test('resizes oversized images before upload compression', () async {
+      final tempDir = await Directory.systemTemp.createTemp(
+        'echoes-compression-dimensions',
+      );
+      final source = File('${tempDir.path}${Platform.pathSeparator}wide.bmp');
+      await source.writeAsBytes(
+        image.encodeBmp(image.Image(width: 1800, height: 900)),
+      );
+      final service = DartImageCompressionService(
+        maxBytes: 120 * 1024,
+        maxDimension: 600,
+        outputDirectory: tempDir,
+      );
+
+      final result = await service.compressToUploadLimit(source.path);
+      final compressed = image.decodeImage(await File(result).readAsBytes());
+
+      expect(result, isNot(source.path));
+      expect(compressed, isNotNull);
+      expect(compressed!.width, lessThanOrEqualTo(600));
+      expect(compressed.height, lessThanOrEqualTo(600));
+      expect(await File(result).length(), lessThanOrEqualTo(120 * 1024));
+      await tempDir.delete(recursive: true);
+    });
   });
 }
 
