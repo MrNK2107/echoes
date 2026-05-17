@@ -1,15 +1,34 @@
 import 'dart:math';
 
+import 'package:echoes/core/cache/app_cache_registry.dart';
 import 'package:echoes/features/places/domain/place.dart';
 import 'package:echoes/features/places/domain/place_repository.dart';
 
-class CachedPlaceRepository implements PlaceRepository {
-  CachedPlaceRepository(this._delegate, {this.maxNearbyQueries = 8});
+class CachedPlaceRepository implements PlaceRepository, AppCacheClient {
+  CachedPlaceRepository(
+    this._delegate, {
+    this.maxNearbyQueries = 8,
+    AppCacheRegistry? cacheRegistry,
+  }) {
+    cacheRegistry?.register(this);
+  }
 
   final PlaceRepository _delegate;
   final int maxNearbyQueries;
   final Map<String, Place> _placesById = {};
   final Map<_NearbyPlaceQuery, List<Place>> _nearbyPlaces = {};
+
+  @override
+  String get cacheLabel => 'Nearby places';
+
+  @override
+  int get cachedItemCount => _placesById.length + _nearbyPlaces.length;
+
+  @override
+  void clearCache() {
+    _placesById.clear();
+    _nearbyPlaces.clear();
+  }
 
   @override
   Future<void> create(Place place) async {

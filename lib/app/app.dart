@@ -1,4 +1,5 @@
 import 'package:echoes/app/theme.dart';
+import 'package:echoes/core/cache/app_cache_registry.dart';
 import 'package:echoes/core/config/app_config.dart';
 import 'package:echoes/core/location/geolocator_location_service.dart';
 import 'package:echoes/core/location/location_service.dart';
@@ -58,20 +59,24 @@ class EchoesApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final appConfig = config ?? AppConfig.fromEnvironment();
+    final cacheRegistry = AppCacheRegistry();
     final authRepository = useFirebase
         ? FirebaseAuthRepository()
         : LocalAuthRepository();
     final appUserRepository = CachedAppUserRepository(
       useFirebase ? FirestoreAppUserRepository() : LocalAppUserRepository(),
+      cacheRegistry: cacheRegistry,
     );
     final mediaUploadService = useFirebase
         ? FirebaseStorageMediaUploadService()
         : const LocalMediaUploadService();
     final placeRepository = CachedPlaceRepository(
       useFirebase ? FirestorePlaceRepository() : LocalPlaceRepository(),
+      cacheRegistry: cacheRegistry,
     );
     final memoryRepository = CachedMemoryRepository(
       useFirebase ? FirestoreMemoryRepository() : LocalMemoryRepository(),
+      cacheRegistry: cacheRegistry,
     );
     final pendingMemoryUploadQueue = LocalPendingMemoryUploadQueue();
     final communityRepository = useFirebase
@@ -94,6 +99,7 @@ class EchoesApp extends StatelessWidget {
       home: MultiRepositoryProvider(
         providers: [
           RepositoryProvider<AuthRepository>(create: (_) => authRepository),
+          RepositoryProvider<AppCacheRegistry>(create: (_) => cacheRegistry),
           RepositoryProvider<AppUserRepository>(
             create: (_) => appUserRepository,
           ),

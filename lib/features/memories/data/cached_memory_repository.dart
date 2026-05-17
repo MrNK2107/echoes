@@ -1,14 +1,31 @@
+import 'package:echoes/core/cache/app_cache_registry.dart';
 import 'package:echoes/features/memories/domain/memory.dart';
 import 'package:echoes/features/memories/domain/memory_repository.dart';
 import 'package:echoes/features/privacy/domain/privacy_type.dart';
 
-class CachedMemoryRepository implements MemoryRepository {
-  CachedMemoryRepository(this._delegate);
+class CachedMemoryRepository implements MemoryRepository, AppCacheClient {
+  CachedMemoryRepository(this._delegate, {AppCacheRegistry? cacheRegistry}) {
+    cacheRegistry?.register(this);
+  }
 
   final MemoryRepository _delegate;
   final Map<String, Memory> _memoriesById = {};
   final Map<String, List<Memory>> _memoriesByPlace = {};
   final Map<String, List<Memory>> _memoriesByUser = {};
+
+  @override
+  String get cacheLabel => 'Recent memories';
+
+  @override
+  int get cachedItemCount =>
+      _memoriesById.length + _memoriesByPlace.length + _memoriesByUser.length;
+
+  @override
+  void clearCache() {
+    _memoriesById.clear();
+    _memoriesByPlace.clear();
+    _memoriesByUser.clear();
+  }
 
   @override
   Future<void> create(Memory memory) async {

@@ -1,13 +1,27 @@
+import 'package:echoes/core/cache/app_cache_registry.dart';
 import 'package:echoes/features/privacy/domain/privacy_type.dart';
 import 'package:echoes/features/users/domain/app_user.dart';
 import 'package:echoes/features/users/domain/app_user_repository.dart';
 
-class CachedAppUserRepository implements AppUserRepository {
-  CachedAppUserRepository(this._delegate);
+class CachedAppUserRepository implements AppUserRepository, AppCacheClient {
+  CachedAppUserRepository(this._delegate, {AppCacheRegistry? cacheRegistry}) {
+    cacheRegistry?.register(this);
+  }
 
   final AppUserRepository _delegate;
   final Map<String, AppUser> _usersById = {};
   String? _currentUserId;
+
+  @override
+  String get cacheLabel => 'Profile settings';
+
+  @override
+  int get cachedItemCount => _usersById.length;
+
+  @override
+  void clearCache() {
+    _usersById.clear();
+  }
 
   @override
   Future<void> create(AppUser user) async {

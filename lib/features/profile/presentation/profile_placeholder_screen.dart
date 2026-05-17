@@ -10,6 +10,7 @@ import 'package:echoes/features/memories/presentation/edit_memory_sheet.dart';
 import 'package:echoes/features/memories/presentation/memory_card.dart';
 import 'package:echoes/features/memories/presentation/memory_detail_sheet.dart';
 import 'package:echoes/features/privacy/domain/privacy_type.dart';
+import 'package:echoes/features/profile/presentation/cache_management_settings.dart';
 import 'package:echoes/features/profile/presentation/notification_settings.dart';
 import 'package:echoes/features/users/domain/app_user_repository.dart';
 import 'package:echoes/shared/widgets/feature_placeholder.dart';
@@ -117,6 +118,8 @@ class _ProfileContent extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               const NotificationSettings(),
+              const SizedBox(height: 16),
+              const CacheManagementSettings(),
               const SizedBox(height: 16),
               _PendingTransfers(userId: userId),
               const SizedBox(height: 16),
