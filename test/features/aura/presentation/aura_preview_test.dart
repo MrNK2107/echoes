@@ -27,5 +27,13 @@ void main() {
     expect(find.text('Positive'), findsOneWidget);
     expect(find.text('64% intensity from 12 public memories'), findsOneWidget);
     expect(find.byIcon(Icons.blur_circular), findsOneWidget);
+    expect(find.byType(TweenAnimationBuilder<double>), findsNWidgets(2));
+
+    await tester.pump(const Duration(milliseconds: 900));
+
+    final progress = tester.widget<LinearProgressIndicator>(
+      find.byType(LinearProgressIndicator),
+    );
+    expect(progress.value, closeTo(0.64, 0.01));
   });
 }

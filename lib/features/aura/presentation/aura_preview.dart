@@ -24,21 +24,43 @@ class AuraPreview extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: color.withValues(alpha: _fillAlpha(aura.intensity)),
-                border: Border.all(color: color, width: 2),
-                boxShadow: [
-                  BoxShadow(
-                    color: color.withValues(alpha: _glowAlpha(aura.intensity)),
-                    blurRadius: 20,
-                    spreadRadius: 4,
-                  ),
-                ],
+            TweenAnimationBuilder<double>(
+              key: ValueKey(
+                '${aura.dominantSentiment.name}-${aura.intensity}-${aura.memoryCount}',
               ),
+              tween: Tween(begin: 0, end: aura.intensity),
+              duration: const Duration(milliseconds: 900),
+              curve: Curves.easeOutCubic,
+              builder: (context, animatedIntensity, child) {
+                final scale = 0.94 + (animatedIntensity * 0.08);
+
+                return Transform.scale(
+                  scale: scale,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 450),
+                    curve: Curves.easeOutCubic,
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: color.withValues(
+                        alpha: _fillAlpha(animatedIntensity),
+                      ),
+                      border: Border.all(color: color, width: 2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: color.withValues(
+                            alpha: _glowAlpha(animatedIntensity),
+                          ),
+                          blurRadius: 16 + (animatedIntensity * 16),
+                          spreadRadius: 2 + (animatedIntensity * 5),
+                        ),
+                      ],
+                    ),
+                    child: child,
+                  ),
+                );
+              },
               child: Icon(Icons.blur_circular, color: color, size: 34),
             ),
             const SizedBox(width: 16),
@@ -61,12 +83,19 @@ class AuraPreview extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  LinearProgressIndicator(
-                    value: aura.intensity,
-                    minHeight: 6,
-                    color: color,
-                    backgroundColor: EchoesColors.deepSpace,
-                    borderRadius: BorderRadius.circular(999),
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0, end: aura.intensity),
+                    duration: const Duration(milliseconds: 700),
+                    curve: Curves.easeOutCubic,
+                    builder: (context, animatedIntensity, _) {
+                      return LinearProgressIndicator(
+                        value: animatedIntensity,
+                        minHeight: 6,
+                        color: color,
+                        backgroundColor: EchoesColors.deepSpace,
+                        borderRadius: BorderRadius.circular(999),
+                      );
+                    },
                   ),
                   const SizedBox(height: 6),
                   Text(

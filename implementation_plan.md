@@ -13,7 +13,7 @@
 
 Last updated: 2026-05-17
 
-- Overall checklist completion: 263 / 387 items complete, about 68%.
+- Overall checklist completion: 264 / 387 items complete, about 68%.
 - Internal Alpha feature scope: mostly implemented in code; device smoke testing and security-rules tests remain.
 - Private Beta feature scope: partially implemented; AR rendering, transfer initiation UI, and tagged-user search are in place; rules tests and deeper AR interaction remain.
 - Public MVP feature scope: in progress; nearby-place, recent-memory, profile/settings warm caches, local image caching, and cache management settings are now implemented; accessibility, performance, notifications, and production hardening remain.
@@ -40,6 +40,7 @@ The repository now contains the product specification, implementation plan, and 
 - Shared empty state for memory and community list surfaces
 - Screen reader heading semantics for app and shared state titles
 - Polished shared dark component theme styles
+- Animated aura preview glow and intensity transitions
 - Profile cache management control for clearing local warm caches
 - Unit and widget tests for the current local MVP and AR lifecycle foundation
 
@@ -687,7 +688,7 @@ Goal: make the app comfortable, legible, and accessible.
 - [x] Add loading states.
 - [x] Add error recovery states.
 - [x] Polish dark theme.
-- [ ] Polish aura animations.
+- [x] Polish aura animations.
 - [ ] Reduce UI chrome in AR mode.
 
 Deliverable:
