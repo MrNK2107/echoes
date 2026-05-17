@@ -42,6 +42,7 @@ import 'package:echoes/features/places/data/cached_place_repository.dart';
 import 'package:echoes/features/places/data/firestore_place_repository.dart';
 import 'package:echoes/features/places/data/local_place_repository.dart';
 import 'package:echoes/features/places/domain/place_repository.dart';
+import 'package:echoes/features/users/data/cached_app_user_repository.dart';
 import 'package:echoes/features/users/data/firestore_app_user_repository.dart';
 import 'package:echoes/features/users/data/local_app_user_repository.dart';
 import 'package:echoes/features/users/domain/app_user_repository.dart';
@@ -60,9 +61,9 @@ class EchoesApp extends StatelessWidget {
     final authRepository = useFirebase
         ? FirebaseAuthRepository()
         : LocalAuthRepository();
-    final appUserRepository = useFirebase
-        ? FirestoreAppUserRepository()
-        : LocalAppUserRepository();
+    final appUserRepository = CachedAppUserRepository(
+      useFirebase ? FirestoreAppUserRepository() : LocalAppUserRepository(),
+    );
     final mediaUploadService = useFirebase
         ? FirebaseStorageMediaUploadService()
         : const LocalMediaUploadService();
