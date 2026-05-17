@@ -40,6 +40,9 @@ import 'package:echoes/features/memories/data/local_memory_repository.dart';
 import 'package:echoes/features/memories/data/local_pending_memory_upload_queue.dart';
 import 'package:echoes/features/memories/domain/memory_repository.dart';
 import 'package:echoes/features/memories/domain/pending_memory_upload_queue.dart';
+import 'package:echoes/features/notifications/data/device_notification_permission_service.dart';
+import 'package:echoes/features/notifications/data/local_notification_permission_service.dart';
+import 'package:echoes/features/notifications/domain/notification_permission_service.dart';
 import 'package:echoes/features/places/data/cached_place_repository.dart';
 import 'package:echoes/features/places/data/firestore_place_repository.dart';
 import 'package:echoes/features/places/data/local_place_repository.dart';
@@ -94,6 +97,9 @@ class EchoesApp extends StatelessWidget {
     final arPermissionService = useFirebase
         ? const DeviceArPermissionService()
         : const LocalArPermissionService();
+    final notificationPermissionService = useFirebase
+        ? const DeviceNotificationPermissionService()
+        : const LocalNotificationPermissionService();
 
     return MaterialApp(
       title: appConfig.appTitle,
@@ -128,6 +134,9 @@ class EchoesApp extends StatelessWidget {
           ),
           RepositoryProvider<ArPermissionService>(
             create: (_) => arPermissionService,
+          ),
+          RepositoryProvider<NotificationPermissionService>(
+            create: (_) => notificationPermissionService,
           ),
           RepositoryProvider<ArSessionService>(
             create: (_) => LocalArSessionService(),
