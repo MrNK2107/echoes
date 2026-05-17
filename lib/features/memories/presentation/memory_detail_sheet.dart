@@ -1,5 +1,6 @@
 import 'package:echoes/app/theme.dart';
 import 'package:echoes/features/memories/domain/memory.dart';
+import 'package:echoes/features/memories/presentation/memory_image_preview.dart';
 import 'package:echoes/features/privacy/domain/privacy_type.dart';
 import 'package:flutter/material.dart';
 
@@ -90,12 +91,7 @@ class MemoryDetailSheet extends StatelessWidget {
           ),
           if (memory.imageUrl != null) ...[
             const SizedBox(height: 16),
-            Text(
-              'Photo: ${memory.imageUrl}',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: EchoesColors.textSecondary,
-              ),
-            ),
+            MemoryImagePreview(imageUrl: memory.imageUrl!, height: 220),
           ],
           const SizedBox(height: 16),
           Text(

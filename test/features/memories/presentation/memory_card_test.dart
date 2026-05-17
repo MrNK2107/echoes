@@ -1,8 +1,11 @@
+import 'package:echoes/core/media/local_image_cache.dart';
 import 'package:echoes/features/aura/domain/sentiment_result.dart';
 import 'package:echoes/features/memories/domain/memory.dart';
 import 'package:echoes/features/memories/presentation/memory_card.dart';
+import 'package:echoes/features/memories/presentation/memory_image_preview.dart';
 import 'package:echoes/features/privacy/domain/privacy_type.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -30,22 +33,28 @@ void main() {
     );
 
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(body: MemoryCard(memory: memory)),
+      RepositoryProvider(
+        create: (_) => LocalImageCache(),
+        child: MaterialApp(
+          home: Scaffold(body: MemoryCard(memory: memory)),
+        ),
       ),
     );
 
     expect(find.text('Private'), findsOneWidget);
     expect(find.text('A memory from the old courtyard.'), findsOneWidget);
-    expect(find.text('/tmp/memory.jpg'), findsOneWidget);
+    expect(find.byType(MemoryImagePreview), findsOneWidget);
     expect(find.textContaining('Created by'), findsNothing);
   });
 
   testWidgets('MemoryCard shows creator for public memories', (tester) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: MemoryCard(memory: _memory(privacy: PrivacyType.public)),
+      RepositoryProvider(
+        create: (_) => LocalImageCache(),
+        child: MaterialApp(
+          home: Scaffold(
+            body: MemoryCard(memory: _memory(privacy: PrivacyType.public)),
+          ),
         ),
       ),
     );
@@ -59,7 +68,7 @@ Memory _memory({required PrivacyType privacy}) {
     id: 'memory-1',
     userId: 'user-1',
     placeId: 'place-1',
-    imageUrl: '/tmp/memory.jpg',
+    imageUrl: 'https://example.com/memory.jpg',
     textContent: 'A memory from the old courtyard.',
     latitude: 12.9716,
     longitude: 77.5946,

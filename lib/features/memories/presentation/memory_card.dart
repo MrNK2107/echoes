@@ -1,5 +1,6 @@
 import 'package:echoes/app/theme.dart';
 import 'package:echoes/features/memories/domain/memory.dart';
+import 'package:echoes/features/memories/presentation/memory_image_preview.dart';
 import 'package:echoes/features/privacy/domain/privacy_type.dart';
 import 'package:flutter/material.dart';
 
@@ -80,26 +81,7 @@ class MemoryCard extends StatelessWidget {
               ),
               if (memory.imageUrl != null) ...[
                 const SizedBox(height: 12),
-                Row(
-                  children: [
-                    const Icon(
-                      Icons.image_outlined,
-                      size: 18,
-                      color: EchoesColors.textSecondary,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        memory.imageUrl!,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: EchoesColors.textSecondary,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                MemoryImagePreview(imageUrl: memory.imageUrl!),
               ],
             ],
           ),

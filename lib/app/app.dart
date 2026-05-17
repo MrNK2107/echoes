@@ -7,6 +7,7 @@ import 'package:echoes/core/media/dart_image_compression_service.dart';
 import 'package:echoes/core/media/firebase_storage_media_upload_service.dart';
 import 'package:echoes/core/media/image_compression_service.dart';
 import 'package:echoes/core/media/image_picker_media_service.dart';
+import 'package:echoes/core/media/local_image_cache.dart';
 import 'package:echoes/core/media/local_media_upload_service.dart';
 import 'package:echoes/core/media/media_picker_service.dart';
 import 'package:echoes/core/media/media_upload_service.dart';
@@ -60,6 +61,8 @@ class EchoesApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final appConfig = config ?? AppConfig.fromEnvironment();
     final cacheRegistry = AppCacheRegistry();
+    final localImageCache = LocalImageCache();
+    cacheRegistry.register(localImageCache);
     final authRepository = useFirebase
         ? FirebaseAuthRepository()
         : LocalAuthRepository();
@@ -100,6 +103,7 @@ class EchoesApp extends StatelessWidget {
         providers: [
           RepositoryProvider<AuthRepository>(create: (_) => authRepository),
           RepositoryProvider<AppCacheRegistry>(create: (_) => cacheRegistry),
+          RepositoryProvider<LocalImageCache>(create: (_) => localImageCache),
           RepositoryProvider<AppUserRepository>(
             create: (_) => appUserRepository,
           ),

@@ -13,10 +13,10 @@
 
 Last updated: 2026-05-17
 
-- Overall checklist completion: 251 / 387 items complete, about 65%.
+- Overall checklist completion: 252 / 387 items complete, about 65%.
 - Internal Alpha feature scope: mostly implemented in code; device smoke testing and security-rules tests remain.
 - Private Beta feature scope: partially implemented; AR rendering, transfer initiation UI, and tagged-user search are in place; rules tests and deeper AR interaction remain.
-- Public MVP feature scope: in progress; nearby-place, recent-memory, profile/settings warm caches, and cache management settings are now implemented; accessibility, performance, notifications, local image caching, and production hardening remain.
+- Public MVP feature scope: in progress; nearby-place, recent-memory, profile/settings warm caches, local image caching, and cache management settings are now implemented; accessibility, performance, notifications, and production hardening remain.
 
 ## Current Repository State
 
@@ -28,6 +28,7 @@ The repository now contains the product specification, implementation plan, and 
 - Platform folders for Android, iOS, web, desktop
 - Firebase Auth, Firestore, Storage, Google Maps, and AR dependencies wired behind repository/service abstractions
 - Warm repository caches for nearby places, recently loaded memories, and profile/settings snapshots
+- Local image cache-backed memory photo previews
 - Profile cache management control for clearing local warm caches
 - Unit and widget tests for the current local MVP and AR lifecycle foundation
 
@@ -625,7 +626,7 @@ Goal: improve reliability on mobile networks.
 - [x] Cache nearby places.
 - [x] Cache recent memories.
 - [x] Cache profile and settings.
-- [ ] Add local image caching.
+- [x] Add local image caching.
 - [x] Add pending upload queue.
 - [x] Retry failed memory uploads.
 - [x] Add sync status indicators.
@@ -714,6 +715,7 @@ Deliverable:
 - [x] Place matching
 - [x] Sentiment classification
 - [x] Aura calculation
+- [x] Local image caching
 - [x] Community role permissions
 - [x] Legacy transfer state machine
 

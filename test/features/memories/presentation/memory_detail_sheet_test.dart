@@ -1,8 +1,11 @@
+import 'package:echoes/core/media/local_image_cache.dart';
 import 'package:echoes/features/aura/domain/sentiment_result.dart';
 import 'package:echoes/features/memories/domain/memory.dart';
 import 'package:echoes/features/memories/presentation/memory_detail_sheet.dart';
+import 'package:echoes/features/memories/presentation/memory_image_preview.dart';
 import 'package:echoes/features/privacy/domain/privacy_type.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -10,12 +13,15 @@ void main() {
     'MemoryDetailSheet renders memory details and restore placeholder',
     (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: MemoryDetailSheet(
-              memory: _memory(),
-              onEdit: () {},
-              onDelete: () {},
+        RepositoryProvider(
+          create: (_) => LocalImageCache(),
+          child: MaterialApp(
+            home: Scaffold(
+              body: MemoryDetailSheet(
+                memory: _memory(),
+                onEdit: () {},
+                onDelete: () {},
+              ),
             ),
           ),
         ),
@@ -25,7 +31,7 @@ void main() {
       expect(find.textContaining('Created 14/05/2026'), findsOneWidget);
       expect(find.text('Created by user-1'), findsOneWidget);
       expect(find.text('A memory from the old courtyard.'), findsOneWidget);
-      expect(find.text('Photo: /tmp/memory.jpg'), findsOneWidget);
+      expect(find.byType(MemoryImagePreview), findsOneWidget);
       expect(find.byKey(const ValueKey('editMemoryButton')), findsOneWidget);
       expect(find.byKey(const ValueKey('deleteMemoryButton')), findsOneWidget);
       expect(
@@ -39,10 +45,13 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: MemoryDetailSheet(
-            memory: _memory(privacy: PrivacyType.private),
+      RepositoryProvider(
+        create: (_) => LocalImageCache(),
+        child: MaterialApp(
+          home: Scaffold(
+            body: MemoryDetailSheet(
+              memory: _memory(privacy: PrivacyType.private),
+            ),
           ),
         ),
       ),
@@ -57,7 +66,7 @@ Memory _memory({PrivacyType privacy = PrivacyType.public}) {
     id: 'memory-1',
     userId: 'user-1',
     placeId: 'place-1',
-    imageUrl: '/tmp/memory.jpg',
+    imageUrl: 'https://example.com/memory.jpg',
     textContent: 'A memory from the old courtyard.',
     latitude: 12.9716,
     longitude: 77.5946,
