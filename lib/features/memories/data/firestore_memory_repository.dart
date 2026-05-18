@@ -16,6 +16,7 @@ class FirestoreMemoryRepository implements MemoryRepository {
   static const defaultPlaceMemoryLimit = 50;
   static const defaultUserMemoryLimit = 50;
   static const maxCommunityQueryIds = 10;
+  static const visibleMemoryQueryPathCount = 5;
 
   final FirebaseFirestore _firestore;
   final int placeMemoryLimit;

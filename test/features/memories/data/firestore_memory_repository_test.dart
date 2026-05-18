@@ -10,4 +10,11 @@ void main() {
   test('FirestoreMemoryRepository caps community visibility query ids', () {
     expect(FirestoreMemoryRepository.maxCommunityQueryIds, 10);
   });
+
+  test(
+    'FirestoreMemoryRepository uses multiple server-side visibility paths',
+    () {
+      expect(FirestoreMemoryRepository.visibleMemoryQueryPathCount, 5);
+    },
+  );
 }

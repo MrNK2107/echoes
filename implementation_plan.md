@@ -13,7 +13,7 @@
 
 Last updated: 2026-05-18
 
-- Overall checklist completion: 281 / 387 items complete, about 73%.
+- Overall checklist completion: 282 / 387 items complete, about 73%.
 - Internal Alpha feature scope: mostly implemented in code; device smoke testing and security-rules tests remain.
 - Private Beta feature scope: partially implemented; AR rendering, transfer initiation UI, and tagged-user search are in place; rules tests and deeper AR interaction remain.
 - Public MVP feature scope: in progress; nearby-place, recent-memory, profile/settings warm caches, local image caching, and cache management settings are now implemented; accessibility, performance, notifications, and production hardening remain.
@@ -57,6 +57,7 @@ The repository now contains the product specification, implementation plan, and 
 - Privacy-scoped Firebase Analytics service with reviewed event surface
 - Deterministic sentiment analyzer unit coverage
 - Separate Firestore visible-memory query paths by privacy mode
+- Server-side visibility query paths reduce client-only privacy filtering
 - Profile cache management control for clearing local warm caches
 - Unit and widget tests for the current local MVP and AR lifecycle foundation
 
@@ -820,7 +821,7 @@ Mitigation:
 - [x] Keep separate query paths for each visibility type.
 - [ ] Enforce access with security rules.
 - [ ] Add security rules tests before broad feature work.
-- [ ] Avoid relying only on client-side filtering.
+- [x] Avoid relying only on client-side filtering.
 
 ### Sentiment Package Risk
 
