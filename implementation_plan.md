@@ -13,7 +13,7 @@
 
 Last updated: 2026-05-18
 
-- Overall checklist completion: 282 / 387 items complete, about 73%.
+- Overall checklist completion: 283 / 387 items complete, about 73%.
 - Internal Alpha feature scope: mostly implemented in code; device smoke testing and security-rules tests remain.
 - Private Beta feature scope: partially implemented; AR rendering, transfer initiation UI, and tagged-user search are in place; rules tests and deeper AR interaction remain.
 - Public MVP feature scope: in progress; nearby-place, recent-memory, profile/settings warm caches, local image caching, and cache management settings are now implemented; accessibility, performance, notifications, and production hardening remain.
@@ -58,6 +58,7 @@ The repository now contains the product specification, implementation plan, and 
 - Deterministic sentiment analyzer unit coverage
 - Separate Firestore visible-memory query paths by privacy mode
 - Server-side visibility query paths reduce client-only privacy filtering
+- Conservative 100m place matching radius covered by tests
 - Profile cache management control for clearing local warm caches
 - Unit and widget tests for the current local MVP and AR lifecycle foundation
 
@@ -839,7 +840,7 @@ Nearby memories may attach to the wrong place if radius logic is too simple.
 
 Mitigation:
 
-- [ ] Start with conservative radius matching.
+- [x] Start with conservative radius matching.
 - [ ] Store geohash and exact coordinates.
 - [ ] Add custodian merge/split tools later.
 

@@ -18,6 +18,10 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('AddMemoryCubit', () {
+    test('uses a conservative place matching radius', () {
+      expect(AddMemoryCubit.placeMatchRadiusMeters, 100);
+    });
+
     test('captures location and creates a memory', () async {
       final memoryRepository = LocalMemoryRepository();
       final cubit = AddMemoryCubit(
