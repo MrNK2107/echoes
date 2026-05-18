@@ -13,7 +13,7 @@
 
 Last updated: 2026-05-18
 
-- Overall checklist completion: 276 / 387 items complete, about 71%.
+- Overall checklist completion: 277 / 387 items complete, about 72%.
 - Internal Alpha feature scope: mostly implemented in code; device smoke testing and security-rules tests remain.
 - Private Beta feature scope: partially implemented; AR rendering, transfer initiation UI, and tagged-user search are in place; rules tests and deeper AR interaction remain.
 - Public MVP feature scope: in progress; nearby-place, recent-memory, profile/settings warm caches, local image caching, and cache management settings are now implemented; accessibility, performance, notifications, and production hardening remain.
@@ -47,6 +47,7 @@ The repository now contains the product specification, implementation plan, and 
 - Dimension-aware image compression before upload encoding
 - Bounded Firestore list and nearby candidate queries
 - Firebase Cloud Messaging foundation with push token and foreground message services
+- Firebase Cloud Functions notification request dispatcher
 - Transfer-request notification delivery requests
 - Transfer-accepted notification delivery requests
 - Tagged-memory notification delivery requests
@@ -82,7 +83,7 @@ Recommended delivery order:
 - [x] Firebase Auth
 - [x] Cloud Firestore
 - [x] Firebase Storage
-- [ ] Firebase Cloud Functions, where server-side validation or denormalized updates are needed
+- [x] Firebase Cloud Functions, where server-side validation or denormalized updates are needed
 - [x] Google Maps SDK
 - [x] ARCore via `arcore_flutter_plus` for Android
 - [x] ARKit via `arkit_plugin` for iOS
