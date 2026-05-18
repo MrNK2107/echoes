@@ -59,4 +59,35 @@ class FirestoreNotificationDeliveryService
       'status': 'pending',
     });
   }
+
+  @override
+  Future<void> notifyMemoryTagged({
+    required String memoryId,
+    required String placeId,
+    required String fromUserId,
+    required List<String> taggedUserIds,
+  }) async {
+    final batch = _firestore.batch();
+    for (final taggedUserId in taggedUserIds.toSet()) {
+      if (taggedUserId == fromUserId) {
+        continue;
+      }
+      batch.set(_requests.doc('memory-tagged-$memoryId-$taggedUserId'), {
+        'type': NotificationDeliveryType.memoryTagged.name,
+        'recipientUserId': taggedUserId,
+        'title': 'Tagged in a memory',
+        'body': '$fromUserId tagged you in a memory.',
+        'data': {
+          'type': NotificationDeliveryType.memoryTagged.name,
+          'memoryId': memoryId,
+          'placeId': placeId,
+          'fromUserId': fromUserId,
+          'toUserId': taggedUserId,
+        },
+        'createdAt': FieldValue.serverTimestamp(),
+        'status': 'pending',
+      });
+    }
+    await batch.commit();
+  }
 }

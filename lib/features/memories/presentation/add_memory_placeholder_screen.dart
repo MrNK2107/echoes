@@ -15,6 +15,7 @@ import 'package:echoes/features/memories/presentation/add_memory_cubit.dart';
 import 'package:echoes/features/memories/presentation/add_memory_state.dart';
 import 'package:echoes/features/memories/presentation/add_memory_status.dart';
 import 'package:echoes/features/memories/presentation/memory_validators.dart';
+import 'package:echoes/features/notifications/domain/notification_delivery_service.dart';
 import 'package:echoes/features/places/domain/place_repository.dart';
 import 'package:echoes/features/privacy/domain/privacy_type.dart';
 import 'package:echoes/features/users/domain/app_user.dart';
@@ -40,6 +41,8 @@ class AddMemoryPlaceholderScreen extends StatelessWidget {
             sentimentAnalyzer: context.read<SentimentAnalyzer>(),
             placeRepository: context.read<PlaceRepository>(),
             memoryRepository: context.read<MemoryRepository>(),
+            notificationDeliveryService: context
+                .read<NotificationDeliveryService>(),
             pendingUploadQueue: context.read<PendingMemoryUploadQueue>(),
             initialPrivacy: snapshot.data?.defaultPrivacy ?? PrivacyType.public,
           ),

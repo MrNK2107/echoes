@@ -60,4 +60,35 @@ class LocalNotificationDeliveryService implements NotificationDeliveryService {
       ),
     );
   }
+
+  @override
+  Future<void> notifyMemoryTagged({
+    required String memoryId,
+    required String placeId,
+    required String fromUserId,
+    required List<String> taggedUserIds,
+  }) async {
+    for (final taggedUserId in taggedUserIds.toSet()) {
+      if (taggedUserId == fromUserId) {
+        continue;
+      }
+      _deliveries.add(
+        NotificationDelivery(
+          id: 'memory-tagged-$memoryId-$taggedUserId',
+          type: NotificationDeliveryType.memoryTagged,
+          recipientUserId: taggedUserId,
+          title: 'Tagged in a memory',
+          body: '$fromUserId tagged you in a memory.',
+          data: {
+            'type': NotificationDeliveryType.memoryTagged.name,
+            'memoryId': memoryId,
+            'placeId': placeId,
+            'fromUserId': fromUserId,
+            'toUserId': taggedUserId,
+          },
+          createdAt: _now ?? DateTime.now().toUtc(),
+        ),
+      );
+    }
+  }
 }

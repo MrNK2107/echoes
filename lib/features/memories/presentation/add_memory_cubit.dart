@@ -14,6 +14,7 @@ import 'package:echoes/features/memories/domain/pending_memory_upload.dart';
 import 'package:echoes/features/memories/domain/pending_memory_upload_queue.dart';
 import 'package:echoes/features/memories/presentation/add_memory_state.dart';
 import 'package:echoes/features/memories/presentation/add_memory_status.dart';
+import 'package:echoes/features/notifications/domain/notification_delivery_service.dart';
 import 'package:echoes/features/places/domain/place.dart';
 import 'package:echoes/features/places/domain/place_repository.dart';
 import 'package:echoes/features/privacy/domain/privacy_type.dart';
@@ -29,6 +30,7 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
     required SentimentAnalyzer sentimentAnalyzer,
     required PlaceRepository placeRepository,
     required MemoryRepository memoryRepository,
+    NotificationDeliveryService? notificationDeliveryService,
     PendingMemoryUploadQueue? pendingUploadQueue,
     PrivacyType initialPrivacy = PrivacyType.public,
     AuraCalculator? auraCalculator,
@@ -41,6 +43,7 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
        _auraCalculator = auraCalculator ?? AuraCalculator(),
        _placeRepository = placeRepository,
        _memoryRepository = memoryRepository,
+       _notificationDeliveryService = notificationDeliveryService,
        _pendingUploadQueue = pendingUploadQueue,
        _uuid = uuid ?? const Uuid(),
        super(AddMemoryState.initial(privacy: initialPrivacy));
@@ -55,6 +58,7 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
   final AuraCalculator _auraCalculator;
   final PlaceRepository _placeRepository;
   final MemoryRepository _memoryRepository;
+  final NotificationDeliveryService? _notificationDeliveryService;
   final PendingMemoryUploadQueue? _pendingUploadQueue;
   final Uuid _uuid;
 
@@ -271,6 +275,14 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
       );
 
       await _memoryRepository.create(memory);
+      if (memory.taggedUserIds.isNotEmpty) {
+        await _notificationDeliveryService?.notifyMemoryTagged(
+          memoryId: memory.id,
+          placeId: memory.placeId,
+          fromUserId: memory.userId,
+          taggedUserIds: memory.taggedUserIds,
+        );
+      }
       final publicMemories =
           (await _memoryRepository.watchMemoriesForPlace(place.id).first)
               .where((memory) => memory.privacy == PrivacyType.public)

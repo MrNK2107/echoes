@@ -19,6 +19,8 @@ import 'package:echoes/features/memories/domain/memory_repository.dart';
 import 'package:echoes/features/memories/domain/pending_memory_upload.dart';
 import 'package:echoes/features/memories/domain/pending_memory_upload_queue.dart';
 import 'package:echoes/features/memories/presentation/add_memory_placeholder_screen.dart';
+import 'package:echoes/features/notifications/data/local_notification_delivery_service.dart';
+import 'package:echoes/features/notifications/domain/notification_delivery_service.dart';
 import 'package:echoes/features/places/data/local_place_repository.dart';
 import 'package:echoes/features/places/domain/place_repository.dart';
 import 'package:echoes/features/privacy/domain/privacy_type.dart';
@@ -218,6 +220,9 @@ class _TestApp extends StatelessWidget {
         ),
         RepositoryProvider<CommunityRepository>(
           create: (_) => LocalCommunityRepository(),
+        ),
+        RepositoryProvider<NotificationDeliveryService>(
+          create: (_) => LocalNotificationDeliveryService(),
         ),
       ],
       child: BlocProvider(

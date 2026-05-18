@@ -1,6 +1,10 @@
 import 'package:equatable/equatable.dart';
 
-enum NotificationDeliveryType { transferRequest, transferAccepted }
+enum NotificationDeliveryType {
+  transferRequest,
+  transferAccepted,
+  memoryTagged,
+}
 
 class NotificationDelivery extends Equatable {
   const NotificationDelivery({

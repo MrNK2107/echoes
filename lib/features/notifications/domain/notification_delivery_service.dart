@@ -12,4 +12,11 @@ abstract interface class NotificationDeliveryService {
     required String fromUserId,
     required String toUserId,
   });
+
+  Future<void> notifyMemoryTagged({
+    required String memoryId,
+    required String placeId,
+    required String fromUserId,
+    required List<String> taggedUserIds,
+  });
 }

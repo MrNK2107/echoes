@@ -10,6 +10,8 @@ import 'package:echoes/features/memories/data/local_memory_repository.dart';
 import 'package:echoes/features/memories/data/local_pending_memory_upload_queue.dart';
 import 'package:echoes/features/memories/presentation/add_memory_cubit.dart';
 import 'package:echoes/features/memories/presentation/add_memory_status.dart';
+import 'package:echoes/features/notifications/data/local_notification_delivery_service.dart';
+import 'package:echoes/features/notifications/domain/notification_delivery.dart';
 import 'package:echoes/features/places/data/local_place_repository.dart';
 import 'package:echoes/features/privacy/domain/privacy_type.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -298,6 +300,46 @@ void main() {
         memoryRepository.dispose();
       },
     );
+
+    test('notifies tagged users after tagged memory creation', () async {
+      final memoryRepository = LocalMemoryRepository();
+      final notifications = LocalNotificationDeliveryService(
+        now: DateTime.utc(2026, 5, 18),
+      );
+      final cubit =
+          AddMemoryCubit(
+              locationService: _FakeLocationService(
+                permission: LocationPermissionState.granted,
+              ),
+              mediaPickerService: _FakeMediaPickerService(),
+              imageCompressionService: _NoOpImageCompressionService(),
+              mediaUploadService: _FakeMediaUploadService(),
+              sentimentAnalyzer: LexiconSentimentAnalyzer(),
+              placeRepository: LocalPlaceRepository(
+                now: DateTime.utc(2026, 5, 14),
+              ),
+              memoryRepository: memoryRepository,
+              notificationDeliveryService: notifications,
+            )
+            ..setPrivacy(PrivacyType.tagged)
+            ..setTaggedUsers('friend-1, friend-2, user-1');
+
+      await cubit.captureLocation();
+      await cubit.submit(userId: 'user-1', textContent: 'Tagged memory');
+
+      expect(cubit.state.status, AddMemoryStatus.success);
+      expect(
+        notifications.deliveries.map((delivery) => delivery.recipientUserId),
+        ['friend-1', 'friend-2'],
+      );
+      expect(
+        notifications.deliveries.map((delivery) => delivery.type).toSet(),
+        {NotificationDeliveryType.memoryTagged},
+      );
+
+      await cubit.close();
+      memoryRepository.dispose();
+    });
   });
 }
 
