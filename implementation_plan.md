@@ -13,7 +13,7 @@
 
 Last updated: 2026-05-18
 
-- Overall checklist completion: 295 / 387 items complete, about 76%.
+- Overall checklist completion: 298 / 387 items complete, about 77%.
 - Internal Alpha feature scope: mostly implemented in code; device smoke testing and security-rules tests remain.
 - Private Beta feature scope: partially implemented; AR rendering, transfer initiation UI, and tagged-user search are in place; rules tests and deeper AR interaction remain.
 - Public MVP feature scope: in progress; nearby-place, recent-memory, profile/settings warm caches, local image caching, and cache management settings are now implemented; accessibility, performance, notifications, and production hardening remain.
@@ -61,6 +61,7 @@ The repository now contains the product specification, implementation plan, and 
 - Conservative 100m place matching radius covered by tests
 - Memory creation stores exact coordinates and geohash
 - Firebase emulator security rules tests for memory privacy modes
+- Firebase emulator security rules tests for transfers and custodian moderation
 - Profile cache management control for clearing local warm caches
 - Unit and widget tests for the current local MVP and AR lifecycle foundation
 
@@ -642,8 +643,8 @@ Tests:
 
 - [x] Unit test transfer state machine.
 - [x] Unit test revoke window.
-- [ ] Security rules test transfer initiation.
-- [ ] Security rules test transfer acceptance.
+- [x] Security rules test transfer initiation.
+- [x] Security rules test transfer acceptance.
 - [ ] Integration test successful transfer.
 
 Deliverable:
@@ -786,7 +787,7 @@ Deliverable:
 - [x] Time-release memory public after release
 - [x] Community memory restricted to members
 - [x] Memory location update denied
-- [ ] Custodian moderation allowed
+- [x] Custodian moderation allowed
 
 ### Manual Device Tests
 

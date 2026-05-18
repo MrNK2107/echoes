@@ -64,6 +64,75 @@ test("memory location updates are denied", async () => {
   );
 });
 
+test("place custodians can soft-delete attached memories", async () => {
+  const creatorDb = testEnv.authenticatedContext("creator").firestore();
+  const strangerDb = testEnv.authenticatedContext("stranger").firestore();
+
+  await assertSucceeds(
+    setDoc(
+      doc(creatorDb, "memories/public-memory"),
+      {
+        isDeleted: true,
+        deletedAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+      },
+      { merge: true },
+    ),
+  );
+  await assertFails(
+    setDoc(
+      doc(strangerDb, "memories/tagged-memory"),
+      {
+        isDeleted: true,
+        deletedAt: Timestamp.now(),
+        updatedAt: Timestamp.now(),
+      },
+      { merge: true },
+    ),
+  );
+});
+
+test("transfer initiation requires place custodianship", async () => {
+  const creatorDb = testEnv.authenticatedContext("creator").firestore();
+  const strangerDb = testEnv.authenticatedContext("stranger").firestore();
+
+  await assertSucceeds(
+    setDoc(doc(creatorDb, "transfers/transfer-1"), transferDoc()),
+  );
+  await assertFails(
+    setDoc(
+      doc(strangerDb, "transfers/transfer-2"),
+      transferDoc({ fromUserId: "stranger" }),
+    ),
+  );
+});
+
+test("transfer acceptance is restricted to the recipient", async () => {
+  const recipientDb = testEnv.authenticatedContext("recipient").firestore();
+  const strangerDb = testEnv.authenticatedContext("stranger").firestore();
+
+  await assertSucceeds(
+    setDoc(
+      doc(recipientDb, "transfers/pending-transfer"),
+      {
+        status: "accepted",
+        acceptedAt: Timestamp.now(),
+      },
+      { merge: true },
+    ),
+  );
+  await assertFails(
+    setDoc(
+      doc(strangerDb, "transfers/pending-transfer"),
+      {
+        status: "accepted",
+        acceptedAt: Timestamp.now(),
+      },
+      { merge: true },
+    ),
+  );
+});
+
 test("notification request creation is restricted to the sender", async () => {
   const creatorDb = testEnv.authenticatedContext("creator").firestore();
   const strangerDb = testEnv.authenticatedContext("stranger").firestore();
@@ -98,6 +167,7 @@ async function seedBaseDocuments() {
     await setDoc(doc(db, "communities/community-1/members/member"), {
       role: "member",
     });
+    await setDoc(doc(db, "transfers/pending-transfer"), transferDoc());
 
     await setDoc(doc(db, "memories/public-memory"), memoryDoc());
     await setDoc(
@@ -127,6 +197,23 @@ async function seedBaseDocuments() {
       memoryDoc({ privacy: "community", communityId: "community-1" }),
     );
   });
+}
+
+function transferDoc({
+  placeId = "place-1",
+  fromUserId = "creator",
+  toUserId = "recipient",
+  status = "pending",
+} = {}) {
+  const now = Timestamp.fromDate(new Date("2026-05-18T00:00:00Z"));
+  return {
+    placeId,
+    fromUserId,
+    toUserId,
+    status,
+    createdAt: now,
+    revokeUntil: Timestamp.fromDate(new Date("2026-05-25T00:00:00Z")),
+  };
 }
 
 function memoryDoc({
