@@ -19,4 +19,11 @@ abstract interface class NotificationDeliveryService {
     required String fromUserId,
     required List<String> taggedUserIds,
   });
+
+  Future<void> notifyCommunityInvitation({
+    required String communityId,
+    required String communityName,
+    required String fromUserId,
+    required List<String> invitedUserIds,
+  });
 }

@@ -5,6 +5,7 @@ import 'package:echoes/features/communities/domain/community_repository.dart';
 import 'package:echoes/features/communities/domain/community_type.dart';
 import 'package:echoes/features/communities/presentation/community_badge.dart';
 import 'package:echoes/features/communities/presentation/community_detail_screen.dart';
+import 'package:echoes/features/notifications/domain/notification_delivery_service.dart';
 import 'package:echoes/shared/widgets/empty_state.dart';
 import 'package:echoes/shared/widgets/loading_state.dart';
 import 'package:flutter/material.dart';
@@ -230,11 +231,13 @@ class _CreateCommunitySheetState extends State<_CreateCommunitySheet> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _invitedUsersController = TextEditingController();
 
   @override
   void dispose() {
     _nameController.dispose();
     _descriptionController.dispose();
+    _invitedUsersController.dispose();
     super.dispose();
   }
 
@@ -276,6 +279,16 @@ class _CreateCommunitySheetState extends State<_CreateCommunitySheet> {
                   : null,
               decoration: const InputDecoration(labelText: 'Description'),
             ),
+            const SizedBox(height: 12),
+            TextFormField(
+              key: const ValueKey('communityInviteesField'),
+              controller: _invitedUsersController,
+              decoration: const InputDecoration(
+                labelText: 'Invite user IDs',
+                helperText: 'Separate multiple user IDs with commas',
+                prefixIcon: Icon(Icons.person_add_alt_1_outlined),
+              ),
+            ),
             const SizedBox(height: 20),
             FilledButton.icon(
               key: const ValueKey('saveCommunityButton'),
@@ -305,8 +318,24 @@ class _CreateCommunitySheetState extends State<_CreateCommunitySheet> {
       createdAt: now,
       updatedAt: now,
     );
+    final communityRepository = context.read<CommunityRepository>();
+    final notificationDeliveryService = context
+        .read<NotificationDeliveryService>();
 
-    await context.read<CommunityRepository>().create(community);
+    await communityRepository.create(community);
+    final invitedUserIds = _invitedUsersController.text
+        .split(',')
+        .map((userId) => userId.trim())
+        .where((userId) => userId.isNotEmpty)
+        .toList(growable: false);
+    if (invitedUserIds.isNotEmpty) {
+      await notificationDeliveryService.notifyCommunityInvitation(
+        communityId: community.id,
+        communityName: community.name,
+        fromUserId: widget.userId,
+        invitedUserIds: invitedUserIds,
+      );
+    }
 
     if (mounted) {
       Navigator.of(context).pop();

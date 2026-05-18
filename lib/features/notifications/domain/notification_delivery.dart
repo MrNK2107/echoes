@@ -4,6 +4,7 @@ enum NotificationDeliveryType {
   transferRequest,
   transferAccepted,
   memoryTagged,
+  communityInvitation,
 }
 
 class NotificationDelivery extends Equatable {

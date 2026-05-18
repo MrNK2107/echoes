@@ -9,6 +9,9 @@ import 'package:echoes/features/communities/domain/community_membership.dart';
 import 'package:echoes/features/communities/domain/community_repository.dart';
 import 'package:echoes/features/communities/domain/community_role.dart';
 import 'package:echoes/features/communities/presentation/communities_placeholder_screen.dart';
+import 'package:echoes/features/notifications/data/local_notification_delivery_service.dart';
+import 'package:echoes/features/notifications/domain/notification_delivery.dart';
+import 'package:echoes/features/notifications/domain/notification_delivery_service.dart';
 import 'package:echoes/features/users/data/local_app_user_repository.dart';
 import 'package:echoes/features/users/domain/app_user_repository.dart';
 import 'package:flutter/material.dart';
@@ -24,12 +27,14 @@ void main() {
     final communityRepository = LocalCommunityRepository(
       now: DateTime.utc(2026, 5, 15),
     );
+    final notifications = LocalNotificationDeliveryService();
 
     await tester.pumpWidget(
       _TestApp(
         authRepository: authRepository,
         userRepository: userRepository,
         communityRepository: communityRepository,
+        notificationDeliveryService: notifications,
       ),
     );
     await tester.pumpAndSettle();
@@ -50,12 +55,14 @@ void main() {
     final communityRepository = LocalCommunityRepository(
       now: DateTime.utc(2026, 5, 15),
     );
+    final notifications = LocalNotificationDeliveryService();
 
     await tester.pumpWidget(
       _TestApp(
         authRepository: authRepository,
         userRepository: userRepository,
         communityRepository: communityRepository,
+        notificationDeliveryService: notifications,
       ),
     );
     await tester.pumpAndSettle();
@@ -70,6 +77,10 @@ void main() {
     await tester.enterText(
       find.byKey(const ValueKey('communityDescriptionField')),
       'Late study memories from the old library.',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('communityInviteesField')),
+      'friend-1, friend-2, user-1',
     );
     await tester.tap(find.byKey(const ValueKey('saveCommunityButton')));
     await tester.pumpAndSettle();
@@ -87,6 +98,13 @@ void main() {
       created.map((community) => community.name),
       contains('Library Nights'),
     );
+    expect(
+      notifications.deliveries.map((delivery) => delivery.recipientUserId),
+      ['friend-1', 'friend-2'],
+    );
+    expect(notifications.deliveries.map((delivery) => delivery.type).toSet(), {
+      NotificationDeliveryType.communityInvitation,
+    });
 
     await tester.pumpWidget(const SizedBox.shrink());
     authRepository.dispose();
@@ -123,11 +141,13 @@ class _TestApp extends StatelessWidget {
     required this.authRepository,
     required this.userRepository,
     required this.communityRepository,
+    this.notificationDeliveryService,
   });
 
   final AuthRepository authRepository;
   final AppUserRepository userRepository;
   final CommunityRepository communityRepository;
+  final NotificationDeliveryService? notificationDeliveryService;
 
   @override
   Widget build(BuildContext context) {
@@ -137,6 +157,10 @@ class _TestApp extends StatelessWidget {
         RepositoryProvider<AppUserRepository>.value(value: userRepository),
         RepositoryProvider<CommunityRepository>.value(
           value: communityRepository,
+        ),
+        RepositoryProvider<NotificationDeliveryService>.value(
+          value:
+              notificationDeliveryService ?? LocalNotificationDeliveryService(),
         ),
       ],
       child: BlocProvider(

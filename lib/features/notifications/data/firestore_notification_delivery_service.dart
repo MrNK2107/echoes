@@ -90,4 +90,38 @@ class FirestoreNotificationDeliveryService
     }
     await batch.commit();
   }
+
+  @override
+  Future<void> notifyCommunityInvitation({
+    required String communityId,
+    required String communityName,
+    required String fromUserId,
+    required List<String> invitedUserIds,
+  }) async {
+    final batch = _firestore.batch();
+    for (final invitedUserId in invitedUserIds.toSet()) {
+      if (invitedUserId == fromUserId) {
+        continue;
+      }
+      batch.set(
+        _requests.doc('community-invitation-$communityId-$invitedUserId'),
+        {
+          'type': NotificationDeliveryType.communityInvitation.name,
+          'recipientUserId': invitedUserId,
+          'title': 'Community invitation',
+          'body': '$fromUserId invited you to join $communityName.',
+          'data': {
+            'type': NotificationDeliveryType.communityInvitation.name,
+            'communityId': communityId,
+            'communityName': communityName,
+            'fromUserId': fromUserId,
+            'toUserId': invitedUserId,
+          },
+          'createdAt': FieldValue.serverTimestamp(),
+          'status': 'pending',
+        },
+      );
+    }
+    await batch.commit();
+  }
 }

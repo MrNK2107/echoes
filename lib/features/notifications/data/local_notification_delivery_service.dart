@@ -91,4 +91,35 @@ class LocalNotificationDeliveryService implements NotificationDeliveryService {
       );
     }
   }
+
+  @override
+  Future<void> notifyCommunityInvitation({
+    required String communityId,
+    required String communityName,
+    required String fromUserId,
+    required List<String> invitedUserIds,
+  }) async {
+    for (final invitedUserId in invitedUserIds.toSet()) {
+      if (invitedUserId == fromUserId) {
+        continue;
+      }
+      _deliveries.add(
+        NotificationDelivery(
+          id: 'community-invitation-$communityId-$invitedUserId',
+          type: NotificationDeliveryType.communityInvitation,
+          recipientUserId: invitedUserId,
+          title: 'Community invitation',
+          body: '$fromUserId invited you to join $communityName.',
+          data: {
+            'type': NotificationDeliveryType.communityInvitation.name,
+            'communityId': communityId,
+            'communityName': communityName,
+            'fromUserId': fromUserId,
+            'toUserId': invitedUserId,
+          },
+          createdAt: _now ?? DateTime.now().toUtc(),
+        ),
+      );
+    }
+  }
 }
