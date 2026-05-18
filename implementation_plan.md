@@ -13,7 +13,7 @@
 
 Last updated: 2026-05-18
 
-- Overall checklist completion: 284 / 387 items complete, about 73%.
+- Overall checklist completion: 295 / 387 items complete, about 76%.
 - Internal Alpha feature scope: mostly implemented in code; device smoke testing and security-rules tests remain.
 - Private Beta feature scope: partially implemented; AR rendering, transfer initiation UI, and tagged-user search are in place; rules tests and deeper AR interaction remain.
 - Public MVP feature scope: in progress; nearby-place, recent-memory, profile/settings warm caches, local image caching, and cache management settings are now implemented; accessibility, performance, notifications, and production hardening remain.
@@ -60,6 +60,7 @@ The repository now contains the product specification, implementation plan, and 
 - Server-side visibility query paths reduce client-only privacy filtering
 - Conservative 100m place matching radius covered by tests
 - Memory creation stores exact coordinates and geohash
+- Firebase emulator security rules tests for memory privacy modes
 - Profile cache management control for clearing local warm caches
 - Unit and widget tests for the current local MVP and AR lifecycle foundation
 
@@ -529,7 +530,7 @@ Tests:
 - [x] Unit test time-release visibility before release date.
 - [x] Unit test time-release visibility after release date.
 - [x] Unit test community visibility.
-- [ ] Security rules tests for all privacy modes.
+- [x] Security rules tests for all privacy modes.
 
 Deliverable:
 
@@ -776,15 +777,15 @@ Deliverable:
 
 ### Security Rules Tests
 
-- [ ] Public memory read
-- [ ] Private memory read denied to other users
-- [ ] Private memory read allowed to creator
-- [ ] Tagged memory read allowed to tagged user
-- [ ] Tagged memory read denied to untagged user
-- [ ] Time-release memory hidden before release
-- [ ] Time-release memory public after release
-- [ ] Community memory restricted to members
-- [ ] Memory location update denied
+- [x] Public memory read
+- [x] Private memory read denied to other users
+- [x] Private memory read allowed to creator
+- [x] Tagged memory read allowed to tagged user
+- [x] Tagged memory read denied to untagged user
+- [x] Time-release memory hidden before release
+- [x] Time-release memory public after release
+- [x] Community memory restricted to members
+- [x] Memory location update denied
 - [ ] Custodian moderation allowed
 
 ### Manual Device Tests
@@ -822,7 +823,7 @@ Mitigation:
 
 - [x] Keep separate query paths for each visibility type.
 - [ ] Enforce access with security rules.
-- [ ] Add security rules tests before broad feature work.
+- [x] Add security rules tests before broad feature work.
 - [x] Avoid relying only on client-side filtering.
 
 ### Sentiment Package Risk

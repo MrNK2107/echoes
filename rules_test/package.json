@@ -1,0 +1,12 @@
+{
+  "name": "echoes-rules-test",
+  "private": true,
+  "description": "Firebase security rules tests for ECHOES.",
+  "scripts": {
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@firebase/rules-unit-testing": "^5.0.0",
+    "firebase": "^12.7.0"
+  }
+}
