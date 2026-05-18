@@ -35,4 +35,28 @@ class FirestoreNotificationDeliveryService
       'status': 'pending',
     });
   }
+
+  @override
+  Future<void> notifyTransferAccepted({
+    required String transferId,
+    required String placeId,
+    required String fromUserId,
+    required String toUserId,
+  }) {
+    return _requests.doc('transfer-accepted-$transferId').set({
+      'type': NotificationDeliveryType.transferAccepted.name,
+      'recipientUserId': fromUserId,
+      'title': 'Custodianship accepted',
+      'body': '$toUserId accepted your custodianship transfer.',
+      'data': {
+        'type': NotificationDeliveryType.transferAccepted.name,
+        'transferId': transferId,
+        'placeId': placeId,
+        'fromUserId': fromUserId,
+        'toUserId': toUserId,
+      },
+      'createdAt': FieldValue.serverTimestamp(),
+      'status': 'pending',
+    });
+  }
 }

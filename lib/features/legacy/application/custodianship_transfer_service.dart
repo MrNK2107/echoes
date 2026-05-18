@@ -44,5 +44,11 @@ class CustodianshipTransferService {
     }
 
     await _transferRepository.accept(transferId);
+    await _notificationDeliveryService.notifyTransferAccepted(
+      transferId: transfer.id,
+      placeId: transfer.placeId,
+      fromUserId: transfer.fromUserId,
+      toUserId: transfer.toUserId,
+    );
   }
 }

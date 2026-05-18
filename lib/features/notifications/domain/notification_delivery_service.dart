@@ -5,4 +5,11 @@ abstract interface class NotificationDeliveryService {
     required String fromUserId,
     required String toUserId,
   });
+
+  Future<void> notifyTransferAccepted({
+    required String transferId,
+    required String placeId,
+    required String fromUserId,
+    required String toUserId,
+  });
 }

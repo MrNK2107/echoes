@@ -34,4 +34,30 @@ class LocalNotificationDeliveryService implements NotificationDeliveryService {
       ),
     );
   }
+
+  @override
+  Future<void> notifyTransferAccepted({
+    required String transferId,
+    required String placeId,
+    required String fromUserId,
+    required String toUserId,
+  }) async {
+    _deliveries.add(
+      NotificationDelivery(
+        id: 'transfer-accepted-$transferId',
+        type: NotificationDeliveryType.transferAccepted,
+        recipientUserId: fromUserId,
+        title: 'Custodianship accepted',
+        body: '$toUserId accepted your custodianship transfer.',
+        data: {
+          'type': NotificationDeliveryType.transferAccepted.name,
+          'transferId': transferId,
+          'placeId': placeId,
+          'fromUserId': fromUserId,
+          'toUserId': toUserId,
+        },
+        createdAt: _now ?? DateTime.now().toUtc(),
+      ),
+    );
+  }
 }

@@ -51,6 +51,10 @@ void main() {
           transferRepository.transferHistory().single.status,
           TransferStatus.accepted,
         );
+        final delivery = notificationDeliveryService.deliveries.single;
+        expect(delivery.type, NotificationDeliveryType.transferAccepted);
+        expect(delivery.recipientUserId, 'original-custodian');
+        expect(delivery.data['transferId'], 'transfer-1');
 
         transferRepository.dispose();
       },
@@ -93,6 +97,10 @@ void main() {
         expect(
           place?.custodianIds.where((id) => id == 'recipient'),
           hasLength(1),
+        );
+        expect(
+          notificationDeliveryService.deliveries.single.type,
+          NotificationDeliveryType.transferAccepted,
         );
 
         transferRepository.dispose();
