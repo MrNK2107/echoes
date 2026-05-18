@@ -13,7 +13,7 @@
 
 Last updated: 2026-05-18
 
-- Overall checklist completion: 325 / 387 items complete, about 84%.
+- Overall checklist completion: 327 / 387 items complete, about 84%.
 - Internal Alpha feature scope: mostly implemented in code; device smoke testing and security-rules tests remain.
 - Private Beta feature scope: partially implemented; AR rendering, transfer initiation UI, and tagged-user search are in place; rules tests and deeper AR interaction remain.
 - Public MVP feature scope: in progress; nearby-place, recent-memory, profile/settings warm caches, local image caching, and cache management settings are now implemented; accessibility, performance, notifications, and production hardening remain.
@@ -602,7 +602,7 @@ Later community automation:
 - [ ] Add verified institution admin flow.
 - [ ] Add alumni domain validation.
 - [ ] Add campus building sub-zones.
-- [ ] Add era groups.
+- [x] Add era groups.
 
 Tests:
 
@@ -891,7 +891,7 @@ Mitigation:
 ### Post-MVP
 
 - [ ] Institution zones
-- [ ] Era groups
+- [x] Era groups
 - [ ] Legacy transfer polish
 - [ ] Community analytics
 - [ ] Discussion board, if requested

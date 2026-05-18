@@ -404,42 +404,48 @@ void main() {
       },
     );
 
-    test('auto-creates time-based community from memory timestamp', () async {
-      final memoryRepository = LocalMemoryRepository();
-      final communityRepository = LocalCommunityRepository(
-        now: DateTime.utc(2026, 5, 14),
-      );
-      final cubit = AddMemoryCubit(
-        locationService: _FakeLocationService(
-          permission: LocationPermissionState.granted,
-        ),
-        mediaPickerService: _FakeMediaPickerService(),
-        imageCompressionService: _NoOpImageCompressionService(),
-        mediaUploadService: _FakeMediaUploadService(),
-        sentimentAnalyzer: LexiconSentimentAnalyzer(),
-        placeRepository: LocalPlaceRepository(now: DateTime.utc(2026, 5, 14)),
-        memoryRepository: memoryRepository,
-        timeBasedCommunityService: TimeBasedCommunityService(
-          communityRepository: communityRepository,
-        ),
-      );
+    test(
+      'auto-creates time-based and era communities from memory timestamp',
+      () async {
+        final memoryRepository = LocalMemoryRepository();
+        final communityRepository = LocalCommunityRepository(
+          now: DateTime.utc(2026, 5, 14),
+        );
+        final cubit = AddMemoryCubit(
+          locationService: _FakeLocationService(
+            permission: LocationPermissionState.granted,
+          ),
+          mediaPickerService: _FakeMediaPickerService(),
+          imageCompressionService: _NoOpImageCompressionService(),
+          mediaUploadService: _FakeMediaUploadService(),
+          sentimentAnalyzer: LexiconSentimentAnalyzer(),
+          placeRepository: LocalPlaceRepository(now: DateTime.utc(2026, 5, 14)),
+          memoryRepository: memoryRepository,
+          timeBasedCommunityService: TimeBasedCommunityService(
+            communityRepository: communityRepository,
+          ),
+        );
 
-      await cubit.captureLocation();
-      await cubit.submit(
-        userId: 'user-1',
-        textContent: 'A memory for this year.',
-      );
+        await cubit.captureLocation();
+        await cubit.submit(
+          userId: 'user-1',
+          textContent: 'A memory for this year.',
+        );
 
-      final community = await communityRepository.findById('time-2026');
+        final community = await communityRepository.findById('time-2026');
+        final era = await communityRepository.findById('era-2020s');
 
-      expect(cubit.state.status, AddMemoryStatus.success);
-      expect(community?.type, CommunityType.timeBased);
-      expect(community?.ownerId, 'user-1');
+        expect(cubit.state.status, AddMemoryStatus.success);
+        expect(community?.type, CommunityType.timeBased);
+        expect(community?.ownerId, 'user-1');
+        expect(era?.type, CommunityType.timeBased);
+        expect(era?.name, '2020s Era');
 
-      await cubit.close();
-      memoryRepository.dispose();
-      communityRepository.dispose();
-    });
+        await cubit.close();
+        memoryRepository.dispose();
+        communityRepository.dispose();
+      },
+    );
   });
 }
 

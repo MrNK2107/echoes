@@ -15,7 +15,33 @@ class TimeBasedCommunityService {
     required DateTime now,
   }) async {
     final year = memory.createdAt.toUtc().year;
-    final communityId = 'time-$year';
+    await _ensureCommunity(
+      id: 'time-$year',
+      name: '$year Memories',
+      description: 'Auto-created for memories saved during $year.',
+      ownerId: memory.userId,
+      now: now,
+    );
+
+    final decadeStart = (year ~/ 10) * 10;
+    await _ensureCommunity(
+      id: 'era-${decadeStart}s',
+      name: '${decadeStart}s Era',
+      description:
+          'Auto-created for memories saved from $decadeStart to ${decadeStart + 9}.',
+      ownerId: memory.userId,
+      now: now,
+    );
+  }
+
+  Future<void> _ensureCommunity({
+    required String id,
+    required String name,
+    required String description,
+    required String ownerId,
+    required DateTime now,
+  }) async {
+    final communityId = id;
     final existing = await _communityRepository.findById(communityId);
     if (existing != null) {
       return;
@@ -24,10 +50,10 @@ class TimeBasedCommunityService {
     await _communityRepository.create(
       Community(
         id: communityId,
-        name: '$year Memories',
-        description: 'Auto-created for memories saved during $year.',
+        name: name,
+        description: description,
         type: CommunityType.timeBased,
-        ownerId: memory.userId,
+        ownerId: ownerId,
         memberCount: 1,
         createdAt: now,
         updatedAt: now,
