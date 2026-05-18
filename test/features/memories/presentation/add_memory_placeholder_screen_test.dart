@@ -10,6 +10,7 @@ import 'package:echoes/features/aura/domain/sentiment_analyzer.dart';
 import 'package:echoes/features/auth/data/local_auth_repository.dart';
 import 'package:echoes/features/auth/domain/auth_repository.dart';
 import 'package:echoes/features/auth/presentation/auth_cubit.dart';
+import 'package:echoes/features/communities/application/geographic_community_service.dart';
 import 'package:echoes/features/communities/data/local_community_repository.dart';
 import 'package:echoes/features/communities/domain/community_repository.dart';
 import 'package:echoes/features/memories/application/pending_memory_upload_sync.dart';
@@ -178,6 +179,10 @@ class _TestApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final memoryRepository = LocalMemoryRepository();
+    final placeRepository = LocalPlaceRepository(
+      now: DateTime.utc(2026, 5, 15),
+    );
+    final communityRepository = LocalCommunityRepository();
     final pendingUploadQueue = uploadQueue ?? LocalPendingMemoryUploadQueue();
     const mediaUploadService = _NoOpMediaUploadService();
 
@@ -204,9 +209,7 @@ class _TestApp extends StatelessWidget {
         RepositoryProvider<SentimentAnalyzer>(
           create: (_) => LexiconSentimentAnalyzer(),
         ),
-        RepositoryProvider<PlaceRepository>(
-          create: (_) => LocalPlaceRepository(now: DateTime.utc(2026, 5, 15)),
-        ),
+        RepositoryProvider<PlaceRepository>(create: (_) => placeRepository),
         RepositoryProvider<MemoryRepository>(create: (_) => memoryRepository),
         RepositoryProvider<PendingMemoryUploadQueue>(
           create: (_) => pendingUploadQueue,
@@ -219,7 +222,13 @@ class _TestApp extends StatelessWidget {
           ),
         ),
         RepositoryProvider<CommunityRepository>(
-          create: (_) => LocalCommunityRepository(),
+          create: (_) => communityRepository,
+        ),
+        RepositoryProvider<GeographicCommunityService>(
+          create: (_) => GeographicCommunityService(
+            communityRepository: communityRepository,
+            placeRepository: placeRepository,
+          ),
         ),
         RepositoryProvider<NotificationDeliveryService>(
           create: (_) => LocalNotificationDeliveryService(),

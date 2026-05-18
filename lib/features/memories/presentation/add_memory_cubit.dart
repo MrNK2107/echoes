@@ -8,6 +8,7 @@ import 'package:echoes/core/media/selected_media.dart';
 import 'package:echoes/features/aura/domain/aura_calculator.dart';
 import 'package:echoes/features/aura/domain/aura_zone.dart';
 import 'package:echoes/features/aura/domain/sentiment_analyzer.dart';
+import 'package:echoes/features/communities/application/geographic_community_service.dart';
 import 'package:echoes/features/memories/domain/memory.dart';
 import 'package:echoes/features/memories/domain/memory_repository.dart';
 import 'package:echoes/features/memories/domain/pending_memory_upload.dart';
@@ -31,6 +32,7 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
     required PlaceRepository placeRepository,
     required MemoryRepository memoryRepository,
     NotificationDeliveryService? notificationDeliveryService,
+    GeographicCommunityService? geographicCommunityService,
     PendingMemoryUploadQueue? pendingUploadQueue,
     PrivacyType initialPrivacy = PrivacyType.public,
     AuraCalculator? auraCalculator,
@@ -44,6 +46,7 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
        _placeRepository = placeRepository,
        _memoryRepository = memoryRepository,
        _notificationDeliveryService = notificationDeliveryService,
+       _geographicCommunityService = geographicCommunityService,
        _pendingUploadQueue = pendingUploadQueue,
        _uuid = uuid ?? const Uuid(),
        super(AddMemoryState.initial(privacy: initialPrivacy));
@@ -59,6 +62,7 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
   final PlaceRepository _placeRepository;
   final MemoryRepository _memoryRepository;
   final NotificationDeliveryService? _notificationDeliveryService;
+  final GeographicCommunityService? _geographicCommunityService;
   final PendingMemoryUploadQueue? _pendingUploadQueue;
   final Uuid _uuid;
 
@@ -291,23 +295,27 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
         memories: publicMemories,
         now: now,
       );
-      await _placeRepository.save(
-        Place(
-          id: place.id,
-          name: place.name,
-          latitude: place.latitude,
-          longitude: place.longitude,
-          geohash: place.geohash,
-          communityId: place.communityId,
-          custodianIds: place.custodianIds,
-          aura: aura,
-          memoryCount: place.memoryCount + 1,
-          publicMemoryCount:
-              place.publicMemoryCount +
-              (state.privacy == PrivacyType.public ? 1 : 0),
-          createdAt: place.createdAt,
-          updatedAt: now,
-        ),
+      final updatedPlace = Place(
+        id: place.id,
+        name: place.name,
+        latitude: place.latitude,
+        longitude: place.longitude,
+        geohash: place.geohash,
+        communityId: place.communityId,
+        custodianIds: place.custodianIds,
+        aura: aura,
+        memoryCount: place.memoryCount + 1,
+        publicMemoryCount:
+            place.publicMemoryCount +
+            (state.privacy == PrivacyType.public ? 1 : 0),
+        createdAt: place.createdAt,
+        updatedAt: now,
+      );
+      await _placeRepository.save(updatedPlace);
+      await _geographicCommunityService?.ensureForPlace(
+        place: updatedPlace,
+        ownerId: userId,
+        now: now,
       );
 
       emit(state.copyWith(status: AddMemoryStatus.success));

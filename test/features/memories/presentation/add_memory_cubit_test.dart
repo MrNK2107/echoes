@@ -7,6 +7,9 @@ import 'package:echoes/core/media/media_picker_service.dart';
 import 'package:echoes/core/media/media_upload_service.dart';
 import 'package:echoes/core/media/selected_media.dart';
 import 'package:echoes/features/aura/data/lexicon_sentiment_analyzer.dart';
+import 'package:echoes/features/communities/application/geographic_community_service.dart';
+import 'package:echoes/features/communities/data/local_community_repository.dart';
+import 'package:echoes/features/communities/domain/community_type.dart';
 import 'package:echoes/features/memories/data/local_memory_repository.dart';
 import 'package:echoes/features/memories/data/local_pending_memory_upload_queue.dart';
 import 'package:echoes/features/memories/presentation/add_memory_cubit.dart';
@@ -351,6 +354,54 @@ void main() {
       await cubit.close();
       memoryRepository.dispose();
     });
+
+    test(
+      'auto-creates geographic community when public memory threshold is met',
+      () async {
+        final memoryRepository = LocalMemoryRepository();
+        final placeRepository = LocalPlaceRepository(
+          now: DateTime.utc(2026, 5, 14),
+        );
+        final communityRepository = LocalCommunityRepository(
+          now: DateTime.utc(2026, 5, 14),
+        );
+        final cubit = AddMemoryCubit(
+          locationService: _FakeLocationService(
+            permission: LocationPermissionState.granted,
+          ),
+          mediaPickerService: _FakeMediaPickerService(),
+          imageCompressionService: _NoOpImageCompressionService(),
+          mediaUploadService: _FakeMediaUploadService(),
+          sentimentAnalyzer: LexiconSentimentAnalyzer(),
+          placeRepository: placeRepository,
+          memoryRepository: memoryRepository,
+          geographicCommunityService: GeographicCommunityService(
+            communityRepository: communityRepository,
+            placeRepository: placeRepository,
+          ),
+        );
+
+        await cubit.captureLocation();
+        await cubit.submit(
+          userId: 'user-1',
+          textContent: 'A public memory for the place circle.',
+        );
+
+        final community = await communityRepository.findById(
+          'geo-college-courtyard',
+        );
+        final place = await placeRepository.findById('college-courtyard');
+
+        expect(cubit.state.status, AddMemoryStatus.success);
+        expect(community?.type, CommunityType.geographic);
+        expect(community?.ownerId, 'user-1');
+        expect(place?.communityId, 'geo-college-courtyard');
+
+        await cubit.close();
+        memoryRepository.dispose();
+        communityRepository.dispose();
+      },
+    );
   });
 }
 
