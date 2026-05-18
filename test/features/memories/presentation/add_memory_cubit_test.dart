@@ -1,3 +1,4 @@
+import 'package:echoes/core/geo/geohash.dart';
 import 'package:echoes/core/location/device_location.dart';
 import 'package:echoes/core/location/location_permission_state.dart';
 import 'package:echoes/core/location/location_service.dart';
@@ -52,6 +53,12 @@ void main() {
           .first;
       expect(memories, hasLength(1));
       expect(memories.single.textContent, contains('courtyard'));
+      expect(memories.single.latitude, 12.9716);
+      expect(memories.single.longitude, 77.5946);
+      expect(
+        memories.single.geohash,
+        Geohash.encode(latitude: 12.9716, longitude: 77.5946),
+      );
       await cubit.close();
       memoryRepository.dispose();
     });
