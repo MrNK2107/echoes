@@ -14,9 +14,9 @@
 Last updated: 2026-05-18
 
 - Overall checklist completion: 331 / 387 items complete, about 86%.
-- Internal Alpha feature scope: mostly implemented in code; device smoke testing and security-rules tests remain.
-- Private Beta feature scope: partially implemented; AR rendering, transfer initiation UI, and tagged-user search are in place; rules tests and deeper AR interaction remain.
-- Public MVP feature scope: in progress; nearby-place, recent-memory, profile/settings warm caches, local image caching, and cache management settings are now implemented; accessibility, performance, notifications, and production hardening remain.
+- Internal Alpha feature scope: implemented in code; device smoke testing remains.
+- Private Beta feature scope: mostly implemented in code; AR prototype, transfer initiation UI, tagged-user search, and rules tests are in place; deeper native AR interaction remains.
+- Public MVP feature scope: in progress; nearby-place, recent-memory, profile/settings warm caches, local image caching, cache management settings, notification delivery, accessibility basics, and production telemetry are implemented; device performance measurement remains.
 
 ## Current Repository State
 
