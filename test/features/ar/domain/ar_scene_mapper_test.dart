@@ -49,12 +49,52 @@ void main() {
     expect(scenePlace.sceneX.abs(), lessThanOrEqualTo(3));
     expect(scenePlace.sceneZ.abs(), lessThanOrEqualTo(3));
   });
+
+  test('caps rendered places and memory orbs for AR performance', () {
+    const mapper = ArSceneMapper(maxPlaces: 2, maxOrbsPerPlace: 3);
+    const origin = DeviceLocation(
+      latitude: 12.9716,
+      longitude: 77.5946,
+      accuracyMeters: 8,
+    );
+
+    final scenePlaces = mapper.mapPlaces(
+      origin: origin,
+      places: [
+        _place(
+          id: 'one',
+          latitude: 12.9717,
+          longitude: 77.5946,
+          publicMemoryCount: 12,
+        ),
+        _place(
+          id: 'two',
+          latitude: 12.9718,
+          longitude: 77.5946,
+          publicMemoryCount: 5,
+        ),
+        _place(
+          id: 'three',
+          latitude: 12.9719,
+          longitude: 77.5946,
+          publicMemoryCount: 4,
+        ),
+      ],
+    );
+
+    expect(scenePlaces, hasLength(2));
+    expect(scenePlaces.map((scenePlace) => scenePlace.visibleOrbCount), [
+      3,
+      3,
+    ]);
+  });
 }
 
 Place _place({
   required String id,
   required double latitude,
   required double longitude,
+  int publicMemoryCount = 1,
 }) {
   final now = DateTime.utc(2026, 5, 16);
   return Place(
@@ -66,7 +106,7 @@ Place _place({
     custodianIds: const ['user-1'],
     aura: AuraZone.empty(now),
     memoryCount: 1,
-    publicMemoryCount: 1,
+    publicMemoryCount: publicMemoryCount,
     createdAt: now,
     updatedAt: now,
   );

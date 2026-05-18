@@ -13,7 +13,7 @@
 
 Last updated: 2026-05-18
 
-- Overall checklist completion: 299 / 387 items complete, about 77%.
+- Overall checklist completion: 300 / 387 items complete, about 78%.
 - Internal Alpha feature scope: mostly implemented in code; device smoke testing and security-rules tests remain.
 - Private Beta feature scope: partially implemented; AR rendering, transfer initiation UI, and tagged-user search are in place; rules tests and deeper AR interaction remain.
 - Public MVP feature scope: in progress; nearby-place, recent-memory, profile/settings warm caches, local image caching, and cache management settings are now implemented; accessibility, performance, notifications, and production hardening remain.
@@ -853,7 +853,7 @@ AR, image loading, and Firestore queries can strain mid-range phones.
 
 Mitigation:
 
-- [ ] Cap rendered AR objects.
+- [x] Cap rendered AR objects.
 - [ ] Compress images.
 - [ ] Cache aggressively.
 - [ ] Profile on physical devices early.
