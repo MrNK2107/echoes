@@ -13,7 +13,7 @@
 
 Last updated: 2026-05-18
 
-- Overall checklist completion: 300 / 387 items complete, about 78%.
+- Overall checklist completion: 301 / 387 items complete, about 78%.
 - Internal Alpha feature scope: mostly implemented in code; device smoke testing and security-rules tests remain.
 - Private Beta feature scope: partially implemented; AR rendering, transfer initiation UI, and tagged-user search are in place; rules tests and deeper AR interaction remain.
 - Public MVP feature scope: in progress; nearby-place, recent-memory, profile/settings warm caches, local image caching, and cache management settings are now implemented; accessibility, performance, notifications, and production hardening remain.
@@ -835,7 +835,7 @@ Mitigation:
 
 - [x] Wrap sentiment analysis behind an interface.
 - [x] Add deterministic unit tests.
-- [ ] Allow replacing the implementation without touching feature code.
+- [x] Allow replacing the implementation without touching feature code.
 
 ### Place Matching Risk
 

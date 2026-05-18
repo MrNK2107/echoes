@@ -66,10 +66,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class EchoesApp extends StatelessWidget {
-  const EchoesApp({super.key, this.config, this.useFirebase = false});
+  const EchoesApp({
+    super.key,
+    this.config,
+    this.useFirebase = false,
+    this.sentimentAnalyzer,
+  });
 
   final AppConfig? config;
   final bool useFirebase;
+  final SentimentAnalyzer? sentimentAnalyzer;
 
   @override
   Widget build(BuildContext context) {
@@ -118,6 +124,8 @@ class EchoesApp extends StatelessWidget {
         ? FirebaseAnalyticsService()
         : LocalAnalyticsService();
     unawaited(analyticsService.logAppOpened());
+    final configuredSentimentAnalyzer =
+        sentimentAnalyzer ?? LexiconSentimentAnalyzer();
     final pushNotificationService = useFirebase
         ? FirebasePushNotificationService()
         : LocalPushNotificationService();
@@ -150,7 +158,7 @@ class EchoesApp extends StatelessWidget {
             create: (_) => mediaUploadService,
           ),
           RepositoryProvider<SentimentAnalyzer>(
-            create: (_) => LexiconSentimentAnalyzer(),
+            create: (_) => configuredSentimentAnalyzer,
           ),
           RepositoryProvider<ArAvailabilityService>(
             create: (_) => arAvailabilityService,

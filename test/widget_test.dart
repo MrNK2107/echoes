@@ -1,5 +1,8 @@
 import 'package:echoes/app/app.dart';
+import 'package:echoes/features/aura/domain/sentiment_analyzer.dart';
+import 'package:echoes/features/aura/domain/sentiment_result.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -13,6 +16,19 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Sign in'), findsOneWidget);
+  });
+
+  testWidgets('allows app-level sentiment analyzer replacement', (
+    tester,
+  ) async {
+    const analyzer = _FixedSentimentAnalyzer();
+
+    await tester.pumpWidget(const EchoesApp(sentimentAnalyzer: analyzer));
+    await tester.pumpAndSettle();
+
+    final context = tester.element(find.text('ECHOES'));
+
+    expect(context.read<SentimentAnalyzer>(), same(analyzer));
   });
 
   testWidgets('signs in and renders ECHOES home shell destinations', (
@@ -197,4 +213,18 @@ void _expectMinTouchTarget(WidgetTester tester, Finder finder) {
 
   expect(size.width, greaterThanOrEqualTo(44));
   expect(size.height, greaterThanOrEqualTo(44));
+}
+
+class _FixedSentimentAnalyzer implements SentimentAnalyzer {
+  const _FixedSentimentAnalyzer();
+
+  @override
+  SentimentResult analyze(String text) {
+    return const SentimentResult(
+      compound: 0,
+      positive: 0,
+      neutral: 1,
+      negative: 0,
+    );
+  }
 }
