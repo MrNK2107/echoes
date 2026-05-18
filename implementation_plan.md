@@ -13,7 +13,7 @@
 
 Last updated: 2026-05-18
 
-- Overall checklist completion: 327 / 387 items complete, about 84%.
+- Overall checklist completion: 331 / 387 items complete, about 86%.
 - Internal Alpha feature scope: mostly implemented in code; device smoke testing and security-rules tests remain.
 - Private Beta feature scope: partially implemented; AR rendering, transfer initiation UI, and tagged-user search are in place; rules tests and deeper AR interaction remain.
 - Public MVP feature scope: in progress; nearby-place, recent-memory, profile/settings warm caches, local image caching, and cache management settings are now implemented; accessibility, performance, notifications, and production hardening remain.
@@ -599,9 +599,9 @@ Later community automation:
 
 - [x] Auto-create geographic communities when 5+ memories exist in 100m radius.
 - [x] Auto-create time-based communities based on memory timestamps.
-- [ ] Add verified institution admin flow.
-- [ ] Add alumni domain validation.
-- [ ] Add campus building sub-zones.
+- [x] Add verified institution admin flow.
+- [x] Add alumni domain validation.
+- [x] Add campus building sub-zones.
 - [x] Add era groups.
 
 Tests:
@@ -890,7 +890,7 @@ Mitigation:
 
 ### Post-MVP
 
-- [ ] Institution zones
+- [x] Institution zones
 - [x] Era groups
 - [ ] Legacy transfer polish
 - [ ] Community analytics
