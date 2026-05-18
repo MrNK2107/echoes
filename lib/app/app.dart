@@ -1,6 +1,9 @@
 import 'dart:async';
 
 import 'package:echoes/app/theme.dart';
+import 'package:echoes/core/analytics/analytics_service.dart';
+import 'package:echoes/core/analytics/firebase_analytics_service.dart';
+import 'package:echoes/core/analytics/local_analytics_service.dart';
 import 'package:echoes/core/cache/app_cache_registry.dart';
 import 'package:echoes/core/config/app_config.dart';
 import 'package:echoes/core/location/geolocator_location_service.dart';
@@ -111,6 +114,10 @@ class EchoesApp extends StatelessWidget {
     final notificationDeliveryService = useFirebase
         ? FirestoreNotificationDeliveryService()
         : LocalNotificationDeliveryService();
+    final analyticsService = useFirebase
+        ? FirebaseAnalyticsService()
+        : LocalAnalyticsService();
+    unawaited(analyticsService.logAppOpened());
     final pushNotificationService = useFirebase
         ? FirebasePushNotificationService()
         : LocalPushNotificationService();
@@ -125,6 +132,7 @@ class EchoesApp extends StatelessWidget {
         providers: [
           RepositoryProvider<AuthRepository>(create: (_) => authRepository),
           RepositoryProvider<AppCacheRegistry>(create: (_) => cacheRegistry),
+          RepositoryProvider<AnalyticsService>(create: (_) => analyticsService),
           RepositoryProvider<LocalImageCache>(create: (_) => localImageCache),
           RepositoryProvider<AppUserRepository>(
             create: (_) => appUserRepository,

@@ -13,7 +13,7 @@
 
 Last updated: 2026-05-18
 
-- Overall checklist completion: 278 / 387 items complete, about 72%.
+- Overall checklist completion: 279 / 387 items complete, about 72%.
 - Internal Alpha feature scope: mostly implemented in code; device smoke testing and security-rules tests remain.
 - Private Beta feature scope: partially implemented; AR rendering, transfer initiation UI, and tagged-user search are in place; rules tests and deeper AR interaction remain.
 - Public MVP feature scope: in progress; nearby-place, recent-memory, profile/settings warm caches, local image caching, and cache management settings are now implemented; accessibility, performance, notifications, and production hardening remain.
@@ -54,6 +54,7 @@ The repository now contains the product specification, implementation plan, and 
 - Community-invitation notification delivery requests
 - Notification permission request flow in settings
 - Firebase Crashlytics wired through bootstrap crash reporting
+- Privacy-scoped Firebase Analytics service with reviewed event surface
 - Profile cache management control for clearing local warm caches
 - Unit and widget tests for the current local MVP and AR lifecycle foundation
 
@@ -724,7 +725,7 @@ Goal: make the app reliable on target devices.
 - [x] Optimize image compression.
 - [x] Optimize Firestore query counts.
 - [x] Add crash reporting.
-- [ ] Add analytics with privacy review.
+- [x] Add analytics with privacy review.
 
 Deliverable:
 
