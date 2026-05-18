@@ -13,7 +13,7 @@
 
 Last updated: 2026-05-18
 
-- Overall checklist completion: 303 / 387 items complete, about 78%.
+- Overall checklist completion: 325 / 387 items complete, about 84%.
 - Internal Alpha feature scope: mostly implemented in code; device smoke testing and security-rules tests remain.
 - Private Beta feature scope: partially implemented; AR rendering, transfer initiation UI, and tagged-user search are in place; rules tests and deeper AR interaction remain.
 - Public MVP feature scope: in progress; nearby-place, recent-memory, profile/settings warm caches, local image caching, and cache management settings are now implemented; accessibility, performance, notifications, and production hardening remain.
@@ -65,7 +65,7 @@ The repository now contains the product specification, implementation plan, and 
 - Profile cache management control for clearing local warm caches
 - Unit and widget tests for the current local MVP and AR lifecycle foundation
 
-Native Firebase config files are present locally but ignored by git for GitHub safety. Production hardening, Firebase Cloud Functions, security-rules tests, notification delivery, offline sync, and full AR rendering remain to be implemented.
+Native Firebase config files are present locally but ignored by git for GitHub safety. Firebase Cloud Functions, notification delivery, crash reporting, analytics, rules tests, and offline cache basics are now implemented; full native AR rendering, device smoke testing, and performance measurement remain.
 
 ## Implementation Strategy
 
@@ -812,8 +812,8 @@ AR dependencies may behave differently across Android and iOS.
 Mitigation:
 
 - [ ] Build AR only after MVP is stable.
-- [ ] Add AR availability detection.
-- [ ] Keep 2D map as complete fallback.
+- [x] Add AR availability detection.
+- [x] Keep 2D map as complete fallback.
 - [ ] Test on real target Android hardware.
 
 ### Privacy Query Complexity
@@ -854,38 +854,38 @@ AR, image loading, and Firestore queries can strain mid-range phones.
 Mitigation:
 
 - [x] Cap rendered AR objects.
-- [ ] Compress images.
-- [ ] Cache aggressively.
+- [x] Compress images.
+- [x] Cache aggressively.
 - [ ] Profile on physical devices early.
 
 ## Release Milestones
 
 ### Internal Alpha
 
-- [ ] Auth
-- [ ] Profile
-- [ ] Map
-- [ ] Add memory
-- [ ] Place detail
-- [ ] Public/private privacy
-- [ ] Basic aura preview
+- [x] Auth
+- [x] Profile
+- [x] Map
+- [x] Add memory
+- [x] Place detail
+- [x] Public/private privacy
+- [x] Basic aura preview
 
 ### Private Beta
 
-- [ ] Advanced privacy
-- [ ] AR prototype
-- [ ] Memory editing
-- [ ] Soft delete
-- [ ] Initial community support
-- [ ] Firebase security rules test coverage
+- [x] Advanced privacy
+- [x] AR prototype
+- [x] Memory editing
+- [x] Soft delete
+- [x] Initial community support
+- [x] Firebase security rules test coverage
 
 ### Public MVP
 
-- [ ] Stable AR fallback
-- [ ] Thematic communities
-- [ ] Custodianship basics
-- [ ] Offline cache basics
-- [ ] Accessibility pass
+- [x] Stable AR fallback
+- [x] Thematic communities
+- [x] Custodianship basics
+- [x] Offline cache basics
+- [x] Accessibility pass
 - [ ] Performance pass on target devices
 
 ### Post-MVP
