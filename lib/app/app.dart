@@ -32,6 +32,7 @@ import 'package:echoes/features/auth/domain/auth_repository.dart';
 import 'package:echoes/features/auth/presentation/auth_cubit.dart';
 import 'package:echoes/features/auth/presentation/auth_gate.dart';
 import 'package:echoes/features/communities/application/geographic_community_service.dart';
+import 'package:echoes/features/communities/application/time_based_community_service.dart';
 import 'package:echoes/features/communities/data/firestore_community_repository.dart';
 import 'package:echoes/features/communities/data/local_community_repository.dart';
 import 'package:echoes/features/communities/domain/community_repository.dart';
@@ -109,6 +110,9 @@ class EchoesApp extends StatelessWidget {
     final geographicCommunityService = GeographicCommunityService(
       communityRepository: communityRepository,
       placeRepository: placeRepository,
+    );
+    final timeBasedCommunityService = TimeBasedCommunityService(
+      communityRepository: communityRepository,
     );
     final legacyTransferRepository = useFirebase
         ? FirestoreLegacyTransferRepository()
@@ -200,6 +204,9 @@ class EchoesApp extends StatelessWidget {
           ),
           RepositoryProvider<GeographicCommunityService>(
             create: (_) => geographicCommunityService,
+          ),
+          RepositoryProvider<TimeBasedCommunityService>(
+            create: (_) => timeBasedCommunityService,
           ),
           RepositoryProvider<LegacyTransferRepository>(
             create: (_) => legacyTransferRepository,

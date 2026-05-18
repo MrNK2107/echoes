@@ -9,6 +9,7 @@ import 'package:echoes/features/aura/domain/aura_calculator.dart';
 import 'package:echoes/features/aura/domain/aura_zone.dart';
 import 'package:echoes/features/aura/domain/sentiment_analyzer.dart';
 import 'package:echoes/features/communities/application/geographic_community_service.dart';
+import 'package:echoes/features/communities/application/time_based_community_service.dart';
 import 'package:echoes/features/memories/domain/memory.dart';
 import 'package:echoes/features/memories/domain/memory_repository.dart';
 import 'package:echoes/features/memories/domain/pending_memory_upload.dart';
@@ -33,6 +34,7 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
     required MemoryRepository memoryRepository,
     NotificationDeliveryService? notificationDeliveryService,
     GeographicCommunityService? geographicCommunityService,
+    TimeBasedCommunityService? timeBasedCommunityService,
     PendingMemoryUploadQueue? pendingUploadQueue,
     PrivacyType initialPrivacy = PrivacyType.public,
     AuraCalculator? auraCalculator,
@@ -47,6 +49,7 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
        _memoryRepository = memoryRepository,
        _notificationDeliveryService = notificationDeliveryService,
        _geographicCommunityService = geographicCommunityService,
+       _timeBasedCommunityService = timeBasedCommunityService,
        _pendingUploadQueue = pendingUploadQueue,
        _uuid = uuid ?? const Uuid(),
        super(AddMemoryState.initial(privacy: initialPrivacy));
@@ -63,6 +66,7 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
   final MemoryRepository _memoryRepository;
   final NotificationDeliveryService? _notificationDeliveryService;
   final GeographicCommunityService? _geographicCommunityService;
+  final TimeBasedCommunityService? _timeBasedCommunityService;
   final PendingMemoryUploadQueue? _pendingUploadQueue;
   final Uuid _uuid;
 
@@ -279,6 +283,10 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
       );
 
       await _memoryRepository.create(memory);
+      await _timeBasedCommunityService?.ensureForMemory(
+        memory: memory,
+        now: now,
+      );
       if (memory.taggedUserIds.isNotEmpty) {
         await _notificationDeliveryService?.notifyMemoryTagged(
           memoryId: memory.id,

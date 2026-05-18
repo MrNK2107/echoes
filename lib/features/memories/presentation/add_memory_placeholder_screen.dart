@@ -6,6 +6,7 @@ import 'package:echoes/core/media/media_upload_service.dart';
 import 'package:echoes/features/aura/domain/sentiment_analyzer.dart';
 import 'package:echoes/features/auth/presentation/auth_cubit.dart';
 import 'package:echoes/features/communities/application/geographic_community_service.dart';
+import 'package:echoes/features/communities/application/time_based_community_service.dart';
 import 'package:echoes/features/communities/domain/community.dart';
 import 'package:echoes/features/communities/domain/community_repository.dart';
 import 'package:echoes/features/memories/application/pending_memory_upload_sync.dart';
@@ -46,6 +47,8 @@ class AddMemoryPlaceholderScreen extends StatelessWidget {
                 .read<NotificationDeliveryService>(),
             geographicCommunityService: context
                 .read<GeographicCommunityService>(),
+            timeBasedCommunityService: context
+                .read<TimeBasedCommunityService>(),
             pendingUploadQueue: context.read<PendingMemoryUploadQueue>(),
             initialPrivacy: snapshot.data?.defaultPrivacy ?? PrivacyType.public,
           ),

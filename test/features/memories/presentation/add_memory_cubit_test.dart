@@ -8,6 +8,7 @@ import 'package:echoes/core/media/media_upload_service.dart';
 import 'package:echoes/core/media/selected_media.dart';
 import 'package:echoes/features/aura/data/lexicon_sentiment_analyzer.dart';
 import 'package:echoes/features/communities/application/geographic_community_service.dart';
+import 'package:echoes/features/communities/application/time_based_community_service.dart';
 import 'package:echoes/features/communities/data/local_community_repository.dart';
 import 'package:echoes/features/communities/domain/community_type.dart';
 import 'package:echoes/features/memories/data/local_memory_repository.dart';
@@ -402,6 +403,43 @@ void main() {
         communityRepository.dispose();
       },
     );
+
+    test('auto-creates time-based community from memory timestamp', () async {
+      final memoryRepository = LocalMemoryRepository();
+      final communityRepository = LocalCommunityRepository(
+        now: DateTime.utc(2026, 5, 14),
+      );
+      final cubit = AddMemoryCubit(
+        locationService: _FakeLocationService(
+          permission: LocationPermissionState.granted,
+        ),
+        mediaPickerService: _FakeMediaPickerService(),
+        imageCompressionService: _NoOpImageCompressionService(),
+        mediaUploadService: _FakeMediaUploadService(),
+        sentimentAnalyzer: LexiconSentimentAnalyzer(),
+        placeRepository: LocalPlaceRepository(now: DateTime.utc(2026, 5, 14)),
+        memoryRepository: memoryRepository,
+        timeBasedCommunityService: TimeBasedCommunityService(
+          communityRepository: communityRepository,
+        ),
+      );
+
+      await cubit.captureLocation();
+      await cubit.submit(
+        userId: 'user-1',
+        textContent: 'A memory for this year.',
+      );
+
+      final community = await communityRepository.findById('time-2026');
+
+      expect(cubit.state.status, AddMemoryStatus.success);
+      expect(community?.type, CommunityType.timeBased);
+      expect(community?.ownerId, 'user-1');
+
+      await cubit.close();
+      memoryRepository.dispose();
+      communityRepository.dispose();
+    });
   });
 }
 

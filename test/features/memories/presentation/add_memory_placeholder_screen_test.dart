@@ -11,6 +11,7 @@ import 'package:echoes/features/auth/data/local_auth_repository.dart';
 import 'package:echoes/features/auth/domain/auth_repository.dart';
 import 'package:echoes/features/auth/presentation/auth_cubit.dart';
 import 'package:echoes/features/communities/application/geographic_community_service.dart';
+import 'package:echoes/features/communities/application/time_based_community_service.dart';
 import 'package:echoes/features/communities/data/local_community_repository.dart';
 import 'package:echoes/features/communities/domain/community_repository.dart';
 import 'package:echoes/features/memories/application/pending_memory_upload_sync.dart';
@@ -228,6 +229,11 @@ class _TestApp extends StatelessWidget {
           create: (_) => GeographicCommunityService(
             communityRepository: communityRepository,
             placeRepository: placeRepository,
+          ),
+        ),
+        RepositoryProvider<TimeBasedCommunityService>(
+          create: (_) => TimeBasedCommunityService(
+            communityRepository: communityRepository,
           ),
         ),
         RepositoryProvider<NotificationDeliveryService>(
