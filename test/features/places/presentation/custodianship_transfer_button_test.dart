@@ -1,6 +1,9 @@
 import 'package:echoes/features/aura/domain/aura_zone.dart';
+import 'package:echoes/features/legacy/application/custodianship_transfer_service.dart';
 import 'package:echoes/features/legacy/data/local_legacy_transfer_repository.dart';
 import 'package:echoes/features/legacy/domain/legacy_transfer_repository.dart';
+import 'package:echoes/features/notifications/data/local_notification_delivery_service.dart';
+import 'package:echoes/features/places/data/local_place_repository.dart';
 import 'package:echoes/features/places/domain/place.dart';
 import 'package:echoes/features/places/presentation/custodianship_transfer_button.dart';
 import 'package:flutter/material.dart';
@@ -24,10 +27,12 @@ void main() {
 
   testWidgets('creates a pending transfer for custodians', (tester) async {
     final repository = LocalLegacyTransferRepository();
+    final notifications = LocalNotificationDeliveryService();
 
     await tester.pumpWidget(
       _TestApp(
         repository: repository,
+        notifications: notifications,
         child: CustodianshipTransferButton(
           place: _place(custodianIds: const ['custodian']),
           currentUserId: 'custodian',
@@ -48,19 +53,36 @@ void main() {
     expect(transfer.placeId, 'place-1');
     expect(transfer.fromUserId, 'custodian');
     expect(transfer.toUserId, 'recipient');
+    expect(notifications.deliveries.single.recipientUserId, 'recipient');
   });
 }
 
 class _TestApp extends StatelessWidget {
-  const _TestApp({required this.repository, required this.child});
+  const _TestApp({
+    required this.repository,
+    required this.child,
+    this.notifications,
+  });
 
   final LegacyTransferRepository repository;
+  final LocalNotificationDeliveryService? notifications;
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
-    return RepositoryProvider<LegacyTransferRepository>.value(
-      value: repository,
+    final notificationDeliveryService =
+        notifications ?? LocalNotificationDeliveryService();
+    return MultiRepositoryProvider(
+      providers: [
+        RepositoryProvider<LegacyTransferRepository>.value(value: repository),
+        RepositoryProvider<CustodianshipTransferService>(
+          create: (_) => CustodianshipTransferService(
+            transferRepository: repository,
+            placeRepository: LocalPlaceRepository(),
+            notificationDeliveryService: notificationDeliveryService,
+          ),
+        ),
+      ],
       child: MaterialApp(
         home: Scaffold(body: Center(child: child)),
       ),

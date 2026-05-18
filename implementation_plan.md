@@ -13,7 +13,7 @@
 
 Last updated: 2026-05-18
 
-- Overall checklist completion: 272 / 387 items complete, about 70%.
+- Overall checklist completion: 273 / 387 items complete, about 71%.
 - Internal Alpha feature scope: mostly implemented in code; device smoke testing and security-rules tests remain.
 - Private Beta feature scope: partially implemented; AR rendering, transfer initiation UI, and tagged-user search are in place; rules tests and deeper AR interaction remain.
 - Public MVP feature scope: in progress; nearby-place, recent-memory, profile/settings warm caches, local image caching, and cache management settings are now implemented; accessibility, performance, notifications, and production hardening remain.
@@ -47,6 +47,7 @@ The repository now contains the product specification, implementation plan, and 
 - Dimension-aware image compression before upload encoding
 - Bounded Firestore list and nearby candidate queries
 - Firebase Cloud Messaging foundation with push token and foreground message services
+- Transfer-request notification delivery requests
 - Notification permission request flow in settings
 - Profile cache management control for clearing local warm caches
 - Unit and widget tests for the current local MVP and AR lifecycle foundation
@@ -672,7 +673,7 @@ Goal: support transfer and community workflows.
 
 - [x] Add Firebase Cloud Messaging.
 - [x] Request notification permissions.
-- [ ] Notify users of transfer requests.
+- [x] Notify users of transfer requests.
 - [ ] Notify users of accepted transfers.
 - [ ] Notify users when tagged in memories.
 - [ ] Notify users of community invitations.

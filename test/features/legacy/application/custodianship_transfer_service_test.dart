@@ -4,6 +4,8 @@ import 'package:echoes/features/legacy/application/custodianship_transfer_servic
 import 'package:echoes/features/legacy/data/local_legacy_transfer_repository.dart';
 import 'package:echoes/features/legacy/domain/legacy_transfer.dart';
 import 'package:echoes/features/legacy/domain/transfer_status.dart';
+import 'package:echoes/features/notifications/data/local_notification_delivery_service.dart';
+import 'package:echoes/features/notifications/domain/notification_delivery.dart';
 import 'package:echoes/features/places/data/local_place_repository.dart';
 import 'package:echoes/features/places/domain/place.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -16,9 +18,11 @@ void main() {
         final now = DateTime.utc(2026, 5, 16);
         final placeRepository = LocalPlaceRepository(now: now);
         final transferRepository = LocalLegacyTransferRepository();
+        final notificationDeliveryService = LocalNotificationDeliveryService();
         final service = CustodianshipTransferService(
           transferRepository: transferRepository,
           placeRepository: placeRepository,
+          notificationDeliveryService: notificationDeliveryService,
         );
 
         await placeRepository.save(
@@ -58,9 +62,11 @@ void main() {
         final now = DateTime.utc(2026, 5, 16);
         final placeRepository = LocalPlaceRepository(now: now);
         final transferRepository = LocalLegacyTransferRepository();
+        final notificationDeliveryService = LocalNotificationDeliveryService();
         final service = CustodianshipTransferService(
           transferRepository: transferRepository,
           placeRepository: placeRepository,
+          notificationDeliveryService: notificationDeliveryService,
         );
 
         await placeRepository.save(
@@ -92,6 +98,40 @@ void main() {
         transferRepository.dispose();
       },
     );
+
+    test('initiating transfer notifies the recipient', () async {
+      final now = DateTime.utc(2026, 5, 18);
+      final transferRepository = LocalLegacyTransferRepository();
+      final placeRepository = LocalPlaceRepository(now: now);
+      final notificationDeliveryService = LocalNotificationDeliveryService(
+        now: now,
+      );
+      final service = CustodianshipTransferService(
+        transferRepository: transferRepository,
+        placeRepository: placeRepository,
+        notificationDeliveryService: notificationDeliveryService,
+      );
+
+      await service.initiateTransfer(
+        LegacyTransfer(
+          id: 'transfer-1',
+          placeId: 'place-1',
+          fromUserId: 'custodian',
+          toUserId: 'recipient',
+          status: TransferStatus.pending,
+          createdAt: now,
+          revokeUntil: now.add(const Duration(days: 7)),
+        ),
+      );
+
+      expect(transferRepository.transferHistory().single.id, 'transfer-1');
+      final delivery = notificationDeliveryService.deliveries.single;
+      expect(delivery.type, NotificationDeliveryType.transferRequest);
+      expect(delivery.recipientUserId, 'recipient');
+      expect(delivery.data['transferId'], 'transfer-1');
+
+      transferRepository.dispose();
+    });
   });
 }
 

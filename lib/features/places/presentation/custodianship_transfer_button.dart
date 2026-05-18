@@ -1,5 +1,5 @@
+import 'package:echoes/features/legacy/application/custodianship_transfer_service.dart';
 import 'package:echoes/features/legacy/domain/legacy_transfer.dart';
-import 'package:echoes/features/legacy/domain/legacy_transfer_repository.dart';
 import 'package:echoes/features/legacy/domain/transfer_status.dart';
 import 'package:echoes/features/places/domain/place.dart';
 import 'package:flutter/material.dart';
@@ -122,7 +122,7 @@ class _TransferSheetState extends State<_TransferSheet> {
 
     setState(() => _isSubmitting = true);
     final now = DateTime.now().toUtc();
-    await context.read<LegacyTransferRepository>().initiate(
+    await context.read<CustodianshipTransferService>().initiateTransfer(
       LegacyTransfer(
         id: const Uuid().v4(),
         placeId: widget.place.id,

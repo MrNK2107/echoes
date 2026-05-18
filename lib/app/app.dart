@@ -44,8 +44,11 @@ import 'package:echoes/features/memories/domain/memory_repository.dart';
 import 'package:echoes/features/memories/domain/pending_memory_upload_queue.dart';
 import 'package:echoes/features/notifications/data/device_notification_permission_service.dart';
 import 'package:echoes/features/notifications/data/firebase_push_notification_service.dart';
+import 'package:echoes/features/notifications/data/firestore_notification_delivery_service.dart';
+import 'package:echoes/features/notifications/data/local_notification_delivery_service.dart';
 import 'package:echoes/features/notifications/data/local_notification_permission_service.dart';
 import 'package:echoes/features/notifications/data/local_push_notification_service.dart';
+import 'package:echoes/features/notifications/domain/notification_delivery_service.dart';
 import 'package:echoes/features/notifications/domain/notification_permission_service.dart';
 import 'package:echoes/features/notifications/domain/push_notification_service.dart';
 import 'package:echoes/features/places/data/cached_place_repository.dart';
@@ -105,6 +108,9 @@ class EchoesApp extends StatelessWidget {
     final notificationPermissionService = useFirebase
         ? const DeviceNotificationPermissionService()
         : const LocalNotificationPermissionService();
+    final notificationDeliveryService = useFirebase
+        ? FirestoreNotificationDeliveryService()
+        : LocalNotificationDeliveryService();
     final pushNotificationService = useFirebase
         ? FirebasePushNotificationService()
         : LocalPushNotificationService();
@@ -147,6 +153,9 @@ class EchoesApp extends StatelessWidget {
           RepositoryProvider<NotificationPermissionService>(
             create: (_) => notificationPermissionService,
           ),
+          RepositoryProvider<NotificationDeliveryService>(
+            create: (_) => notificationDeliveryService,
+          ),
           RepositoryProvider<PushNotificationService>(
             create: (_) => pushNotificationService,
           ),
@@ -175,6 +184,7 @@ class EchoesApp extends StatelessWidget {
             create: (_) => CustodianshipTransferService(
               transferRepository: legacyTransferRepository,
               placeRepository: placeRepository,
+              notificationDeliveryService: notificationDeliveryService,
             ),
           ),
         ],
