@@ -13,7 +13,7 @@
 
 Last updated: 2026-05-18
 
-- Overall checklist completion: 280 / 387 items complete, about 72%.
+- Overall checklist completion: 281 / 387 items complete, about 73%.
 - Internal Alpha feature scope: mostly implemented in code; device smoke testing and security-rules tests remain.
 - Private Beta feature scope: partially implemented; AR rendering, transfer initiation UI, and tagged-user search are in place; rules tests and deeper AR interaction remain.
 - Public MVP feature scope: in progress; nearby-place, recent-memory, profile/settings warm caches, local image caching, and cache management settings are now implemented; accessibility, performance, notifications, and production hardening remain.
@@ -56,6 +56,7 @@ The repository now contains the product specification, implementation plan, and 
 - Firebase Crashlytics wired through bootstrap crash reporting
 - Privacy-scoped Firebase Analytics service with reviewed event surface
 - Deterministic sentiment analyzer unit coverage
+- Separate Firestore visible-memory query paths by privacy mode
 - Profile cache management control for clearing local warm caches
 - Unit and widget tests for the current local MVP and AR lifecycle foundation
 
@@ -816,7 +817,7 @@ Firestore queries can become difficult when combining public, private, tagged, c
 
 Mitigation:
 
-- [ ] Keep separate query paths for each visibility type.
+- [x] Keep separate query paths for each visibility type.
 - [ ] Enforce access with security rules.
 - [ ] Add security rules tests before broad feature work.
 - [ ] Avoid relying only on client-side filtering.

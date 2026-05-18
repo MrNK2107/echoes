@@ -6,4 +6,8 @@ void main() {
     expect(FirestoreMemoryRepository.defaultPlaceMemoryLimit, 50);
     expect(FirestoreMemoryRepository.defaultUserMemoryLimit, 50);
   });
+
+  test('FirestoreMemoryRepository caps community visibility query ids', () {
+    expect(FirestoreMemoryRepository.maxCommunityQueryIds, 10);
+  });
 }
