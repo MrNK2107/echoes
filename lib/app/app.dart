@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:echoes/app/theme.dart';
 import 'package:echoes/core/cache/app_cache_registry.dart';
 import 'package:echoes/core/config/app_config.dart';
@@ -41,8 +43,11 @@ import 'package:echoes/features/memories/data/local_pending_memory_upload_queue.
 import 'package:echoes/features/memories/domain/memory_repository.dart';
 import 'package:echoes/features/memories/domain/pending_memory_upload_queue.dart';
 import 'package:echoes/features/notifications/data/device_notification_permission_service.dart';
+import 'package:echoes/features/notifications/data/firebase_push_notification_service.dart';
 import 'package:echoes/features/notifications/data/local_notification_permission_service.dart';
+import 'package:echoes/features/notifications/data/local_push_notification_service.dart';
 import 'package:echoes/features/notifications/domain/notification_permission_service.dart';
+import 'package:echoes/features/notifications/domain/push_notification_service.dart';
 import 'package:echoes/features/places/data/cached_place_repository.dart';
 import 'package:echoes/features/places/data/firestore_place_repository.dart';
 import 'package:echoes/features/places/data/local_place_repository.dart';
@@ -100,6 +105,10 @@ class EchoesApp extends StatelessWidget {
     final notificationPermissionService = useFirebase
         ? const DeviceNotificationPermissionService()
         : const LocalNotificationPermissionService();
+    final pushNotificationService = useFirebase
+        ? FirebasePushNotificationService()
+        : LocalPushNotificationService();
+    unawaited(pushNotificationService.initialize());
 
     return MaterialApp(
       title: appConfig.appTitle,
@@ -137,6 +146,9 @@ class EchoesApp extends StatelessWidget {
           ),
           RepositoryProvider<NotificationPermissionService>(
             create: (_) => notificationPermissionService,
+          ),
+          RepositoryProvider<PushNotificationService>(
+            create: (_) => pushNotificationService,
           ),
           RepositoryProvider<ArSessionService>(
             create: (_) => LocalArSessionService(),
