@@ -13,7 +13,7 @@
 
 Last updated: 2026-05-18
 
-- Overall checklist completion: 298 / 387 items complete, about 77%.
+- Overall checklist completion: 299 / 387 items complete, about 77%.
 - Internal Alpha feature scope: mostly implemented in code; device smoke testing and security-rules tests remain.
 - Private Beta feature scope: partially implemented; AR rendering, transfer initiation UI, and tagged-user search are in place; rules tests and deeper AR interaction remain.
 - Public MVP feature scope: in progress; nearby-place, recent-memory, profile/settings warm caches, local image caching, and cache management settings are now implemented; accessibility, performance, notifications, and production hardening remain.
@@ -823,7 +823,7 @@ Firestore queries can become difficult when combining public, private, tagged, c
 Mitigation:
 
 - [x] Keep separate query paths for each visibility type.
-- [ ] Enforce access with security rules.
+- [x] Enforce access with security rules.
 - [x] Add security rules tests before broad feature work.
 - [x] Avoid relying only on client-side filtering.
 

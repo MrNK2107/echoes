@@ -37,7 +37,9 @@ test("memory privacy read rules allow and deny expected viewers", async () => {
   const strangerDb = testEnv.authenticatedContext("stranger").firestore();
   const taggedDb = testEnv.authenticatedContext("tagged-user").firestore();
   const memberDb = testEnv.authenticatedContext("member").firestore();
+  const unauthenticatedDb = testEnv.unauthenticatedContext().firestore();
 
+  await assertFails(getDoc(doc(unauthenticatedDb, "memories/public-memory")));
   await assertSucceeds(getDoc(doc(strangerDb, "memories/public-memory")));
   await assertSucceeds(getDoc(doc(creatorDb, "memories/private-memory")));
   await assertFails(getDoc(doc(strangerDb, "memories/private-memory")));
