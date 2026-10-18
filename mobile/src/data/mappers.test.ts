@@ -1,0 +1,120 @@
+import { Timestamp } from 'firebase/firestore';
+import {
+  memoryFromDoc,
+  memoryToDoc,
+  placeFromDoc,
+  placeToDoc,
+  userFromDoc,
+  userToDoc,
+} from './mappers';
+import type { AppUser, Memory, Place } from '../domain/types';
+
+const d = (s: string) => new Date(s);
+
+const memory: Memory = {
+  id: 'm1',
+  userId: 'u1',
+  placeId: 'p1',
+  imageUrl: null,
+  audioUrl: 'https://a/b.m4a',
+  textContent: 'hello',
+  latitude: 1.5,
+  longitude: 2.5,
+  geohash: 'abc',
+  sentiment: { compound: 0.4, positive: 0.5, neutral: 0.4, negative: 0.1 },
+  privacy: 'timeRelease',
+  taggedUserIds: ['u2'],
+  communityId: null,
+  releaseDate: d('2030-01-01T00:00:00.000Z'),
+  isDeleted: false,
+  deletedAt: null,
+  createdAt: d('2026-01-02T03:04:05.000Z'),
+  updatedAt: d('2026-01-03T03:04:05.000Z'),
+};
+
+const place: Place = {
+  id: 'p1',
+  name: 'Spot',
+  latitude: 1,
+  longitude: 2,
+  geohash: 'abc',
+  communityId: null,
+  custodianIds: ['u1'],
+  aura: {
+    dominantSentiment: 'mixed',
+    compoundScore: 0.2,
+    intensity: 0.5,
+    memoryCount: 10,
+    colorHex: '#DDA0DD',
+    updatedAt: d('2026-02-01T00:00:00.000Z'),
+  },
+  memoryCount: 12,
+  publicMemoryCount: 10,
+  createdAt: d('2026-01-01T00:00:00.000Z'),
+  updatedAt: d('2026-02-01T00:00:00.000Z'),
+};
+
+const user: AppUser = {
+  id: 'u1',
+  displayName: null,
+  email: 'a@b.c',
+  photoUrl: null,
+  defaultPrivacy: 'private',
+  managedPlaceIds: [],
+  communityIds: ['c1'],
+  createdAt: d('2026-01-01T00:00:00.000Z'),
+  updatedAt: d('2026-01-02T00:00:00.000Z'),
+};
+
+describe('memory mapper', () => {
+  it('round-trips', () => {
+    expect(memoryFromDoc(memory.id, memoryToDoc(memory))).toEqual(memory);
+  });
+  it('writes Timestamps and nulls', () => {
+    const doc = memoryToDoc(memory);
+    expect(doc.createdAt).toBeInstanceOf(Timestamp);
+    expect(doc.releaseDate).toBeInstanceOf(Timestamp);
+    expect(doc.imageUrl).toBeNull();
+    expect(doc.deletedAt).toBeNull();
+    expect(doc).not.toHaveProperty('id');
+  });
+  it('reads legacy ISO date strings', () => {
+    const doc = { ...memoryToDoc(memory), createdAt: '2025-01-02T03:04:05.000Z' };
+    expect(memoryFromDoc('m1', doc).createdAt).toEqual(d('2025-01-02T03:04:05.000Z'));
+  });
+  it('maps missing optionals to null', () => {
+    const doc = memoryToDoc(memory);
+    delete doc.imageUrl;
+    delete doc.releaseDate;
+    delete doc.communityId;
+    const m = memoryFromDoc('m1', doc);
+    expect(m.imageUrl).toBeNull();
+    expect(m.releaseDate).toBeNull();
+    expect(m.communityId).toBeNull();
+  });
+});
+
+describe('place mapper', () => {
+  it('writes ISO strings', () => {
+    const doc = placeToDoc(place);
+    expect(doc.createdAt).toBe(place.createdAt.toISOString());
+    expect(doc.aura.updatedAt).toBe(place.aura.updatedAt.toISOString());
+  });
+  it('round-trips', () => {
+    expect(placeFromDoc(place.id, placeToDoc(place))).toEqual(place);
+  });
+});
+
+describe('user mapper', () => {
+  it('writes ISO strings and nulls', () => {
+    const doc = userToDoc(user);
+    expect(doc.createdAt).toBe(user.createdAt.toISOString());
+    expect(doc.displayName).toBeNull();
+  });
+  it('round-trips and defaults missing optionals to null', () => {
+    expect(userFromDoc(user.id, userToDoc(user))).toEqual(user);
+    const doc = userToDoc(user);
+    delete doc.photoUrl;
+    expect(userFromDoc(user.id, doc).photoUrl).toBeNull();
+  });
+});
