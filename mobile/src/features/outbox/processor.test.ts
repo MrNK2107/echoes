@@ -85,15 +85,22 @@ describe('OutboxProcessor', () => {
     expect(await outbox.list()).toEqual([]);
     expect(jest.getTimerCount()).toBe(0);
 
-    // After the success the schedule starts again at 2 s.
-    create.mockRejectedValueOnce(unavailable());
+    // The success reset the backoff: a newly queued draft is first retried at 2 s, then 4 s (not 16 s).
+    create.mockRejectedValueOnce(unavailable()).mockRejectedValueOnce(unavailable());
     await outbox.add(outboxDraft({ memoryId: 'm2', placeIdIfNew: 'p_m2' }));
-    await processor.retryNow();
+    await jest.advanceTimersByTimeAsync(1_999);
+    expect(create).toHaveBeenCalledTimes(4);
+    await jest.advanceTimersByTimeAsync(1);
     expect(create).toHaveBeenCalledTimes(5);
-    await jest.advanceTimersByTimeAsync(2_000);
+    await jest.advanceTimersByTimeAsync(3_999);
+    expect(create).toHaveBeenCalledTimes(5);
+    await jest.advanceTimersByTimeAsync(1);
     expect(create).toHaveBeenCalledTimes(6);
+    await jest.advanceTimersByTimeAsync(8_000);
+    expect(create).toHaveBeenCalledTimes(7);
     expect(await outbox.list()).toEqual([]);
     stop();
+    expect(jest.getTimerCount()).toBe(0);
   });
 
   it('retryNow runs immediately and resets the backoff', async () => {
@@ -166,5 +173,72 @@ describe('OutboxProcessor', () => {
     expect(await outbox.list()).toEqual([]);
     stop();
     expect(jest.getTimerCount()).toBe(0);
+  });
+
+  it('replays a draft queued while a replay is pending right after the first succeeds', async () => {
+    const { services, outbox, processor } = setup();
+    const realCreate = services.repos.memories.create.bind(services.repos.memories);
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const create = jest.spyOn(services.repos.memories, 'create').mockImplementation(async (m) => {
+      if (m.id === 'm1') await gate;
+      return realCreate(m);
+    });
+    await outbox.add(outboxDraft());
+    const stop = processor.start();
+    await jest.advanceTimersByTimeAsync(0);
+    expect(create).toHaveBeenCalledTimes(1);
+    await outbox.add(outboxDraft({ memoryId: 'm2', placeIdIfNew: 'p_m2' }));
+    release();
+    await jest.advanceTimersByTimeAsync(0);
+    expect(create.mock.calls.map(([m]) => m.id)).toEqual(['m1', 'm2']);
+    expect(await outbox.list()).toEqual([]);
+    expect(jest.getTimerCount()).toBe(0);
+    stop();
+  });
+
+  it('parks a draft after a permanent error and stops retrying it until Retry', async () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const { services, connectivity, outbox, processor } = setup();
+    const denied = Object.assign(new Error('Missing permissions'), { code: 'permission-denied' });
+    const create = jest.spyOn(services.repos.memories, 'create').mockRejectedValue(denied);
+    await outbox.add(outboxDraft());
+    const stop = processor.start();
+    await jest.advanceTimersByTimeAsync(0);
+    expect(await outbox.list()).toEqual([
+      { ...outboxDraft(), failed: true, failedReason: 'permission-denied: Missing permissions' },
+    ]);
+    expect(warn).toHaveBeenCalledWith('Outbox draft failed permanently', {
+      memoryId: 'm1',
+      failedReason: 'permission-denied: Missing permissions',
+    });
+    expect(jest.getTimerCount()).toBe(0);
+    connectivity.setOnline(true);
+    await jest.advanceTimersByTimeAsync(300_000);
+    expect(create).toHaveBeenCalledTimes(1);
+
+    // Retry gives it one more attempt.
+    create.mockRestore();
+    await processor.retryNow();
+    expect(await outbox.list()).toEqual([]);
+    stop();
+    warn.mockRestore();
+  });
+
+  it('skips a draft whose original submit is still in flight', async () => {
+    const { services, outbox, processor } = setup();
+    const create = jest.spyOn(services.repos.memories, 'create');
+    await outbox.add(outboxDraft());
+    outbox.markInFlight('m1');
+    const stop = processor.start();
+    await jest.advanceTimersByTimeAsync(0);
+    expect(create).not.toHaveBeenCalled();
+    outbox.clearInFlight('m1');
+    await jest.advanceTimersByTimeAsync(2_000);
+    expect(create).toHaveBeenCalledTimes(1);
+    expect(await outbox.list()).toEqual([]);
+    stop();
   });
 });

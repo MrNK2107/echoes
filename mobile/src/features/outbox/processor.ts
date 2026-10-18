@@ -1,4 +1,11 @@
-import { isNetworkError, runDraft, TimeoutError, withTimeout } from '@/features/memories/submitMemory';
+import {
+  describeError,
+  isNetworkError,
+  isPermanentError,
+  runDraft,
+  TimeoutError,
+  withTimeout,
+} from '@/features/memories/submitMemory';
 import type { Services } from '@/services/services';
 
 import type { Outbox } from './outbox';
@@ -8,8 +15,9 @@ export const BACKOFF_SECONDS = [2, 4, 8, 16, 32, 64] as const;
 
 /**
  * Replays outbox drafts on start, when connectivity comes back, when a draft is queued, and on retryNow.
- * A pass that leaves any draft behind schedules the next one with exponential backoff; any success or
- * retryNow resets it.
+ * A pass that leaves any retryable draft behind schedules the next one with exponential backoff; any
+ * success or retryNow resets it. Drafts that hit a permanent error are parked (ruling R14) and skipped
+ * until retryNow; drafts whose original submit is still running are skipped until it settles.
  */
 export class OutboxProcessor {
   private attempt = 0;
@@ -30,8 +38,10 @@ export class OutboxProcessor {
       if (online) void this.kick();
     });
     // A draft queued after a timed-out submit is retried on the normal backoff, not immediately.
-    const offQueue = this.outbox.subscribe((pending) => {
-      if (pending > 0 && this.timer === undefined && !this.running) this.schedule();
+    const offQueue = this.outbox.onAdded(() => {
+      // Queued during a pass: run once more right after it. Otherwise take the next backoff slot.
+      if (this.running) this.again = true;
+      else if (this.timer === undefined) this.schedule();
     });
     void this.kick();
     return () => {
@@ -42,10 +52,12 @@ export class OutboxProcessor {
     };
   }
 
-  retryNow(): Promise<void> {
+  /** Resets the backoff and gives parked drafts one more attempt. */
+  async retryNow(): Promise<void> {
     this.attempt = 0;
     this.clearTimer();
-    return this.kick();
+    await this.outbox.resetFailed();
+    await this.kick();
   }
 
   /** Single-flight: a kick during a pass runs one more pass afterwards. */
@@ -72,22 +84,29 @@ export class OutboxProcessor {
     this.clearTimer();
     try {
       if (!(await this.services.connectivity.isOnline())) return;
-      const drafts = await this.outbox.list();
+      const drafts = (await this.outbox.list()).filter((d) => !d.failed);
       let succeeded = false;
-      let failed = false;
       for (const d of drafts) {
         if (this.stopped) return;
+        if (this.outbox.isInFlight(d.memoryId)) continue;
         try {
           await withTimeout(runDraft(this.services, d));
           await this.outbox.remove(d.memoryId);
           succeeded = true;
         } catch (e) {
-          failed = true;
-          if (!(e instanceof TimeoutError) && !isNetworkError(e)) console.warn('Outbox replay failed', e);
+          if (isPermanentError(e)) {
+            const reason = describeError(e);
+            console.warn('Outbox draft failed permanently', { memoryId: d.memoryId, failedReason: reason });
+            await this.outbox.markFailed(d.memoryId, reason);
+          } else if (!(e instanceof TimeoutError) && !isNetworkError(e)) {
+            console.warn('Outbox replay failed', e);
+          }
         }
       }
       if (succeeded) this.attempt = 0;
-      if (failed) this.schedule();
+      // Anything still retryable (failed transiently, or skipped while in flight) gets the next backoff slot.
+      const remaining = (await this.outbox.list()).filter((d) => !d.failed);
+      if (remaining.length > 0) this.schedule();
     } catch (e) {
       console.warn('Outbox pass failed', e);
       this.schedule();

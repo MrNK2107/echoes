@@ -248,7 +248,7 @@ describe('firestore backend specifics', () => {
       communityId: null, location: { latitude: 12.97, longitude: 77.59 }, imageUri: null, audioUri: null,
     };
     await expect(runDraft(services, draft)).resolves.toEqual({ memoryId: 'q1', placeId: 'p_q1' });
-    // Replay: the place now exists within 100 m and the memory is re-set with identical data.
+    // Replay: the memory already exists, so nothing is rewritten.
     await expect(runDraft(services, draft)).resolves.toEqual({ memoryId: 'q1', placeId: 'p_q1' });
     expect(await ctx.repos.memories.findById('q1')).toMatchObject({
       id: 'q1', placeId: 'p_q1', textContent: 'queued offline', createdAt: T, updatedAt: T,

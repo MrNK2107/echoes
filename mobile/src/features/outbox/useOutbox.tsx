@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 
 import { useServices } from '@/services/ServicesProvider';
 
-import { Outbox } from './outbox';
+import { Outbox, type OutboxCounts } from './outbox';
 import { OutboxProcessor } from './processor';
 
 type OutboxContextValue = { outbox: Outbox; processor: OutboxProcessor };
@@ -26,12 +26,21 @@ export function useOutboxContext(): OutboxContextValue {
   return v;
 }
 
-export function useOutbox(): { pending: number; retry(): void } {
+export function useOutbox(): { pending: number; failed: number; retry(): void; discardFailed(): void } {
   const { outbox, processor } = useOutboxContext();
-  const [pending, setPending] = useState(0);
-  useEffect(() => outbox.subscribe(setPending), [outbox]);
+  const [counts, setCounts] = useState<OutboxCounts>({ pending: 0, failed: 0 });
+  useEffect(
+    () =>
+      outbox.subscribe((next) =>
+        setCounts((prev) => (prev.pending === next.pending && prev.failed === next.failed ? prev : next)),
+      ),
+    [outbox],
+  );
   const retry = useCallback(() => {
     void processor.retryNow();
   }, [processor]);
-  return { pending, retry };
+  const discardFailed = useCallback(() => {
+    void outbox.discardFailed();
+  }, [outbox]);
+  return { pending: counts.pending, failed: counts.failed, retry, discardFailed };
 }

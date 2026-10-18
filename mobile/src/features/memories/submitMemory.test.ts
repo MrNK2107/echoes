@@ -1,3 +1,4 @@
+import { DEMO_USER } from '@/data/seed';
 import { fakeFiles, memoryKeyValue, SEED_CENTER, testServices, TEST_NOW } from '@/device/fakes';
 import { analyzeSentiment } from '@/domain/sentiment';
 import type { Memory } from '@/domain/types';
@@ -5,7 +6,14 @@ import { outboxDraft } from '@/features/outbox/fixtures';
 import { Outbox } from '@/features/outbox/outbox';
 
 import type { MemoryDraft } from './submitMemory';
-import { isNetworkError, prepareDraft, runDraft, submitMemory, SUBMIT_TIMEOUT_MS } from './submitMemory';
+import {
+  isNetworkError,
+  isPermanentError,
+  prepareDraft,
+  runDraft,
+  submitMemory,
+  SUBMIT_TIMEOUT_MS,
+} from './submitMemory';
 
 const draft = (o: Partial<MemoryDraft> = {}): MemoryDraft => ({
   textContent: 'A lovely quiet morning',
@@ -195,9 +203,11 @@ describe('submitMemory', () => {
       const p = submitMemory(s, USER, draft(), outbox);
       await jest.advanceTimersByTimeAsync(SUBMIT_TIMEOUT_MS);
       await expect(p).resolves.toMatchObject({ queued: true });
+      expect(outbox.isInFlight('id-1')).toBe(true);
       release();
       await jest.advanceTimersByTimeAsync(0);
       expect(await outbox.list()).toEqual([]);
+      expect(outbox.isInFlight('id-1')).toBe(false);
     });
   });
 });
@@ -220,6 +230,7 @@ describe('prepareDraft', () => {
         location: SEED_CENTER,
         imageUri: null,
         audioUri: null,
+        sentiment: analyzeSentiment('hi'),
       },
     });
   });
@@ -261,6 +272,95 @@ describe('runDraft', () => {
     jest.spyOn(s.repos.places, 'findNearest').mockResolvedValue(null);
     await expect(runDraft(s, d)).resolves.toEqual({ memoryId: 'm1', placeId: 'p_m1' });
     expect(createPlace).not.toHaveBeenCalled();
+  });
+});
+
+describe('runDraft over an existing memory', () => {
+  async function signedIn() {
+    const s = testServices();
+    await s.repos.auth.signIn(DEMO_USER.email, DEMO_USER.password);
+    return s;
+  }
+
+  it('writes nothing and returns the original place when findNearest now picks another', async () => {
+    const s = await signedIn();
+    const d = outboxDraft({ location: QUEUED_FAR });
+    await runDraft(s, d);
+    jest.spyOn(s.repos.places, 'findNearest').mockResolvedValue(await s.repos.places.findById('place-2'));
+    const create = jest.spyOn(s.repos.memories, 'create');
+    const createPlace = jest.spyOn(s.repos.places, 'create');
+    await expect(runDraft(s, d)).resolves.toEqual({ memoryId: 'm1', placeId: 'p_m1' });
+    expect(create).not.toHaveBeenCalled();
+    expect(createPlace).not.toHaveBeenCalled();
+  });
+
+  it('does not restore a soft-deleted memory', async () => {
+    const s = await signedIn();
+    const d = outboxDraft({ imageUri: 'persisted://m1.jpg' });
+    jest.spyOn(s.repos.media, 'uploadMemoryImage').mockResolvedValueOnce('').mockResolvedValue('https://img');
+    await runDraft(s, d);
+    await s.repos.memories.softDelete('m1', new Date('2026-10-18T10:00:00Z'));
+    const attach = jest.spyOn(s.repos.memories, 'attachMedia');
+    await runDraft(s, d);
+    expect(await s.repos.memories.findById('m1')).toMatchObject({ isDeleted: true });
+    expect(attach).not.toHaveBeenCalled();
+  });
+
+  it("keeps the user's later edit", async () => {
+    const s = await signedIn();
+    const d = outboxDraft();
+    await runDraft(s, d);
+    const edit = {
+      textContent: 'edited later', privacy: 'private' as const, taggedUserIds: [], releaseDate: null, communityId: null,
+    };
+    await s.repos.memories.update('m1', edit, new Date('2026-10-18T11:00:00Z'));
+    await runDraft(s, d);
+    expect(await s.repos.memories.findById('m1')).toMatchObject(edit);
+  });
+
+  it('attaches media the existing memory is missing, without rewriting it', async () => {
+    const s = await signedIn();
+    await runDraft(s, outboxDraft());
+    jest.spyOn(s.repos.media, 'uploadMemoryAudio').mockResolvedValue('https://audio/m1.m4a');
+    const create = jest.spyOn(s.repos.memories, 'create');
+    const attach = jest.spyOn(s.repos.memories, 'attachMedia');
+    await runDraft(s, outboxDraft({ audioUri: 'persisted://m1.m4a' }));
+    expect(create).not.toHaveBeenCalled();
+    expect(attach).toHaveBeenCalledWith('m1', { audioUrl: 'https://audio/m1.m4a' }, TEST_NOW);
+    expect(await s.repos.memories.findById('m1')).toMatchObject({ audioUrl: 'https://audio/m1.m4a' });
+  });
+
+  it('writes the sentiment stored in the draft, computing it for older drafts without one', async () => {
+    const s = testServices();
+    const stored = { compound: 0.9, positive: 0.9, neutral: 0.1, negative: 0 };
+    await runDraft(s, outboxDraft({ sentiment: stored, location: QUEUED_FAR }));
+    await runDraft(s, outboxDraft({ memoryId: 'm2', placeIdIfNew: 'p_m2', location: QUEUED_FAR }));
+    const memories = await memoriesAt(s, 'p_m1');
+    expect(memories.find((m) => m.id === 'm1')?.sentiment).toEqual(stored);
+    expect(memories.find((m) => m.id === 'm2')?.sentiment).toEqual(analyzeSentiment('Queued memory'));
+  });
+});
+
+describe('isPermanentError', () => {
+  it.each([
+    [firestoreError('permission-denied'), true],
+    [firestoreError('invalid-argument'), true],
+    [firestoreError('storage/unauthorized'), true],
+    [firestoreError('storage/object-not-found'), true],
+    [new Error('Photo is too large to upload.'), true],
+    [firestoreError('unavailable'), false],
+    [firestoreError('storage/retry-limit-exceeded'), false],
+    [new TypeError('Network request failed'), false],
+    [new Error('boom'), false],
+  ])('%p -> %p', (e, expected) => {
+    expect(isPermanentError(e)).toBe(expected);
+  });
+
+  it('looks through a wrapped media upload error', async () => {
+    const s = testServices();
+    jest.spyOn(s.repos.media, 'uploadMemoryImage').mockRejectedValue(firestoreError('storage/unauthorized'));
+    const e = await runDraft(s, outboxDraft({ imageUri: 'persisted://m1.jpg' })).catch((x: unknown) => x);
+    expect(isPermanentError(e)).toBe(true);
   });
 });
 

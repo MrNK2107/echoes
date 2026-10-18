@@ -68,17 +68,65 @@ describe('Outbox', () => {
     expect(files.removed.sort()).toEqual(['persisted://m1.jpg', 'persisted://m1.m4a']);
   });
 
-  it('notifies subscribers with the pending count', async () => {
+  it('notifies subscribers with pending and failed counts', async () => {
     const outbox = new Outbox(memoryKeyValue(), fakeFiles(), 'user-demo');
     await outbox.add(outboxDraft({ memoryId: 'a' }));
-    const counts: number[] = [];
-    const off = outbox.subscribe((n) => counts.push(n));
+    const counts: { pending: number; failed: number }[] = [];
+    const off = outbox.subscribe((c) => counts.push(c));
     await Promise.resolve();
     await Promise.resolve();
     await outbox.add(outboxDraft({ memoryId: 'b' }));
-    await outbox.remove('a');
-    off();
+    await outbox.markFailed('a', 'permission-denied: no');
     await outbox.remove('b');
-    expect(counts).toEqual([1, 2, 1]);
+    off();
+    await outbox.remove('a');
+    expect(counts).toEqual([
+      { pending: 1, failed: 0 },
+      { pending: 2, failed: 0 },
+      { pending: 1, failed: 1 },
+      { pending: 0, failed: 1 },
+    ]);
+  });
+
+  it('parks a draft as failed, persisted, and resetFailed un-parks it', async () => {
+    const store = memoryKeyValue();
+    const outbox = new Outbox(store, fakeFiles(), 'user-demo');
+    await outbox.add(outboxDraft());
+    await outbox.markFailed('m1', 'storage/unauthorized: nope');
+    const [parked] = await new Outbox(store, fakeFiles(), 'user-demo').list();
+    expect(parked).toMatchObject({ memoryId: 'm1', failed: true, failedReason: 'storage/unauthorized: nope' });
+    await outbox.resetFailed();
+    expect(await outbox.list()).toEqual([outboxDraft()]);
+  });
+
+  it('discardFailed removes only failed drafts and their files', async () => {
+    const files = spyFiles();
+    const outbox = new Outbox(memoryKeyValue(), files, 'user-demo');
+    await outbox.add(outboxDraft({ memoryId: 'bad', imageUri: 'file:///b.jpg' }));
+    await outbox.add(outboxDraft({ memoryId: 'ok', imageUri: 'file:///o.jpg' }));
+    await outbox.markFailed('bad', 'permission-denied: no');
+    await outbox.discardFailed();
+    expect((await outbox.list()).map((d) => d.memoryId)).toEqual(['ok']);
+    expect(files.removed).toEqual(['persisted://bad.jpg']);
+  });
+
+  it('tracks in-flight submits in memory only', async () => {
+    const store = memoryKeyValue();
+    const outbox = new Outbox(store, fakeFiles(), 'user-demo');
+    outbox.markInFlight('m1');
+    expect(outbox.isInFlight('m1')).toBe(true);
+    expect(new Outbox(store, fakeFiles(), 'user-demo').isInFlight('m1')).toBe(false);
+    outbox.clearInFlight('m1');
+    expect(outbox.isInFlight('m1')).toBe(false);
+  });
+
+  it('calls onAdded listeners after an add', async () => {
+    const outbox = new Outbox(memoryKeyValue(), fakeFiles(), 'user-demo');
+    const added = jest.fn();
+    const off = outbox.onAdded(added);
+    await outbox.add(outboxDraft());
+    off();
+    await outbox.add(outboxDraft({ memoryId: 'm2' }));
+    expect(added).toHaveBeenCalledTimes(1);
   });
 });

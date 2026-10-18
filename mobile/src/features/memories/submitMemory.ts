@@ -58,6 +58,30 @@ export function isNetworkError(e: unknown): boolean {
   return code === 'unavailable' || code === 'storage/retry-limit-exceeded';
 }
 
+const PERMANENT_CODES = new Set([
+  'permission-denied',
+  'invalid-argument',
+  'storage/unauthorized',
+  'storage/object-not-found',
+]);
+const PHOTO_TOO_LARGE = 'Photo is too large to upload.';
+
+/** Errors a replay can never get past (ruling R14): the draft is parked instead of retried. */
+export function isPermanentError(e: unknown): boolean {
+  if (e instanceof MediaUploadError) return isPermanentError(e.original);
+  if (e instanceof Error && e.message === PHOTO_TOO_LARGE) return true;
+  const code = typeof e === 'object' && e !== null ? (e as { code?: unknown }).code : undefined;
+  return typeof code === 'string' && PERMANENT_CODES.has(code);
+}
+
+/** A short description of an error for logs and `failedReason`. */
+export function describeError(e: unknown): string {
+  if (e instanceof MediaUploadError) return describeError(e.original);
+  const code = typeof e === 'object' && e !== null ? (e as { code?: unknown }).code : undefined;
+  const message = e instanceof Error ? e.message : String(e);
+  return typeof code === 'string' ? `${code}: ${message}` : message;
+}
+
 /** Rejects with TimeoutError after `ms`; the timer is always cleared. The work itself keeps running. */
 export async function withTimeout<T>(work: Promise<T>, ms: number = SUBMIT_TIMEOUT_MS): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -92,6 +116,7 @@ export function prepareDraft(
 
   const fields = normalizePrivacyFields(draft);
   const memoryId = services.newId();
+  const textContent = draft.textContent.trim();
   return {
     ok: true,
     draft: {
@@ -99,7 +124,7 @@ export function prepareDraft(
       placeIdIfNew: placeIdForNewMemory(memoryId),
       userId,
       createdAt: now.toISOString(),
-      textContent: draft.textContent.trim(),
+      textContent,
       privacy: fields.privacy,
       releaseDate: fields.releaseDate ? fields.releaseDate.toISOString() : null,
       taggedUserIds: fields.taggedUserIds,
@@ -107,6 +132,7 @@ export function prepareDraft(
       location: draft.location,
       imageUri: draft.imageUri,
       audioUri: draft.audioUri,
+      sentiment: analyzeSentiment(textContent),
     },
   };
 }
@@ -120,21 +146,33 @@ async function upload(run: () => Promise<string>): Promise<string> {
 }
 
 /**
- * Writes the draft. Idempotent: media go to fixed Storage paths, the place `placeIdIfNew` is created only
- * when no place lies within 100 m and it does not exist yet, and the memory is set at its fixed id with
- * identical data (an empty-diff update if it already exists).
+ * Writes the draft. Idempotent: if the memory already exists (even soft-deleted or edited since) nothing
+ * is rewritten; at most missing media are attached. Otherwise media go to fixed Storage paths, the place
+ * `placeIdIfNew` is created only when no place lies within 100 m and it does not exist yet, and the memory
+ * is set at its fixed id.
  */
 export async function runDraft(services: Services, d: OutboxDraft): Promise<{ memoryId: string; placeId: string }> {
   const { repos } = services;
   const { userId, memoryId, location } = d;
   const createdAt = new Date(d.createdAt);
+  const uploadImage = () =>
+    upload(() => repos.media.uploadMemoryImage({ userId, memoryId, localUri: d.imageUri! }));
+  const uploadAudio = () =>
+    upload(() => repos.media.uploadMemoryAudio({ userId, memoryId, localUri: d.audioUri! }));
 
-  const imageUrl = d.imageUri
-    ? await upload(() => repos.media.uploadMemoryImage({ userId, memoryId, localUri: d.imageUri! }))
-    : null;
-  const audioUrl = d.audioUri
-    ? await upload(() => repos.media.uploadMemoryAudio({ userId, memoryId, localUri: d.audioUri! }))
-    : null;
+  const existing = await repos.memories.findById(memoryId);
+  if (existing) {
+    if (!existing.isDeleted) {
+      const media: { imageUrl?: string; audioUrl?: string } = {};
+      if (d.imageUri && !existing.imageUrl) media.imageUrl = await uploadImage();
+      if (d.audioUri && !existing.audioUrl) media.audioUrl = await uploadAudio();
+      if (media.imageUrl || media.audioUrl) await repos.memories.attachMedia(memoryId, media, services.now());
+    }
+    return { memoryId, placeId: existing.placeId };
+  }
+
+  const imageUrl = d.imageUri ? await uploadImage() : null;
+  const audioUrl = d.audioUri ? await uploadAudio() : null;
 
   let place = await repos.places.findNearest({ center: location, radiusMeters: PLACE_MATCH_RADIUS_METERS });
   if (!place) place = await repos.places.findById(d.placeIdIfNew);
@@ -167,7 +205,7 @@ export async function runDraft(services: Services, d: OutboxDraft): Promise<{ me
     latitude: location.latitude,
     longitude: location.longitude,
     geohash: encodeGeohash(location.latitude, location.longitude),
-    sentiment: analyzeSentiment(d.textContent),
+    sentiment: d.sentiment ?? analyzeSentiment(d.textContent),
     privacy: d.privacy,
     taggedUserIds: d.taggedUserIds,
     communityId: d.communityId,
@@ -206,7 +244,19 @@ export async function submitMemory(
     }
   }
 
+  // The processor skips this draft while the original attempt is still running.
+  const memoryId = d.memoryId;
+  outbox.markInFlight(memoryId);
+  let queued = false;
   const work = runDraft(services, d);
+  void work
+    .then(
+      // A timed-out write may still land while the app is open; then the queued copy is no longer needed.
+      () => (queued ? outbox.remove(memoryId) : undefined),
+      () => {},
+    )
+    .catch(() => {})
+    .finally(() => outbox.clearInFlight(memoryId));
   try {
     const r = await withTimeout(work);
     return { ok: true, queued: false, ...r };
@@ -218,14 +268,8 @@ export async function submitMemory(
         console.warn('Could not queue memory', queueError);
         return { ok: false, error: GENERIC_ERROR };
       }
-      // A timed-out write may still land while the app is open; then the queued copy is no longer needed.
-      if (e instanceof TimeoutError) {
-        work.then(
-          () => outbox.remove(d.memoryId).catch(() => {}),
-          () => {},
-        );
-      }
-      return { ok: true, queued: true, memoryId: d.memoryId };
+      queued = true;
+      return { ok: true, queued: true, memoryId };
     }
     if (e instanceof MediaUploadError) return { ok: false, error: UPLOAD_ERROR };
     console.warn('Memory submit failed', e);
