@@ -1,7 +1,11 @@
 import { renderHook } from '@testing-library/react-native';
 
 import { DEMO_CENTER } from '@/data/seed';
-import { testServices } from '@/device/fakes';
+import { asyncKeyValue } from '@/device/keyValueStore';
+import { expoAudioPlayer, expoAudioRecorder } from '@/device/expoAudio';
+import { expoConnectivity } from '@/device/expoNetwork';
+import { fakeFiles, testServices } from '@/device/fakes';
+import { outboxFiles } from '@/device/fileStore';
 import { expoLocation } from '@/device/expoLocation';
 
 import { readConfig } from './config';
@@ -47,6 +51,28 @@ describe('createServices', () => {
   it('generates distinct ids', () => {
     const s = createServices(readConfig({}));
     expect(s.newId()).not.toBe(s.newId());
+  });
+});
+
+describe('device services wiring', () => {
+  it('createServices wires the Expo implementations', () => {
+    const s = createServices(readConfig({}));
+    expect(s.connectivity).toBe(expoConnectivity);
+    expect(s.keyValue).toBe(asyncKeyValue);
+    expect(s.files).toBe(outboxFiles);
+    expect(s.audioRecorder).toBe(expoAudioRecorder);
+    expect(s.audioPlayer).toBe(expoAudioPlayer);
+  });
+
+  it('testServices wires fakes that overrides replace', async () => {
+    const s = testServices();
+    await expect(s.connectivity.isOnline()).resolves.toBe(true);
+    await expect(s.keyValue.get('k')).resolves.toBeNull();
+    await expect(s.files.persist('file:///a', 'a')).resolves.toBe('persisted://a');
+    await expect(s.audioRecorder.requestPermission()).resolves.toBe('granted');
+    expect(typeof s.audioPlayer.load).toBe('function');
+    const files = fakeFiles();
+    expect(testServices({ files }).files).toBe(files);
   });
 });
 

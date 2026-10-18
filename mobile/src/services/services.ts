@@ -1,5 +1,13 @@
 import type { Repositories } from '@/data/types';
-import type { ImagePickerService, LocationService } from '@/device/types';
+import type {
+  AudioPlayerService,
+  AudioRecorderService,
+  ConnectivityService,
+  FileStore,
+  ImagePickerService,
+  KeyValueStore,
+  LocationService,
+} from '@/device/types';
 
 import type { AppConfig } from './config';
 
@@ -9,6 +17,11 @@ export interface Services {
   repos: Repositories;
   location: LocationService;
   imagePicker: ImagePickerService;
+  connectivity: ConnectivityService;
+  keyValue: KeyValueStore;
+  files: FileStore;
+  audioRecorder: AudioRecorderService;
+  audioPlayer: AudioPlayerService;
   now(): Date;
   newId(): string;
 }

@@ -3,9 +3,13 @@ import { randomUUID } from 'expo-crypto';
 import type { Repositories } from '@/data/types';
 import { createMemoryBackend } from '@/data/memory';
 import { buildSeed, DEMO_CENTER } from '@/data/seed';
+import { expoAudioPlayer, expoAudioRecorder } from '@/device/expoAudio';
+import { expoConnectivity } from '@/device/expoNetwork';
 import { expoImagePicker } from '@/device/expoImagePicker';
 import { demoLocation } from '@/device/demoLocation';
 import { expoLocation } from '@/device/expoLocation';
+import { outboxFiles } from '@/device/fileStore';
+import { asyncKeyValue } from '@/device/keyValueStore';
 
 import type { AppConfig } from './config';
 import type { Services } from './services';
@@ -36,6 +40,11 @@ export function createServices(config: AppConfig, overrides: Partial<Services> =
     // Memory mode pins the user to the seed's neighbourhood so the demo map is never empty.
     location: config.backend === 'memory' ? demoLocation(DEMO_CENTER) : expoLocation,
     imagePicker: expoImagePicker,
+    connectivity: expoConnectivity,
+    keyValue: asyncKeyValue,
+    files: outboxFiles,
+    audioRecorder: expoAudioRecorder,
+    audioPlayer: expoAudioPlayer,
     now,
     newId: () => randomUUID(),
     ...overrides,

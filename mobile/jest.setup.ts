@@ -11,3 +11,15 @@ jest.mock('react-native-maps', () => {
     React.createElement(Pressable, { testID, onPress, pinColor, title });
   return { __esModule: true, default: MapView, Marker };
 });
+
+jest.mock('@react-native-async-storage/async-storage', () =>
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
+);
+
+// expo-audio evaluates native classes at import time; only createServices' import graph needs this.
+jest.mock('expo-audio', () => ({
+  AudioModule: { requestRecordingPermissionsAsync: jest.fn(), AudioRecorder: jest.fn() },
+  RecordingPresets: { HIGH_QUALITY: {} },
+  createAudioPlayer: jest.fn(),
+  setAudioModeAsync: jest.fn(),
+}));
