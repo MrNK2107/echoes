@@ -212,9 +212,9 @@ function useOutbox(): { pending: number; retry(): void }
 
 **Behaviour:** VoiceRecorder states idle → recording (`Recording {s}s / 60s`, `Stop`) → ready (`Voice note ready ({s}s)`, `Remove voice note`); permission denied → `Microphone permission is needed for voice notes.`; auto-stop at 60 s (1 s interval); `stop()` returning null → back to idle with no error. Player: `Play voice note` / `Pause voice note` toggle, label `Voice note`, error → `Voice note unavailable`, resets to play on `finished`, releases on unmount.
 
-- [ ] **Step 1: Failing tests** — **`auto-stops at 60 seconds`** (fake timers); **`ignores a recording that produced no file`**; denied copy; submit with audio uploads to `memory-audio` and sets `audioUrl`; queued draft persists the audio file; player toggles, shows error copy, releases on unmount.
-- [ ] **Step 2–4:** FAIL → implement → PASS (+ `npx expo export --platform android`).
-- [ ] **Step 5: Commit** `feat(memories): 60-second voice notes`.
+- [x] **Step 1: Failing tests** — **`auto-stops at 60 seconds`** (fake timers); **`ignores a recording that produced no file`**; denied copy; submit with audio uploads to `memory-audio` and sets `audioUrl`; queued draft persists the audio file; player toggles, shows error copy, releases on unmount.
+- [x] **Step 2–4:** FAIL → implement → PASS (+ `npx expo export --platform android`).
+- [x] **Step 5: Commit** `feat(memories): 60-second voice notes`.
 
 ---
 
