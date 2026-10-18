@@ -63,7 +63,7 @@ export function ProfileScreen() {
   }, [repos.memories, uid]);
 
   const choosePrivacy = async (next: DefaultPrivacy) => {
-    if (!uid || next === privacy) return;
+    if (!uid || !user || next === privacy) return;
     const previous = privacy;
     setPrivacy(next);
     setError(null);
@@ -83,7 +83,7 @@ export function ProfileScreen() {
     }
   };
 
-  const name = (user ? user.displayName : session?.displayName) ?? 'ECHOES custodian';
+  const name = (user ? user.displayName : session?.displayName) || 'ECHOES custodian';
   const email = (user ? user.email : session?.email) ?? null;
 
   return (
@@ -114,7 +114,8 @@ export function ProfileScreen() {
             key={c.value}
             testID={`default-privacy-${c.value}`}
             accessibilityRole="button"
-            accessibilityState={{ selected: privacy === c.value }}
+            accessibilityState={{ selected: privacy === c.value, disabled: !user }}
+            disabled={!user}
             onPress={() => choosePrivacy(c.value)}
             style={[styles.segment, privacy === c.value && styles.segmentOn]}
           >

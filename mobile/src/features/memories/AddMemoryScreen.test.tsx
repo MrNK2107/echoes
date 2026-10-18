@@ -64,6 +64,54 @@ describe('AddMemoryScreen', () => {
     );
   });
 
+  it('disables Save until the default privacy resolves', async () => {
+    const services = testServices();
+    let release!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    const get = services.repos.users.get.bind(services.repos.users);
+    jest.spyOn(services.repos.users, 'get').mockImplementation(async (id) => {
+      await gate;
+      return get(id);
+    });
+    await act(async () => {
+      await services.repos.auth.signIn(DEMO_USER.email, DEMO_USER.password);
+    });
+    await render(
+      <ServicesProvider services={services}>
+        <OutboxProvider userId="user-demo">
+          <AddMemoryScreen />
+        </OutboxProvider>
+      </ServicesProvider>,
+    );
+    expect(screen.getByTestId('save-button').props.accessibilityState).toMatchObject({ disabled: true });
+    await act(async () => {
+      release();
+    });
+    await waitFor(() =>
+      expect(screen.getByTestId('save-button').props.accessibilityState).toMatchObject({ disabled: false }),
+    );
+    expect(screen.getByTestId('privacy-public').props.accessibilityState).toMatchObject({ selected: true });
+  });
+
+  it('defaults to Private when the user lookup fails', async () => {
+    const services = testServices();
+    jest.spyOn(services.repos.users, 'get').mockRejectedValue(new Error('x'));
+    await act(async () => {
+      await services.repos.auth.signIn(DEMO_USER.email, DEMO_USER.password);
+    });
+    await render(
+      <ServicesProvider services={services}>
+        <OutboxProvider userId="user-demo">
+          <AddMemoryScreen />
+        </OutboxProvider>
+      </ServicesProvider>,
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId('save-button').props.accessibilityState).toMatchObject({ disabled: false }),
+    );
+    expect(screen.getByTestId('privacy-private').props.accessibilityState).toMatchObject({ selected: true });
+  });
+
   it('shows a character counter', async () => {
     await setup();
     await fireEvent.changeText(screen.getByTestId('text-input'), 'hello');

@@ -68,6 +68,24 @@ describe('ProfileScreen', () => {
     expect(await screen.findByText('ECHOES custodian')).toBeOnTheScreen();
   });
 
+  it('shows ECHOES custodian for an empty display name', async () => {
+    const services = testServices();
+    const get = services.repos.users.get.bind(services.repos.users);
+    jest.spyOn(services.repos.users, 'get').mockImplementation(async (id) => {
+      const u = await get(id);
+      return u && { ...u, displayName: '' };
+    });
+    await setup(services);
+    expect(await screen.findByText('ECHOES custodian')).toBeOnTheScreen();
+  });
+
+  it('disables the default privacy control until the user has loaded', async () => {
+    const services = testServices();
+    jest.spyOn(services.repos.users, 'get').mockReturnValue(new Promise(() => {}));
+    await setup(services);
+    expect(screen.getByTestId('default-privacy-private').props.accessibilityState).toMatchObject({ disabled: true });
+  });
+
   it('shows 50+ at the limit', async () => {
     const services = testServices();
     const sub = services.repos.memories.subscribeForUser.bind(services.repos.memories);

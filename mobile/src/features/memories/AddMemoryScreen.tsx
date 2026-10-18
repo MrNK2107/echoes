@@ -23,7 +23,8 @@ export function AddMemoryScreen() {
   const services = useServices();
   const { session } = useSession();
   const [text, setText] = useState('');
-  const [privacy, setPrivacy] = useState<PrivacyChoice>('public');
+  const [privacy, setPrivacy] = useState<PrivacyChoice>('private');
+  const [defaultResolved, setDefaultResolved] = useState(false);
   const [releaseDate, setReleaseDate] = useState<Date | null>(null);
   const [location, setLocation] = useState<LatLng | null>(null);
   const [imageUri, setImageUri] = useState<string | null>(null);
@@ -35,9 +36,11 @@ export function AddMemoryScreen() {
   // Guards against a double tap starting two submits; offline retries belong to the outbox (ADR-0006).
   const saving = useRef(false);
 
-  // The picker starts on 'public' and adopts the user's default once it loads (a brief default
-  // rather than blocking the form); a choice the user already made is never overwritten.
+  // Never default to public before the user's preference is known: the picker starts on 'private',
+  // Save stays disabled until the default resolves (or the user picks explicitly), and a failed or
+  // missing lookup stays 'private'. A choice the user already made is never overwritten.
   const privacyTouched = useRef(false);
+  const [touched, setTouched] = useState(false);
   const uid = session?.userId;
   useEffect(() => {
     if (!uid) return;
@@ -45,9 +48,13 @@ export function AddMemoryScreen() {
     services.repos.users
       .get(uid)
       .then((u) => {
-        if (!cancelled && !privacyTouched.current && u?.defaultPrivacy === 'private') setPrivacy('private');
+        if (cancelled) return;
+        if (!privacyTouched.current && u?.defaultPrivacy === 'public') setPrivacy('public');
+        setDefaultResolved(true);
       })
-      .catch(() => {});
+      .catch(() => {
+        if (!cancelled) setDefaultResolved(true);
+      });
     return () => {
       cancelled = true;
     };
@@ -82,8 +89,10 @@ export function AddMemoryScreen() {
     }
   };
 
+  const canSave = defaultResolved || touched;
+
   const save = async () => {
-    if (!session || saving.current || queued) return;
+    if (!session || saving.current || queued || !canSave) return;
     saving.current = true;
     setError(null);
     setSubmitting(true);
@@ -145,6 +154,7 @@ export function AddMemoryScreen() {
         privacy={privacy}
         onPrivacyChange={(p) => {
           privacyTouched.current = true;
+          setTouched(true);
           setPrivacy(p);
         }}
         releaseDate={releaseDate}
@@ -185,10 +195,10 @@ export function AddMemoryScreen() {
       <Pressable
         testID="save-button"
         accessibilityRole="button"
-        accessibilityState={{ disabled: submitting }}
-        disabled={submitting}
+        accessibilityState={{ disabled: submitting || !canSave }}
+        disabled={submitting || !canSave}
         onPress={save}
-        style={[styles.save, submitting && styles.saveDisabled]}
+        style={[styles.save, (submitting || !canSave) && styles.saveDisabled]}
       >
         <Text style={styles.saveText}>{submitting ? 'Saving...' : 'Save memory'}</Text>
       </Pressable>
