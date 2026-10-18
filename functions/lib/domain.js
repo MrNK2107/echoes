@@ -7,7 +7,8 @@ function normalizeName(s) {
     .trim()
     .replace(/\s+/g, " ")
     .normalize("NFKD")
-    .replace(/\p{M}/gu, "")
+    .replace(/[̀-ͯ]/g, "")
+    .normalize("NFC")
     .toLowerCase();
 }
 

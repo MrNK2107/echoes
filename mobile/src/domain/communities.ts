@@ -10,7 +10,8 @@ export function normalizeName(s: string): string {
     .trim()
     .replace(/\s+/g, ' ')
     .normalize('NFKD')
-    .replace(/\p{M}/gu, '')
+    .replace(/[̀-ͯ]/g, '')
+    .normalize('NFC')
     .toLowerCase();
 }
 
