@@ -6,7 +6,7 @@ const {
   assertSucceeds,
   initializeTestEnvironment,
 } = require("@firebase/rules-unit-testing");
-const { doc, getDoc, setDoc, Timestamp } = require("firebase/firestore");
+const { doc, getDoc, setDoc, updateDoc, Timestamp } = require("firebase/firestore");
 const {
   collection,
   getDocs,
@@ -185,6 +185,73 @@ test("audioUrl is attachable by the author only; placeId stays immutable", async
       { audioUrl: "https://example.test/a.m4a", updatedAt: Timestamp.now() },
       { merge: true },
     ),
+  );
+});
+
+test("memory updates cannot add unknown fields", async () => {
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    const db = context.firestore();
+    await setDoc(
+      doc(db, "memories/others-memory"),
+      memoryDoc({ userId: "other" }),
+    );
+    await setDoc(doc(db, "memories/deleted-by-author"), {
+      ...memoryDoc(),
+      isDeleted: true,
+      deletedAt: Timestamp.now(),
+    });
+  });
+  const creatorDb = testEnv.authenticatedContext("creator").firestore();
+  const now = () => Timestamp.now();
+
+  // author edit + bogus
+  await assertFails(
+    updateDoc(doc(creatorDb, "memories/private-memory"), {
+      textContent: "edited",
+      bogus: true,
+      updatedAt: now(),
+    }),
+  );
+  // author soft-delete + bogus
+  await assertFails(
+    updateDoc(doc(creatorDb, "memories/public-memory"), {
+      isDeleted: true,
+      deletedAt: now(),
+      updatedAt: now(),
+      bogus: true,
+    }),
+  );
+  // custodian (non-author) soft-delete + bogus
+  await assertFails(
+    updateDoc(doc(creatorDb, "memories/others-memory"), {
+      isDeleted: true,
+      deletedAt: now(),
+      updatedAt: now(),
+      bogus: true,
+    }),
+  );
+  // author restore + bogus
+  await assertFails(
+    updateDoc(doc(creatorDb, "memories/deleted-by-author"), {
+      isDeleted: false,
+      updatedAt: now(),
+      bogus: true,
+    }),
+  );
+  // sanity: the same custodian soft-delete without bogus is allowed
+  await assertSucceeds(
+    updateDoc(doc(creatorDb, "memories/others-memory"), {
+      isDeleted: true,
+      deletedAt: now(),
+      updatedAt: now(),
+    }),
+  );
+});
+
+test("author write identical to stored doc (empty diff) is allowed", async () => {
+  const creatorDb = testEnv.authenticatedContext("creator").firestore();
+  await assertSucceeds(
+    setDoc(doc(creatorDb, "memories/private-memory"), memoryDoc({ privacy: "private" })),
   );
 });
 

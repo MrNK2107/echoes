@@ -47,7 +47,7 @@ service cloud.firestore {
     }
 
     function mutableMemoryEditOnly() {
-      return request.resource.data.diff(resource.data).changedKeys()
+      return request.resource.data.diff(resource.data).affectedKeys()
         .hasOnly([
           'textContent',
           'privacy',
@@ -61,14 +61,14 @@ service cloud.firestore {
     }
 
     function softDeleteOnly() {
-      return request.resource.data.diff(resource.data).changedKeys()
+      return request.resource.data.diff(resource.data).affectedKeys()
         .hasOnly(['isDeleted', 'deletedAt', 'updatedAt']) &&
         resource.data.isDeleted == false &&
         request.resource.data.isDeleted == true;
     }
 
     function restoreOnly() {
-      return request.resource.data.diff(resource.data).changedKeys()
+      return request.resource.data.diff(resource.data).affectedKeys()
         .hasOnly(['isDeleted', 'deletedAt', 'updatedAt']) &&
         resource.data.isDeleted == true &&
         request.resource.data.isDeleted == false &&
