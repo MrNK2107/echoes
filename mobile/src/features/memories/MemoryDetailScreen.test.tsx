@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-
 import { Alert } from 'react-native';
 
 import { DEMO_USER } from '@/data/seed';
-import { testServices } from '@/device/fakes';
+import { fakeAudioPlayer, testServices } from '@/device/fakes';
 import { MemoryCard } from '@/features/places/MemoryCard';
 import { ServicesProvider } from '@/services/ServicesProvider';
 import type { Services } from '@/services/services';
@@ -49,6 +49,19 @@ describe('MemoryDetailScreen', () => {
     expect(await screen.findByText('What a wonderful, beautiful Sunday under these old trees. Pure joy.')).toBeOnTheScreen();
     expect(screen.getByText('Edit')).toBeOnTheScreen();
     expect(screen.getByText('Delete')).toBeOnTheScreen();
+  });
+
+  it('plays the voice note when the memory has one', async () => {
+    const services = testServices({ audioPlayer: fakeAudioPlayer() });
+    await services.repos.memories.attachMedia('memory-2', { audioUrl: 'https://audio/2.m4a' }, services.now());
+    await setup('memory-2', services);
+    expect(await screen.findByLabelText('Play voice note')).toBeOnTheScreen();
+  });
+
+  it('shows no player without a voice note', async () => {
+    await setup('memory-2');
+    await screen.findByText('Edit');
+    expect(screen.queryByLabelText('Play voice note')).toBeNull();
   });
 
   it('hides Edit and Delete from a stranger', async () => {
@@ -146,5 +159,16 @@ describe('MemoryCard', () => {
     await render(<MemoryCard memory={memory!} />);
     await fireEvent.press(screen.getByTestId('memory-memory-2'));
     expect(mockPush).toHaveBeenCalledWith('/memory/memory-2');
+  });
+
+  it('shows a Voice note indicator only with audio', async () => {
+    const services = testServices();
+    await services.repos.auth.signIn(DEMO_USER.email, DEMO_USER.password);
+    const memory = (await services.repos.memories.findById('memory-2'))!;
+    const view = await render(<MemoryCard memory={{ ...memory, audioUrl: 'https://audio/2.m4a' }} />);
+    expect(screen.getByText('Voice note')).toBeOnTheScreen();
+    await view.unmount();
+    await render(<MemoryCard memory={{ ...memory, audioUrl: null }} />);
+    expect(screen.queryByText('Voice note')).toBeNull();
   });
 });

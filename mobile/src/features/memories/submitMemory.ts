@@ -35,6 +35,7 @@ export type SubmitResult =
   | { ok: false; error: string };
 
 const UPLOAD_ERROR = 'Photo upload failed. Try again or remove the photo.';
+const AUDIO_UPLOAD_ERROR = 'Voice note upload failed. Try again or remove the voice note.';
 const GENERIC_ERROR = 'Something went wrong. Please try again.';
 
 export class TimeoutError extends Error {
@@ -45,7 +46,10 @@ export class TimeoutError extends Error {
 
 /** A media upload failed; `original` is the storage error, kept for network classification. */
 class MediaUploadError extends Error {
-  constructor(readonly original: unknown) {
+  constructor(
+    readonly original: unknown,
+    readonly kind: 'image' | 'audio',
+  ) {
     super('Media upload failed');
   }
 }
@@ -137,11 +141,11 @@ export function prepareDraft(
   };
 }
 
-async function upload(run: () => Promise<string>): Promise<string> {
+async function upload(kind: 'image' | 'audio', run: () => Promise<string>): Promise<string> {
   try {
     return await run();
   } catch (e) {
-    throw new MediaUploadError(e);
+    throw new MediaUploadError(e, kind);
   }
 }
 
@@ -156,9 +160,9 @@ export async function runDraft(services: Services, d: OutboxDraft): Promise<{ me
   const { userId, memoryId, location } = d;
   const createdAt = new Date(d.createdAt);
   const uploadImage = () =>
-    upload(() => repos.media.uploadMemoryImage({ userId, memoryId, localUri: d.imageUri! }));
+    upload('image', () => repos.media.uploadMemoryImage({ userId, memoryId, localUri: d.imageUri! }));
   const uploadAudio = () =>
-    upload(() => repos.media.uploadMemoryAudio({ userId, memoryId, localUri: d.audioUri! }));
+    upload('audio', () => repos.media.uploadMemoryAudio({ userId, memoryId, localUri: d.audioUri! }));
 
   const existing = await repos.memories.findById(memoryId);
   if (existing) {
@@ -271,7 +275,9 @@ export async function submitMemory(
       queued = true;
       return { ok: true, queued: true, memoryId };
     }
-    if (e instanceof MediaUploadError) return { ok: false, error: UPLOAD_ERROR };
+    if (e instanceof MediaUploadError) {
+      return { ok: false, error: e.kind === 'audio' ? AUDIO_UPLOAD_ERROR : UPLOAD_ERROR };
+    }
     console.warn('Memory submit failed', e);
     return { ok: false, error: GENERIC_ERROR };
   }

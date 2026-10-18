@@ -128,6 +128,15 @@ describe('submitMemory', () => {
     expect(m?.audioUrl).toBe('https://audio/1.m4a');
   });
 
+  it('reports a voice note upload failure with voice copy and does not queue', async () => {
+    const s = testServices();
+    jest.spyOn(s.repos.media, 'uploadMemoryAudio').mockRejectedValue(firestoreError('storage/unauthorized'));
+    const outbox = newOutbox();
+    const r = await submitMemory(s, USER, draft({ audioUri: 'file:///v.m4a' }), outbox);
+    expect(r).toEqual({ ok: false, error: 'Voice note upload failed. Try again or remove the voice note.' });
+    expect(await outbox.list()).toEqual([]);
+  });
+
   it('reports a non-network upload failure, creates no memory and does not queue', async () => {
     const s = testServices();
     jest.spyOn(s.repos.media, 'uploadMemoryImage').mockRejectedValue(firestoreError('storage/unauthorized'));

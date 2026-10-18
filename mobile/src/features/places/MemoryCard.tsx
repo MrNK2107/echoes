@@ -17,6 +17,7 @@ export function MemoryCard({ memory }: { memory: Memory }) {
     >
       {memory.imageUrl ? <Image source={{ uri: memory.imageUrl }} style={styles.image} /> : null}
       <Text style={styles.text}>{memory.textContent}</Text>
+      {memory.audioUrl ? <Text style={styles.voice}>Voice note</Text> : null}
       <View style={styles.metaRow}>
         <Text style={styles.meta}>{memory.createdAt.toLocaleDateString()}</Text>
         {badge ? (
@@ -34,6 +35,7 @@ const styles = StyleSheet.create({
   image: { width: '100%', height: 180, borderRadius: 8, marginBottom: 12 },
   text: { color: colors.text, fontSize: 16 },
   metaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 },
+  voice: { color: colors.accent, fontSize: 12, marginTop: 8 },
   meta: { color: colors.textSecondary },
   badge: { backgroundColor: colors.elevated, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2 },
   badgeText: { color: colors.gold, fontSize: 12 },

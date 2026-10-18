@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 
 import { DEMO_USER } from '@/data/seed';
-import { fakeConnectivity, fakeImagePicker, fakeLocation, testServices } from '@/device/fakes';
+import { fakeAudioRecorder, fakeConnectivity, fakeImagePicker, fakeLocation, testServices } from '@/device/fakes';
 import type { Memory } from '@/domain/types';
 import { OutboxProvider } from '@/features/outbox/useOutbox';
 import { ServicesProvider } from '@/services/ServicesProvider';
@@ -89,6 +89,23 @@ describe('AddMemoryScreen', () => {
     expect(await screen.findByTestId('photo-thumbnail')).toBeOnTheScreen();
     await fireEvent.press(screen.getByText('Remove photo'));
     expect(screen.queryByTestId('photo-thumbnail')).toBeNull();
+  });
+
+  it('uploads a recorded voice note with the memory', async () => {
+    const services = await setup({
+      audioRecorder: fakeAudioRecorder({ result: { uri: 'file:///v.m4a', durationMs: 3000 } }),
+    });
+    const upload = jest.spyOn(services.repos.media, 'uploadMemoryAudio').mockResolvedValue('https://audio/v.m4a');
+    await fireEvent.changeText(screen.getByTestId('text-input'), 'with a voice');
+    await fireEvent.press(screen.getByText('Public'));
+    await fireEvent.press(screen.getByTestId('use-location-button'));
+    await screen.findByText('Location captured');
+    await fireEvent.press(screen.getByText('Record voice note'));
+    await fireEvent.press(await screen.findByText('Stop'));
+    await screen.findByText('Voice note ready (3s)');
+    await fireEvent.press(screen.getByTestId('save-button'));
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledTimes(1));
+    expect(upload).toHaveBeenCalledWith(expect.objectContaining({ localUri: 'file:///v.m4a' }));
   });
 
   it('explains denied location permission', async () => {

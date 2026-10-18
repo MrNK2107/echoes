@@ -10,6 +10,7 @@ import { colors } from '@/ui/theme';
 
 import { PrivacyPicker, type PrivacyChoice } from './PrivacyPicker';
 import { MAX_MEMORY_LENGTH, submitMemory } from './submitMemory';
+import { VoiceRecorder } from './VoiceRecorder';
 
 const PERMISSION_COPY = 'Location permission is needed to save a memory here.';
 const QUEUED_COPY = "Saved offline. It will upload when you're back online.";
@@ -26,6 +27,7 @@ export function AddMemoryScreen() {
   const [releaseDate, setReleaseDate] = useState<Date | null>(null);
   const [location, setLocation] = useState<LatLng | null>(null);
   const [imageUri, setImageUri] = useState<string | null>(null);
+  const [audioUri, setAudioUri] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [queued, setQueued] = useState(false);
@@ -80,7 +82,7 @@ export function AddMemoryScreen() {
           communityId: null,
           location,
           imageUri,
-          audioUri: null,
+          audioUri,
         },
         outbox,
       );
@@ -145,6 +147,8 @@ export function AddMemoryScreen() {
           </Pressable>
         </View>
       ) : null}
+
+      <VoiceRecorder onChange={(r) => setAudioUri(r ? r.uri : null)} />
 
       {queued ? (
         <Text role="status" style={styles.notice}>

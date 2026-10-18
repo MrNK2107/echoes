@@ -8,6 +8,7 @@ import { privacyLabel } from '@/ui/privacyLabel';
 import { colors } from '@/ui/theme';
 
 import { useMemory } from './useMemory';
+import { VoiceNotePlayer } from './VoiceNotePlayer';
 
 export function MemoryDetailScreen({ memoryId }: { memoryId: string }) {
   const router = useRouter();
@@ -78,6 +79,7 @@ export function MemoryDetailScreen({ memoryId }: { memoryId: string }) {
       <ScrollView contentContainerStyle={styles.content}>
         {memory.imageUrl ? <Image source={{ uri: memory.imageUrl }} style={styles.image} /> : null}
         <Text style={styles.text}>{memory.textContent}</Text>
+        {memory.audioUrl ? <VoiceNotePlayer url={memory.audioUrl} /> : null}
         <View style={styles.metaRow}>
           <Text style={styles.meta}>{memory.createdAt.toLocaleString()}</Text>
           {badge ? (
