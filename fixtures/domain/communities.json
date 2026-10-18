@@ -1,0 +1,42 @@
+{
+  "normalizeName": [
+    { "input": "  Ánna  Bell ", "expected": "anna bell" },
+    { "input": "ÉMILE\tZola", "expected": "emile zola" },
+    { "input": "Sam 🌟 Lee", "expected": "sam 🌟 lee" },
+    { "input": "   ", "expected": "" }
+  ],
+  "searchRange": [
+    { "input": "a", "expected": null },
+    { "input": " é ", "expected": null },
+    { "input": "An", "expected": { "start": "an", "end": "an" } },
+    { "input": "  Ánna B", "expected": { "start": "anna b", "end": "anna b" } }
+  ],
+  "yearCommunity": [
+    { "input": "1999-12-31T23:59:00Z", "expected": { "id": "time-1999", "name": "1999 Memories" } },
+    { "input": "2000-01-01T00:00:00Z", "expected": { "id": "time-2000", "name": "2000 Memories" } },
+    { "input": "2024-06-15T12:00:00Z", "expected": { "id": "time-2024", "name": "2024 Memories" } }
+  ],
+  "eraCommunity": [
+    { "input": "1999-12-31T23:59:00Z", "expected": { "id": "era-1990s", "name": "1990s Era" } },
+    { "input": "2000-01-01T00:00:00Z", "expected": { "id": "era-2000s", "name": "2000s Era" } },
+    { "input": "2024-06-15T12:00:00Z", "expected": { "id": "era-2020s", "name": "2020s Era" } }
+  ],
+  "geoCommunity": [
+    { "input": { "id": "ChIJabc", "name": "Paris" }, "expected": { "id": "geo-ChIJabc", "name": "Paris Circle" } },
+    { "input": { "id": "p2", "name": "New York" }, "expected": { "id": "geo-p2", "name": "New York Circle" } }
+  ],
+  "containsProfanity": [
+    { "input": "class", "expected": false },
+    { "input": "assistant", "expected": false },
+    { "input": "Scunthorpe", "expected": false },
+    { "input": "A lovely day at the beach", "expected": false },
+    { "input": "what the fuck", "expected": true },
+    { "input": "SHIT happens", "expected": true },
+    { "input": "sh1t", "expected": true },
+    { "input": "you b!tch", "expected": false },
+    { "input": "f.u.c.k", "expected": false },
+    { "input": "Bítch", "expected": true },
+    { "input": "he said: asshole!", "expected": true },
+    { "input": "", "expected": false }
+  ]
+}
