@@ -12,4 +12,10 @@ describe('validateDisplayName', () => {
     expect(validateDisplayName(' a ')).toBe(msg);
     expect(validateDisplayName('x'.repeat(41))).toBe(msg);
   });
+  it('rejects control characters, including line breaks', () => {
+    for (const s of ['Ann\nLee', 'Ann\rLee', 'Ann\tLee', 'Ann\u0000', 'Ann\u007f', 'Ann\u001f']) {
+      expect(validateDisplayName(s)).toBe(msg);
+    }
+    expect(validateDisplayName('Zoë Ángel 🙂')).toBeNull();
+  });
 });

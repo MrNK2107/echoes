@@ -111,7 +111,7 @@ describe('SignInScreen', () => {
         }),
       );
       expect(screen.getByRole('alert')).toHaveTextContent(
-        "Couldn't reach the server. Check your connection and try again.",
+        'Could not reach the server. Check your connection and try again.',
       );
       expect(warn).toHaveBeenCalled();
     });

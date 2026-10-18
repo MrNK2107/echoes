@@ -1,6 +1,7 @@
 import { randomUUID } from 'expo-crypto';
 
 import type { Repositories } from '@/data/types';
+import type { ConnectivityService } from '@/device/types';
 import { createMemoryBackend } from '@/data/memory';
 import { buildSeed, DEMO_CENTER } from '@/data/seed';
 import { expoAudioPlayer, expoAudioRecorder } from '@/device/expoAudio';
@@ -20,27 +21,28 @@ export type { Services } from './services';
  * Firebase is required lazily so memory mode (and Jest) never loads the SDK; its
  * react-native build is ESM-only and is not transformed by jest-expo.
  */
-function createFirebaseRepos(config: AppConfig): Repositories {
+function createFirebaseRepos(config: AppConfig, connectivity: ConnectivityService): Repositories {
   /* eslint-disable @typescript-eslint/no-require-imports */
   const { createFirestoreBackend } = require('@/data/firestore') as typeof import('@/data/firestore');
   const { initFirebase } = require('./firebase') as typeof import('./firebase');
   /* eslint-enable @typescript-eslint/no-require-imports */
-  return createFirestoreBackend(initFirebase(config));
+  return createFirestoreBackend({ ...initFirebase(config), isOnline: () => connectivity.isOnline() });
 }
 
 export function createServices(config: AppConfig, overrides: Partial<Services> = {}): Services {
   const now = overrides.now ?? (() => new Date());
+  const connectivity = overrides.connectivity ?? expoConnectivity;
   const repos =
     config.backend === 'memory'
       ? createMemoryBackend(buildSeed(now()), { now })
-      : createFirebaseRepos(config);
+      : createFirebaseRepos(config, connectivity);
   return {
     config,
     repos,
     // Memory mode pins the user to the seed's neighbourhood so the demo map is never empty.
     location: config.backend === 'memory' ? demoLocation(DEMO_CENTER) : expoLocation,
     imagePicker: expoImagePicker,
-    connectivity: expoConnectivity,
+    connectivity,
     keyValue: asyncKeyValue,
     files: outboxFiles,
     audioRecorder: expoAudioRecorder,

@@ -133,6 +133,13 @@ export function notificationRepositoryContract(name: string, make: ContractFacto
       await inboxOf('friend', (ns) => expect(ns[0]?.readAt).toEqual(at));
     });
 
+    it('markRead of an unknown notification rejects with generic copy', async () => {
+      await ctx.signInAs('friend');
+      await expect(ctx.repos.notifications.markRead('friend', 'missing', new Date())).rejects.toThrow(
+        'Something went wrong. Please try again.',
+      );
+    });
+
     it('lists newest first and markAllRead marks every unread item', async () => {
       const a = mem({ taggedUserIds: ['friend'] });
       await ctx.repos.memories.create(a);

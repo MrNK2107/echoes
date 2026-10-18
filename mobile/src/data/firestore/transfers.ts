@@ -1,10 +1,9 @@
 import { collection, limit, orderBy, query, where, type DocumentData, type Firestore, type Query } from 'firebase/firestore';
-import type { Functions } from 'firebase/functions';
 import type { Transfer } from '@/domain/types';
 import { TRANSFER_INITIATE_ERRORS } from '../callableErrors';
 import { transferFromDoc } from '../mappers';
 import type { TransferRepository } from '../types';
-import { callCallable } from './callables';
+import { callCallable, type CallableClient } from './callables';
 import { subscribeUnion } from './snapshots';
 
 const LIST_LIMIT = 50;
@@ -16,7 +15,7 @@ const newestFirst = (a: Transfer, b: Transfer) =>
  * Transfers are read directly (the rules allow the sender and the recipient) and changed only
  * through the callables in functions/transfers.js (ADR-0007).
  */
-export function createTransferRepository(db: Firestore, functions: Functions): TransferRepository {
+export function createTransferRepository(db: Firestore, callables: CallableClient): TransferRepository {
   const transfers = collection(db, 'transfers');
   const subscribe = (
     queries: Query<DocumentData>[],
@@ -30,13 +29,13 @@ export function createTransferRepository(db: Firestore, functions: Functions): T
     );
   return {
     async initiate({ placeId, toUserId }) {
-      await callCallable(functions, 'initiateTransfer', { placeId, toUserId }, TRANSFER_INITIATE_ERRORS);
+      await callCallable(callables, 'initiateTransfer', { placeId, toUserId }, TRANSFER_INITIATE_ERRORS);
     },
     async respond(id, accept) {
-      await callCallable(functions, 'respondToTransfer', { transferId: id, accept });
+      await callCallable(callables, 'respondToTransfer', { transferId: id, accept });
     },
     async revoke(id) {
-      await callCallable(functions, 'revokeTransfer', { transferId: id });
+      await callCallable(callables, 'revokeTransfer', { transferId: id });
     },
     subscribeIncoming(uid, cb, onError) {
       // (toUserId, status, createdAt desc) index.

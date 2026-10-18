@@ -1,9 +1,8 @@
 import { collection, doc, getDoc, limit, orderBy, query, type Firestore } from 'firebase/firestore';
-import type { Functions } from 'firebase/functions';
 import { CLAIM_ADMIN_ERRORS } from '../callableErrors';
 import { institutionFromDoc } from '../mappers';
 import type { InstitutionRepository } from '../types';
-import { callCallable } from './callables';
+import { callCallable, type CallableClient } from './callables';
 import { subscribeUnion } from './snapshots';
 
 const LIST_LIMIT = 50;
@@ -12,7 +11,7 @@ const LIST_LIMIT = 50;
  * Institutions are readable by every signed-in user and written only by the callables in
  * functions/institutions.js (ADR-0007).
  */
-export function createInstitutionRepository(db: Firestore, functions: Functions): InstitutionRepository {
+export function createInstitutionRepository(db: Firestore, callables: CallableClient): InstitutionRepository {
   const institutions = collection(db, 'institutions');
   return {
     subscribeAll(cb, onError) {
@@ -34,17 +33,17 @@ export function createInstitutionRepository(db: Firestore, functions: Functions)
       return data === undefined ? null : institutionFromDoc(snap.id, data);
     },
     async create({ name, allowedEmailDomains }) {
-      const { id } = await callCallable<{ id: string }>(functions, 'createInstitution', {
+      const { id } = await callCallable<{ id: string }>(callables, 'createInstitution', {
         name,
         allowedEmailDomains,
       });
       return id;
     },
     async claimAdmin(id) {
-      await callCallable(functions, 'claimInstitutionAdmin', { institutionId: id }, CLAIM_ADMIN_ERRORS);
+      await callCallable(callables, 'claimInstitutionAdmin', { institutionId: id }, CLAIM_ADMIN_ERRORS);
     },
     async addSubZone(id, { name, latitude, longitude }) {
-      await callCallable(functions, 'addInstitutionSubZone', { institutionId: id, name, latitude, longitude });
+      await callCallable(callables, 'addInstitutionSubZone', { institutionId: id, name, latitude, longitude });
     },
   };
 }

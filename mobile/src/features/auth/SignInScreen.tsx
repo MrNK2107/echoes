@@ -11,7 +11,7 @@ import {
   View,
 } from 'react-native';
 
-import { BAD_CREDENTIALS, EMAIL_IN_USE, GENERIC_ERROR } from '@/data/errors';
+import { BAD_CREDENTIALS, EMAIL_IN_USE, GENERIC_ERROR, TIMEOUT_ERROR } from '@/data/errors';
 import { DEMO_USER } from '@/data/seed';
 import { DISPLAY_NAME_ERROR } from '@/domain/profiles';
 import { useServices } from '@/services/ServicesProvider';
@@ -19,7 +19,6 @@ import { colors } from '@/ui/theme';
 
 import { validateDisplayName, validateEmail, validatePassword } from './validators';
 
-const NETWORK_ERROR = "Couldn't reach the server. Check your connection and try again.";
 /** Domain messages the auth repositories throw on purpose; everything else is mapped to generic copy. */
 const KNOWN_AUTH_MESSAGES = new Set([BAD_CREDENTIALS, EMAIL_IN_USE, DISPLAY_NAME_ERROR]);
 
@@ -27,7 +26,7 @@ function authErrorCopy(e: unknown): string {
   if (e instanceof Error && KNOWN_AUTH_MESSAGES.has(e.message)) return e.message;
   console.warn('Auth request failed', e);
   const code = typeof e === 'object' && e !== null && 'code' in e ? (e as { code: unknown }).code : null;
-  return code === 'auth/network-request-failed' ? NETWORK_ERROR : GENERIC_ERROR;
+  return code === 'auth/network-request-failed' ? TIMEOUT_ERROR : GENERIC_ERROR;
 }
 
 type Errors = { email?: string; password?: string; name?: string; age?: string };

@@ -13,7 +13,10 @@ import { createServices } from './createServices';
 import { useServices } from './ServicesProvider';
 
 // The Firebase SDK is ESM-only and not transformed by jest-expo; stub the lazily required modules.
-jest.mock('@/data/firestore', () => ({ createFirestoreBackend: () => ({}) }));
+const mockCreateFirestoreBackend = jest.fn((_deps: Record<string, unknown>) => ({}));
+jest.mock('@/data/firestore', () => ({
+  createFirestoreBackend: (deps: Record<string, unknown>) => mockCreateFirestoreBackend(deps),
+}));
 jest.mock('./firebase', () => ({ initFirebase: () => ({}) }));
 
 describe('createServices', () => {
@@ -30,6 +33,15 @@ describe('createServices', () => {
     const s = createServices(readConfig({}));
     await expect(s.location.requestPermission()).resolves.toBe('granted');
     await expect(s.location.getCurrentPosition()).resolves.toEqual(DEMO_CENTER);
+  });
+
+  it('emulator mode gives the Firestore backend the connectivity check for callables', async () => {
+    const connectivity = testServices().connectivity;
+    const spy = jest.spyOn(connectivity, 'isOnline').mockResolvedValue(false);
+    createServices(readConfig({ EXPO_PUBLIC_BACKEND: 'emulator' }), { connectivity });
+    const deps = mockCreateFirestoreBackend.mock.calls.at(-1)![0] as { isOnline: () => Promise<boolean> };
+    await expect(deps.isOnline()).resolves.toBe(false);
+    expect(spy).toHaveBeenCalled();
   });
 
   it('emulator mode keeps the real location service', () => {

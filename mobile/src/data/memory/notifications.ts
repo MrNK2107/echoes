@@ -1,4 +1,5 @@
 import type { AppNotification } from '@/domain/types';
+import { GENERIC_ERROR } from '../errors';
 import type { NotificationRepository } from '../types';
 import type { Store } from './store';
 
@@ -10,7 +11,7 @@ export function createNotificationRepository(store: Store): NotificationReposito
     const items = inbox(uid);
     for (const id of ids) {
       const n = items.get(id);
-      if (!n) throw new Error('Notification not found.');
+      if (!n) throw new Error(GENERIC_ERROR);
       items.set(id, { ...n, readAt: at });
     }
     store.notify(store.notificationListeners);

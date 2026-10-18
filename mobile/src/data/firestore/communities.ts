@@ -11,12 +11,11 @@ import {
   type Firestore,
   type QueryConstraint,
 } from 'firebase/firestore';
-import type { Functions } from 'firebase/functions';
 import type { Community } from '@/domain/types';
 import { COMMUNITY_LEAVE_ERRORS } from '../callableErrors';
 import { communityFromDoc, membershipFromDoc, memoryFromDoc } from '../mappers';
 import type { CommunityRepository, Unsubscribe } from '../types';
-import { callCallable } from './callables';
+import { callCallable, type CallableClient } from './callables';
 import { subscribeUnion } from './snapshots';
 
 const LIST_LIMIT = 50;
@@ -36,7 +35,7 @@ function chunk<T>(xs: T[], size: number): T[][] {
  * Reads are direct (the rules let signed-in users read communities, and a member doc its own
  * user); every change goes through the callables in functions/communities.js (ADR-0007).
  */
-export function createCommunityRepository(db: Firestore, functions: Functions): CommunityRepository {
+export function createCommunityRepository(db: Firestore, callables: CallableClient): CommunityRepository {
   const communities = collection(db, 'communities');
   const memories = collection(db, 'memories');
   return {
@@ -127,17 +126,17 @@ export function createCommunityRepository(db: Firestore, functions: Functions): 
       );
     },
     async create({ name, description }) {
-      const { id } = await callCallable<{ id: string }>(functions, 'createCommunity', { name, description });
+      const { id } = await callCallable<{ id: string }>(callables, 'createCommunity', { name, description });
       return id;
     },
     async join(id) {
-      await callCallable(functions, 'joinCommunity', { communityId: id });
+      await callCallable(callables, 'joinCommunity', { communityId: id });
     },
     async leave(id) {
-      await callCallable(functions, 'leaveCommunity', { communityId: id }, COMMUNITY_LEAVE_ERRORS);
+      await callCallable(callables, 'leaveCommunity', { communityId: id }, COMMUNITY_LEAVE_ERRORS);
     },
     async invite(id, userIds) {
-      await callCallable(functions, 'inviteToCommunity', { communityId: id, userIds });
+      await callCallable(callables, 'inviteToCommunity', { communityId: id, userIds });
     },
   };
 }

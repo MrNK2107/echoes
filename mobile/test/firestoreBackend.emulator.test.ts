@@ -132,7 +132,8 @@ async function makeCtx(): Promise<Ctx> {
   connectStorageEmulator(storage, HOST, 9199);
   const functions = getFunctions(app);
   connectFunctionsEmulator(functions, HOST, 5001);
-  const repos = createFirestoreBackend({ db, auth, storage, functions });
+  // The suite runs against live emulators, so the device is always online.
+  const repos = createFirestoreBackend({ db, auth, storage, functions, isOnline: async () => true });
   return {
     app, db, auth, storage, repos,
     async signInAs(uid) {
@@ -245,6 +246,13 @@ describe('firestore backend specifics', () => {
     } finally {
       unsub();
     }
+  });
+
+  it('markAllRead on an inbox the rules refuse rejects with generic copy, not the raw denial', async () => {
+    await ctx.signInAs('friend');
+    await expect(ctx.repos.notifications.markAllRead('author', new Date())).rejects.toThrow(
+      'Something went wrong. Please try again.',
+    );
   });
 
   it('register creates the users doc with public default privacy', async () => {

@@ -1,12 +1,11 @@
 import { collection, deleteDoc, doc, orderBy, query, setDoc, type Firestore } from 'firebase/firestore';
-import type { Functions } from 'firebase/functions';
 import { REPORT_ERRORS } from '../callableErrors';
 import { GENERIC_ERROR } from '../errors';
 import type { SafetyRepository } from '../types';
-import { callCallable } from './callables';
+import { callCallable, type CallableClient } from './callables';
 import { subscribeUnion } from './snapshots';
 
-export function createSafetyRepository(db: Firestore, functions: Functions): SafetyRepository {
+export function createSafetyRepository(db: Firestore, callables: CallableClient): SafetyRepository {
   const blocks = (uid: string) => collection(db, 'users', uid, 'blocks');
   return {
     async block(uid, other, at) {
@@ -38,7 +37,7 @@ export function createSafetyRepository(db: Firestore, functions: Functions): Saf
       const trimmed = note?.trim();
       // The callable treats an absent note as "no note"; send none rather than an empty one.
       await callCallable(
-        functions,
+        callables,
         'reportMemory',
         trimmed ? { memoryId, reason, note: trimmed } : { memoryId, reason },
         REPORT_ERRORS,

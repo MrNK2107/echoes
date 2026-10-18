@@ -20,7 +20,10 @@ export function createFirestoreBackend(deps: {
   auth: Auth;
   storage: FirebaseStorage;
   functions: Functions;
+  /** Device connectivity; callables report failures while offline as TIMEOUT_ERROR. */
+  isOnline(): Promise<boolean>;
 }): Repositories {
+  const callables = { functions: deps.functions, isOnline: deps.isOnline };
   const users = createUserRepository(deps.db);
   const profiles = createProfileRepository(deps.db);
   return {
@@ -31,9 +34,9 @@ export function createFirestoreBackend(deps: {
     media: createMediaRepository(deps.storage),
     profiles,
     notifications: createNotificationRepository(deps.db),
-    safety: createSafetyRepository(deps.db, deps.functions),
-    communities: createCommunityRepository(deps.db, deps.functions),
-    transfers: createTransferRepository(deps.db, deps.functions),
-    institutions: createInstitutionRepository(deps.db, deps.functions),
+    safety: createSafetyRepository(deps.db, callables),
+    communities: createCommunityRepository(deps.db, callables),
+    transfers: createTransferRepository(deps.db, callables),
+    institutions: createInstitutionRepository(deps.db, callables),
   };
 }
