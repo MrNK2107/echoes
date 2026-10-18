@@ -371,3 +371,132 @@ test("expireTransfers is a daily schedule with a 540 s timeout", () => {
   assert.equal(endpoint.timeoutSeconds, 540);
   assert.equal(endpoint.scheduleTrigger.schedule, "every 24 hours");
 });
+
+// --- Fix round 1 ---
+
+test("accept fails when the sender is no longer a custodian", async () => {
+  const db = seed();
+  const { id } = await initiate(db);
+  db._put("places/p1", { name: "Old Mill", custodianIds: ["carol"] });
+  assert.equal(
+    await codeOf(call(db, "respondToTransfer", "bob", { transferId: id, accept: true })),
+    "failed-precondition",
+  );
+  assert.equal(db._get(`transfers/${id}`).status, "pending");
+  assert.deepEqual(db._get("places/p1").custodianIds, ["carol"]);
+});
+
+test("A->B accepted, B->C pending; A revokes B: B->C is revoked and C's accept fails", async () => {
+  const db = seed({
+    "places/p2": { name: "Pier", custodianIds: ["bob"] },
+  });
+  const { id: ab } = await initiate(db);
+  await call(db, "respondToTransfer", "bob", { transferId: ab, accept: true });
+  const { id: bc } = await initiate(db, "bob", { placeId: "p1", toUserId: "carol" });
+  // B's pending transfer for another place is untouched.
+  const { id: other } = await initiate(db, "bob", { placeId: "p2", toUserId: "carol" });
+
+  await call(db, "revokeTransfer", "alice", { transferId: ab });
+  assert.deepEqual(db._get("places/p1").custodianIds, ["alice"]);
+  const t = db._get(`transfers/${bc}`);
+  assert.equal(t.status, "revoked");
+  assert.equal(typeof t.revokedAt, "string");
+  assert.equal(db._get(`transfers/${other}`).status, "pending");
+  assert.equal(
+    await codeOf(call(db, "respondToTransfer", "carol", { transferId: bc, accept: true })),
+    "failed-precondition",
+  );
+  assert.deepEqual(db._get("places/p1").custodianIds, ["alice"]);
+});
+
+test("even without the cascade, C's accept fails once B is no longer a custodian", async () => {
+  const db = seed();
+  const { id: ab } = await initiate(db);
+  await call(db, "respondToTransfer", "bob", { transferId: ab, accept: true });
+  const { id: bc } = await initiate(db, "bob", { placeId: "p1", toUserId: "carol" });
+  db._put("places/p1", { name: "Old Mill", custodianIds: ["alice"] });
+  assert.equal(
+    await codeOf(call(db, "respondToTransfer", "carol", { transferId: bc, accept: true })),
+    "failed-precondition",
+  );
+});
+
+test("accept is refused when a block appeared after the request (either direction)", async () => {
+  for (const blockPath of ["users/bob/blocks/alice", "users/alice/blocks/bob"]) {
+    const db = seed();
+    const { id } = await initiate(db);
+    db._put(blockPath, { createdAt: "2026-10-19T00:00:00.000Z" });
+    assert.equal(
+      await codeOf(call(db, "respondToTransfer", "bob", { transferId: id, accept: true })),
+      "permission-denied",
+    );
+    assert.equal(db._get(`transfers/${id}`).status, "pending");
+    assert.deepEqual(db._get("places/p1").custodianIds, ["alice"]);
+  }
+});
+
+// Wraps the fake so the first transfers query runs `afterQuery` once its results are read.
+function withRaceAfterQuery(db, afterQuery) {
+  let fired = false;
+  const wrap = (q) => ({
+    where: (...a) => wrap(q.where(...a)),
+    orderBy: (...a) => wrap(q.orderBy(...a)),
+    limit: (n) => wrap(q.limit(n)),
+    async get() {
+      const snap = await q.get();
+      if (!fired) {
+        fired = true;
+        afterQuery();
+      }
+      return snap;
+    },
+  });
+  return { ...db, collection: (p) => (p === "transfers" ? wrap(db.collection(p)) : db.collection(p)) };
+}
+
+test("expiry does not overwrite a transfer that changed after the query", async () => {
+  const now = new Date("2026-10-19T00:00:00.000Z");
+  const db = seed({
+    "transfers/raced": pending(new Date(now.getTime() - 9 * DAY_MS)),
+    "transfers/stale": pending(new Date(now.getTime() - 8 * DAY_MS)),
+  });
+  const raced = withRaceAfterQuery(db, () =>
+    db._put("transfers/raced", { ...db._get("transfers/raced"), status: "accepted" }),
+  );
+  const expired = await expireStale(raced, now);
+  assert.equal(expired, 1);
+  assert.equal(db._get("transfers/raced").status, "accepted");
+  assert.equal(db._get("transfers/stale").status, "expired");
+});
+
+// Makes every notification write fail.
+function withFailingNotifications(db) {
+  return {
+    ...db,
+    collection: (p) =>
+      p.endsWith("/notifications")
+        ? {
+            doc: () => ({
+              create: async () => {
+                throw new Error("notify boom");
+              },
+              set: async () => {
+                throw new Error("notify boom");
+              },
+            }),
+          }
+        : db.collection(p),
+  };
+}
+
+test("a notification failure never fails a committed transfer", async () => {
+  const base = seed();
+  const db = withFailingNotifications(base);
+  const { id } = await initiate(db);
+  assert.equal(base._get(`transfers/${id}`).status, "pending");
+  assert.deepEqual(await call(db, "respondToTransfer", "bob", { transferId: id, accept: true }), {
+    status: "accepted",
+  });
+  assert.equal(base._get(`transfers/${id}`).status, "accepted");
+  assert.deepEqual(base._get("places/p1").custodianIds, ["alice", "bob"]);
+});

@@ -47,6 +47,8 @@ test("indexes the Plan 3 queries need are present", () => {
     ["transfers", [["toUserId", A], ["createdAt", D]]],
     ["transfers", [["toUserId", A], ["status", A], ["createdAt", D]]],
     ["transfers", [["fromUserId", A], ["createdAt", D]]],
+    ["transfers", [["placeId", A], ["toUserId", A], ["status", A]]],
+    ["transfers", [["status", A], ["createdAt", A]]],
     ["notifications", [["readAt", A], ["createdAt", D]]],
   ];
   for (const [group, fields] of expected) {
