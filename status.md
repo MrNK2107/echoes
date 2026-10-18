@@ -1,6 +1,6 @@
 # ECHOES — Ground Truth Status
 
-**Updated:** July 31, 2026  
+**Updated:** October 19, 2026  
 **Target:** Production-ready v1 for Android and iOS, age 13+
 
 ## Expo rewrite — Plan 1

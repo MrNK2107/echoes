@@ -27,6 +27,9 @@ implementation. A shared npm workspace was rejected: Firebase deploy uploads onl
 `functions/`, so local package dependencies need bundling, which is more machinery
 than one 60-line function justifies.
 
+## Concurrency & retries
+The function recomputes by reading the place's memories and then writing the result. Under concurrent writes to the same place the aggregates can briefly be stale; they self-heal on the next write. `auraHistory` entries may be duplicated if an event is redelivered (at-least-once delivery); the planned fix is to use the event id as the document id, before Plan 4.
+
 ## Consequences
 - Easier: correct counts for non-custodians; one client write path; rules can stay strict.
 - Harder: aura updates are eventually consistent (≈1–2 s); tests need the Functions runtime.
