@@ -164,9 +164,9 @@ function useOutbox(): { pending: number; retry(): void }
 ```
 `SubmitResult` gains `queued`. Plan 1's `startSubmit`/`awaitWithTimeout`/single-flight in AddMemoryScreen are removed (ADR-0006 supersedes R10). Screen: success → `router.replace('/place/{placeId}')`; queued → show `Saved offline. It will upload when you're back online.` then `router.replace('/')`. Banner on map when `pending > 0`: `{n} memory waiting to upload` / `{n} memories waiting to upload` + `Retry`. Network errors = Firestore `unavailable`, Storage `storage/retry-limit-exceeded`, or `TypeError: Network request failed`; validation errors never queue.
 
-- [ ] **Step 1: Failing tests** — submit with repo create never settling → queued after 15 s, draft persisted with `memoryId`, timers cleared; processor replays when connectivity flips online and removes the draft; backoff schedule (fake timers: failures at 2, 4, 8 s; success resets); **`replay after partial success creates nothing twice`** (place `p_<id>` and photo already exist, memory missing → after replay exactly one place and one memory); outbox survives a new `Outbox` instance over the same store (restart); drafts are per-user (`outbox:<uid>`); banner pluralisation and Retry calls `retryNow`.
-- [ ] **Step 2: Run** → FAIL. **Step 3: Implement.** **Step 4: Run** gates → PASS.
-- [ ] **Step 5: Commit** `feat(outbox): persisted offline drafts with idempotent replay`.
+- [x] **Step 1: Failing tests** — submit with repo create never settling → queued after 15 s, draft persisted with `memoryId`, timers cleared; processor replays when connectivity flips online and removes the draft; backoff schedule (fake timers: failures at 2, 4, 8 s; success resets); **`replay after partial success creates nothing twice`** (place `p_<id>` and photo already exist, memory missing → after replay exactly one place and one memory); outbox survives a new `Outbox` instance over the same store (restart); drafts are per-user (`outbox:<uid>`); banner pluralisation and Retry calls `retryNow`.
+- [x] **Step 2: Run** → FAIL. **Step 3: Implement.** **Step 4: Run** gates → PASS.
+- [x] **Step 5: Commit** `feat(outbox): persisted offline drafts with idempotent replay`.
 
 ---
 
