@@ -4,6 +4,8 @@ import {
   EmailAuthProvider,
   onAuthStateChanged,
   reauthenticateWithCredential,
+  reload,
+  sendEmailVerification,
   signInWithEmailAndPassword,
   signOut,
   updateProfile,
@@ -111,6 +113,20 @@ export function createAuthRepository(
       }
       // Server-side `cleanupDeletedUser` (Auth onDelete) removes the profile, memories and files.
       await deleteUser(user);
+    },
+    async sendEmailVerification() {
+      const user = auth.currentUser;
+      if (!user) throw new Error(NOT_SIGNED_IN);
+      await sendEmailVerification(user);
+    },
+    async refreshUser() {
+      const user = auth.currentUser;
+      if (!user) throw new Error(NOT_SIGNED_IN);
+      // reload() picks up a verified email; the forced token refresh carries it (and the staff
+      // claim) to the callables, which read the ID token.
+      await reload(user);
+      const token = await user.getIdTokenResult(true);
+      return { email: user.email ?? '', emailVerified: user.emailVerified, staff: token.claims.staff === true };
     },
   };
 }

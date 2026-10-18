@@ -2,6 +2,7 @@ import { DEFAULT_NOTIFICATION_PREFS, validateDisplayName } from '@/domain/profil
 import type { AuthSession } from '@/domain/types';
 import { BAD_CREDENTIALS, EMAIL_IN_USE, INCORRECT_PASSWORD, NOT_SIGNED_IN } from '../errors';
 import type { AuthRepository } from '../types';
+import { cleanupUserCommunities } from './autoCommunities';
 import { recomputePlace } from './recompute';
 import type { Store } from './store';
 
@@ -63,12 +64,26 @@ export function createAuthRepository(store: Store): AuthRepository {
       store.profiles.delete(session.userId);
       store.notifications.delete(session.userId);
       store.blocks.delete(session.userId);
+      cleanupUserCommunities(store, session.userId);
       store.accounts.delete(acct.email.toLowerCase());
       store.notify(store.memoryListeners);
       store.notify(store.placeListeners);
       store.notify(store.notificationListeners);
       store.notify(store.blockListeners);
+      store.notify(store.communityListeners);
+      store.notify(store.institutionListeners);
       setSession(null);
+    },
+    async sendEmailVerification() {
+      const account = store.session ? store.accountOf(store.session.userId) : null;
+      if (!account) throw new Error(NOT_SIGNED_IN);
+      // Demo mode has no inbox to click a link in, so sending the email verifies the address.
+      account.emailVerified = true;
+    },
+    async refreshUser() {
+      const account = store.session ? store.accountOf(store.session.userId) : null;
+      if (!account) throw new Error(NOT_SIGNED_IN);
+      return { email: account.email, emailVerified: account.emailVerified === true, staff: account.staff === true };
     },
   };
 }

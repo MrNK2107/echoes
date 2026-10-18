@@ -24,7 +24,7 @@ function mem(over: Partial<Memory> = {}): Memory {
   };
 }
 
-function appUser(id: string): AppUser {
+export function appUser(id: string): AppUser {
   return {
     id, displayName: id, email: `${id}@contract.test`, photoUrl: null, defaultPrivacy: 'public',
     managedPlaceIds: [], communityIds: [],

@@ -20,7 +20,13 @@ import {
   profileRepositoryContract,
   safetyRepositoryContract,
 } from './contracts/social.contract';
-import { waitFor } from './contracts/util';
+import {
+  auraHistoryContract,
+  communityRepositoryContract,
+  institutionRepositoryContract,
+  transferRepositoryContract,
+} from './contracts/communities.contract';
+import { waitFor, type AccountPatch } from './contracts/util';
 
 // runDraft's module pulls in the native image compressor; the outbox replay never calls it.
 jest.mock('@/features/memories/compressImage', () => ({ compressImage: async (u: string) => u }));
@@ -35,6 +41,7 @@ interface Ctx {
   storage: FirebaseStorage;
   repos: Repositories;
   signInAs(uid: string): Promise<void>;
+  setAccount(uid: string, patch: AccountPatch): Promise<void>;
   cleanup(): Promise<void>;
 }
 
@@ -87,6 +94,26 @@ async function adminSetDoc(path: string, fields: Record<string, string>): Promis
   if (!res.ok) throw new Error(`Admin write failed (${res.status}) for ${path}`);
 }
 
+/**
+ * Changes an Auth emulator account as the Admin SDK would (`Bearer owner`): email, its
+ * verification and the `staff` custom claim. ID tokens only carry the change once refreshed.
+ */
+async function adminUpdateAccount(uid: string, patch: AccountPatch): Promise<void> {
+  const body: Record<string, unknown> = { localId: uid };
+  if (patch.email !== undefined) body.email = patch.email;
+  if (patch.emailVerified !== undefined) body.emailVerified = patch.emailVerified;
+  if (patch.staff !== undefined) body.customAttributes = JSON.stringify(patch.staff ? { staff: true } : {});
+  const res = await fetch(
+    `http://${HOST}:9099/identitytoolkit.googleapis.com/v1/projects/${PROJECT_ID}/accounts:update`,
+    {
+      method: 'POST',
+      headers: { Authorization: 'Bearer owner', 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    },
+  );
+  if (!res.ok) throw new Error(`Account update failed (${res.status}): ${await res.text()}`);
+}
+
 let appSeq = 0;
 
 /** A fresh app per test so Firestore's local cache never leaks documents between tests. */
@@ -112,6 +139,10 @@ async function makeCtx(): Promise<Ctx> {
       if (auth.currentUser?.uid === uid) return;
       await signInWithCustomToken(auth, emulatorCustomToken(uid));
     },
+    async setAccount(uid, patch) {
+      await adminUpdateAccount(uid, patch);
+      if (auth.currentUser?.uid === uid) await auth.currentUser.getIdToken(true);
+    },
     async cleanup() {
       await signOut(auth);
       await deleteApp(app);
@@ -122,7 +153,7 @@ async function makeCtx(): Promise<Ctx> {
 
 const make = async () => {
   const ctx = await makeCtx();
-  return { repos: ctx.repos, signInAs: ctx.signInAs, cleanup: ctx.cleanup };
+  return { repos: ctx.repos, signInAs: ctx.signInAs, setAccount: ctx.setAccount, cleanup: ctx.cleanup };
 };
 
 placeRepositoryContract('firestore', make);
@@ -136,6 +167,11 @@ userRepositoryContract('firestore', make, { supportsLifecycle: true });
 profileRepositoryContract('firestore', make);
 notificationRepositoryContract('firestore', make);
 safetyRepositoryContract('firestore', make);
+// Communities, transfers and institutions run through their callables and onMemoryWritten.
+communityRepositoryContract('firestore', make);
+transferRepositoryContract('firestore', make);
+institutionRepositoryContract('firestore', make);
+auraHistoryContract('firestore', make);
 
 describe('firestore backend specifics', () => {
   let ctx: Ctx;

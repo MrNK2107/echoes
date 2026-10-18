@@ -4,6 +4,7 @@ import {
   getDoc,
   getDocs,
   limit,
+  orderBy,
   query,
   setDoc,
   where,
@@ -13,11 +14,12 @@ import {
 } from 'firebase/firestore';
 import { coveringPrefixes, distanceMeters, geohashRangeEnd } from '@/domain/geo';
 import type { LatLng, Place } from '@/domain/types';
-import { placeFromDoc, placeToDoc } from '../mappers';
+import { auraHistoryFromDoc, placeFromDoc, placeToDoc } from '../mappers';
 import type { PlaceRepository } from '../types';
 import { subscribeUnion } from './snapshots';
 
 const CANDIDATE_LIMIT = 50;
+const AURA_HISTORY_LIMIT = 14;
 
 /** One geohash range query per covering prefix (see `coveringPrefixes` for why not just `queryPrefixes`). */
 function prefixQueries(db: Firestore, q: { center: LatLng; radiusMeters: number }) {
@@ -61,6 +63,24 @@ export function createPlaceRepository(db: Firestore): PlaceRepository {
     },
     async create(place) {
       await setDoc(doc(db, 'places', place.id), placeToDoc(place));
+    },
+    subscribeAuraHistory(placeId, cb, onError) {
+      // Server-appended by onMemoryWritten; ISO `recordedAt` strings sort chronologically.
+      const q = query(
+        collection(db, 'places', placeId, 'auraHistory'),
+        orderBy('recordedAt', 'desc'),
+        limit(AURA_HISTORY_LIMIT),
+      );
+      return subscribeUnion(
+        [q],
+        (docs) =>
+          cb(
+            docs
+              .map((d) => auraHistoryFromDoc(d.id, d.data()))
+              .sort((a, b) => a.recordedAt.getTime() - b.recordedAt.getTime() || (a.id < b.id ? -1 : 1)),
+          ),
+        onError,
+      );
     },
   };
 }

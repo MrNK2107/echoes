@@ -73,6 +73,16 @@ export function authRepositoryContract(
       );
     });
 
+    it('refreshUser reports the email, its verification and the staff claim', async () => {
+      await expect(ctx.repos.auth.refreshUser()).rejects.toThrow('Not signed in.');
+      await expect(ctx.repos.auth.sendEmailVerification()).rejects.toThrow('Not signed in.');
+      await ctx.repos.auth.register('ver@example.com', 'secret12', 'Vera', TERMS_AT);
+      expect(await ctx.repos.auth.refreshUser()).toEqual({
+        email: 'ver@example.com', emailVerified: false, staff: false,
+      });
+      await expect(ctx.repos.auth.sendEmailVerification()).resolves.toBeUndefined();
+    });
+
     itLifecycle('deleteAccount with a wrong password rejects and the session stays', async () => {
       const s = await ctx.repos.auth.register('del1@example.com', 'secret12', 'Del', TERMS_AT);
       const emitted: (AuthSession | null)[] = [];

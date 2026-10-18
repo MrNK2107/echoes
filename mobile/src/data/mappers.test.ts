@@ -1,5 +1,9 @@
 import { Timestamp } from 'firebase/firestore';
 import {
+  auraHistoryFromDoc,
+  communityFromDoc,
+  institutionFromDoc,
+  membershipFromDoc,
   memoryFromDoc,
   memoryToDoc,
   notificationFromDoc,
@@ -7,6 +11,7 @@ import {
   placeToDoc,
   profileFromDoc,
   profileToDoc,
+  transferFromDoc,
   userFromDoc,
   userToDoc,
 } from './mappers';
@@ -193,5 +198,60 @@ describe('notification mapper', () => {
     });
     expect(n.readAt).toEqual(d('2026-05-02T00:00:00.000Z'));
     expect(n.data).toEqual({});
+  });
+});
+
+describe('Plan 3 social mappers (server-written docs with ISO dates)', () => {
+  const ISO = '2026-05-01T00:00:00.000Z';
+  it('maps communities, defaulting the optional links to null', () => {
+    expect(
+      communityFromDoc('time-2026', {
+        name: '2026 Memories', description: 'Memories from 2026.', type: 'timeBased', ownerId: 'system',
+        placeId: null, institutionId: null, memberCount: 3, createdAt: ISO, updatedAt: ISO,
+      }),
+    ).toEqual({
+      id: 'time-2026', name: '2026 Memories', description: 'Memories from 2026.', type: 'timeBased',
+      ownerId: 'system', placeId: null, institutionId: null, memberCount: 3, createdAt: d(ISO), updatedAt: d(ISO),
+    });
+    expect(
+      communityFromDoc('c', { name: 'n', description: 'd', type: 'thematic', ownerId: 'u', memberCount: 1, createdAt: ISO, updatedAt: ISO }),
+    ).toMatchObject({ placeId: null, institutionId: null });
+  });
+  it('maps memberships', () => {
+    expect(membershipFromDoc({ userId: 'u', role: 'guardian', joinedAt: ISO })).toEqual({ role: 'guardian', joinedAt: d(ISO) });
+  });
+  it('maps transfers', () => {
+    expect(
+      transferFromDoc('t1', {
+        placeId: 'p', fromUserId: 'a', toUserId: 'b', status: 'pending', createdAt: ISO, respondedAt: null,
+        revokeUntil: '2026-05-08T00:00:00.000Z', recipientWasCustodian: null,
+      }),
+    ).toEqual({
+      id: 't1', placeId: 'p', fromUserId: 'a', toUserId: 'b', status: 'pending', createdAt: d(ISO),
+      respondedAt: null, revokeUntil: d('2026-05-08T00:00:00.000Z'),
+    });
+  });
+  it('maps institutions and their sub-zones', () => {
+    expect(
+      institutionFromDoc('i1', {
+        name: 'Uni', allowedEmailDomains: ['uni.edu'], adminUserIds: ['a'],
+        subZones: [{ id: 'z', name: 'Library', latitude: 1, longitude: 2, radiusMeters: 60 }],
+        communityId: 'inst-i1', createdAt: ISO, updatedAt: ISO,
+      }),
+    ).toEqual({
+      id: 'i1', name: 'Uni', allowedEmailDomains: ['uni.edu'], adminUserIds: ['a'],
+      subZones: [{ id: 'z', name: 'Library', latitude: 1, longitude: 2, radiusMeters: 60 }], communityId: 'inst-i1',
+    });
+    expect(institutionFromDoc('i2', { name: 'Uni' })).toEqual({
+      id: 'i2', name: 'Uni', allowedEmailDomains: [], adminUserIds: [], subZones: [], communityId: null,
+    });
+  });
+  it('maps aura history entries', () => {
+    const aura = {
+      dominantSentiment: 'positive', compoundScore: 0.5, intensity: 0.1, memoryCount: 2, colorHex: '#FFD166', updatedAt: ISO,
+    };
+    expect(auraHistoryFromDoc('h1', { placeId: 'p', aura, recordedAt: ISO })).toEqual({
+      id: 'h1', aura: { ...aura, updatedAt: d(ISO) }, recordedAt: d(ISO),
+    });
   });
 });

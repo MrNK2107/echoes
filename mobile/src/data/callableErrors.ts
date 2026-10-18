@@ -1,4 +1,13 @@
-import { GENERIC_ERROR, REPORT_DUPLICATE, REPORT_RATE, TIMEOUT_ERROR } from './errors';
+import {
+  EMAIL_DOMAIN_NOT_APPROVED,
+  GENERIC_ERROR,
+  OWNER_CANNOT_LEAVE,
+  REPORT_DUPLICATE,
+  REPORT_RATE,
+  TIMEOUT_ERROR,
+  TRANSFER_DUPLICATE,
+  VERIFY_EMAIL_FIRST,
+} from './errors';
 
 /** HttpsError codes (functions/lib/callable.js) without the SDK's `functions/` prefix. */
 export type CallableCode =
@@ -19,6 +28,18 @@ export type CallableErrorCopy = Partial<Record<CallableCode, string>>;
 export const REPORT_ERRORS: CallableErrorCopy = {
   'already-exists': REPORT_DUPLICATE,
   'resource-exhausted': REPORT_RATE,
+};
+
+/** leaveCommunity refuses the owner with failed-precondition. */
+export const COMMUNITY_LEAVE_ERRORS: CallableErrorCopy = { 'failed-precondition': OWNER_CANNOT_LEAVE };
+
+/** initiateTransfer: already-exists means a request to that person is pending. */
+export const TRANSFER_INITIATE_ERRORS: CallableErrorCopy = { 'already-exists': TRANSFER_DUPLICATE };
+
+/** claimInstitutionAdmin: unverified email, then a domain that is not exactly an allowed one. */
+export const CLAIM_ADMIN_ERRORS: CallableErrorCopy = {
+  'failed-precondition': VERIFY_EMAIL_FIRST,
+  'permission-denied': EMAIL_DOMAIN_NOT_APPROVED,
 };
 
 const OFFLINE_CODES = new Set(['unavailable', 'deadline-exceeded']);

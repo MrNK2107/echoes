@@ -13,6 +13,10 @@ describe('shared error copy', () => {
       PHOTO_TOO_LARGE: 'Photo is too large to upload.',
       REPORT_DUPLICATE: 'You already reported this memory.',
       REPORT_RATE: "You've sent a lot of reports today. Try again tomorrow.",
+      OWNER_CANNOT_LEAVE: "Owners can't leave their community.",
+      TRANSFER_DUPLICATE: 'A request to this person is already pending.',
+      VERIFY_EMAIL_FIRST: 'Verify your email address first.',
+      EMAIL_DOMAIN_NOT_APPROVED: "Your email domain isn't approved for this institution.",
     });
   });
 });

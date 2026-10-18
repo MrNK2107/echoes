@@ -44,6 +44,8 @@ test("indexes the Plan 3 queries need are present", () => {
   const D = "DESCENDING";
   const expected = [
     ["memories", [["communityId", A], ["isDeleted", A], ["privacy", A], ["moderation", A], ["createdAt", D]]],
+    // CommunityRepository.subscribeFeed: the viewer's own memories shared with the community.
+    ["memories", [["communityId", A], ["isDeleted", A], ["userId", A], ["createdAt", D]]],
     ["transfers", [["toUserId", A], ["createdAt", D]]],
     ["transfers", [["toUserId", A], ["status", A], ["createdAt", D]]],
     ["transfers", [["fromUserId", A], ["createdAt", D]]],

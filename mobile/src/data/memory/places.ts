@@ -3,6 +3,8 @@ import type { LatLng, Place } from '@/domain/types';
 import type { PlaceRepository } from '../types';
 import type { Store } from './store';
 
+const AURA_HISTORY_LIMIT = 14;
+
 function nearby(store: Store, q: { center: LatLng; radiusMeters: number }): Place[] {
   return [...store.places.values()]
     .map((place) => ({ place, d: distanceMeters(q.center, place) }))
@@ -28,6 +30,12 @@ export function createPlaceRepository(store: Store): PlaceRepository {
     async create(place) {
       store.places.set(place.id, place);
       store.notify(store.placeListeners);
+    },
+    subscribeAuraHistory(placeId, cb) {
+      const emit = () => cb((store.auraHistory.get(placeId) ?? []).slice(-AURA_HISTORY_LIMIT));
+      store.placeListeners.add(emit);
+      emit();
+      return () => { store.placeListeners.delete(emit); };
     },
   };
 }

@@ -1,7 +1,12 @@
 import type {
+  AccountStatus,
   AppNotification,
   AppUser,
+  AuraHistoryEntry,
   AuthSession,
+  Community,
+  CommunityMembership,
+  Institution,
   LatLng,
   Memory,
   NotificationPrefs,
@@ -10,9 +15,22 @@ import type {
   PublicProfile,
   ReportReason,
   SentimentResult,
+  Transfer,
 } from '@/domain/types';
 
-export type { AppNotification, NotificationPrefs, PublicProfile, ReportReason } from '@/domain/types';
+export type {
+  AccountStatus,
+  AppNotification,
+  AuraHistoryEntry,
+  Community,
+  CommunityMembership,
+  Institution,
+  NotificationPrefs,
+  PublicProfile,
+  ReportReason,
+  SubZone,
+  Transfer,
+} from '@/domain/types';
 
 export type Unsubscribe = () => void;
 
@@ -25,6 +43,12 @@ export interface PlaceRepository {
   findById(id: string): Promise<Place | null>;
   findNearest(q: { center: LatLng; radiusMeters: number }): Promise<Place | null>;
   create(place: Place): Promise<void>;
+  /** The place's 14 most recent aura history entries, oldest first (chart order). */
+  subscribeAuraHistory(
+    placeId: string,
+    cb: (entries: AuraHistoryEntry[]) => void,
+    onError?: (e: Error) => void,
+  ): Unsubscribe;
 }
 
 export interface MemoryRepository {
@@ -86,6 +110,13 @@ export interface AuthRepository {
   signOut(): Promise<void>;
   /** Rejects with Error(INCORRECT_PASSWORD) (see ./errors) when the password is wrong; the session stays. */
   deleteAccount(password: string): Promise<void>;
+  /** Rejects with Error(NOT_SIGNED_IN) without a session. */
+  sendEmailVerification(): Promise<void>;
+  /**
+   * Reloads the account and forces a fresh ID token, so callables see a just-verified email or a
+   * new `staff` claim. Rejects with Error(NOT_SIGNED_IN) without a session.
+   */
+  refreshUser(): Promise<AccountStatus>;
 }
 
 export interface MediaRepository {
@@ -126,6 +157,70 @@ export interface SafetyRepository {
   reportMemory(input: { memoryId: string; reason: ReportReason; note: string | null }): Promise<void>;
 }
 
+/** The feed viewer; `viewerCommunityIds` is users/{uid}.communityIds. */
+export interface FeedViewer { viewerId: string; viewerCommunityIds: string[]; now: Date }
+
+/**
+ * Communities change only through callables (ADR-0007). Callable failures reject with the copy
+ * in ./callableErrors (COMMUNITY_LEAVE_ERRORS for leave), otherwise generic or offline copy.
+ */
+export interface CommunityRepository {
+  /** The communities in users/{uid}.communityIds, by name. */
+  subscribeMine(uid: string, cb: (communities: Community[]) => void, onError?: (e: Error) => void): Unsubscribe;
+  /** Largest first (memberCount desc), at most 50. */
+  subscribeDiscover(cb: (communities: Community[]) => void, onError?: (e: Error) => void): Unsubscribe;
+  findById(id: string): Promise<Community | null>;
+  /** The user's membership of the community, or null. */
+  subscribeMembership(
+    id: string,
+    uid: string,
+    cb: (membership: CommunityMembership | null) => void,
+    onError?: (e: Error) => void,
+  ): Unsubscribe;
+  /**
+   * The community's memories, newest first, at most 50: members see its unhidden `community`
+   * memories; everyone sees their own memories shared with it (hidden ones included).
+   */
+  subscribeFeed(
+    id: string,
+    viewer: FeedViewer,
+    cb: (memories: Memory[]) => void,
+    onError?: (e: Error) => void,
+  ): Unsubscribe;
+  /** Returns the new community's id; the caller becomes its owner. */
+  create(input: { name: string; description: string }): Promise<string>;
+  join(id: string): Promise<void>;
+  /** Rejects with Error(OWNER_CANNOT_LEAVE) for the owner. */
+  leave(id: string): Promise<void>;
+  /** Members only; skips self, existing members and users who blocked you or turned invites off. */
+  invite(id: string, userIds: string[]): Promise<void>;
+}
+
+/** Custodianship transfers (functions/transfers.js). */
+export interface TransferRepository {
+  /** Rejects with Error(TRANSFER_DUPLICATE) while a request to that person is pending. */
+  initiate(input: { placeId: string; toUserId: string }): Promise<void>;
+  respond(id: string, accept: boolean): Promise<void>;
+  revoke(id: string): Promise<void>;
+  /** Pending requests to the user, newest first, at most 50. */
+  subscribeIncoming(uid: string, cb: (transfers: Transfer[]) => void, onError?: (e: Error) => void): Unsubscribe;
+  /** Transfers the user sent or received, newest first, at most 50. */
+  subscribeHistory(uid: string, cb: (transfers: Transfer[]) => void, onError?: (e: Error) => void): Unsubscribe;
+}
+
+/** Institutions (functions/institutions.js). */
+export interface InstitutionRepository {
+  /** By name, at most 50. */
+  subscribeAll(cb: (institutions: Institution[]) => void, onError?: (e: Error) => void): Unsubscribe;
+  findById(id: string): Promise<Institution | null>;
+  /** Staff only (the `staff` custom claim). Returns the new institution's id. */
+  create(input: { name: string; allowedEmailDomains: string[] }): Promise<string>;
+  /** Rejects with Error(VERIFY_EMAIL_FIRST) or Error(EMAIL_DOMAIN_NOT_APPROVED). */
+  claimAdmin(id: string): Promise<void>;
+  /** Admins only; the radius is the server default (60 m). */
+  addSubZone(id: string, input: { name: string; latitude: number; longitude: number }): Promise<void>;
+}
+
 export interface Repositories {
   places: PlaceRepository;
   memories: MemoryRepository;
@@ -135,4 +230,7 @@ export interface Repositories {
   profiles: ProfileRepository;
   notifications: NotificationRepository;
   safety: SafetyRepository;
+  communities: CommunityRepository;
+  transfers: TransferRepository;
+  institutions: InstitutionRepository;
 }

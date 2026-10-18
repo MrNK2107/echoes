@@ -4,12 +4,15 @@ import type { Functions } from 'firebase/functions';
 import type { FirebaseStorage } from 'firebase/storage';
 import type { Repositories } from '../types';
 import { createAuthRepository } from './auth';
+import { createCommunityRepository } from './communities';
+import { createInstitutionRepository } from './institutions';
 import { createMediaRepository } from './media';
 import { createMemoryRepository } from './memories';
 import { createNotificationRepository } from './notifications';
 import { createPlaceRepository } from './places';
 import { createProfileRepository } from './profiles';
 import { createSafetyRepository } from './safety';
+import { createTransferRepository } from './transfers';
 import { createUserRepository } from './users';
 
 export function createFirestoreBackend(deps: {
@@ -29,5 +32,8 @@ export function createFirestoreBackend(deps: {
     profiles,
     notifications: createNotificationRepository(deps.db),
     safety: createSafetyRepository(deps.db, deps.functions),
+    communities: createCommunityRepository(deps.db, deps.functions),
+    transfers: createTransferRepository(deps.db, deps.functions),
+    institutions: createInstitutionRepository(deps.db, deps.functions),
   };
 }

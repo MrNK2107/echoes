@@ -83,3 +83,50 @@ export interface AppNotification {
 /** The reportMemory callable's reasons (functions/safety.js REASONS). */
 export type ReportReason = 'spam' | 'harassment' | 'hate' | 'sexual' | 'violence' | 'other';
 export interface AuthSession { userId: string; email: string; displayName: string | null }
+export type CommunityType = 'geographic' | 'thematic' | 'timeBased' | 'institution';
+export type CommunityRole = 'owner' | 'guardian' | 'member';
+/**
+ * communities/{id}, written only by callables and onMemoryWritten (ADR-0007). Auto communities
+ * (time-, era-, geo-, inst-) are owned by 'system' (R25).
+ */
+export interface Community {
+  id: string;
+  name: string;
+  description: string;
+  type: CommunityType;
+  ownerId: string;
+  placeId: string | null;
+  institutionId: string | null;
+  memberCount: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+/** communities/{id}/members/{uid}. */
+export interface CommunityMembership { role: CommunityRole; joinedAt: Date }
+export type TransferStatus = 'pending' | 'accepted' | 'rejected' | 'revoked' | 'expired';
+/** transfers/{id}: a custodianship request (functions/transfers.js). */
+export interface Transfer {
+  id: string;
+  placeId: string;
+  fromUserId: string;
+  toUserId: string;
+  status: TransferStatus;
+  createdAt: Date;
+  respondedAt: Date | null;
+  /** createdAt + 7 days: the sender may revoke until then. */
+  revokeUntil: Date;
+}
+export interface SubZone { id: string; name: string; latitude: number; longitude: number; radiusMeters: number }
+/** institutions/{id} (functions/institutions.js). */
+export interface Institution {
+  id: string;
+  name: string;
+  allowedEmailDomains: string[];
+  adminUserIds: string[];
+  subZones: SubZone[];
+  communityId: string | null;
+}
+/** places/{id}/auraHistory/{entryId}, appended on every aggregate recompute. */
+export interface AuraHistoryEntry { id: string; aura: AuraZone; recordedAt: Date }
+/** The signed-in account as the server sees it (ID token claims). */
+export interface AccountStatus { email: string; emailVerified: boolean; staff: boolean }

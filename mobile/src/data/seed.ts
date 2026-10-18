@@ -2,7 +2,7 @@ import { calculateAura } from '@/domain/aura';
 import { encodeGeohash } from '@/domain/geo';
 import { DEFAULT_NOTIFICATION_PREFS } from '@/domain/profiles';
 import { analyzeSentiment } from '@/domain/sentiment';
-import type { AppUser, LatLng, Memory, Place, PrivacyType } from '@/domain/types';
+import type { AppUser, Community, LatLng, Memory, Place, PrivacyType } from '@/domain/types';
 import type { Account } from './memory/store';
 
 export const DEMO_USER = {
@@ -80,7 +80,13 @@ export const DEMO_CENTER: LatLng = { latitude: 12.9716, longitude: 77.5946 };
 export function buildSeed(
   now: Date,
   center: LatLng = DEMO_CENTER,
-): { places: Place[]; memories: Memory[]; users: AppUser[]; credentials: Account[] } {
+): {
+  places: Place[];
+  memories: Memory[];
+  users: AppUser[];
+  credentials: Account[];
+  communities: Community[];
+} {
   const basePlaces = PLACE_DEFS.map((def) => ({
     def,
     latitude: center.latitude + def.dLat,
@@ -163,5 +169,14 @@ export function buildSeed(
     { userId: USER_DEMO, email: DEMO_USER.email, password: DEMO_USER.password, displayName: DEMO_USER.displayName },
   ];
 
-  return { places, memories, users, credentials };
+  // The memory store derives memberships (and memberCount) from the users' communityIds.
+  const communities: Community[] = [
+    {
+      id: COMMUNITY_ID, name: 'Cubbon Park Walkers', description: 'Morning walks around Cubbon Park.',
+      type: 'thematic', ownerId: USER_DEMO, placeId: null, institutionId: null, memberCount: 0,
+      createdAt: joined, updatedAt: joined,
+    },
+  ];
+
+  return { places, memories, users, credentials, communities };
 }

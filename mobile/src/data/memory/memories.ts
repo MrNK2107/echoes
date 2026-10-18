@@ -3,6 +3,7 @@ import { isMemoryVisibleTo } from '@/domain/privacy';
 import type { Memory } from '@/domain/types';
 import { RESTORE_EXPIRED } from '../errors';
 import type { MemoryRepository } from '../types';
+import { ensureTimeCommunities } from './autoCommunities';
 import { emulateTagNotifications } from './notify';
 import { recomputePlace } from './recompute';
 import type { Store } from './store';
@@ -65,6 +66,11 @@ export function createMemoryRepository(store: Store): MemoryRepository {
       const memory: Memory = { ...input, moderation: null };
       store.memories.set(memory.id, memory);
       recomputePlace(store, memory.placeId);
+      // onMemoryWritten on create: the time communities and the author's year membership.
+      if (!memory.isDeleted && !Number.isNaN(memory.createdAt.getTime())) {
+        ensureTimeCommunities(store, memory.userId, memory.createdAt);
+        store.notify(store.communityListeners);
+      }
       store.notify(store.memoryListeners);
       store.notify(store.placeListeners);
       emulateTagNotifications(store, memory);

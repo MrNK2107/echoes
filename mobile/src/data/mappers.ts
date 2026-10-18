@@ -4,7 +4,13 @@ import { DEFAULT_NOTIFICATION_PREFS } from '../domain/profiles';
 import type {
   AppNotification,
   AppUser,
+  AuraHistoryEntry,
   AuraZone,
+  Community,
+  CommunityMembership,
+  CommunityRole,
+  CommunityType,
+  Institution,
   Memory,
   NotificationPrefs,
   NotificationType,
@@ -13,6 +19,9 @@ import type {
   PublicProfile,
   SentimentCategory,
   SentimentResult,
+  SubZone,
+  Transfer,
+  TransferStatus,
 } from '../domain/types';
 
 export function toDate(v: Timestamp | string | null | undefined): Date | null {
@@ -222,5 +231,76 @@ export function notificationFromDoc(id: string, d: DocumentData): AppNotificatio
     data,
     createdAt: requiredDate(d.createdAt, 'createdAt'),
     readAt: toDate(d.readAt as Timestamp | string | null | undefined),
+  };
+}
+
+const strings = (v: unknown): string[] => (Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []);
+
+/** communities/{id}; server-written with ISO dates (functions/communities.js newCommunity). */
+export function communityFromDoc(id: string, d: DocumentData): Community {
+  return {
+    id,
+    name: String(d.name),
+    description: String(d.description ?? ''),
+    type: d.type as CommunityType,
+    ownerId: String(d.ownerId),
+    placeId: optStr(d.placeId),
+    institutionId: optStr(d.institutionId),
+    memberCount: Number(d.memberCount ?? 0),
+    createdAt: requiredDate(d.createdAt, 'createdAt'),
+    updatedAt: requiredDate(d.updatedAt, 'updatedAt'),
+  };
+}
+
+/** communities/{id}/members/{uid}: { userId, role, joinedAt }. */
+export function membershipFromDoc(d: DocumentData): CommunityMembership {
+  return { role: d.role as CommunityRole, joinedAt: requiredDate(d.joinedAt, 'joinedAt') };
+}
+
+/** transfers/{id}; `recipientWasCustodian` and `revokedAt` are server bookkeeping, not mapped. */
+export function transferFromDoc(id: string, d: DocumentData): Transfer {
+  return {
+    id,
+    placeId: String(d.placeId),
+    fromUserId: String(d.fromUserId),
+    toUserId: String(d.toUserId),
+    status: d.status as TransferStatus,
+    createdAt: requiredDate(d.createdAt, 'createdAt'),
+    respondedAt: toDate(d.respondedAt as string | null | undefined),
+    revokeUntil: requiredDate(d.revokeUntil, 'revokeUntil'),
+  };
+}
+
+function subZoneFromDoc(d: DocumentData): SubZone {
+  return {
+    id: String(d.id),
+    name: String(d.name),
+    latitude: Number(d.latitude),
+    longitude: Number(d.longitude),
+    radiusMeters: Number(d.radiusMeters),
+  };
+}
+
+/** institutions/{id} (functions/institutions.js). */
+export function institutionFromDoc(id: string, d: DocumentData): Institution {
+  const zones: unknown[] = Array.isArray(d.subZones) ? d.subZones : [];
+  return {
+    id,
+    name: String(d.name),
+    allowedEmailDomains: strings(d.allowedEmailDomains),
+    adminUserIds: strings(d.adminUserIds),
+    subZones: zones
+      .filter((z): z is DocumentData => typeof z === 'object' && z !== null)
+      .map(subZoneFromDoc),
+    communityId: optStr(d.communityId),
+  };
+}
+
+/** places/{id}/auraHistory/{entryId}: { placeId, aura, recordedAt } (onMemoryWritten). */
+export function auraHistoryFromDoc(id: string, d: DocumentData): AuraHistoryEntry {
+  return {
+    id,
+    aura: auraFromDoc(d.aura as DocumentData),
+    recordedAt: requiredDate(d.recordedAt, 'recordedAt'),
   };
 }

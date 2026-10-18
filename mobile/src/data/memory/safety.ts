@@ -2,6 +2,7 @@ import { callableFailure, mapCallableError, REPORT_ERRORS } from '../callableErr
 import { GENERIC_ERROR } from '../errors';
 import type { ReportReason } from '@/domain/types';
 import type { SafetyRepository } from '../types';
+import { recomputePlace } from './recompute';
 import { canRead } from './visibility';
 import type { Store } from './store';
 
@@ -26,10 +27,7 @@ function emulateReportMemory(
     throw callableFailure('invalid-argument');
   }
   const now = store.now();
-  const limitKey = `${uid}_reportMemory_${now.toISOString().slice(0, 10)}`;
-  const used = store.rateLimits.get(limitKey) ?? 0;
-  if (used + 1 > REPORTS_PER_DAY) throw callableFailure('resource-exhausted');
-  store.rateLimits.set(limitKey, used + 1);
+  if (!store.consumeRateLimit(uid, 'reportMemory', REPORTS_PER_DAY)) throw callableFailure('resource-exhausted');
 
   const memory = store.memories.get(input.memoryId);
   // Own memory and missing / unreadable memories get the same answer, as on the server.
@@ -44,7 +42,10 @@ function emulateReportMemory(
   const reporters = [...store.reports.values()].filter((r) => r.memoryId === input.memoryId).length;
   if (reporters === HIDE_AT && memory.moderation !== 'hidden') {
     store.memories.set(memory.id, { ...memory, moderation: 'hidden' });
+    // The moderation write re-runs onMemoryWritten on the server (a new aura history entry).
+    recomputePlace(store, memory.placeId);
     store.notify(store.memoryListeners);
+    store.notify(store.placeListeners);
   }
 }
 

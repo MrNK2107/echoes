@@ -1,16 +1,13 @@
 import { collection, deleteDoc, doc, orderBy, query, setDoc, type Firestore } from 'firebase/firestore';
-import { httpsCallable, type Functions } from 'firebase/functions';
-import { mapCallableError, REPORT_ERRORS } from '../callableErrors';
+import type { Functions } from 'firebase/functions';
+import { REPORT_ERRORS } from '../callableErrors';
 import { GENERIC_ERROR } from '../errors';
 import type { SafetyRepository } from '../types';
+import { callCallable } from './callables';
 import { subscribeUnion } from './snapshots';
 
 export function createSafetyRepository(db: Firestore, functions: Functions): SafetyRepository {
   const blocks = (uid: string) => collection(db, 'users', uid, 'blocks');
-  const reportMemory = httpsCallable<{ memoryId: string; reason: string; note?: string }, unknown>(
-    functions,
-    'reportMemory',
-  );
   return {
     async block(uid, other, at) {
       // The rules refuse a self-block (otherUserId != userId); fail with copy instead.
@@ -39,12 +36,13 @@ export function createSafetyRepository(db: Firestore, functions: Functions): Saf
     },
     async reportMemory({ memoryId, reason, note }) {
       const trimmed = note?.trim();
-      try {
-        // The callable treats an absent note as "no note"; send none rather than an empty one.
-        await reportMemory(trimmed ? { memoryId, reason, note: trimmed } : { memoryId, reason });
-      } catch (e) {
-        throw mapCallableError(e, REPORT_ERRORS);
-      }
+      // The callable treats an absent note as "no note"; send none rather than an empty one.
+      await callCallable(
+        functions,
+        'reportMemory',
+        trimmed ? { memoryId, reason, note: trimmed } : { memoryId, reason },
+        REPORT_ERRORS,
+      );
     },
   };
 }

@@ -45,6 +45,18 @@ describe('buildSeed', () => {
     expect(seed.credentials[0]).toMatchObject({ userId: demo.id, email: DEMO_USER.email });
   });
 
+  it('the demo community exists and its seeded members belong to it', async () => {
+    const comm = seed.memories.find((m) => m.privacy === 'community')!;
+    const repos = createMemoryBackend(buildSeed(now), { now: () => now });
+    const s = await repos.auth.signIn(DEMO_USER.email, DEMO_USER.password);
+    expect(await repos.communities.findById(comm.communityId!)).toMatchObject({
+      name: 'Cubbon Park Walkers', type: 'thematic', ownerId: s.userId, memberCount: 1,
+    });
+    let role: string | null = null;
+    repos.communities.subscribeMembership(comm.communityId!, s.userId, (m) => { role = m?.role ?? null; })();
+    expect(role).toBe('owner');
+  });
+
   it('demo user can sign in on the seeded memory backend', async () => {
     const repos = createMemoryBackend(buildSeed(now));
     const s = await repos.auth.signIn(DEMO_USER.email, DEMO_USER.password);
