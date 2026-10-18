@@ -1,6 +1,7 @@
-// In-memory Firestore stand-in for unit tests: doc get/set/update/delete, collection queries
-// (where/orderBy/limit), transactions, batches and the FieldValue transforms. Docs live in one
-// Map keyed by full path ("users/u1/blocks/u2").
+// In-memory Firestore stand-in for unit tests: doc get/set/update/delete, collection and
+// collection-group queries (where/orderBy/limit), ref.parent, recursiveDelete, transactions,
+// batches (atomic) and the FieldValue transforms. Docs live in one Map keyed by full path
+// ("users/u1/blocks/u2").
 const clone = (v) => (v === undefined ? v : structuredClone(v));
 const name = (v) => v?.constructor?.name;
 
@@ -98,19 +99,28 @@ function createFakeFirestore(initial = {}) {
       }
       store.set(path, resolve(data));
     },
-    delete(path) {
+    delete(path, precondition) {
+      if (precondition?.exists === true && !store.has(path)) {
+        const e = new Error(`NOT_FOUND: ${path}`);
+        e.code = 5;
+        throw e;
+      }
       store.delete(path);
     },
   };
 
+  const parentPath = (path) => path.split("/").slice(0, -1).join("/");
   const docRef = (path) => ({
     path,
     id: path.split("/").pop(),
+    get parent() {
+      return collectionRef(parentPath(path));
+    },
     get: async () => snap(path),
     set: async (d, o) => write.set(path, d, o),
     update: async (d) => write.update(path, d),
     create: async (d) => write.create(path, d),
-    delete: async () => write.delete(path),
+    delete: async (pre) => write.delete(path, pre),
     collection: (sub) => collectionRef(`${path}/${sub}`),
   });
 
@@ -129,17 +139,23 @@ function createFakeFirestore(initial = {}) {
     }
   };
 
-  const query = (path, filters = [], orders = [], max) => ({
-    where: (field, op, value) => query(path, [...filters, { field, op, value }], orders, max),
-    orderBy: (field, dir = "asc") => query(path, filters, [...orders, { field, dir }], max),
-    limit: (n) => query(path, filters, orders, n),
+  // `inScope(docPath)` decides which docs the query ranges over (one collection or a group).
+  const inCollection = (path) => {
+    const depth = path.split("/").length + 1;
+    return (p) => p.startsWith(`${path}/`) && p.split("/").length === depth;
+  };
+  const inGroup = (id) => (p) => {
+    const parts = p.split("/");
+    return parts.length % 2 === 0 && parts[parts.length - 2] === id;
+  };
+
+  const query = (inScope, filters = [], orders = [], max) => ({
+    where: (field, op, value) => query(inScope, [...filters, { field, op, value }], orders, max),
+    orderBy: (field, dir = "asc") => query(inScope, filters, [...orders, { field, dir }], max),
+    limit: (n) => query(inScope, filters, orders, n),
     async get() {
-      const depth = path.split("/").length + 1;
       let rows = [...store.entries()].filter(
-        ([p, d]) =>
-          p.startsWith(`${path}/`) &&
-          p.split("/").length === depth &&
-          filters.every((f) => matches(d, f)),
+        ([p, d]) => inScope(p) && filters.every((f) => matches(d, f)),
       );
       for (const { field, dir } of [...orders].reverse()) {
         rows.sort(([, a], [, b]) => {
@@ -155,8 +171,12 @@ function createFakeFirestore(initial = {}) {
   });
 
   const collectionRef = (path) => ({
-    ...query(path),
+    ...query(inCollection(path)),
     path,
+    id: path.split("/").pop(),
+    get parent() {
+      return path.includes("/") ? docRef(parentPath(path)) : null;
+    },
     doc: (id) => docRef(`${path}/${id ?? `auto-${++autoId}`}`),
     add: async (data) => {
       const ref = docRef(`${path}/auto-${++autoId}`);
@@ -165,9 +185,29 @@ function createFakeFirestore(initial = {}) {
     },
   });
 
+  // All-or-nothing like Firestore: a failing write (create on an existing doc, update on a
+  // missing one) rolls back the earlier writes of the same batch/transaction.
+  const commitAll = (pending) => {
+    const backup = new Map([...store].map(([k, v]) => [k, clone(v)]));
+    try {
+      pending.forEach((f) => f());
+    } catch (error) {
+      store.clear();
+      backup.forEach((v, k) => store.set(k, v));
+      throw error;
+    }
+  };
+
   const db = {
     collection: collectionRef,
+    collectionGroup: (id) => query(inGroup(id)),
     doc: docRef,
+    // Deletes the doc or collection at ref.path and everything beneath it.
+    async recursiveDelete(ref) {
+      for (const p of [...store.keys()]) {
+        if (p === ref.path || p.startsWith(`${ref.path}/`)) store.delete(p);
+      }
+    },
     async runTransaction(fn) {
       const pending = [];
       const tx = {
@@ -176,9 +216,9 @@ function createFakeFirestore(initial = {}) {
       tx.set = (r, d, o) => (pending.push(() => write.set(r.path, d, o)), tx);
       tx.update = (r, d) => (pending.push(() => write.update(r.path, d)), tx);
       tx.create = (r, d) => (pending.push(() => write.create(r.path, d)), tx);
-      tx.delete = (r) => (pending.push(() => write.delete(r.path)), tx);
+      tx.delete = (r, pre) => (pending.push(() => write.delete(r.path, pre)), tx);
       const result = await fn(tx);
-      pending.forEach((f) => f());
+      commitAll(pending);
       return result;
     },
     batch() {
@@ -187,8 +227,8 @@ function createFakeFirestore(initial = {}) {
         set: (r, d, o) => (pending.push(() => write.set(r.path, d, o)), b),
         update: (r, d) => (pending.push(() => write.update(r.path, d)), b),
         create: (r, d) => (pending.push(() => write.create(r.path, d)), b),
-        delete: (r) => (pending.push(() => write.delete(r.path)), b),
-        commit: async () => pending.forEach((f) => f()),
+        delete: (r, pre) => (pending.push(() => write.delete(r.path, pre)), b),
+        commit: async () => commitAll(pending),
       };
       return b;
     },

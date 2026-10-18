@@ -1,0 +1,33 @@
+const admin = require("firebase-admin");
+const { onDocumentCreated } = require("firebase-functions/v2/firestore");
+const { notify } = require("./lib/notify");
+
+// Rules cap taggedUserIds at 20; the server enforces the same cap for Admin/legacy writes.
+const MAX_TAGS = 20;
+
+// Notifies the first MAX_TAGS unique tagged users (author excluded; notify skips blocked pairs
+// and disabled prefs). Ids without a users doc are skipped so no orphan inbox is created.
+async function notifyTaggedUsers(db, memoryId, memory) {
+  const tagged = Array.isArray(memory?.taggedUserIds) ? memory.taggedUserIds : [];
+  const unique = [...new Set(tagged.filter((id) => typeof id === "string" && id && !id.includes("/")))];
+  const author = memory.userId;
+  for (const to of unique.slice(0, MAX_TAGS)) {
+    if (to === author) continue;
+    const user = await db.collection("users").doc(to).get();
+    if (!user.exists) continue;
+    await notify(db, {
+      to,
+      type: "memoryTagged",
+      actorId: author,
+      data: { memoryId, placeId: memory.placeId ?? null },
+    });
+  }
+}
+
+const onMemoryCreatedTags = onDocumentCreated("memories/{memoryId}", async (event) => {
+  const data = event.data?.data();
+  if (!data) return;
+  await notifyTaggedUsers(admin.firestore(), event.params.memoryId, data);
+});
+
+module.exports = { onMemoryCreatedTags, notifyTaggedUsers, MAX_TAGS };

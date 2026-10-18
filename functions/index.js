@@ -7,6 +7,8 @@ const { logger } = require("firebase-functions");
 const functionsV1 = require("firebase-functions/v1");
 const { onMemoryWritten } = require("./onMemoryWritten");
 const { onPublicProfileWritten } = require("./onPublicProfileWritten");
+const communities = require("./communities");
+const { onMemoryCreatedTags } = require("./tags");
 const {
   purgeDeletedMemories,
   __private__: { purgeExpired },
@@ -20,6 +22,11 @@ const messaging = admin.messaging();
 exports.onMemoryWritten = onMemoryWritten;
 exports.onPublicProfileWritten = onPublicProfileWritten;
 exports.purgeDeletedMemories = purgeDeletedMemories;
+exports.onMemoryCreatedTags = onMemoryCreatedTags;
+exports.createCommunity = communities.createCommunity;
+exports.joinCommunity = communities.joinCommunity;
+exports.leaveCommunity = communities.leaveCommunity;
+exports.inviteToCommunity = communities.inviteToCommunity;
 
 exports.dispatchNotificationRequest = onDocumentCreated(
   "notificationRequests/{requestId}",
@@ -90,7 +97,6 @@ exports.cleanupDeletedUser = functionsV1.auth.user().onDelete(async (user) => {
     db.collection("transfers").where("toUserId", "==", userId),
     db.collection("notificationRequests").where("recipientUserId", "==", userId),
     db.collection("notificationRequests").where("data.fromUserId", "==", userId),
-    db.collectionGroup("members").where("userId", "==", userId),
   ];
 
   for (const query of deleteQueries) {
@@ -109,13 +115,9 @@ exports.cleanupDeletedUser = functionsV1.auth.user().onDelete(async (user) => {
     });
   });
 
-  const ownedCommunities = await db
-    .collection("communities")
-    .where("ownerId", "==", userId)
-    .get();
-  await Promise.all(
-    ownedCommunities.docs.map((doc) => db.recursiveDelete(doc.ref)),
-  );
+  // Memberships elsewhere are removed with their memberCount decremented; owned communities
+  // are deleted after unlinking them from their members' communityIds (R24).
+  await communities.cleanupUserCommunities(db, userId);
 
   await writer.close();
   await db.recursiveDelete(db.collection("users").doc(userId));
