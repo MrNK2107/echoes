@@ -58,6 +58,27 @@ npx firebase emulators:exec --only firestore "npm test --prefix rules_test"
 
 The Firestore rules tests must run through `firebase emulators:exec`; running `npm test` directly inside `rules_test` will fail because no emulator host and port are available.
 
+## Run the Expo app
+
+The app lives in `mobile/` (React Native + Expo SDK 58). Choose a backend with `EXPO_PUBLIC_BACKEND` (copy `mobile/.env.example` to `mobile/.env`):
+
+- **memory** (default): seeded demo data, no network. Sign in with `demo@echoes.app` / `echoes-demo`.
+- **emulator**: Firebase emulators. Start them from the repo root with
+  `npx firebase emulators:start --project demo-echoes --only auth,firestore,storage,functions`,
+  then set `EXPO_PUBLIC_BACKEND=emulator`. On a physical phone also set `EXPO_PUBLIC_EMULATOR_HOST` to your PC's LAN IP.
+  `firebase.json` binds every emulator to `0.0.0.0` (not the default 127.0.0.1) so a phone on the same network can reach them; allow the ports (9099, 8080, 9199, 5001) through your firewall.
+- **firebase**: a real project. Set `EXPO_PUBLIC_BACKEND=firebase` plus all `EXPO_PUBLIC_FIREBASE_*` keys from `.env.example`; a missing key fails at startup with `Missing EXPO_PUBLIC_FIREBASE_<KEY>`.
+
+Expo Go steps:
+
+```bash
+cd mobile
+npm install
+npx expo start
+```
+
+Scan the QR code with Expo Go (Android) or the Camera app (iOS). Restart with `npx expo start -c` after changing `.env`.
+
 ## Run Locally
 
 List devices:
