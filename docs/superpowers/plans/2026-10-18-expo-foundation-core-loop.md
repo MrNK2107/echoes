@@ -405,11 +405,11 @@ export function testServices(overrides?: Partial<Services>): Services; // memory
 - Consumes: `useSession`, `repos.places.findById`, `repos.memories.subscribeVisibleForPlace` (viewerCommunityIds from `repos.users.get(uid).communityIds`).
 - Produces: `usePlaceMemories(placeId: string): { status: 'loading' | 'notFound' | 'ready' | 'error'; place: Place | null; memories: Memory[] }`. PlaceScreen header: name, aura chip (category label capitalised, background `colorHex`), `"{n} memories"`. `MemoryCard` (`testID="memory-{id}"`): text, image if `imageUrl`, local date `toLocaleDateString()`, privacy badge for non-public (`Private`, `Tagged`, `Time release`, `Community`). Empty: `No memories here yet.` Not found: `This place no longer exists.`
 
-- [ ] **Step 1: Write failing tests:** with seeded data signed in as demo user, the screen shows the place's public memories and the demo user's own private memory with a `Private` badge, but not another user's private memory; newest first; unknown id shows not-found copy.
-- [ ] **Step 2: Run** `npm --prefix mobile test -- PlaceScreen` — Expected: FAIL.
-- [ ] **Step 3: Implement.**
-- [ ] **Step 4: Run** — Expected: PASS.
-- [ ] **Step 5: Commit** `feat(places): place detail with privacy-aware memory list`.
+- [x] **Step 1: Write failing tests:** with seeded data signed in as demo user, the screen shows the place's public memories and the demo user's own private memory with a `Private` badge, but not another user's private memory; newest first; unknown id shows not-found copy.
+- [x] **Step 2: Run** `npm --prefix mobile test -- PlaceScreen` — Expected: FAIL.
+- [x] **Step 3: Implement.**
+- [x] **Step 4: Run** — Expected: PASS.
+- [x] **Step 5: Commit** `feat(places): place detail with privacy-aware memory list`.
 
 ---
 
