@@ -252,14 +252,14 @@ mapCallableError(e): Error   // HttpsError code → spec copy (already-exists/du
 ```
 Memory backend emulates notifications (including tag notifications on memory create) and report auto-hide in-process.
 
-- [ ] **Step 1: Failing contract cases** (memory + emulator):
+- [x] **Step 1: Failing contract cases** (memory + emulator):
   - profile set/get/search (case/diacritic-insensitive, excludes self, `limit 10`, null for < 2 chars);
   - notifications appear for tagged users and markRead works;
   - block/unblock list;
   - report thrice → hidden for others, visible to author; duplicate report → error copy;
   - register writes publicProfile + acceptedTermsAt.
-- [ ] **Step 2–4:** FAIL → implement → PASS (unit + emulator).
-- [ ] **Step 5: Commit** `feat(data): profiles, inbox, blocks, reports, moderation`.
+- [x] **Step 2–4:** FAIL → implement → PASS (unit + emulator).
+- [x] **Step 5: Commit** `feat(data): profiles, inbox, blocks, reports, moderation`.
 
 ---
 
