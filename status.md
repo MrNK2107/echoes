@@ -3,6 +3,36 @@
 **Updated:** July 31, 2026  
 **Target:** Production-ready v1 for Android and iOS, age 13+
 
+## Expo rewrite — Plan 1
+
+The active client is now the React Native + Expo app in `mobile/` (branch `expo-rewrite`). Plan 1 (foundation and core loop) is verified by the gates below; the Flutter notes further down are historical.
+
+| Command | Result |
+| --- | --- |
+| `npm --prefix mobile test` | Pass (21 suites, 251 tests) |
+| `npm --prefix mobile run typecheck` | Pass |
+| `npm --prefix mobile run lint` | Pass |
+| `npm test --prefix functions` | Pass (29 tests) |
+| `npx firebase emulators:exec --project demo-echoes --only auth,firestore,storage,functions "npm --prefix mobile run test:emulator"` | Pass (19 tests) |
+| `npx firebase emulators:exec --only firestore "npm test --prefix rules_test"` | Pass (11 tests) |
+| `cd mobile && npx expo export --platform android --output-dir dist && npx expo export --platform ios --output-dir dist-ios` | Pass (both bundles exported) |
+
+### Manual Expo Go checklist
+
+- [ ] `cd mobile && npx expo start`, scan the QR code with Expo Go
+- [ ] Sign in with `demo@echoes.app` / `echoes-demo`
+- [ ] Map shows 6+ markers
+- [ ] Open a place
+- [ ] Add a memory
+- [ ] The memory appears on the place
+
+### Known follow-ups
+
+- Firebase and emulator modes are not yet smoke-tested on a device.
+- Date picker and Google Maps rendering are not verified on a device.
+
+---
+
 ## Outcome
 
 The repository-side v1 implementation is complete. The app now has working

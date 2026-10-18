@@ -1,5 +1,7 @@
 # ECHOES
 
+> **Active client:** the React Native + Expo app in [`mobile/`](mobile/) is the current client (see "Run the Expo app" below and `status.md`). The Flutter app described in the rest of this file is the legacy implementation.
+
 ECHOES is a Flutter/Firebase beta for place-based memories: users attach photos and text to locations, places develop emotional aura summaries, and custodians can preserve memory spaces over time.
 
 ## Beta Status
