@@ -23,7 +23,7 @@
 - Constants: place match radius `100` m, map radius `1500` m, list limit `50`, earth radius `6371000` m, image upload limit `1048576` bytes.
 - UI copy strings copied verbatim from the spec's "Validation copy" section.
 - Every task ends green on `npm --prefix mobile test`, `npm --prefix mobile run typecheck`, `npm --prefix mobile run lint`.
-- Commit messages end with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. Work on branch `expo-rewrite` (branched from `hardening-pass`).
+- Commit messages carry NO Claude attribution (no `Co-Authored-By: Claude` trailer) — user instruction. Work on branch `expo-rewrite` (branched from `hardening-pass`).
 
 ## Review Focus
 
