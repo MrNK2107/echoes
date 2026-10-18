@@ -61,11 +61,11 @@ mobile/app/(app)/{memory/[id],memory/[id]/edit,profile,recently-deleted,delete-a
 - `placeIdForNewMemory(memoryId: string): string` → `'p_' + memoryId`.
 - `normalizePrivacyFields(input: { privacy; taggedUserIds; releaseDate; communityId }): same shape` — clears fields not used by the chosen privacy (`tagged` keeps taggedUserIds, `timeRelease` keeps releaseDate, `community` keeps communityId; all others set to `[]`/`null`).
 
-- [ ] **Step 1: Failing tests** — restoreDaysLeft: deleted 0 ms ago → 30; 29 d 1 h ago → 1; exactly 30 d → 0; not deleted → 0. canRestore: 30 d − 1 ms → true, 30 d → false. validateMemoryText table. normalizePrivacyFields: public clears all three; timeRelease keeps date and clears tags/community.
-- [ ] **Step 2: Run** `npm --prefix mobile test -- memoryLifecycle` → FAIL.
-- [ ] **Step 3: Implement**; refactor submitMemory to use `validateMemoryText` (existing tests must stay green).
-- [ ] **Step 4: Run** full mobile gates → PASS.
-- [ ] **Step 5: Commit** `feat(domain): memory lifecycle helpers`.
+- [x] **Step 1: Failing tests** — restoreDaysLeft: deleted 0 ms ago → 30; 29 d 1 h ago → 1; exactly 30 d → 0; not deleted → 0. canRestore: 30 d − 1 ms → true, 30 d → false. validateMemoryText table. normalizePrivacyFields: public clears all three; timeRelease keeps date and clears tags/community.
+- [x] **Step 2: Run** `npm --prefix mobile test -- memoryLifecycle` → FAIL.
+- [x] **Step 3: Implement**; refactor submitMemory to use `validateMemoryText` (existing tests must stay green).
+- [x] **Step 4: Run** full mobile gates → PASS.
+- [x] **Step 5: Commit** `feat(domain): memory lifecycle helpers`.
 
 ---
 
