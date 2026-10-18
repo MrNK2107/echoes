@@ -125,13 +125,13 @@ mobile/app/(app)/{notifications,communities/index,communities/[id],institutions/
   - Name lookups use `publicProfiles`, falling back to `Someone`.
 - `incrementRateLimit(db, uid, action, perDay, now)`: transactional, throws `resource-exhausted`.
 
-- [ ] **Step 1: Failing tests** with a fake Firestore (in-memory, supporting the used subset):
+- [x] **Step 1: Failing tests** with a fake Firestore (in-memory, supporting the used subset):
   - unauthenticated → `unauthenticated`; bad input → `invalid-argument`;
   - the 21st report in a day → `resource-exhausted`;
   - notify skips self, blocked users and disabled prefs;
   - notify fills in names.
-- [ ] **Step 2–4:** FAIL → implement → PASS (`npm test --prefix functions`).
-- [ ] **Step 5: Commit** `feat(functions): callable, rate-limit, block and notify helpers`.
+- [x] **Step 2–4:** FAIL → implement → PASS (`npm test --prefix functions`).
+- [x] **Step 5: Commit** `feat(functions): callable, rate-limit, block and notify helpers`.
 
 ---
 
