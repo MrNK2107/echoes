@@ -71,13 +71,13 @@ mobile/app/(app)/{notifications,communities/index,communities/[id],institutions/
 - `geoCommunity(place: { id; name }): { id: 'geo-<placeId>'; name: '<name> Circle' }`. `GEO_THRESHOLD = 5`.
 - `containsProfanity(text): boolean`: whole-word match against a list in `profanity.ts` (≤ 60 common English slurs/obscenities plus their leetspeak variants). Case- and diacritic-insensitive.
 
-- [ ] **Step 1: Failing tests:**
+- [x] **Step 1: Failing tests:**
   - `normalizes names for search`: `'  Ánna  Bell '` → `'anna bell'`; emoji kept; `searchRange('a')` → null; `searchRange('An')` → `{start:'an', end:'an'}`.
   - The bucket ids and names for 1999-12-31T23:59Z (UTC) → `time-1999` and `era-1990s`.
   - Profanity whole-word: `'class'` is not flagged; a listed word is flagged.
   - The functions mirror produces identical output on `communities.json`.
-- [ ] **Step 2: Run** → FAIL. **Step 3: Implement.** **Step 4: Run** gates → PASS.
-- [ ] **Step 5: Commit** `feat(domain): profile, community and profanity helpers`.
+- [x] **Step 2: Run** → FAIL. **Step 3: Implement.** **Step 4: Run** gates → PASS.
+- [x] **Step 5: Commit** `feat(domain): profile, community and profanity helpers`.
 
 ---
 
