@@ -54,6 +54,7 @@ service cloud.firestore {
           'taggedUserIds',
           'communityId',
           'releaseDate',
+          'sentiment',
           'imageUrl',
           'audioUrl',
           'updatedAt'

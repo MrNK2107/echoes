@@ -129,7 +129,7 @@ describe('MemoryDetailScreen delete and focus', () => {
     await act(async () => {
       await services.repos.memories.update(
         'memory-2',
-        { textContent: 'Edited text', privacy: 'public', taggedUserIds: [], releaseDate: null, communityId: null },
+        { textContent: 'Edited text', privacy: 'public', taggedUserIds: [], releaseDate: null, communityId: null, sentiment: { compound: 0, positive: 0, neutral: 1, negative: 0 } },
         services.now(),
       );
     });

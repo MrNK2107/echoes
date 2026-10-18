@@ -4,6 +4,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, 
 
 import { normalizePrivacyFields, validateMemoryText } from '@/domain/memoryLifecycle';
 import { validatePrivacy } from '@/domain/privacy';
+import { analyzeSentiment } from '@/domain/sentiment';
 import type { Memory, PrivacyType } from '@/domain/types';
 import { useSession } from '@/features/auth/useSession';
 import { useServices } from '@/services/ServicesProvider';
@@ -48,6 +49,12 @@ function EditForm({ memory }: { memory: Memory }) {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const busy = useRef(false);
+  /** The latest update, kept while it may still be running after a timeout so a newer save is ordered after it. */
+  const lastWrite = useRef<Promise<unknown> | null>(null);
+
+  const settle = (w: Promise<unknown>) => {
+    if (lastWrite.current === w) lastWrite.current = null;
+  };
 
   const save = async () => {
     if (busy.current) return;
@@ -56,16 +63,31 @@ function EditForm({ memory }: { memory: Memory }) {
     if (textError) return setError(textError);
     const at = now();
     const fields = { privacy, taggedUserIds: memory.taggedUserIds, releaseDate, communityId: memory.communityId };
-    const privacyError = validatePrivacy({ ...fields, now: at });
+    // A released time-release memory keeps its past date; only a changed privacy or date needs a future one.
+    const privacyChanged = privacy !== memory.privacy || releaseDate?.getTime() !== memory.releaseDate?.getTime();
+    const privacyError = privacyChanged ? validatePrivacy({ ...fields, now: at }) : null;
     if (privacyError) return setError(privacyError);
 
     busy.current = true;
     setSaving(true);
     let done = false;
     try {
-      await withTimeout(
-        repos.memories.update(memory.id, { textContent: text.trim(), ...normalizePrivacyFields(fields) }, at),
+      const trimmed = text.trim();
+      const previous = lastWrite.current;
+      const write = (async () => {
+        await previous?.catch(() => {});
+        await repos.memories.update(
+          memory.id,
+          { textContent: trimmed, sentiment: analyzeSentiment(trimmed), ...normalizePrivacyFields(fields) },
+          at,
+        );
+      })();
+      lastWrite.current = write;
+      void write.then(
+        () => settle(write),
+        () => settle(write),
       );
+      await withTimeout(write);
       done = true;
       router.back();
     } catch (e) {

@@ -162,6 +162,7 @@ export function memoryRepositoryContract(
     const EDIT = {
       textContent: 'edited text', privacy: 'private' as const, taggedUserIds: [] as string[],
       releaseDate: null, communityId: null,
+      sentiment: { compound: -0.5, positive: 0, neutral: 0.5, negative: 0.5 },
     };
 
     itLifecycle('findById returns own deleted memory for the author, null for a stranger', async () => {
@@ -201,6 +202,8 @@ export function memoryRepositoryContract(
       const got = await ctx.repos.memories.findById(m.id);
       expect(got?.textContent).toBe('edited text');
       expect(got?.privacy).toBe('private');
+      expect(got?.sentiment).toEqual(EDIT.sentiment);
+      expect(got?.sentiment).not.toEqual(m.sentiment);
       expect(got?.createdAt).toEqual(m.createdAt);
       expect(got?.updatedAt).toEqual(at);
     });

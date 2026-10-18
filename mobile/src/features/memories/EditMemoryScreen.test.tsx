@@ -2,6 +2,8 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-
 
 import { DEMO_USER } from '@/data/seed';
 import { testServices } from '@/device/fakes';
+import { analyzeSentiment } from '@/domain/sentiment';
+import type { Memory } from '@/domain/types';
 import { ServicesProvider } from '@/services/ServicesProvider';
 import type { Services } from '@/services/services';
 
@@ -67,7 +69,7 @@ describe('EditMemoryScreen', () => {
       const m = (await s.repos.memories.findById('memory-2'))!;
       await s.repos.memories.update(
         m.id,
-        { textContent: m.textContent, privacy: 'timeRelease', taggedUserIds: [], releaseDate: FUTURE, communityId: null },
+        { textContent: m.textContent, privacy: 'timeRelease', taggedUserIds: [], releaseDate: FUTURE, communityId: null, sentiment: m.sentiment },
         s.now(),
       );
     });
@@ -116,6 +118,107 @@ describe('EditMemoryScreen', () => {
     } finally {
       jest.useRealTimers();
     }
+  });
+
+  function prepareWith(over: Partial<Memory>) {
+    return (s: Services) => {
+      return s.repos.memories.update(
+        'memory-2',
+        {
+          textContent: OWN_TEXT,
+          privacy: 'public',
+          taggedUserIds: [],
+          releaseDate: null,
+          communityId: null,
+          sentiment: analyzeSentiment(OWN_TEXT),
+          ...over,
+        },
+        s.now(),
+      );
+    };
+  }
+
+  it('recomputes sentiment from the edited text', async () => {
+    const services = await setup();
+    const text = 'I hate this terrible, awful place. So sad.';
+    await fireEvent.changeText(await screen.findByTestId('text-input'), text);
+    await fireEvent.press(screen.getByText('Save changes'));
+    await waitFor(() => expect(mockBack).toHaveBeenCalled());
+    const m = await services.repos.memories.findById('memory-2');
+    expect(m?.sentiment).toEqual(analyzeSentiment(text));
+    expect(m?.sentiment.compound).toBeLessThan(0);
+  });
+
+  it('saves a text-only edit of an already released time-release memory', async () => {
+    const past = new Date('2020-01-01T00:00:00Z');
+    const services = await setup('memory-2', prepareWith({ privacy: 'timeRelease', releaseDate: past }));
+    await fireEvent.changeText(await screen.findByTestId('text-input'), 'Still mine');
+    await fireEvent.press(screen.getByText('Save changes'));
+    await waitFor(() => expect(mockBack).toHaveBeenCalled());
+    const m = await services.repos.memories.findById('memory-2');
+    expect(m).toMatchObject({ textContent: 'Still mine', privacy: 'timeRelease' });
+    expect(m?.releaseDate).toEqual(past);
+  });
+
+  it('a text-only edit preserves tagged users', async () => {
+    const services = await setup('memory-2', prepareWith({ privacy: 'tagged', taggedUserIds: ['user-asha'] }));
+    await fireEvent.changeText(await screen.findByTestId('text-input'), 'Tagged edit');
+    await fireEvent.press(screen.getByText('Save changes'));
+    await waitFor(() => expect(mockBack).toHaveBeenCalled());
+    expect(await services.repos.memories.findById('memory-2')).toMatchObject({
+      textContent: 'Tagged edit',
+      privacy: 'tagged',
+      taggedUserIds: ['user-asha'],
+    });
+  });
+
+  it('a text-only edit preserves the community', async () => {
+    const services = await setup('memory-2', prepareWith({ privacy: 'community', communityId: 'c-1' }));
+    await fireEvent.changeText(await screen.findByTestId('text-input'), 'Community edit');
+    await fireEvent.press(screen.getByText('Save changes'));
+    await waitFor(() => expect(mockBack).toHaveBeenCalled());
+    expect(await services.repos.memories.findById('memory-2')).toMatchObject({
+      privacy: 'community',
+      communityId: 'c-1',
+    });
+  });
+
+  it('a new save waits for a timed-out update so a late write cannot clobber it', async () => {
+    const services = await setup();
+    const real = services.repos.memories.update.bind(services.repos.memories);
+    const gates: (() => void)[] = [];
+    const order: string[] = [];
+    jest.spyOn(services.repos.memories, 'update').mockImplementation(async (id, patch, at) => {
+      order.push(patch.textContent);
+      if (gates.length === 0 && order.length === 1) await new Promise<void>((r) => gates.push(r));
+      await real(id, patch, at);
+    });
+    await fireEvent.changeText(await screen.findByTestId('text-input'), 'first');
+    jest.useFakeTimers();
+    try {
+      await act(async () => {
+        void fireEvent.press(screen.getByText('Save changes'));
+        await jest.advanceTimersByTimeAsync(SUBMIT_TIMEOUT_MS);
+      });
+      expect(screen.getByRole('alert')).toHaveTextContent(/Could not reach the server/);
+      await act(async () => {
+        void fireEvent.changeText(screen.getByTestId('text-input'), 'second');
+      });
+      await act(async () => {
+        void fireEvent.press(screen.getByText('Save changes'));
+        await jest.advanceTimersByTimeAsync(1000);
+      });
+      expect(order).toEqual(['first']); // second is held back behind the in-flight first
+      await act(async () => {
+        gates[0]!();
+        await jest.advanceTimersByTimeAsync(0);
+      });
+      expect(order).toEqual(['first', 'second']);
+      expect(mockBack).toHaveBeenCalled();
+    } finally {
+      jest.useRealTimers();
+    }
+    expect((await services.repos.memories.findById('memory-2'))?.textContent).toBe('second');
   });
 
   it('goes back without rendering for a non-author', async () => {

@@ -146,6 +146,12 @@ export function createMemoryRepository(db: Firestore): MemoryRepository {
       const privacy = normalizePrivacyFields(patch);
       await updateDoc(doc(db, 'memories', id), {
         textContent: patch.textContent,
+        sentiment: {
+          compound: patch.sentiment.compound,
+          positive: patch.sentiment.positive,
+          neutral: patch.sentiment.neutral,
+          negative: patch.sentiment.negative,
+        },
         privacy: privacy.privacy,
         taggedUserIds: privacy.taggedUserIds,
         communityId: privacy.communityId,

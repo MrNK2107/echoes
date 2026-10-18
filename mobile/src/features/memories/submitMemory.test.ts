@@ -312,6 +312,7 @@ describe('runDraft over an existing memory', () => {
     await runDraft(s, d);
     const edit = {
       textContent: 'edited later', privacy: 'private' as const, taggedUserIds: [], releaseDate: null, communityId: null,
+      sentiment: { compound: 0, positive: 0, neutral: 1, negative: 0 },
     };
     await s.repos.memories.update('m1', edit, new Date('2026-10-18T11:00:00Z'));
     await runDraft(s, d);

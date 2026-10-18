@@ -188,6 +188,29 @@ test("audioUrl is attachable by the author only; placeId stays immutable", async
   );
 });
 
+test("author may update sentiment alongside text; a non-author may not", async () => {
+  const sentiment = { compound: -0.5, positive: 0, neutral: 0.5, negative: 0.5 };
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await setDoc(doc(context.firestore(), "memories/sentiment-memory"), memoryDoc());
+  });
+  const creatorDb = testEnv.authenticatedContext("creator").firestore();
+  const strangerDb = testEnv.authenticatedContext("stranger").firestore();
+  await assertFails(
+    updateDoc(doc(strangerDb, "memories/sentiment-memory"), {
+      textContent: "hijack",
+      sentiment,
+      updatedAt: Timestamp.now(),
+    }),
+  );
+  await assertSucceeds(
+    updateDoc(doc(creatorDb, "memories/sentiment-memory"), {
+      textContent: "edited",
+      sentiment,
+      updatedAt: Timestamp.now(),
+    }),
+  );
+});
+
 test("memory updates cannot add unknown fields", async () => {
   await testEnv.withSecurityRulesDisabled(async (context) => {
     const db = context.firestore();

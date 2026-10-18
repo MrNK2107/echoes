@@ -220,12 +220,13 @@ describe('firestore backend specifics', () => {
       {
         textContent: 'now public', privacy: 'public', taggedUserIds: ['x'],
         releaseDate: new Date('2027-01-01T00:00:00Z'), communityId: 'c',
+        sentiment: { compound: -0.4, positive: 0, neutral: 0.6, negative: 0.4 },
       },
       at,
     );
     expect(await ctx.repos.memories.findById('edit-me')).toMatchObject({
       textContent: 'now public', privacy: 'public', taggedUserIds: [], releaseDate: null,
-      communityId: null, createdAt: T, updatedAt: at,
+      sentiment: { compound: -0.4, positive: 0, neutral: 0.6, negative: 0.4 }, communityId: null, createdAt: T, updatedAt: at,
     });
   });
 

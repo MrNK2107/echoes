@@ -1,4 +1,4 @@
-import type { AppUser, AuthSession, LatLng, Memory, Place, PrivacyType } from '@/domain/types';
+import type { AppUser, AuthSession, LatLng, Memory, Place, PrivacyType, SentimentResult } from '@/domain/types';
 
 export type Unsubscribe = () => void;
 
@@ -39,6 +39,7 @@ export interface MemoryRepository {
       taggedUserIds: string[];
       releaseDate: Date | null;
       communityId: string | null;
+      sentiment: SentimentResult;
     },
     updatedAt: Date,
   ): Promise<void>;
