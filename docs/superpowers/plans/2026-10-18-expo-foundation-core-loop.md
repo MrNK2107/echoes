@@ -246,14 +246,14 @@ export interface Repositories { places: PlaceRepository; memories: MemoryReposit
 - Produces: `createMemoryBackend(seed?: { places: Place[]; memories: Memory[]; users: AppUser[] }): Repositories`. On `memories.create`, the in-memory backend recomputes the place exactly as ADR-0003's function does (aura from non-deleted public memories, `memoryCount`, `publicMemoryCount`, `updatedAt`) and notifies place subscribers. `auth.register` with an existing email rejects with `Error('An account already exists for that email.')`; wrong password rejects `Error('Incorrect email or password.')`. `media.uploadMemoryImage` returns `memory://images/{userId}/{memoryId}.jpg`.
 - Produces contract suites: `export function placeRepositoryContract(name: string, make: () => Promise<{ repos: Repositories; signInAs(uid: string): Promise<void>; cleanup(): Promise<void> }>)` and likewise `memoryRepositoryContract`, `authRepositoryContract`. Suites must use only the interface.
 
-- [ ] **Step 1: Write the contract suites and `memoryBackend.test.ts`** that invokes each with `createMemoryBackend`. Required cases:
+- [x] **Step 1: Write the contract suites and `memoryBackend.test.ts`** that invokes each with `createMemoryBackend`. Required cases:
   - places: `findNearest` returns the place 60 m away and `null` for 150 m (radius 100); `subscribeNearby` emits places within 1500 m sorted by distance and excludes one 2 km away; emits again after `create`.
   - memories: viewer sees public + own private, not another user's private; tagged visible only to tagged viewer; timeRelease hidden before releaseDate; newest first; at most 50; after `create(public memory)` the place's `memoryCount`, `publicMemoryCount` and `aura.memoryCount` increase by 1 (memory backend: immediately; contract waits with `waitFor` up to 10 s).
   - auth: register → session with displayName; `subscribe` emits it; signOut emits `null`; duplicate register and wrong password reject.
-- [ ] **Step 2: Run** `npm --prefix mobile test -- memoryBackend` — Expected: FAIL.
-- [ ] **Step 3: Implement** the in-memory backend over one `store.ts` (Maps + listener sets), reusing `isMemoryVisibleTo`, `distanceMeters`, `calculateAura`.
-- [ ] **Step 4: Run** — Expected: PASS.
-- [ ] **Step 5: Commit** `feat(data): repository interfaces, in-memory backend, contract suites`.
+- [x] **Step 2: Run** `npm --prefix mobile test -- memoryBackend` — Expected: FAIL.
+- [x] **Step 3: Implement** the in-memory backend over one `store.ts` (Maps + listener sets), reusing `isMemoryVisibleTo`, `distanceMeters`, `calculateAura`.
+- [x] **Step 4: Run** — Expected: PASS.
+- [x] **Step 5: Commit** `feat(data): repository interfaces, in-memory backend, contract suites`.
 
 ---
 
