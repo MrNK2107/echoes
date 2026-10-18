@@ -3,6 +3,8 @@
 //
 //   node scripts/build-rules.js            writes firestore.rules and firestore.lan.rules
 //   FIREBASE_STORAGE_BUCKET=<bucket> node scripts/build-rules.js
+//   node scripts/build-rules.js --require-bucket   fails unless FIREBASE_STORAGE_BUCKET is set
+//                                                  (used by `npm run deploy:rules`)
 //
 // Firestore rules cannot see the project id, so the Storage bucket that memory media URLs must
 // point at is baked in here. The default is the emulator/demo bucket; the committed files use it
@@ -66,6 +68,13 @@ function render(template, { bucket, lan }) {
 }
 
 function main() {
+  if (process.argv.includes("--require-bucket") && !process.env.FIREBASE_STORAGE_BUCKET) {
+    console.error(
+      "FIREBASE_STORAGE_BUCKET is not set. Use the exact bucket name from the Firebase console " +
+        "(e.g. <project>.firebasestorage.app); the default demo bucket would reject every media URL.",
+    );
+    process.exit(1);
+  }
   const bucket = process.env.FIREBASE_STORAGE_BUCKET || DEFAULT_BUCKET;
   const template = fs.readFileSync(path.join(ROOT, "firestore.rules.template"), "utf8");
   for (const [file, lan] of [["firestore.rules", false], ["firestore.lan.rules", true]]) {

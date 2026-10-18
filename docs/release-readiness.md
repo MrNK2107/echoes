@@ -21,10 +21,12 @@ npx firebase emulators:exec --only firestore,storage "npm test --prefix rules_te
   selected production Firebase project.
 - Build the Firestore rules for the production bucket first. `firestore.rules` is
   generated from `firestore.rules.template` and pins the Storage bucket that memory
-  media URLs must use; the committed copy pins the emulator bucket. Run
-  `FIREBASE_STORAGE_BUCKET=<production bucket> node scripts/build-rules.js`, then
-  `firebase deploy --only firestore:rules`. Never deploy `firestore.lan.rules`
-  (it accepts private-LAN emulator hosts and is used only by `firebase.lan.json`).
+  media URLs must use; the committed copy pins the emulator bucket. Set
+  `FIREBASE_STORAGE_BUCKET` to the exact bucket name from the Firebase console
+  (e.g. `<project>.firebasestorage.app`) and run
+  `npm run deploy:rules -- --project <project-id>` (it refuses to run without the
+  variable). Never deploy `firestore.lan.rules` (it accepts private-LAN emulator
+  hosts and is used only by `firebase.lan.json`).
 - **Deploying the Plan 3 rules retires the legacy Flutter client.** Its direct
   writes to communities, memberships, transfers, institutions, places and
   `notificationRequests`, and its memory creates without `moderation: null`, are
