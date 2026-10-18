@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
   },
   lines: { flexShrink: 1, marginRight: 12, gap: 2 },
   text: { color: colors.text },
-  failed: { color: '#F85149' },
+  failed: { color: colors.danger },
   actions: { flexDirection: 'row', gap: 8 },
   button: { paddingVertical: 6, paddingHorizontal: 12, borderRadius: 16, backgroundColor: colors.accent },
   buttonText: { color: colors.background, fontWeight: '600' },

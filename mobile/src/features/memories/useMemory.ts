@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import type { Memory } from '@/domain/types';
 import { useSession } from '@/features/auth/useSession';
@@ -9,15 +9,19 @@ export type MemoryState = {
   memory: Memory | null;
 };
 
+export type UseMemory = MemoryState & { reload: () => void };
+
 const LOADING: MemoryState = { status: 'loading', memory: null };
 type Keyed = MemoryState & { key: string };
 
 /** Soft-deleted memories count as not found here; they are restored from Recently deleted. */
-export function useMemory(id: string): MemoryState {
+export function useMemory(id: string): UseMemory {
   const { repos } = useServices();
   const { session } = useSession();
   const viewerId = session?.userId ?? null;
   const [state, setState] = useState<Keyed>({ ...LOADING, key: '' });
+  const [version, setVersion] = useState(0);
+  const reload = useCallback(() => setVersion((v) => v + 1), []);
 
   useEffect(() => {
     if (!viewerId) return;
@@ -37,7 +41,7 @@ export function useMemory(id: string): MemoryState {
     return () => {
       active = false;
     };
-  }, [repos, id, viewerId]);
+  }, [repos, id, viewerId, version]);
 
-  return state.key === `${viewerId}:${id}` ? state : LOADING;
+  return { ...(state.key === `${viewerId}:${id}` ? state : LOADING), reload };
 }

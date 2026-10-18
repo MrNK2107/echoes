@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   counter: { color: colors.textSecondary, alignSelf: 'flex-end', marginTop: 4, marginBottom: 12 },
-  error: { color: '#F85149', marginVertical: 8 },
+  error: { color: colors.danger, marginVertical: 8 },
   save: { backgroundColor: colors.accent, borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 16 },
   saveDisabled: { opacity: 0.5 },
   saveText: { color: colors.background, fontSize: 16, fontWeight: '600' },

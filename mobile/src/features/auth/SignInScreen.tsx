@@ -179,7 +179,7 @@ function Field({ label, error, ...input }: { label: string; error?: string } & C
   );
 }
 
-const ERROR = '#F85149';
+const ERROR = colors.danger;
 
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.background },

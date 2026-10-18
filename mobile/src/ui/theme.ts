@@ -6,4 +6,5 @@ export const colors = {
   gold: '#F0B429',
   text: '#F0F6FC',
   textSecondary: '#8B949E',
+  danger: '#F85149',
 } as const;

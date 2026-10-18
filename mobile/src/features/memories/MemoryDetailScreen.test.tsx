@@ -11,7 +11,13 @@ import { MemoryDetailScreen } from './MemoryDetailScreen';
 
 const mockBack = jest.fn();
 const mockPush = jest.fn();
-jest.mock('expo-router', () => ({ useRouter: () => ({ back: mockBack, push: mockPush }) }));
+let mockFocus: (() => void) | undefined;
+jest.mock('expo-router', () => ({
+  useRouter: () => ({ back: mockBack, push: mockPush }),
+  useFocusEffect: (cb: () => void) => {
+    mockFocus = cb;
+  },
+}));
 
 async function setup(id: string, services: Services = testServices()) {
   await act(async () => {
@@ -97,6 +103,38 @@ describe('MemoryDetailScreen', () => {
   it('shows a Private badge', async () => {
     await setup('memory-7');
     expect(await screen.findByText('Private')).toBeOnTheScreen();
+  });
+});
+
+describe('MemoryDetailScreen delete and focus', () => {
+  it('ignores a repeated confirm: softDelete once, back once', async () => {
+    const services = testServices();
+    const softDelete = jest.spyOn(services.repos.memories, 'softDelete');
+    await setup('memory-2', services);
+    jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, buttons) => {
+      const del = buttons?.find((b) => b.text === 'Delete');
+      del?.onPress?.();
+      del?.onPress?.();
+    });
+    await fireEvent.press(await screen.findByText('Delete'));
+    await waitFor(() => expect(mockBack).toHaveBeenCalled());
+    expect(softDelete).toHaveBeenCalledTimes(1);
+    expect(mockBack).toHaveBeenCalledTimes(1);
+  });
+
+  it('refetches when the screen regains focus', async () => {
+    const services = await setup('memory-2');
+    expect(await screen.findByText(/Pure joy/)).toBeOnTheScreen();
+    await act(async () => mockFocus?.()); // first focus: no extra fetch needed
+    await act(async () => {
+      await services.repos.memories.update(
+        'memory-2',
+        { textContent: 'Edited text', privacy: 'public', taggedUserIds: [], releaseDate: null, communityId: null },
+        services.now(),
+      );
+    });
+    await act(async () => mockFocus?.());
+    expect(await screen.findByText('Edited text')).toBeOnTheScreen();
   });
 });
 

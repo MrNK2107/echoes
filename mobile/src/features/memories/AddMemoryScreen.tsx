@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
   ok: { color: colors.gold, marginBottom: 8 },
   photoRow: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 8 },
   thumb: { width: 72, height: 72, borderRadius: 8, backgroundColor: colors.elevated },
-  error: { color: '#F85149', marginVertical: 8 },
+  error: { color: colors.danger, marginVertical: 8 },
   notice: { color: colors.gold, marginVertical: 8 },
   save: { backgroundColor: colors.accent, borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 16 },
   saveDisabled: { opacity: 0.5 },

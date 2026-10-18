@@ -1,5 +1,5 @@
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useRef, useState } from 'react';
 import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { useSession } from '@/features/auth/useSession';
@@ -13,8 +13,19 @@ export function MemoryDetailScreen({ memoryId }: { memoryId: string }) {
   const router = useRouter();
   const { repos, now } = useServices();
   const { session } = useSession();
-  const { status, memory } = useMemory(memoryId);
+  const { status, memory, reload } = useMemory(memoryId);
   const [error, setError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const deletingRef = useRef(false);
+  const focusedOnce = useRef(false);
+
+  // Refetch when returning to this screen (e.g. from Edit); the first focus is covered by the mount fetch.
+  useFocusEffect(
+    useCallback(() => {
+      if (focusedOnce.current) reload();
+      focusedOnce.current = true;
+    }, [reload]),
+  );
 
   const back = (
     <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => router.back()} style={styles.back}>
@@ -44,10 +55,16 @@ export function MemoryDetailScreen({ memoryId }: { memoryId: string }) {
         text: 'Delete',
         style: 'destructive',
         onPress: async () => {
+          if (deletingRef.current) return;
+          deletingRef.current = true;
+          setDeleting(true);
+          setError(null);
           try {
             await repos.memories.softDelete(memory.id, now());
             router.back();
           } catch {
+            deletingRef.current = false;
+            setDeleting(false);
             setError("Couldn't delete this memory. Try again.");
           }
         },
@@ -79,7 +96,12 @@ export function MemoryDetailScreen({ memoryId }: { memoryId: string }) {
             >
               <Text style={styles.actionText}>Edit</Text>
             </Pressable>
-            <Pressable accessibilityRole="button" onPress={confirmDelete} style={styles.action}>
+            <Pressable
+              accessibilityRole="button"
+              disabled={deleting}
+              onPress={confirmDelete}
+              style={[styles.action, deleting && styles.disabled]}
+            >
               <Text style={[styles.actionText, styles.destructive]}>Delete</Text>
             </Pressable>
           </View>
@@ -102,9 +124,10 @@ const styles = StyleSheet.create({
   meta: { color: colors.textSecondary },
   badge: { backgroundColor: colors.elevated, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2 },
   badgeText: { color: colors.gold, fontSize: 12 },
-  error: { color: colors.textSecondary, marginTop: 12 },
+  error: { color: colors.danger, marginTop: 12 },
   actions: { flexDirection: 'row', gap: 12, marginTop: 24 },
   action: { backgroundColor: colors.surface, borderRadius: 10, paddingHorizontal: 20, paddingVertical: 12 },
   actionText: { color: colors.accent, fontSize: 16, fontWeight: '600' },
-  destructive: { color: '#F85149' },
+  destructive: { color: colors.danger },
+  disabled: { opacity: 0.5 },
 });
