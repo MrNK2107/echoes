@@ -176,9 +176,9 @@ function useOutbox(): { pending: number; retry(): void }
 
 **Interfaces:** `useMemory(id)` → `{ status: 'loading'|'notFound'|'ready'|'error'; memory }` via `repos.memories.findById`. Screen shows text, image, `VoiceNotePlayer` slot (rendered in Task 10; until then show nothing for audio), privacy badge (reuse MemoryCard's badge logic — extract `privacyLabel(m)` to `src/ui/privacyLabel.ts`), `createdAt.toLocaleString()`. Author-only actions `Edit` (→ `/memory/{id}/edit`) and `Delete` (confirm dialog per spec via `Alert.alert`; on confirm `softDelete(id, now)` then `router.back()`). Not found copy: `This memory is no longer available.`
 
-- [ ] **Step 1: Failing tests** — author sees Edit/Delete, stranger does not; Delete → confirm → memory soft-deleted and navigates back (mock `Alert.alert` to press `Delete`); Cancel does nothing; card press navigates to `/memory/{id}`; not-found copy.
-- [ ] **Step 2–4:** Run FAIL → implement → PASS.
-- [ ] **Step 5: Commit** `feat(memories): memory detail with author delete`.
+- [x] **Step 1: Failing tests** — author sees Edit/Delete, stranger does not; Delete → confirm → memory soft-deleted and navigates back (mock `Alert.alert` to press `Delete`); Cancel does nothing; card press navigates to `/memory/{id}`; not-found copy.
+- [x] **Step 2–4:** Run FAIL → implement → PASS.
+- [x] **Step 5: Commit** `feat(memories): memory detail with author delete`.
 
 ---
 
