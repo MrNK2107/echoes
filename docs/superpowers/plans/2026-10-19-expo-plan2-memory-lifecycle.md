@@ -75,11 +75,11 @@ mobile/app/(app)/{memory/[id],memory/[id]/edit,profile,recently-deleted,delete-a
 
 **Change:** `match /memories/{memoryId}`: `allow get, list: if isVisibleMemory(resource.data) || (signedIn() && resource.data.userId == request.auth.uid);` Add `'audioUrl'` to `mutableMemoryEditOnly`'s list. Nothing else.
 
-- [ ] **Step 1: Failing rules tests** — author can `get` and `list` (`where userId == uid, isDeleted == true`) own deleted memory; another user cannot `get` it; author can update `audioUrl` alone; author still cannot change `placeId`; non-author cannot set `audioUrl`.
-- [ ] **Step 2: Run** `npx firebase emulators:exec --only firestore "npm test --prefix rules_test"` → new tests FAIL, old PASS.
-- [ ] **Step 3: Change the rules.**
-- [ ] **Step 4: Run** → all PASS.
-- [ ] **Step 5: Commit** `feat(rules): authors read own deleted memories; audioUrl attachable`.
+- [x] **Step 1: Failing rules tests** — author can `get` and `list` (`where userId == uid, isDeleted == true`) own deleted memory; another user cannot `get` it; author can update `audioUrl` alone; author still cannot change `placeId`; non-author cannot set `audioUrl`.
+- [x] **Step 2: Run** `npx firebase emulators:exec --only firestore "npm test --prefix rules_test"` → new tests FAIL, old PASS.
+- [x] **Step 3: Change the rules.**
+- [x] **Step 4: Run** → all PASS.
+- [x] **Step 5: Commit** `feat(rules): authors read own deleted memories; audioUrl attachable`.
 
 ---
 
