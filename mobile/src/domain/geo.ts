@@ -69,7 +69,7 @@ export function queryPrefixes(origin: LatLng, radiusMeters: number): string[] {
 
 /** Exclusive-style upper bound for a prefix range query; covers continuations ending in 'z'. */
 export function geohashRangeEnd(prefix: string): string {
-  return `${prefix}`;
+  return `${prefix}\uf8ff`;
 }
 
 const METERS_PER_DEGREE_LAT = 111195;

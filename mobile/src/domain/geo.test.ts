@@ -58,6 +58,10 @@ describe('geohashRangeEnd', () => {
   it('sorts after any continuation including z', () => {
     expect(geohashRangeEnd('tdr1') > 'tdr1zzzz').toBe(true);
   });
+
+  it('appends the U+F8FF sentinel', () => {
+    expect(geohashRangeEnd('tdr1')).toBe('tdr1\uf8ff');
+  });
 });
 
 describe('coveringPrefixes', () => {
