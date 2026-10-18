@@ -73,9 +73,12 @@ const MEMORY_DEFS: MemDef[] = [
   { place: 7, user: USER_ASHA, privacy: 'private', ageDays: 2, text: 'Parked the scooter near gate two.' },
 ];
 
+/** Centre of the demo neighbourhood (Bengaluru) that the seed is laid out around. */
+export const DEMO_CENTER: LatLng = { latitude: 12.9716, longitude: 77.5946 };
+
 export function buildSeed(
   now: Date,
-  center: LatLng = { latitude: 12.9716, longitude: 77.5946 },
+  center: LatLng = DEMO_CENTER,
 ): { places: Place[]; memories: Memory[]; users: AppUser[]; credentials: Account[] } {
   const basePlaces = PLACE_DEFS.map((def) => ({
     def,

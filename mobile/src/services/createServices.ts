@@ -2,8 +2,9 @@ import { randomUUID } from 'expo-crypto';
 
 import type { Repositories } from '@/data/types';
 import { createMemoryBackend } from '@/data/memory';
-import { buildSeed } from '@/data/seed';
+import { buildSeed, DEMO_CENTER } from '@/data/seed';
 import { expoImagePicker } from '@/device/expoImagePicker';
+import { demoLocation } from '@/device/demoLocation';
 import { expoLocation } from '@/device/expoLocation';
 
 import type { AppConfig } from './config';
@@ -32,7 +33,8 @@ export function createServices(config: AppConfig, overrides: Partial<Services> =
   return {
     config,
     repos,
-    location: expoLocation,
+    // Memory mode pins the user to the seed's neighbourhood so the demo map is never empty.
+    location: config.backend === 'memory' ? demoLocation(DEMO_CENTER) : expoLocation,
     imagePicker: expoImagePicker,
     now,
     newId: () => randomUUID(),

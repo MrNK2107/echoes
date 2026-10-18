@@ -1,10 +1,16 @@
 import { renderHook } from '@testing-library/react-native';
 
+import { DEMO_CENTER } from '@/data/seed';
 import { testServices } from '@/device/fakes';
+import { expoLocation } from '@/device/expoLocation';
 
 import { readConfig } from './config';
 import { createServices } from './createServices';
 import { useServices } from './ServicesProvider';
+
+// The Firebase SDK is ESM-only and not transformed by jest-expo; stub the lazily required modules.
+jest.mock('@/data/firestore', () => ({ createFirestoreBackend: () => ({}) }));
+jest.mock('./firebase', () => ({ initFirebase: () => ({}) }));
 
 describe('createServices', () => {
   it('memory mode returns seeded repositories', async () => {
@@ -14,6 +20,22 @@ describe('createServices', () => {
       radiusMeters: 5000,
     });
     expect(place).not.toBeNull();
+  });
+
+  it('memory mode uses a demo location pinned to the seed centre', async () => {
+    const s = createServices(readConfig({}));
+    await expect(s.location.requestPermission()).resolves.toBe('granted');
+    await expect(s.location.getCurrentPosition()).resolves.toEqual(DEMO_CENTER);
+  });
+
+  it('emulator mode keeps the real location service', () => {
+    const s = createServices(readConfig({ EXPO_PUBLIC_BACKEND: 'emulator' }));
+    expect(s.location).toBe(expoLocation);
+  });
+
+  it('overrides win over the demo location', () => {
+    const location = testServices().location;
+    expect(createServices(readConfig({}), { location }).location).toBe(location);
   });
 
   it('allows overriding services', () => {

@@ -1,12 +1,12 @@
 import { createMemoryBackend } from '@/data/memory';
-import { buildSeed } from '@/data/seed';
+import { buildSeed, DEMO_CENTER } from '@/data/seed';
 import type { LatLng } from '@/domain/types';
 import { readConfig } from '@/services/config';
 import type { Services } from '@/services/services';
 
 import type { ImagePickerService, LocationService } from './types';
 
-export const SEED_CENTER: LatLng = { latitude: 12.9716, longitude: 77.5946 };
+export const SEED_CENTER: LatLng = DEMO_CENTER;
 export const TEST_NOW = new Date('2026-10-18T09:00:00Z');
 
 export function fakeLocation(
