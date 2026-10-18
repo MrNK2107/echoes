@@ -224,9 +224,9 @@ function useOutbox(): { pending: number; retry(): void }
 
 **Behaviour:** header `displayName ?? 'ECHOES custodian'` + email; stat `Memories` = live count from `subscribeForUser` (shows `50+` at the limit); `Default privacy for new memories` Public/Private → `users.updateDefaultPrivacy`; `Your memories` list of `MemoryCard`s (empty copy per spec); buttons `Recently deleted` → `/recently-deleted`, `Sign out` → `auth.signOut()`, `Delete account` → `/delete-account`.
 
-- [ ] **Step 1: Failing tests** — shows name fallback, count, own memories only; changing default privacy persists and AddMemoryScreen opens with Private selected; Sign out → session null; navigation buttons push the right routes.
-- [ ] **Step 2–4:** FAIL → implement → PASS.
-- [ ] **Step 5: Commit** `feat(profile): profile, my memories, default privacy`.
+- [x] **Step 1: Failing tests** — shows name fallback, count, own memories only; changing default privacy persists and AddMemoryScreen opens with Private selected; Sign out → session null; navigation buttons push the right routes.
+- [x] **Step 2–4:** FAIL → implement → PASS.
+- [x] **Step 5: Commit** `feat(profile): profile, my memories, default privacy`.
 
 ---
 
