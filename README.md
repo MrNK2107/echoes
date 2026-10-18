@@ -58,7 +58,7 @@ npm test --prefix functions
 npx firebase emulators:exec --only firestore,storage "npm test --prefix rules_test"
 ```
 
-The rules tests (`rules_test/firestore.rules.test.js` and `rules_test/storage.rules.test.js`) must run through `firebase emulators:exec` with both the Firestore and Storage emulators; running `npm test` directly inside `rules_test` will fail because no emulator host and port are available.
+The rules tests (`rules_test/firestore.rules.test.js`, `rules_test/firestore.lan.rules.test.js` and `rules_test/storage.rules.test.js`, plus the emulator-free `rules_test/build-rules.test.js`) must run through `firebase emulators:exec` with both the Firestore and Storage emulators; running `npm test` directly inside `rules_test` will fail because no emulator host and port are available.
 
 ## Run the Expo app
 
@@ -71,7 +71,9 @@ The app lives in `mobile/` (React Native + Expo SDK 58). Choose a backend with `
   Emulators bind to localhost only by default. For a physical phone, use the opt-in LAN config instead:
   `npx firebase --config firebase.lan.json emulators:start --project demo-echoes --only auth,firestore,storage,functions`.
   **Warning:** `firebase.lan.json` binds the emulators to `0.0.0.0`, exposing them (unauthenticated, with open demo data) to everyone on your network. Use it only on a trusted network, and allow ports 9099, 8080, 9199 and 5001 through your firewall.
-  On the Android emulator set `EXPO_PUBLIC_EMULATOR_HOST=10.0.2.2` (the emulator's alias for the host PC).
+  `firebase.lan.json` also loads `firestore.lan.rules`, the only rules that accept Storage emulator media URLs on private-LAN hosts (the default `firestore.rules` accepts only `127.0.0.1`/`localhost`, see Security rules notes).
+  On the Android emulator either use the LAN config with `EXPO_PUBLIC_EMULATOR_HOST=10.0.2.2` (the emulator's alias for the host PC), or keep the default localhost-only emulators and forward the ports, leaving `EXPO_PUBLIC_EMULATOR_HOST` unset:
+  `adb reverse tcp:9099 tcp:9099`, `adb reverse tcp:8080 tcp:8080`, `adb reverse tcp:9199 tcp:9199`, `adb reverse tcp:5001 tcp:5001` (this also works for a USB-connected Android phone).
 - **firebase**: a real project. Set `EXPO_PUBLIC_BACKEND=firebase` plus all `EXPO_PUBLIC_FIREBASE_*` keys from `.env.example`; a missing key fails at startup with `Missing EXPO_PUBLIC_FIREBASE_<KEY>`.
 
 Expo app features: map and places, add memories with photos and 60 s voice notes, memory detail with edit, delete and restore (Recently deleted keeps items 30 days), an offline outbox that retries saves, profile with default privacy, and account deletion with re-authentication.
@@ -162,7 +164,10 @@ npx firebase emulators:exec --project demo-echoes --only auth,firestore,storage,
 
 - Soft-delete stamps are server time (ruling R13): `deletedAt`/`updatedAt` must equal `request.time` on a soft delete, and a restore must clear `deletedAt` within 30 days of it. Clients write `serverTimestamp()`.
 - Memory `sentiment` must be numeric (`compound` in [-1, 1]; `positive`/`neutral`/`negative` in [0, 1]); `onMemoryWritten` also clamps it.
-- Memory `imageUrl`/`audioUrl` must be null or a Storage download URL for the author's own folder (`memory-images%2F<uid>%2F…`, `memory-audio%2F<uid>%2F…`). Accepted hosts are `https://firebasestorage.googleapis.com` and the Storage emulator at `http://<loopback, 10.0.2.2 or a private LAN IPv4>:9199`, so LAN device testing keeps working. The bucket name is not pinned (Firestore rules cannot see the project id).
+- `firestore.rules` and `firestore.lan.rules` are **generated**; edit `firestore.rules.template` and run `node scripts/build-rules.js` (no dependencies), then commit all three. `rules_test/build-rules.test.js` fails if the generated files are stale. The committed files pin the emulator bucket `demo-echoes.appspot.com`; before a production deploy regenerate with the real bucket: `FIREBASE_STORAGE_BUCKET=<project>.appspot.com node scripts/build-rules.js` (PowerShell: `$env:FIREBASE_STORAGE_BUCKET='<bucket>'; node scripts/build-rules.js`), deploy, and do not commit that build.
+- Memory `imageUrl`/`audioUrl` must be null or a Storage download URL in the pinned bucket for the author's own folder (`memory-images%2F<uid>%2F…`, `memory-audio%2F<uid>%2F…`). `firestore.rules` accepts `https://firebasestorage.googleapis.com` and the Storage emulator at `http://(127.0.0.1|localhost):9199`; `firestore.lan.rules` (used only by `firebase.lan.json`) additionally accepts `10.0.2.2` and private-LAN IPv4 hosts on port 9199 (ruling R18).
+- Plan 3 (ADR-0007/0008): `communities` (and `members`), `transfers`, `institutions` and `places` updates are server-only (callables/triggers); clients only read them, and only create empty places they look after. `reports`, `rateLimits` and `notificationRequests` are closed to clients. `publicProfiles/{uid}` is readable by any signed-in user and written only by its owner (`displayName` 2–40 code points, `displayNameLower`, `updatedAt`). `users/{uid}/notifications` are owner-read and the owner may only set `readAt`; `users/{uid}/blocks` are owner-only `{ createdAt }`.
+- Memories carry `moderation` (`null`, or `'hidden'` set by the server after 3 reports). New memories must write `moderation: null`; clients can never change it or `flags`. Hidden memories are readable only by their author, so non-own list queries must filter `where('moderation', '==', null)`. A moderator un-hides a memory by setting `moderation` to `null` (not by deleting the field).
 - `users/{uid}` (holds the email) is readable only by its owner. Storage files are readable through the SDK only by their owner; viewers load media through the token download URLs stored on memory docs.
 
 ## Beta Smoke Checklist

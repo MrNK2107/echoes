@@ -19,6 +19,18 @@ npx firebase emulators:exec --only firestore,storage "npm test --prefix rules_te
   `ANDROID_KEY_ALIAS`, and `ANDROID_KEY_PASSWORD` for release signing.
 - Deploy Firestore rules, indexes, Storage rules, and Cloud Functions to the
   selected production Firebase project.
+- Build the Firestore rules for the production bucket first. `firestore.rules` is
+  generated from `firestore.rules.template` and pins the Storage bucket that memory
+  media URLs must use; the committed copy pins the emulator bucket. Run
+  `FIREBASE_STORAGE_BUCKET=<production bucket> node scripts/build-rules.js`, then
+  `firebase deploy --only firestore:rules`. Never deploy `firestore.lan.rules`
+  (it accepts private-LAN emulator hosts and is used only by `firebase.lan.json`).
+- **Deploying the Plan 3 rules retires the legacy Flutter client.** Its direct
+  writes to communities, memberships, transfers, institutions, places and
+  `notificationRequests`, and its memory creates without `moderation: null`, are
+  all denied. Ship the Expo app to the stores before (or together with) this
+  deploy, and backfill `moderation: null` on existing memories (memories without
+  the field are hidden from non-authors).
 
 ## Android device gate
 
