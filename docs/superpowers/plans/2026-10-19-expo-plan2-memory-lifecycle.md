@@ -188,9 +188,9 @@ function useOutbox(): { pending: number; retry(): void }
 
 **Behaviour:** title `Edit memory`; text input with counter; PrivacyPicker (Public | Private | Time release); `Save changes` validates with `validateMemoryText` + `validatePrivacy(now)`; saves `memories.update(id, normalizePrivacyFields(...), now)` under the 15 s timeout (timeout → `Could not reach the server. Check your connection and try again.`); success → `router.back()`. Only the author can open it (others → `router.back()` with no render).
 
-- [ ] **Step 1: Failing tests** — prefilled values; save updates text; **`switching to public clears release date`** (timeRelease memory edited to Public → stored releaseDate null); past release date → `Choose a future release date.`; timeout copy; AddMemoryScreen tests still pass after the PrivacyPicker extraction.
-- [ ] **Step 2–4:** FAIL → implement → PASS.
-- [ ] **Step 5: Commit** `feat(memories): edit text and privacy`.
+- [x] **Step 1: Failing tests** — prefilled values; save updates text; **`switching to public clears release date`** (timeRelease memory edited to Public → stored releaseDate null); past release date → `Choose a future release date.`; timeout copy; AddMemoryScreen tests still pass after the PrivacyPicker extraction.
+- [x] **Step 2–4:** FAIL → implement → PASS.
+- [x] **Step 5: Commit** `feat(memories): edit text and privacy`.
 
 ---
 
