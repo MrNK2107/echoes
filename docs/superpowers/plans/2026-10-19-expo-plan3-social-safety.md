@@ -193,13 +193,13 @@ mobile/app/(app)/{notifications,communities/index,communities/[id],institutions/
 - `expireTransfers` = `onSchedule('every 24 hours')`: pending with `createdAt` older than 7 d → `expired`. Paginated, `timeoutSeconds: 540`.
 - `cleanupDeletedUser`: also deletes `publicProfiles/{uid}`, removes the uid from `institutions.adminUserIds`, and deletes `reports` by the reporter (keep reports *about* their memories — memories are deleted anyway).
 
-- [ ] **Step 1: Failing tests:**
+- [x] **Step 1: Failing tests:**
   - happy path; self-transfer; non-custodian; duplicate pending → `already-exists`;
   - **`accept after place deleted fails cleanly`**; **`accept is idempotent`** (no duplicate custodian);
   - revoke before and after 7 d; revoke of an accepted transfer removes the custodian;
   - blocked transfer refused; expiry job; cleanup additions.
-- [ ] **Step 2–4:** FAIL → implement → PASS.
-- [ ] **Step 5: Commit** `feat(functions): custodianship transfers`.
+- [x] **Step 2–4:** FAIL → implement → PASS.
+- [x] **Step 5: Commit** `feat(functions): custodianship transfers`.
 
 ---
 
