@@ -17,6 +17,18 @@ import { colors } from '@/ui/theme';
 
 import { validateDisplayName, validateEmail, validatePassword } from './validators';
 
+const GENERIC_ERROR = 'Something went wrong. Please try again.';
+const NETWORK_ERROR = "Couldn't reach the server. Check your connection and try again.";
+/** Domain messages the auth repositories throw on purpose; everything else is mapped to generic copy. */
+const KNOWN_AUTH_MESSAGES = new Set(['Incorrect email or password.', 'An account already exists for that email.']);
+
+function authErrorCopy(e: unknown): string {
+  if (e instanceof Error && KNOWN_AUTH_MESSAGES.has(e.message)) return e.message;
+  console.warn('Auth request failed', e);
+  const code = typeof e === 'object' && e !== null && 'code' in e ? (e as { code: unknown }).code : null;
+  return code === 'auth/network-request-failed' ? NETWORK_ERROR : GENERIC_ERROR;
+}
+
 type Errors = { email?: string; password?: string; name?: string; age?: string };
 
 export function SignInScreen() {
@@ -59,7 +71,7 @@ export function SignInScreen() {
       if (register) await repos.auth.register(email.trim(), password, name.trim());
       else await repos.auth.signIn(email.trim(), password);
     } catch (e) {
-      setFormError(e instanceof Error ? e.message : 'Something went wrong. Please try again.');
+      setFormError(authErrorCopy(e));
     } finally {
       setBusy(false);
     }

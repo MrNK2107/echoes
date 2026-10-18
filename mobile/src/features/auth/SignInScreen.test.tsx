@@ -83,4 +83,49 @@ describe('SignInScreen', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('Incorrect email or password.');
     expect(screen.getByTestId('status')).toHaveTextContent('signedOut');
   });
+
+  describe('unknown backend errors', () => {
+    let warn: jest.SpyInstance;
+    beforeEach(() => {
+      warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    });
+    afterEach(() => warn.mockRestore());
+
+    const failWith = async (error: unknown) => {
+      const services = testServices();
+      jest.spyOn(services.repos.auth, 'signIn').mockRejectedValue(error);
+      await render(
+        <ServicesProvider services={services}>
+          <SignInScreen />
+        </ServicesProvider>,
+      );
+      await type('email-input', DEMO_USER.email);
+      await type('password-input', 'some-password');
+      await press('submit-button');
+    };
+
+    it('maps a network failure to connection copy', async () => {
+      await failWith(
+        Object.assign(new Error('Firebase: Error (auth/network-request-failed).'), {
+          code: 'auth/network-request-failed',
+        }),
+      );
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        "Couldn't reach the server. Check your connection and try again.",
+      );
+      expect(warn).toHaveBeenCalled();
+    });
+
+    it('maps any other unknown error to generic copy without leaking the message', async () => {
+      await failWith(new Error('Firebase: Error (auth/internal-error).'));
+      expect(screen.getByRole('alert')).toHaveTextContent('Something went wrong. Please try again.');
+      expect(screen.queryByText(/internal-error/)).toBeNull();
+      expect(warn).toHaveBeenCalled();
+    });
+
+    it('passes through the known account-exists message', async () => {
+      await failWith(new Error('An account already exists for that email.'));
+      expect(screen.getByRole('alert')).toHaveTextContent('An account already exists for that email.');
+    });
+  });
 });
