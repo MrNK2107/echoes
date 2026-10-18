@@ -1,8 +1,8 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { __private__ } = require("../purgeDeletedMemories");
+const { purgeDeletedMemories, __private__ } = require("../purgeDeletedMemories");
 
-const { purgeExpired, PURGE_BATCH_SIZE } = __private__;
+const { purgeExpired, PURGE_BATCH_SIZE, FILE_DELETE_CHUNK, PURGE_BUDGET_MS } = __private__;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const NOW = new Date("2026-10-19T00:00:00.000Z");
@@ -157,4 +157,92 @@ test("does nothing when nothing has expired", async () => {
   assert.equal(await purgeExpired(db, fakeBucket([]), NOW), 0);
   assert.equal(db.store.size, 2);
   assert.deepEqual(db.stats.batches, []);
+});
+
+test("is scheduled daily with a 540 s timeout", () => {
+  const endpoint = purgeDeletedMemories.__endpoint;
+  assert.equal(endpoint.scheduleTrigger.schedule, "every 24 hours");
+  assert.equal(endpoint.timeoutSeconds, 540);
+});
+
+test("deletes storage files at most 50 at a time", async () => {
+  assert.equal(FILE_DELETE_CHUNK, 50);
+  const docs = {};
+  const paths = [];
+  for (let i = 0; i < 120; i += 1) {
+    docs[`m${i}`] = memory("u", { isDeleted: true, deletedAt: ts(daysAgo(40)) });
+    paths.push(`memory-images/u/m${i}.jpg`, `memory-audio/u/m${i}.m4a`);
+  }
+  const bucket = fakeBucket(paths);
+  let inFlight = 0;
+  let maxInFlight = 0;
+  const file = bucket.file.bind(bucket);
+  bucket.file = (path) => ({
+    async delete() {
+      inFlight += 1;
+      maxInFlight = Math.max(maxInFlight, inFlight);
+      await new Promise((r) => setImmediate(r));
+      try {
+        await file(path).delete();
+      } finally {
+        inFlight -= 1;
+      }
+    },
+  });
+
+  assert.equal(await purgeExpired(fakeDb(docs), bucket, NOW), 120);
+  assert.equal(bucket.deleted.length, 240);
+  assert.ok(maxInFlight <= 50, `too many concurrent deletes: ${maxInFlight}`);
+  assert.equal(maxInFlight, 50);
+});
+
+test("stops starting new pages once the time budget is spent", async () => {
+  assert.equal(PURGE_BUDGET_MS, 480_000);
+  const docs = {};
+  for (let i = 0; i < 1203; i += 1) {
+    docs[`m${i}`] = memory("u", { isDeleted: true, deletedAt: ts(daysAgo(40)) });
+  }
+  const db = fakeDb(docs);
+  // Each page "takes" 300 s: the second page starts at 300 s (< 480 s), the third would start at
+  // 600 s and is skipped; the next daily run picks up the rest.
+  let t = 0;
+  const clock = () => t;
+  const batch = db.batch.bind(db);
+  db.batch = () => {
+    const b = batch();
+    const commit = b.commit;
+    b.commit = async () => {
+      await commit();
+      t += 300_000;
+    };
+    return b;
+  };
+
+  const logs = [];
+  const log = (msg, data) => logs.push([msg, data]);
+  const purged = await purgeExpired(db, fakeBucket([]), NOW, { clock, log });
+  assert.equal(purged, 1000);
+  assert.deepEqual(logs, [["Purge time budget spent; resuming next run", { purged: 1000 }]]);
+  assert.deepEqual(db.stats.batches, [500, 500]);
+  assert.equal(db.store.size, 203);
+});
+
+test("a custom budget is honoured", async () => {
+  const docs = {};
+  for (let i = 0; i < 600; i += 1) {
+    docs[`m${i}`] = memory("u", { isDeleted: true, deletedAt: ts(daysAgo(40)) });
+  }
+  const db = fakeDb(docs);
+  let t = 0;
+  const purged = await purgeExpired(db, fakeBucket([]), NOW, {
+    budgetMs: 10,
+    log: () => {},
+    clock: () => {
+      const now = t;
+      t += 20;
+      return now;
+    },
+  });
+  assert.equal(purged, 500);
+  assert.equal(db.stats.queries, 1);
 });
