@@ -368,11 +368,11 @@ export function testServices(overrides?: Partial<Services>): Services; // memory
 - Produces: `validateEmail(v: string): string | null`, `validatePassword(v)`, `validateDisplayName(v)` (spec copy); `useSession(): { status: 'loading' | 'signedOut' | 'signedIn'; session: AuthSession | null }`; `(app)/_layout.tsx` redirects to `/sign-in` when `signedOut`; `sign-in.tsx` redirects to `/` when `signedIn`.
 - Screen testIDs: `email-input`, `password-input`, `name-input`, `age-checkbox`, `submit-button`, `mode-toggle`. Mode toggle text: `Create an account` / `I already have an account`. Submit text: `Sign in` / `Create account`. Repository errors are shown in a `role="alert"` text.
 
-- [ ] **Step 1: Write failing tests:** validator table from spec copy; screen: empty submit shows `Email is required` and `Password is required`; register without age checkbox shows `You must be at least 13 to create an account.` and does not call `register`; demo credentials sign in and `useSession` becomes `signedIn`; wrong password shows `Incorrect email or password.`; authGate: rendering the router with `testServices()` signed-out lands on sign-in (`expo-router/testing-library` `renderRouter`).
-- [ ] **Step 2: Run** `npm --prefix mobile test -- auth` — Expected: FAIL.
-- [ ] **Step 3: Implement.**
-- [ ] **Step 4: Run** — Expected: PASS.
-- [ ] **Step 5: Commit** `feat(auth): sign-in and 13+ registration with session gate`.
+- [x] **Step 1: Write failing tests:** validator table from spec copy; screen: empty submit shows `Email is required` and `Password is required`; register without age checkbox shows `You must be at least 13 to create an account.` and does not call `register`; demo credentials sign in and `useSession` becomes `signedIn`; wrong password shows `Incorrect email or password.`; authGate: rendering the router with `testServices()` signed-out lands on sign-in (`expo-router/testing-library` `renderRouter`).
+- [x] **Step 2: Run** `npm --prefix mobile test -- auth` — Expected: FAIL.
+- [x] **Step 3: Implement.**
+- [x] **Step 4: Run** — Expected: PASS.
+- [x] **Step 5: Commit** `feat(auth): sign-in and 13+ registration with session gate`.
 
 ---
 
