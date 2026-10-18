@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { GENERIC_ERROR } from '@/data/errors';
 import type { AppUser, Memory } from '@/domain/types';
 import { useSession } from '@/features/auth/useSession';
 import { MemoryCard } from '@/features/places/MemoryCard';
@@ -10,7 +11,6 @@ import { colors } from '@/ui/theme';
 
 /** subscribeForUser returns at most this many memories. */
 const LIMIT = 50;
-const GENERIC = 'Something went wrong. Please try again.';
 type DefaultPrivacy = 'public' | 'private';
 const CHOICES: { value: DefaultPrivacy; label: string }[] = [
   { value: 'public', label: 'Public' },
@@ -40,7 +40,7 @@ export function ProfileScreen() {
         setPrivacy(u?.defaultPrivacy === 'private' ? 'private' : 'public');
       })
       .catch(() => {
-        if (!cancelled) setError(GENERIC);
+        if (!cancelled) setError(GENERIC_ERROR);
       });
     return () => {
       cancelled = true;
@@ -57,7 +57,7 @@ export function ProfileScreen() {
       },
       () => {
         setLoaded(true);
-        setError(GENERIC);
+        setError(GENERIC_ERROR);
       },
     );
   }, [repos.memories, uid]);
@@ -71,7 +71,7 @@ export function ProfileScreen() {
       await repos.users.updateDefaultPrivacy(uid, next, now());
     } catch {
       setPrivacy(previous);
-      setError(GENERIC);
+      setError(GENERIC_ERROR);
     }
   };
 
@@ -79,7 +79,7 @@ export function ProfileScreen() {
     try {
       await repos.auth.signOut();
     } catch {
-      setError(GENERIC);
+      setError(GENERIC_ERROR);
     }
   };
 

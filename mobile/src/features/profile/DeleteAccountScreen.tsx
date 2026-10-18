@@ -2,12 +2,10 @@ import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { GENERIC_ERROR, INCORRECT_PASSWORD } from '@/data/errors';
 import { useOutboxContext } from '@/features/outbox/useOutbox';
 import { useServices } from '@/services/ServicesProvider';
 import { colors } from '@/ui/theme';
-
-const WRONG = 'Incorrect password.';
-const GENERIC = 'Something went wrong. Please try again.';
 
 export function DeleteAccountScreen() {
   const router = useRouter();
@@ -35,7 +33,7 @@ export function DeleteAccountScreen() {
     try {
       await repos.auth.deleteAccount(password);
     } catch (e) {
-      if (mounted.current) setError(e instanceof Error && e.message === WRONG ? WRONG : GENERIC);
+      if (mounted.current) setError(e instanceof Error && e.message === INCORRECT_PASSWORD ? INCORRECT_PASSWORD : GENERIC_ERROR);
       busyRef.current = false;
       if (mounted.current) setBusy(false);
       return;

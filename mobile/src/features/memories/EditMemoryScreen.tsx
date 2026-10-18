@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { GENERIC_ERROR, TIMEOUT_ERROR } from '@/data/errors';
 import { normalizePrivacyFields, validateMemoryText } from '@/domain/memoryLifecycle';
 import { validatePrivacy } from '@/domain/privacy';
 import { analyzeSentiment } from '@/domain/sentiment';
@@ -13,9 +14,6 @@ import { colors } from '@/ui/theme';
 import { PrivacyPicker } from './PrivacyPicker';
 import { MAX_MEMORY_LENGTH, TimeoutError, withTimeout } from './submitMemory';
 import { useMemory } from './useMemory';
-
-const TIMEOUT_COPY = 'Could not reach the server. Check your connection and try again.';
-const GENERIC_COPY = 'Something went wrong. Please try again.';
 
 /** Only the author may edit; anyone else is sent back without seeing the form. */
 export function EditMemoryScreen({ memoryId }: { memoryId: string }) {
@@ -91,7 +89,7 @@ function EditForm({ memory }: { memory: Memory }) {
       done = true;
       router.back();
     } catch (e) {
-      setError(e instanceof TimeoutError ? TIMEOUT_COPY : GENERIC_COPY);
+      setError(e instanceof TimeoutError ? TIMEOUT_ERROR : GENERIC_ERROR);
     } finally {
       busy.current = false;
       if (!done) setSaving(false);

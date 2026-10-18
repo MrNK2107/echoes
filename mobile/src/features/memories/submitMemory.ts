@@ -1,3 +1,4 @@
+import { GENERIC_ERROR, PHOTO_TOO_LARGE } from '@/data/errors';
 import { emptyAura } from '@/domain/aura';
 import { encodeGeohash } from '@/domain/geo';
 import {
@@ -36,7 +37,6 @@ export type SubmitResult =
 
 const UPLOAD_ERROR = 'Photo upload failed. Try again or remove the photo.';
 const AUDIO_UPLOAD_ERROR = 'Voice note upload failed. Try again or remove the voice note.';
-const GENERIC_ERROR = 'Something went wrong. Please try again.';
 
 export class TimeoutError extends Error {
   constructor() {
@@ -68,7 +68,6 @@ const PERMANENT_CODES = new Set([
   'storage/unauthorized',
   'storage/object-not-found',
 ]);
-const PHOTO_TOO_LARGE = 'Photo is too large to upload.';
 
 /** Errors a replay can never get past (ruling R14): the draft is parked instead of retried. */
 export function isPermanentError(e: unknown): boolean {

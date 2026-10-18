@@ -1,4 +1,5 @@
 import type { AuthSession } from '@/domain/types';
+import { BAD_CREDENTIALS, EMAIL_IN_USE, INCORRECT_PASSWORD, NOT_SIGNED_IN } from '../errors';
 import type { AuthRepository } from '../types';
 import { recomputePlace } from './recompute';
 import type { Store } from './store';
@@ -17,14 +18,14 @@ export function createAuthRepository(store: Store): AuthRepository {
     },
     async signIn(email, password) {
       const acct = store.accounts.get(email.toLowerCase());
-      if (!acct || acct.password !== password) throw new Error('Incorrect email or password.');
+      if (!acct || acct.password !== password) throw new Error(BAD_CREDENTIALS);
       const session = { userId: acct.userId, email: acct.email, displayName: acct.displayName };
       setSession(session);
       return session;
     },
     async register(email, password, displayName) {
       const key = email.toLowerCase();
-      if (store.accounts.has(key)) throw new Error('An account already exists for that email.');
+      if (store.accounts.has(key)) throw new Error(EMAIL_IN_USE);
       const acct = { userId: store.nextUserId(), email, password, displayName };
       store.accounts.set(key, acct);
       const at = store.now();
@@ -41,9 +42,9 @@ export function createAuthRepository(store: Store): AuthRepository {
     },
     async deleteAccount(password) {
       const session = store.session;
-      if (!session) throw new Error('Not signed in.');
+      if (!session) throw new Error(NOT_SIGNED_IN);
       const acct = store.accounts.get(session.email.toLowerCase());
-      if (!acct || acct.password !== password) throw new Error('Incorrect password.');
+      if (!acct || acct.password !== password) throw new Error(INCORRECT_PASSWORD);
       const placeIds = new Set<string>();
       for (const [id, m] of [...store.memories]) {
         if (m.userId !== session.userId) continue;

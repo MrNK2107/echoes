@@ -1,6 +1,8 @@
 import { File } from 'expo-file-system';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 
+import { PHOTO_TOO_LARGE } from '@/data/errors';
+
 export const UPLOAD_LIMIT_BYTES = 1_048_576;
 const START_WIDTH = 1600;
 const MIN_WIDTH = 400;
@@ -34,7 +36,7 @@ export async function compressImage(uri: string, deps: CompressDeps = defaultDep
       quality = Math.max(MIN_QUALITY, quality - QUALITY_STEP);
     } else {
       width = Math.floor(width / 2);
-      if (width < MIN_WIDTH) throw new Error('Photo is too large to upload.');
+      if (width < MIN_WIDTH) throw new Error(PHOTO_TOO_LARGE);
     }
   }
 }

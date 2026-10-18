@@ -11,11 +11,9 @@ import {
   type User,
 } from 'firebase/auth';
 import type { AuthSession } from '@/domain/types';
+import { BAD_CREDENTIALS, EMAIL_IN_USE, INCORRECT_PASSWORD, NOT_SIGNED_IN } from '../errors';
 import type { AuthRepository, UserRepository } from '../types';
 
-const BAD_CREDENTIALS = 'Incorrect email or password.';
-const EMAIL_IN_USE = 'An account already exists for that email.';
-const WRONG_PASSWORD = 'Incorrect password.';
 const WRONG_PASSWORD_CODES = new Set([
   'auth/invalid-credential',
   'auth/wrong-password',
@@ -95,11 +93,11 @@ export function createAuthRepository(
     },
     async deleteAccount(password) {
       const user = auth.currentUser;
-      if (!user || !user.email) throw new Error('Not signed in.');
+      if (!user || !user.email) throw new Error(NOT_SIGNED_IN);
       try {
         await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, password));
       } catch (e) {
-        if (WRONG_PASSWORD_CODES.has(errorCode(e) ?? '')) throw new Error(WRONG_PASSWORD);
+        if (WRONG_PASSWORD_CODES.has(errorCode(e) ?? '')) throw new Error(INCORRECT_PASSWORD);
         throw e;
       }
       // Server-side `cleanupDeletedUser` (Auth onDelete) removes the profile, memories and files.

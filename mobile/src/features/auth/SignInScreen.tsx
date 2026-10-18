@@ -11,16 +11,16 @@ import {
   View,
 } from 'react-native';
 
+import { BAD_CREDENTIALS, EMAIL_IN_USE, GENERIC_ERROR } from '@/data/errors';
 import { DEMO_USER } from '@/data/seed';
 import { useServices } from '@/services/ServicesProvider';
 import { colors } from '@/ui/theme';
 
 import { validateDisplayName, validateEmail, validatePassword } from './validators';
 
-const GENERIC_ERROR = 'Something went wrong. Please try again.';
 const NETWORK_ERROR = "Couldn't reach the server. Check your connection and try again.";
 /** Domain messages the auth repositories throw on purpose; everything else is mapped to generic copy. */
-const KNOWN_AUTH_MESSAGES = new Set(['Incorrect email or password.', 'An account already exists for that email.']);
+const KNOWN_AUTH_MESSAGES = new Set([BAD_CREDENTIALS, EMAIL_IN_USE]);
 
 function authErrorCopy(e: unknown): string {
   if (e instanceof Error && KNOWN_AUTH_MESSAGES.has(e.message)) return e.message;

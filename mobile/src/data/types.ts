@@ -49,7 +49,7 @@ export interface MemoryRepository {
    * (ruling R13) and ignores it.
    */
   softDelete(id: string, at: Date): Promise<void>;
-  /** Rejects with Error('This memory can no longer be restored.') outside the restore window. */
+  /** Rejects with Error(RESTORE_EXPIRED) (see ./errors) outside the restore window. */
   restore(id: string, at: Date): Promise<void>;
 }
 
@@ -64,7 +64,7 @@ export interface AuthRepository {
   signIn(email: string, password: string): Promise<AuthSession>;
   register(email: string, password: string, displayName: string): Promise<AuthSession>;
   signOut(): Promise<void>;
-  /** Rejects with Error('Incorrect password.') when the password is wrong; the session stays. */
+  /** Rejects with Error(INCORRECT_PASSWORD) (see ./errors) when the password is wrong; the session stays. */
   deleteAccount(password: string): Promise<void>;
 }
 

@@ -17,6 +17,7 @@ import {
 } from 'firebase/firestore';
 import { normalizePrivacyFields } from '@/domain/memoryLifecycle';
 import type { Memory } from '@/domain/types';
+import { RESTORE_EXPIRED } from '../errors';
 import { memoryFromDoc, memoryToDoc } from '../mappers';
 import type { MemoryRepository } from '../types';
 import { subscribeUnion } from './snapshots';
@@ -37,8 +38,6 @@ export const TIME_RELEASE_SKEW_MS = 5 * 60 * 1000;
 export function timeReleaseBound(now: Date, clientNow: number = Date.now()): Date {
   return new Date(Math.min(now.getTime(), clientNow) - TIME_RELEASE_SKEW_MS);
 }
-
-export const RESTORE_EXPIRED = 'This memory can no longer be restored.';
 
 function errorCode(e: unknown): unknown {
   return typeof e === 'object' && e !== null ? (e as { code?: unknown }).code : undefined;

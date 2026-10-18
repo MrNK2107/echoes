@@ -1,6 +1,7 @@
 import { canRestore } from '@/domain/memoryLifecycle';
 import { isMemoryVisibleTo } from '@/domain/privacy';
 import type { Memory } from '@/domain/types';
+import { RESTORE_EXPIRED } from '../errors';
 import type { MemoryRepository } from '../types';
 import { recomputePlace } from './recompute';
 import type { Store } from './store';
@@ -103,7 +104,7 @@ export function createMemoryRepository(store: Store): MemoryRepository {
     },
     async restore(id, at) {
       const m = getOrThrow(id);
-      if (!canRestore(m, store.now())) throw new Error('This memory can no longer be restored.');
+      if (!canRestore(m, store.now())) throw new Error(RESTORE_EXPIRED);
       store.memories.set(id, { ...m, isDeleted: false, deletedAt: null, updatedAt: at });
       changed(m.placeId);
     },

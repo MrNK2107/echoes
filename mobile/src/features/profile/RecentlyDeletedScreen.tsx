@@ -2,14 +2,12 @@ import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { GENERIC_ERROR, RESTORE_EXPIRED } from '@/data/errors';
 import { canRestore, restoreDaysLeft } from '@/domain/memoryLifecycle';
 import type { Memory } from '@/domain/types';
 import { useSession } from '@/features/auth/useSession';
 import { useServices } from '@/services/ServicesProvider';
 import { colors } from '@/ui/theme';
-
-const EXPIRED = 'This memory can no longer be restored.';
-const GENERIC = 'Something went wrong. Please try again.';
 
 export function RecentlyDeletedScreen() {
   const router = useRouter();
@@ -40,7 +38,7 @@ export function RecentlyDeletedScreen() {
       },
       () => {
         setLoaded(true);
-        setError(GENERIC);
+        setError(GENERIC_ERROR);
       },
     );
   }, [repos.memories, uid]);
@@ -56,7 +54,7 @@ export function RecentlyDeletedScreen() {
     try {
       await repos.memories.restore(id, now());
     } catch (e) {
-      if (mounted.current) setError(e instanceof Error && e.message === EXPIRED ? EXPIRED : GENERIC);
+      if (mounted.current) setError(e instanceof Error && e.message === RESTORE_EXPIRED ? RESTORE_EXPIRED : GENERIC_ERROR);
     } finally {
       restoringRef.current = false;
       if (mounted.current) setRestoringId(null);
