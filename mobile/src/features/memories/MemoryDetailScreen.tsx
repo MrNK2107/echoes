@@ -2,13 +2,17 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { TIMEOUT_ERROR } from '@/data/errors';
 import { useSession } from '@/features/auth/useSession';
 import { useServices } from '@/services/ServicesProvider';
 import { privacyLabel } from '@/ui/privacyLabel';
 import { colors } from '@/ui/theme';
 
+import { TimeoutError, withTimeout } from './submitMemory';
 import { useMemory } from './useMemory';
 import { VoiceNotePlayer } from './VoiceNotePlayer';
+
+const DELETE_FAILED = "Couldn't delete this memory. Try again.";
 
 export function MemoryDetailScreen({ memoryId }: { memoryId: string }) {
   const router = useRouter();
@@ -61,12 +65,12 @@ export function MemoryDetailScreen({ memoryId }: { memoryId: string }) {
           setDeleting(true);
           setError(null);
           try {
-            await repos.memories.softDelete(memory.id, now());
+            await withTimeout(repos.memories.softDelete(memory.id, now()));
             router.back();
-          } catch {
+          } catch (e) {
             deletingRef.current = false;
             setDeleting(false);
-            setError("Couldn't delete this memory. Try again.");
+            setError(e instanceof TimeoutError ? TIMEOUT_ERROR : DELETE_FAILED);
           }
         },
       },
@@ -88,7 +92,11 @@ export function MemoryDetailScreen({ memoryId }: { memoryId: string }) {
             </View>
           ) : null}
         </View>
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+        {error ? (
+          <Text accessibilityRole="alert" style={styles.error}>
+            {error}
+          </Text>
+        ) : null}
         {isAuthor ? (
           <View style={styles.actions}>
             <Pressable

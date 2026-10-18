@@ -2,12 +2,18 @@ import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { GENERIC_ERROR, RESTORE_EXPIRED } from '@/data/errors';
+import { GENERIC_ERROR, RESTORE_EXPIRED, TIMEOUT_ERROR } from '@/data/errors';
 import { canRestore, restoreDaysLeft } from '@/domain/memoryLifecycle';
 import type { Memory } from '@/domain/types';
 import { useSession } from '@/features/auth/useSession';
+import { TimeoutError, withTimeout } from '@/features/memories/submitMemory';
 import { useServices } from '@/services/ServicesProvider';
 import { colors } from '@/ui/theme';
+
+function restoreErrorCopy(e: unknown): string {
+  if (e instanceof TimeoutError) return TIMEOUT_ERROR;
+  return e instanceof Error && e.message === RESTORE_EXPIRED ? RESTORE_EXPIRED : GENERIC_ERROR;
+}
 
 export function RecentlyDeletedScreen() {
   const router = useRouter();
@@ -52,9 +58,9 @@ export function RecentlyDeletedScreen() {
     setRestoringId(id);
     setError(null);
     try {
-      await repos.memories.restore(id, now());
+      await withTimeout(repos.memories.restore(id, now()));
     } catch (e) {
-      if (mounted.current) setError(e instanceof Error && e.message === RESTORE_EXPIRED ? RESTORE_EXPIRED : GENERIC_ERROR);
+      if (mounted.current) setError(restoreErrorCopy(e));
     } finally {
       restoringRef.current = false;
       if (mounted.current) setRestoringId(null);
@@ -96,6 +102,7 @@ export function RecentlyDeletedScreen() {
               <Pressable
                 testID={`restore-${item.id}`}
                 accessibilityRole="button"
+                accessibilityLabel={`Restore memory: ${item.textContent.slice(0, 40)}`}
                 disabled={restoringId !== null}
                 onPress={() => restore(item.id)}
                 style={[styles.action, restoringId !== null && styles.disabled]}

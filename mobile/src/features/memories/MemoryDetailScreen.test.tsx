@@ -8,6 +8,7 @@ import { ServicesProvider } from '@/services/ServicesProvider';
 import type { Services } from '@/services/services';
 
 import { MemoryDetailScreen } from './MemoryDetailScreen';
+import { SUBMIT_TIMEOUT_MS } from './submitMemory';
 
 const mockBack = jest.fn();
 const mockPush = jest.fn();
@@ -133,6 +134,38 @@ describe('MemoryDetailScreen delete and focus', () => {
     await waitFor(() => expect(mockBack).toHaveBeenCalled());
     expect(softDelete).toHaveBeenCalledTimes(1);
     expect(mockBack).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows timeout copy and re-enables Delete when the server does not answer', async () => {
+    const services = testServices();
+    jest.spyOn(services.repos.memories, 'softDelete').mockImplementation(() => new Promise(() => {}));
+    await setup('memory-2', services);
+    pressConfirm('Delete');
+    const del = await screen.findByText('Delete');
+    jest.useFakeTimers();
+    try {
+      await fireEvent.press(del);
+      await act(async () => {
+        await jest.advanceTimersByTimeAsync(SUBMIT_TIMEOUT_MS);
+      });
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'Could not reach the server. Check your connection and try again.',
+      );
+      expect(mockBack).not.toHaveBeenCalled();
+      expect(screen.getByRole('button', { name: 'Delete' })).toBeEnabled();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('shows delete failure copy for other errors', async () => {
+    const services = testServices();
+    jest.spyOn(services.repos.memories, 'softDelete').mockRejectedValue(new Error('boom'));
+    await setup('memory-2', services);
+    pressConfirm('Delete');
+    await fireEvent.press(await screen.findByText('Delete'));
+    expect(await screen.findByRole('alert')).toHaveTextContent("Couldn't delete this memory. Try again.");
+    expect(mockBack).not.toHaveBeenCalled();
   });
 
   it('refetches when the screen regains focus', async () => {

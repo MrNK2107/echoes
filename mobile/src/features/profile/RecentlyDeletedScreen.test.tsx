@@ -5,6 +5,8 @@ import { TEST_NOW, testServices } from '@/device/fakes';
 import { ServicesProvider } from '@/services/ServicesProvider';
 import type { Services } from '@/services/services';
 
+import { SUBMIT_TIMEOUT_MS } from '@/features/memories/submitMemory';
+
 import { RecentlyDeletedScreen } from './RecentlyDeletedScreen';
 
 const mockBack = jest.fn();
@@ -85,6 +87,32 @@ describe('RecentlyDeletedScreen', () => {
     await screen.findByText(TEXT);
     await fireEvent.press(screen.getByTestId('restore-memory-2'));
     expect(await screen.findByRole('alert')).toHaveTextContent('Something went wrong. Please try again.');
+  });
+
+  it('labels each Restore button with the start of its memory', async () => {
+    await setup(5 * DAY);
+    expect(await screen.findByLabelText(`Restore memory: ${TEXT.slice(0, 40)}`)).toBeOnTheScreen();
+    expect(screen.getByTestId('restore-memory-2')).toHaveAccessibleName(`Restore memory: ${TEXT.slice(0, 40)}`);
+  });
+
+  it('shows timeout copy and re-enables Restore when the server does not answer', async () => {
+    const services = await setup(5 * DAY);
+    jest.spyOn(services.repos.memories, 'restore').mockImplementation(() => new Promise(() => {}));
+    await screen.findByText(TEXT);
+    jest.useFakeTimers();
+    try {
+      // The handler's promise settles only once the timeout fires, so advance the clock before
+      // awaiting the press.
+      const press = fireEvent.press(screen.getByTestId('restore-memory-2'));
+      await jest.advanceTimersByTimeAsync(SUBMIT_TIMEOUT_MS);
+      await press;
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'Could not reach the server. Check your connection and try again.',
+      );
+      expect(screen.getByTestId('restore-memory-2')).toBeEnabled();
+    } finally {
+      jest.useRealTimers();
+    }
   });
 
   it('ignores a repeated tap: restore once', async () => {
