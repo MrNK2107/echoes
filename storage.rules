@@ -6,8 +6,10 @@ service firebase.storage {
       return request.auth != null;
     }
 
+    // Reads through the SDK are owner-only. Viewers load media through the token download URLs
+    // stored on memory docs, and Firestore rules decide who can see those docs.
     match /memory-images/{userId}/{fileName} {
-      allow read: if signedIn();
+      allow read: if signedIn() && request.auth.uid == userId;
       allow write: if signedIn() &&
         request.auth.uid == userId &&
         request.resource.size <= 1 * 1024 * 1024 &&
@@ -15,7 +17,7 @@ service firebase.storage {
     }
 
     match /memory-audio/{userId}/{fileName} {
-      allow read: if signedIn();
+      allow read: if signedIn() && request.auth.uid == userId;
       allow write: if signedIn() &&
         request.auth.uid == userId &&
         request.resource.size <= 5 * 1024 * 1024 &&

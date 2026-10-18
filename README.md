@@ -55,10 +55,10 @@ Run the beta validation suite:
 flutter analyze
 flutter test
 npm test --prefix functions
-npx firebase emulators:exec --only firestore "npm test --prefix rules_test"
+npx firebase emulators:exec --only firestore,storage "npm test --prefix rules_test"
 ```
 
-The Firestore rules tests must run through `firebase emulators:exec`; running `npm test` directly inside `rules_test` will fail because no emulator host and port are available.
+The rules tests (`rules_test/firestore.rules.test.js` and `rules_test/storage.rules.test.js`) must run through `firebase emulators:exec` with both the Firestore and Storage emulators; running `npm test` directly inside `rules_test` will fail because no emulator host and port are available.
 
 ## Run the Expo app
 
@@ -137,7 +137,7 @@ flutter run -d ios
 The repo configures the Firestore emulator on port `8080` in `firebase.json`. To run emulator-backed checks:
 
 ```powershell
-npx firebase emulators:start --only firestore
+npx firebase emulators:start --only firestore,storage
 ```
 
 In another terminal:
@@ -149,7 +149,7 @@ npm test --prefix rules_test
 For a one-shot rules test, prefer:
 
 ```powershell
-npx firebase emulators:exec --only firestore "npm test --prefix rules_test"
+npx firebase emulators:exec --only firestore,storage "npm test --prefix rules_test"
 ```
 
 `firebase.json` also configures the Auth (`9099`), Storage (`9199`) and Functions (`5001`) emulators. The Expo app's Firestore backend is verified against the backend contract suites (`mobile/test/contracts`) under the real `firestore.rules`/`storage.rules`. All mobile emulator commands use the demo project id `demo-echoes` (no real Firebase project needed); run from the repo root:

@@ -7,7 +7,7 @@ flutter analyze
 flutter test
 flutter test integration_test -d <device-id>
 npm test --prefix functions
-npx firebase emulators:exec --only firestore "npm test --prefix rules_test"
+npx firebase emulators:exec --only firestore,storage "npm test --prefix rules_test"
 ```
 
 ## Required external configuration
