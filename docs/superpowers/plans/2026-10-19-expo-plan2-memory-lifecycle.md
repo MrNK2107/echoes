@@ -236,9 +236,9 @@ function useOutbox(): { pending: number; retry(): void }
 
 **Behaviour:** spec copy; password field `Confirm your password` (secureTextEntry); `Delete permanently` disabled until a password is typed and while busy; calls `auth.deleteAccount(password)`; also clears this user's outbox (`Outbox.clear()` — add it, removes persisted files) **after** successful deletion; on success the session gate routes to `/sign-in`; `Incorrect password.` and unknown errors (generic copy) in `role="alert"`.
 
-- [ ] **Step 1: Failing tests** — **`wrong password keeps the account`** (error shown, session still signed in); success → session null, user's memories gone from the memory backend, outbox cleared; button disabled when empty.
-- [ ] **Step 2–4:** FAIL → implement → PASS.
-- [ ] **Step 5: Commit** `feat(profile): account deletion with re-authentication`.
+- [x] **Step 1: Failing tests** — **`wrong password keeps the account`** (error shown, session still signed in); success → session null, user's memories gone from the memory backend, outbox cleared; button disabled when empty.
+- [x] **Step 2–4:** FAIL → implement → PASS.
+- [x] **Step 5: Commit** `feat(profile): account deletion with re-authentication`.
 
 ---
 
