@@ -159,7 +159,7 @@ mobile/app/(app)/{notifications,communities/index,communities/[id],institutions/
   - All idempotent.
 - `onMemoryCreatedTags` (`onDocumentCreated('memories/{id}')`): for each `taggedUserIds` entry (deduped, excluding the author and blocked users), sends `notify` of type `memoryTagged`.
 
-- [ ] **Step 1: Failing tests:**
+- [x] **Step 1: Failing tests:**
   - create/join/leave/invite happy paths and errors;
   - join twice → count 1;
   - owner leave → `failed-precondition`;
@@ -167,8 +167,8 @@ mobile/app/(app)/{notifications,communities/index,communities/[id],institutions/
   - auto communities created once over repeated triggers;
   - geo at exactly 5;
   - the tag trigger notifies each tagged user once, skips the author.
-- [ ] **Step 2–4:** FAIL → implement → PASS.
-- [ ] **Step 5: Commit** `feat(functions): communities and tag notifications`.
+- [x] **Step 2–4:** FAIL → implement → PASS.
+- [x] **Step 5: Commit** `feat(functions): communities and tag notifications`.
 
 ---
 
