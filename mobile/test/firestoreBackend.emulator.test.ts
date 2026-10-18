@@ -101,7 +101,8 @@ const make = async () => {
 placeRepositoryContract('firestore', make);
 // Aggregation runs through `onMemoryWritten`; account cleanup through `cleanupDeletedUser`
 // (both need the functions emulator, see jest.emulator.config.js).
-memoryRepositoryContract('firestore', make, { supportsLifecycle: true });
+// Deletion times are server-stamped (ruling R13), so the backdated-delete case is memory-only.
+memoryRepositoryContract('firestore', make, { supportsLifecycle: true, supportsClientDeletionTime: false });
 authRepositoryContract('firestore', make, { supportsLifecycle: true });
 userRepositoryContract('firestore', make, { supportsLifecycle: true });
 

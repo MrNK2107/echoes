@@ -61,11 +61,16 @@ service cloud.firestore {
         ]);
     }
 
+    // Ruling R13: deletion times come from the server clock (clients write serverTimestamp()), so
+    // nobody, including a place custodian acting on another user's memory, can backdate a delete
+    // past the restore window or future-date it out of reach of the purge.
     function softDeleteOnly() {
       return request.resource.data.diff(resource.data).affectedKeys()
         .hasOnly(['isDeleted', 'deletedAt', 'updatedAt']) &&
         resource.data.isDeleted == false &&
-        request.resource.data.isDeleted == true;
+        request.resource.data.isDeleted == true &&
+        request.resource.data.deletedAt == request.time &&
+        request.resource.data.updatedAt == request.time;
     }
 
     function restoreOnly() {
@@ -73,6 +78,8 @@ service cloud.firestore {
         .hasOnly(['isDeleted', 'deletedAt', 'updatedAt']) &&
         resource.data.isDeleted == true &&
         request.resource.data.isDeleted == false &&
+        request.resource.data.deletedAt == null &&
+        request.resource.data.updatedAt == request.time &&
         resource.data.userId == request.auth.uid &&
         resource.data.deletedAt != null &&
         request.time < resource.data.deletedAt + duration.value(30, 'd');

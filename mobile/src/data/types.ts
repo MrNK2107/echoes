@@ -44,6 +44,10 @@ export interface MemoryRepository {
     updatedAt: Date,
   ): Promise<void>;
   attachMedia(id: string, media: { imageUrl?: string; audioUrl?: string }, updatedAt: Date): Promise<void>;
+  /**
+   * `at` is the deletion time for the in-memory backend; Firestore stamps the server time instead
+   * (ruling R13) and ignores it.
+   */
   softDelete(id: string, at: Date): Promise<void>;
   /** Rejects with Error('This memory can no longer be restored.') outside the restore window. */
   restore(id: string, at: Date): Promise<void>;

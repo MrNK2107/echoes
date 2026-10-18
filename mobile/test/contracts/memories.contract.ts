@@ -41,6 +41,12 @@ export interface MemoryContractOptions {
    * until Task 4 and the cases are skipped.
    */
   supportsLifecycle?: boolean;
+  /**
+   * Whether `softDelete(id, at)` records the caller's `at`. Only the in-memory backend does: the
+   * Firestore rules pin `deletedAt` to the server's `request.time` (ruling R13), so a delete
+   * cannot be backdated and the expired-restore case cannot be staged through the client.
+   */
+  supportsClientDeletionTime?: boolean;
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -52,6 +58,8 @@ export function memoryRepositoryContract(
 ): void {
   const itAggregation = options.supportsAggregation === false ? it.skip : it;
   const itLifecycle = options.supportsLifecycle === false ? it.skip : it;
+  const itClientDeletionTime =
+    options.supportsLifecycle === false || options.supportsClientDeletionTime === false ? it.skip : it;
   const itLifecycleAgg =
     options.supportsLifecycle === false || options.supportsAggregation === false ? it.skip : it;
   describe(`MemoryRepository contract: ${name}`, () => {
@@ -221,11 +229,11 @@ export function memoryRepositoryContract(
     });
 
     /**
-     * Works on any backend: the deletion timestamp is client-supplied (`softDelete(id, at)`), so a
-     * memory deleted 31 days ago is made by passing an old `at`; restore is then judged against
-     * the backend's clock (real time here; `request.time` in the Firestore rules).
+     * Stages a delete 31 days ago by passing an old `at`, which only a backend that records the
+     * client time allows. On Firestore the rules test covers this with a doc seeded past the
+     * window (rules_test: "restore is judged against the stored deletion time").
      */
-    itLifecycle('restore after 31 days rejects with the expired message', async () => {
+    itClientDeletionTime('restore after 31 days rejects with the expired message', async () => {
       const m = mem();
       await seed(m);
       await ctx.signInAs('author');

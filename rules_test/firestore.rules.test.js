@@ -6,7 +6,14 @@ const {
   assertSucceeds,
   initializeTestEnvironment,
 } = require("@firebase/rules-unit-testing");
-const { doc, getDoc, setDoc, updateDoc, Timestamp } = require("firebase/firestore");
+const {
+  doc,
+  getDoc,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
+  Timestamp,
+} = require("firebase/firestore");
 const {
   collection,
   getDocs,
@@ -20,6 +27,8 @@ const rules = fs.readFileSync(
   path.join(__dirname, "..", "firestore.rules"),
   "utf8",
 );
+
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 let testEnv;
 
@@ -265,10 +274,120 @@ test("memory updates cannot add unknown fields", async () => {
   await assertSucceeds(
     updateDoc(doc(creatorDb, "memories/others-memory"), {
       isDeleted: true,
-      deletedAt: now(),
-      updatedAt: now(),
+      deletedAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
     }),
   );
+});
+
+test("soft-delete timestamps must be the server's request time", async () => {
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await setDoc(
+      doc(context.firestore(), "memories/others-memory"),
+      memoryDoc({ userId: "other" }),
+    );
+  });
+  // creator is the custodian of place-1, which holds others-memory.
+  const creatorDb = testEnv.authenticatedContext("creator").firestore();
+  const backdated = Timestamp.fromDate(new Date(Date.now() - 40 * DAY_MS));
+  const future = Timestamp.fromDate(new Date("2999-01-01T00:00:00Z"));
+
+  // author with a client clock timestamp
+  await assertFails(
+    updateDoc(doc(creatorDb, "memories/public-memory"), {
+      isDeleted: true,
+      deletedAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+    }),
+  );
+  // custodian backdating another user's memory past the restore window
+  await assertFails(
+    updateDoc(doc(creatorDb, "memories/others-memory"), {
+      isDeleted: true,
+      deletedAt: backdated,
+      updatedAt: serverTimestamp(),
+    }),
+  );
+  // custodian future-dating it so it is never purged
+  await assertFails(
+    updateDoc(doc(creatorDb, "memories/others-memory"), {
+      isDeleted: true,
+      deletedAt: future,
+      updatedAt: serverTimestamp(),
+    }),
+  );
+  // updatedAt must be pinned as well
+  await assertFails(
+    updateDoc(doc(creatorDb, "memories/others-memory"), {
+      isDeleted: true,
+      deletedAt: serverTimestamp(),
+      updatedAt: backdated,
+    }),
+  );
+  await assertSucceeds(
+    updateDoc(doc(creatorDb, "memories/public-memory"), {
+      isDeleted: true,
+      deletedAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    }),
+  );
+  await assertSucceeds(
+    updateDoc(doc(creatorDb, "memories/others-memory"), {
+      isDeleted: true,
+      deletedAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    }),
+  );
+});
+
+test("restore is judged against the stored deletion time and must clear it", async () => {
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    const db = context.firestore();
+    await setDoc(doc(db, "memories/expired-deleted"), {
+      ...memoryDoc(),
+      isDeleted: true,
+      deletedAt: Timestamp.fromDate(new Date(Date.now() - 31 * DAY_MS)),
+    });
+    await setDoc(doc(db, "memories/recent-deleted"), {
+      ...memoryDoc(),
+      isDeleted: true,
+      deletedAt: Timestamp.fromDate(new Date(Date.now() - DAY_MS)),
+    });
+  });
+  const creatorDb = testEnv.authenticatedContext("creator").firestore();
+  const restore = { isDeleted: false, deletedAt: null, updatedAt: serverTimestamp() };
+
+  await assertFails(updateDoc(doc(creatorDb, "memories/expired-deleted"), restore));
+  // leaving deletedAt in place (or replacing it) is not a restore
+  await assertFails(
+    updateDoc(doc(creatorDb, "memories/recent-deleted"), {
+      isDeleted: false,
+      updatedAt: serverTimestamp(),
+    }),
+  );
+  await assertFails(
+    updateDoc(doc(creatorDb, "memories/recent-deleted"), {
+      isDeleted: false,
+      deletedAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    }),
+  );
+  await assertSucceeds(updateDoc(doc(creatorDb, "memories/recent-deleted"), restore));
+});
+
+test("author can read their own deleted private memory; others cannot", async () => {
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await setDoc(doc(context.firestore(), "memories/deleted-private"), {
+      ...memoryDoc({ privacy: "private" }),
+      isDeleted: true,
+      deletedAt: Timestamp.now(),
+    });
+  });
+  const creatorDb = testEnv.authenticatedContext("creator").firestore();
+  const strangerDb = testEnv.authenticatedContext("stranger").firestore();
+
+  await assertSucceeds(getDoc(doc(creatorDb, "memories/deleted-private")));
+  await assertFails(getDoc(doc(strangerDb, "memories/deleted-private")));
 });
 
 test("author write identical to stored doc (empty diff) is allowed", async () => {
@@ -328,8 +447,8 @@ test("place custodians can soft-delete attached memories", async () => {
       doc(creatorDb, "memories/public-memory"),
       {
         isDeleted: true,
-        deletedAt: Timestamp.now(),
-        updatedAt: Timestamp.now(),
+        deletedAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
       },
       { merge: true },
     ),
@@ -339,8 +458,8 @@ test("place custodians can soft-delete attached memories", async () => {
       doc(strangerDb, "memories/tagged-memory"),
       {
         isDeleted: true,
-        deletedAt: Timestamp.now(),
-        updatedAt: Timestamp.now(),
+        deletedAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
       },
       { merge: true },
     ),

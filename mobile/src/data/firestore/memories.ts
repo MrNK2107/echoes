@@ -5,11 +5,13 @@ import {
   limit,
   orderBy,
   query,
+  serverTimestamp,
   setDoc,
   Timestamp,
   updateDoc,
   where,
   type DocumentData,
+  type DocumentSnapshot,
   type Firestore,
   type QueryConstraint,
 } from 'firebase/firestore';
@@ -48,6 +50,20 @@ const isPermissionDenied = (e: unknown) => errorCode(e) === 'permission-denied';
 function newestFirst(ms: Memory[], key: (m: Memory) => Date | null): Memory[] {
   const t = (m: Memory) => key(m)?.getTime() ?? 0;
   return ms.sort((a, b) => t(b) - t(a)).slice(0, LIST_LIMIT);
+}
+
+/**
+ * Soft-delete stamps are server timestamps (ruling R13). Until the write is acknowledged the local
+ * value is pending, so it is read as the SDK's estimate; otherwise a fresh delete would map with
+ * `deletedAt: null` and drop out of Recently deleted.
+ */
+function fromSnapshot(d: DocumentSnapshot<DocumentData>): Memory | null {
+  const data = d.data({ serverTimestamps: 'estimate' });
+  return data === undefined ? null : memoryFromDoc(d.id, data);
+}
+
+function mapSnapshots(docs: DocumentSnapshot<DocumentData>[]): Memory[] {
+  return docs.map(fromSnapshot).filter((m): m is Memory => m !== null);
 }
 
 function chunk<T>(xs: T[], size: number): T[][] {
@@ -103,9 +119,7 @@ export function createMemoryRepository(db: Firestore): MemoryRepository {
       // The rules allow `get` for visible memories and for the author's own (deleted or not).
       // Anything else, including a missing document, is denied, which reads as "not found".
       try {
-        const snap = await getDoc(doc(db, 'memories', id));
-        const data = snap.data();
-        return data === undefined ? null : memoryFromDoc(snap.id, data);
+        return fromSnapshot(await getDoc(doc(db, 'memories', id)));
       } catch (e) {
         const code = errorCode(e);
         if (code === 'permission-denied' || code === 'not-found') return null;
@@ -123,7 +137,7 @@ export function createMemoryRepository(db: Firestore): MemoryRepository {
       );
       return subscribeUnion(
         [q],
-        (docs) => cb(newestFirst(docs.map((d) => memoryFromDoc(d.id, d.data())), (m) => m.createdAt)),
+        (docs) => cb(newestFirst(mapSnapshots(docs), (m) => m.createdAt)),
         onError,
       );
     },
@@ -137,7 +151,7 @@ export function createMemoryRepository(db: Firestore): MemoryRepository {
       );
       return subscribeUnion(
         [q],
-        (docs) => cb(newestFirst(docs.map((d) => memoryFromDoc(d.id, d.data())), (m) => m.deletedAt)),
+        (docs) => cb(newestFirst(mapSnapshots(docs), (m) => m.deletedAt)),
         onError,
       );
     },
@@ -165,18 +179,23 @@ export function createMemoryRepository(db: Firestore): MemoryRepository {
       if (media.audioUrl !== undefined) fields.audioUrl = media.audioUrl;
       await updateDoc(doc(db, 'memories', id), fields);
     },
-    async softDelete(id, at) {
-      const stamp = Timestamp.fromDate(at);
-      await updateDoc(doc(db, 'memories', id), { isDeleted: true, deletedAt: stamp, updatedAt: stamp });
+    // `at` is honoured only by the in-memory backend: the rules require both stamps to equal
+    // `request.time` (ruling R13), so the client clock never decides when a memory was deleted.
+    async softDelete(id) {
+      await updateDoc(doc(db, 'memories', id), {
+        isDeleted: true,
+        deletedAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
     },
-    async restore(id, at) {
+    async restore(id) {
       // `restoreOnly` judges the 30-day window against the server clock (`request.time`); the
       // author meets every other condition, so a denial here means the window has closed.
       try {
         await updateDoc(doc(db, 'memories', id), {
           isDeleted: false,
           deletedAt: null,
-          updatedAt: Timestamp.fromDate(at),
+          updatedAt: serverTimestamp(),
         });
       } catch (e) {
         if (isPermissionDenied(e)) throw new Error(RESTORE_EXPIRED);
