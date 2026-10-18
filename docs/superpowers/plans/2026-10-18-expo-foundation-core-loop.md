@@ -435,14 +435,14 @@ export function compressImage(uri: string, deps?: { manipulate: typeof manipulat
   - `compressImage`: resize to max width 1600, JPEG quality 0.7; while size > limit, lower quality by 0.15 (min 0.25) then halve width; return final uri; throws `Error('Photo is too large to upload.')` if still over.
   - Screen: multiline `text-input` with counter `"{n}/2000"`; privacy segmented control `Public | Private | Time release` (tagged/community arrive in Plan 3); date picker row for time release (`release-date-button`, use `@react-native-community/datetimepicker` via `npx expo install`); `Use my location` button capturing via `services.location` showing `Location captured` when set; `Add photo` → `services.imagePicker.pick('library')` with thumbnail and `Remove photo`; `Save memory` disabled while submitting; on success `router.replace('/place/{placeId}')`; errors in `role="alert"`.
 
-- [ ] **Step 1: Write failing tests:**
+- [x] **Step 1: Write failing tests:**
   - submitMemory: creates a new place when none within 100 m (`name 'Memory Place'`, creator custodian); reuses the seeded place 40 m away; sentiment equals `analyzeSentiment(text)`; whitespace-only text error; 2001 chars error; timeRelease in the past error; image uploaded and `imageUrl` set; upload failure error with no memory created; **`times out after 15 s with a connection error`** (repo `create` returns a never-settling promise; jest fake timers advance 15 000 ms).
   - compressImage: **`compresses until under the upload limit`** (fake `sizeOf` returns 4_000_000, 1_500_000, 900_000 → resolves after 3 manipulations); throws when never under limit.
   - Screen: type text, choose Public, capture location, save → navigates to the place and the new memory is listed; **`ignores a cancelled pick`** (`fakeImagePicker(null)` → no thumbnail, no error); counter shows `5/2000` after typing `hello`.
-- [ ] **Step 2: Run** `npm --prefix mobile test -- memories` — Expected: FAIL.
-- [ ] **Step 3: Implement.**
-- [ ] **Step 4: Run** — Expected: PASS.
-- [ ] **Step 5: Commit** `feat(memories): add memory with photo, privacy and place matching`.
+- [x] **Step 2: Run** `npm --prefix mobile test -- memories` — Expected: FAIL.
+- [x] **Step 3: Implement.**
+- [x] **Step 4: Run** — Expected: PASS.
+- [x] **Step 5: Commit** `feat(memories): add memory with photo, privacy and place matching`.
 
 ---
 
