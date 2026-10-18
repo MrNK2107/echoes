@@ -8,6 +8,8 @@ const functionsV1 = require("firebase-functions/v1");
 const { onMemoryWritten } = require("./onMemoryWritten");
 const { onPublicProfileWritten } = require("./onPublicProfileWritten");
 const communities = require("./communities");
+const transfers = require("./transfers");
+const { cleanupUserSocialData } = require("./accountCleanup");
 const { onMemoryCreatedTags } = require("./tags");
 const {
   purgeDeletedMemories,
@@ -27,6 +29,10 @@ exports.createCommunity = communities.createCommunity;
 exports.joinCommunity = communities.joinCommunity;
 exports.leaveCommunity = communities.leaveCommunity;
 exports.inviteToCommunity = communities.inviteToCommunity;
+exports.initiateTransfer = transfers.initiateTransfer;
+exports.respondToTransfer = transfers.respondToTransfer;
+exports.revokeTransfer = transfers.revokeTransfer;
+exports.expireTransfers = transfers.expireTransfers;
 
 exports.dispatchNotificationRequest = onDocumentCreated(
   "notificationRequests/{requestId}",
@@ -118,6 +124,8 @@ exports.cleanupDeletedUser = functionsV1.auth.user().onDelete(async (user) => {
   // Memberships elsewhere are removed with their memberCount decremented; owned communities
   // pass to their earliest-joined member, or are deleted when no one else is left (R24, R25).
   await communities.cleanupUserCommunities(db, userId);
+  // Public profile, institution admin roles and reports the user filed.
+  await cleanupUserSocialData(db, userId);
 
   await writer.close();
   await db.recursiveDelete(db.collection("users").doc(userId));

@@ -4,12 +4,9 @@
 // communities/{id}.memberCount == number of members/* docs.
 const { HttpsError } = require("firebase-functions/v2/https");
 const { FieldValue } = require("firebase-admin/firestore");
-const { callable } = require("./lib/callable");
+const { callable, ID_PATTERN, idField } = require("./lib/callable");
 const { notify } = require("./lib/notify");
 
-// Firestore ids: no slashes, not "." / "..", at most 1500 bytes; we keep them short.
-const ID_PATTERN = /^(?!\.\.?$)[^/]{1,128}$/;
-const idField = { type: "string", min: 1, max: 128, pattern: ID_PATTERN };
 const MAX_INVITES = 20;
 
 const communityRef = (db, id) => db.collection("communities").doc(id);

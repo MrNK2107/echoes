@@ -1,0 +1,33 @@
+const { FieldValue } = require("firebase-admin/firestore");
+
+// Firestore allows at most 500 writes per batch.
+const BATCH_SIZE = 500;
+
+// Account deletion, social/safety data (Plan 3): the public profile, institution admin roles,
+// and reports the user filed. Reports *about* the user's memories are left alone (the memories
+// themselves are deleted by cleanupDeletedUser). No transactions: this runs in an async auth
+// trigger (see cleanupUserCommunities). Idempotent, so a retried run is safe.
+async function cleanupUserSocialData(db, uid, { batchSize = BATCH_SIZE } = {}) {
+  await db.collection("publicProfiles").doc(uid).delete();
+
+  const institutions = await db.collection("institutions").where("adminUserIds", "array-contains", uid).get();
+  for (let i = 0; i < institutions.docs.length; i += batchSize) {
+    const batch = db.batch();
+    institutions.docs
+      .slice(i, i + batchSize)
+      .forEach((doc) => batch.update(doc.ref, { adminUserIds: FieldValue.arrayRemove(uid) }));
+    await batch.commit();
+  }
+
+  // Paged: each page is re-queried after its deletes commit.
+  for (;;) {
+    const reports = await db.collection("reports").where("reporterId", "==", uid).limit(batchSize).get();
+    if (reports.empty) break;
+    const batch = db.batch();
+    reports.docs.forEach((doc) => batch.delete(doc.ref));
+    await batch.commit();
+    if (reports.docs.length < batchSize) break;
+  }
+}
+
+module.exports = { cleanupUserSocialData };

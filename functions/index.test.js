@@ -40,3 +40,10 @@ test("exports the daily purgeDeletedMemories job", () => {
   assert.ok(index.purgeDeletedMemories, "purgeDeletedMemories is exported");
   assert.ok(index.cleanupDeletedUser, "cleanupDeletedUser is still exported");
 });
+
+test("exports the transfer callables and the daily expiry job", () => {
+  const index = require("./index");
+  for (const name of ["initiateTransfer", "respondToTransfer", "revokeTransfer", "expireTransfers"]) {
+    assert.ok(index[name], `${name} is exported`);
+  }
+});

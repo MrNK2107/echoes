@@ -2,6 +2,10 @@ const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { logger } = require("firebase-functions");
 const { incrementRateLimit } = require("./rateLimit");
 
+// Firestore ids: no slashes, not "." / "..", at most 1500 bytes; we keep them short.
+const ID_PATTERN = /^(?!\.\.?$)[^/]{1,128}$/;
+const idField = { type: "string", min: 1, max: 128, pattern: ID_PATTERN };
+
 // Schema: { field: { type: "string"|"number"|"boolean"|"array"|"object", optional, min, max,
 // enum, trim, pattern, items } }. For strings min/max are code-point lengths; for numbers,
 // values; for arrays, lengths. Unknown fields are rejected.
@@ -81,4 +85,4 @@ function callable(name, options, handler) {
   return onCall(buildHandler({ name, ...options }, handler, getDb));
 }
 
-module.exports = { callable, buildHandler, validate };
+module.exports = { callable, buildHandler, validate, ID_PATTERN, idField };
