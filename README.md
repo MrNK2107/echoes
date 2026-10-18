@@ -158,6 +158,13 @@ npx firebase emulators:exec --only firestore,storage "npm test --prefix rules_te
 npx firebase emulators:exec --project demo-echoes --only auth,firestore,storage,functions "npm --prefix mobile run test:emulator"
 ```
 
+### Security rules notes
+
+- Soft-delete stamps are server time (ruling R13): `deletedAt`/`updatedAt` must equal `request.time` on a soft delete, and a restore must clear `deletedAt` within 30 days of it. Clients write `serverTimestamp()`.
+- Memory `sentiment` must be numeric (`compound` in [-1, 1]; `positive`/`neutral`/`negative` in [0, 1]); `onMemoryWritten` also clamps it.
+- Memory `imageUrl`/`audioUrl` must be null or a Storage download URL for the author's own folder (`memory-images%2F<uid>%2F…`, `memory-audio%2F<uid>%2F…`). Accepted hosts are `https://firebasestorage.googleapis.com` and the Storage emulator at `http://<loopback, 10.0.2.2 or a private LAN IPv4>:9199`, so LAN device testing keeps working. The bucket name is not pinned (Firestore rules cannot see the project id).
+- `users/{uid}` (holds the email) is readable only by its owner. Storage files are readable through the SDK only by their owner; viewers load media through the token download URLs stored on memory docs.
+
 ## Beta Smoke Checklist
 
 Use this checklist on Android first, then iOS if available:
