@@ -3,7 +3,7 @@ import { analyzeSentiment } from '@/domain/sentiment';
 import type { Memory } from '@/domain/types';
 
 import type { MemoryDraft } from './submitMemory';
-import { submitMemory, SUBMIT_TIMEOUT_MS } from './submitMemory';
+import { startSubmit, submitMemory, SUBMIT_TIMEOUT_MS } from './submitMemory';
 
 const draft = (o: Partial<MemoryDraft> = {}): MemoryDraft => ({
   textContent: 'A lovely quiet morning',
@@ -101,6 +101,27 @@ describe('submitMemory', () => {
     const r = await submitMemory(s, USER, draft({ imageUri: 'file:///p.jpg' }), { compress: async (u) => u });
     expect(r).toEqual({ ok: false, error: 'Photo upload failed. Try again or remove the photo.' });
     expect(create).not.toHaveBeenCalled();
+  });
+
+  it('maps an unknown backend error to generic copy and logs the raw error', async () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const s = testServices();
+    jest
+      .spyOn(s.repos.memories, 'create')
+      .mockRejectedValue(new Error('PERMISSION_DENIED: missing or insufficient permissions'));
+    const r = await submitMemory(s, USER, draft());
+    expect(r).toEqual({ ok: false, error: 'Something went wrong. Please try again.' });
+    expect(warn).toHaveBeenCalledTimes(1);
+    warn.mockRestore();
+  });
+
+  it('startSubmit mints ids once so a second await cannot duplicate', async () => {
+    const s = testServices();
+    const create = jest.spyOn(s.repos.memories, 'create');
+    const work = startSubmit(s, USER, draft());
+    const [a, b] = await Promise.all([work, work]);
+    expect(a).toEqual(b);
+    expect(create).toHaveBeenCalledTimes(1);
   });
 
   describe('timeout', () => {

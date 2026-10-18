@@ -7,6 +7,7 @@ import { ServicesProvider } from '@/services/ServicesProvider';
 import type { Services } from '@/services/services';
 
 import { AddMemoryScreen } from './AddMemoryScreen';
+import { SUBMIT_TIMEOUT_MS } from './submitMemory';
 
 const mockReplace = jest.fn();
 const mockBack = jest.fn();
@@ -90,9 +91,7 @@ describe('AddMemoryScreen', () => {
   it('explains denied location permission', async () => {
     await setup({ location: fakeLocation({ permission: 'denied' }) });
     await fireEvent.press(screen.getByTestId('use-location-button'));
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Location permission is needed to save a memory here.',
-    );
+    expect(await screen.findByRole('alert')).toHaveTextContent('Location permission is needed to save a memory here.');
   });
 
   it('requires a future release date for time release', async () => {
@@ -107,5 +106,79 @@ describe('AddMemoryScreen', () => {
     await fireEvent.press(screen.getByTestId('mock-date-picker'));
     await fireEvent.press(screen.getByTestId('save-button'));
     await waitFor(() => expect(mockReplace).toHaveBeenCalledTimes(1));
+  });
+
+  async function fillAndLocate() {
+    await fireEvent.changeText(screen.getByTestId('text-input'), 'Retry me safely');
+    await fireEvent.press(screen.getByTestId('use-location-button'));
+    await screen.findByText('Location captured');
+  }
+
+  async function memoriesNear(services: Services, placeId: string): Promise<Memory[]> {
+    let memories: Memory[] = [];
+    const off = services.repos.memories.subscribeVisibleForPlace(
+      { placeId, viewerId: 'user-demo', viewerCommunityIds: [], now: services.now() },
+      (m) => {
+        memories = m;
+      },
+    );
+    await Promise.resolve();
+    off();
+    return memories;
+  }
+
+  describe('submit reliability', () => {
+    afterEach(() => jest.useRealTimers());
+
+    it('does not duplicate the memory when Save is pressed again after a timeout', async () => {
+      const base = testServices();
+      const realCreate = base.repos.memories.create.bind(base.repos.memories);
+      let release: () => void = () => {};
+      const gate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      const create = jest.fn(async (m: Memory) => {
+        await gate;
+        return realCreate(m);
+      });
+      const services = await setup({ repos: { ...base.repos, memories: { ...base.repos.memories, create } } });
+      await fillAndLocate();
+      jest.useFakeTimers();
+
+      await act(async () => {
+        void fireEvent.press(screen.getByTestId('save-button'));
+        await jest.advanceTimersByTimeAsync(SUBMIT_TIMEOUT_MS);
+      });
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'Could not reach the server. Check your connection and try again.',
+      );
+      expect(mockReplace).not.toHaveBeenCalled();
+
+      await act(async () => {
+        release();
+        await Promise.resolve();
+      });
+      await fireEvent.press(screen.getByTestId('save-button'));
+      await waitFor(() => expect(mockReplace).toHaveBeenCalledTimes(1));
+
+      expect(create).toHaveBeenCalledTimes(1);
+      const placeId = (mockReplace.mock.calls[0]![0] as string).replace('/place/', '');
+      const found = (await memoriesNear(services, placeId)).filter((m) => m.textContent === 'Retry me safely');
+      expect(found).toHaveLength(1);
+    });
+
+    it('starts only one submit for two taps in the same tick', async () => {
+      const base = testServices();
+      const create = jest.spyOn(base.repos.memories, 'create');
+      await setup({ repos: base.repos });
+      await fillAndLocate();
+      const { onClick: onPress } = screen.getByTestId('save-button').props as { onClick: () => Promise<void> };
+      await act(async () => {
+        void onPress();
+        void onPress();
+      });
+      await waitFor(() => expect(mockReplace).toHaveBeenCalledTimes(1));
+      expect(create).toHaveBeenCalledTimes(1);
+    });
   });
 });

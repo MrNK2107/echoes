@@ -26,18 +26,28 @@ export type SubmitResult = { ok: true; memoryId: string; placeId: string } | { o
 const TIMEOUT_ERROR = 'Could not reach the server. Check your connection and try again.';
 const UPLOAD_ERROR = 'Photo upload failed. Try again or remove the photo.';
 
+const GENERIC_ERROR = 'Something went wrong. Please try again.';
+
 class UploadError extends Error {}
 class TimeoutError extends Error {}
 
-export async function submitMemory(
+type Deps = { compress(uri: string): Promise<string> };
+
+/**
+ * Validates the draft and starts the submit work. The returned promise never rejects: it resolves with the
+ * mapped result. Ids and timestamps are minted once here, so awaiting the same promise again (after a
+ * timeout) can never create a second memory.
+ */
+export function startSubmit(
   services: Services,
   userId: string,
   draft: MemoryDraft,
-  deps: { compress(uri: string): Promise<string> } = { compress: compressImage },
+  deps: Deps = { compress: compressImage },
 ): Promise<SubmitResult> {
   const text = draft.textContent.trim();
-  if (text.length === 0) return { ok: false, error: 'Write something to remember.' };
-  if (text.length > MAX_MEMORY_LENGTH) return { ok: false, error: 'Memories can be at most 2000 characters.' };
+  if (text.length === 0) return Promise.resolve({ ok: false, error: 'Write something to remember.' });
+  if (text.length > MAX_MEMORY_LENGTH)
+    return Promise.resolve({ ok: false, error: 'Memories can be at most 2000 characters.' });
 
   const now = services.now();
   const privacyError = validatePrivacy({
@@ -47,9 +57,9 @@ export async function submitMemory(
     communityId: draft.communityId,
     now,
   });
-  if (privacyError) return { ok: false, error: privacyError };
+  if (privacyError) return Promise.resolve({ ok: false, error: privacyError });
   const location = draft.location;
-  if (!location) return { ok: false, error: 'Capture location before saving.' };
+  if (!location) return Promise.resolve({ ok: false, error: 'Capture location before saving.' });
 
   const memoryId = services.newId();
   const { repos } = services;
@@ -107,18 +117,41 @@ export async function submitMemory(
     return { memoryId, placeId: place.id };
   };
 
+  return work().then(
+    (r): SubmitResult => ({ ok: true, ...r }),
+    (e: unknown): SubmitResult => {
+      if (e instanceof UploadError) return { ok: false, error: UPLOAD_ERROR };
+      console.warn('Memory submit failed', e);
+      return { ok: false, error: GENERIC_ERROR };
+    },
+  );
+}
+
+/**
+ * Waits for `work` for at most SUBMIT_TIMEOUT_MS. On timeout the work keeps running; the caller may await the
+ * same promise again under a fresh timeout.
+ */
+export async function awaitWithTimeout(
+  work: Promise<SubmitResult>,
+): Promise<{ result: SubmitResult; timedOut: boolean }> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     const timeout = new Promise<never>((_, reject) => {
       timer = setTimeout(() => reject(new TimeoutError()), SUBMIT_TIMEOUT_MS);
     });
-    const r = await Promise.race([work(), timeout]);
-    return { ok: true, ...r };
-  } catch (e) {
-    if (e instanceof UploadError) return { ok: false, error: UPLOAD_ERROR };
-    if (e instanceof TimeoutError) return { ok: false, error: TIMEOUT_ERROR };
-    return { ok: false, error: e instanceof Error && e.message ? e.message : TIMEOUT_ERROR };
+    return { result: await Promise.race([work, timeout]), timedOut: false };
+  } catch {
+    return { result: { ok: false, error: TIMEOUT_ERROR }, timedOut: true };
   } finally {
     clearTimeout(timer);
   }
+}
+
+export async function submitMemory(
+  services: Services,
+  userId: string,
+  draft: MemoryDraft,
+  deps: Deps = { compress: compressImage },
+): Promise<SubmitResult> {
+  return (await awaitWithTimeout(startSubmit(services, userId, draft, deps))).result;
 }

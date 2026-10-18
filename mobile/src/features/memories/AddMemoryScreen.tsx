@@ -1,6 +1,6 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import type { LatLng, PrivacyType } from '@/domain/types';
@@ -8,7 +8,7 @@ import { useSession } from '@/features/auth/useSession';
 import { useServices } from '@/services/ServicesProvider';
 import { colors } from '@/ui/theme';
 
-import { MAX_MEMORY_LENGTH, submitMemory } from './submitMemory';
+import { awaitWithTimeout, MAX_MEMORY_LENGTH, startSubmit, type SubmitResult } from './submitMemory';
 
 type Choice = Extract<PrivacyType, 'public' | 'private' | 'timeRelease'>;
 const CHOICES: { value: Choice; label: string }[] = [
@@ -31,6 +31,10 @@ export function AddMemoryScreen() {
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // Single-flight per draft: after a timeout the work keeps running (Firestore queues writes), so the next Save
+  // re-awaits this same promise instead of minting a new memory. Cleared once an attempt definitively settles.
+  const inFlight = useRef<Promise<SubmitResult> | null>(null);
+  const saving = useRef(false);
 
   const captureLocation = async () => {
     setError(null);
@@ -56,21 +60,28 @@ export function AddMemoryScreen() {
   };
 
   const save = async () => {
-    if (!session || submitting) return;
+    if (!session || saving.current) return;
+    saving.current = true;
     setError(null);
     setSubmitting(true);
-    const result = await submitMemory(services, session.userId, {
-      textContent: text,
-      privacy,
-      releaseDate: privacy === 'timeRelease' ? releaseDate : null,
-      taggedUserIds: [],
-      communityId: null,
-      location,
-      imageUri,
-    });
-    setSubmitting(false);
-    if (result.ok) router.replace(`/place/${result.placeId}`);
-    else setError(result.error);
+    try {
+      inFlight.current ??= startSubmit(services, session.userId, {
+        textContent: text,
+        privacy,
+        releaseDate: privacy === 'timeRelease' ? releaseDate : null,
+        taggedUserIds: [],
+        communityId: null,
+        location,
+        imageUri,
+      });
+      const { result, timedOut } = await awaitWithTimeout(inFlight.current);
+      if (!timedOut) inFlight.current = null;
+      if (result.ok) router.replace(`/place/${result.placeId}`);
+      else setError(result.error);
+    } finally {
+      saving.current = false;
+      setSubmitting(false);
+    }
   };
 
   return (
