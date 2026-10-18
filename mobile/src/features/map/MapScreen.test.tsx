@@ -105,4 +105,13 @@ describe('MapScreen', () => {
     expect(await screen.findByText('1 memory waiting to upload')).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: 'Retry' })).toBeOnTheScreen();
   });
+
+  it('Profile header button navigates', async () => {
+    await setup();
+    await waitFor(() => expect(screen.getByLabelText('Profile')).toBeOnTheScreen());
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Profile'));
+    });
+    expect(mockPush).toHaveBeenCalledWith('/profile');
+  });
 });

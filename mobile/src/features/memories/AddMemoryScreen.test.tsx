@@ -46,6 +46,24 @@ async function setup(overrides: Partial<Services> = {}) {
 describe('AddMemoryScreen', () => {
   beforeEach(() => jest.clearAllMocks());
 
+  it('starts with the default privacy of a user whose default is private', async () => {
+    const services = testServices();
+    await act(async () => {
+      await services.repos.auth.signIn(DEMO_USER.email, DEMO_USER.password);
+      await services.repos.users.updateDefaultPrivacy('user-demo', 'private', services.now());
+    });
+    await render(
+      <ServicesProvider services={services}>
+        <OutboxProvider userId="user-demo">
+          <AddMemoryScreen />
+        </OutboxProvider>
+      </ServicesProvider>,
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId('privacy-private').props.accessibilityState).toMatchObject({ selected: true }),
+    );
+  });
+
   it('shows a character counter', async () => {
     await setup();
     await fireEvent.changeText(screen.getByTestId('text-input'), 'hello');

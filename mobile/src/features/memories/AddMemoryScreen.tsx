@@ -35,6 +35,24 @@ export function AddMemoryScreen() {
   // Guards against a double tap starting two submits; offline retries belong to the outbox (ADR-0006).
   const saving = useRef(false);
 
+  // The picker starts on 'public' and adopts the user's default once it loads (a brief default
+  // rather than blocking the form); a choice the user already made is never overwritten.
+  const privacyTouched = useRef(false);
+  const uid = session?.userId;
+  useEffect(() => {
+    if (!uid) return;
+    let cancelled = false;
+    services.repos.users
+      .get(uid)
+      .then((u) => {
+        if (!cancelled && !privacyTouched.current && u?.defaultPrivacy === 'private') setPrivacy('private');
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [services.repos.users, uid]);
+
   useEffect(() => {
     if (!queued) return;
     const timer = setTimeout(() => router.replace('/'), QUEUED_NOTICE_MS);
@@ -125,7 +143,10 @@ export function AddMemoryScreen() {
 
       <PrivacyPicker
         privacy={privacy}
-        onPrivacyChange={setPrivacy}
+        onPrivacyChange={(p) => {
+          privacyTouched.current = true;
+          setPrivacy(p);
+        }}
         releaseDate={releaseDate}
         onReleaseDateChange={setReleaseDate}
         now={services.now()}
