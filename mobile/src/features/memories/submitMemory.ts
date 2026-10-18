@@ -1,5 +1,6 @@
 import { emptyAura } from '@/domain/aura';
 import { encodeGeohash } from '@/domain/geo';
+import { MAX_MEMORY_LENGTH, validateMemoryText } from '@/domain/memoryLifecycle';
 import { validatePrivacy } from '@/domain/privacy';
 import { analyzeSentiment } from '@/domain/sentiment';
 import type { LatLng, Memory, Place, PrivacyType } from '@/domain/types';
@@ -9,7 +10,7 @@ import { compressImage } from './compressImage';
 
 export const PLACE_MATCH_RADIUS_METERS = 100;
 export const SUBMIT_TIMEOUT_MS = 15_000;
-export const MAX_MEMORY_LENGTH = 2000;
+export { MAX_MEMORY_LENGTH };
 
 export interface MemoryDraft {
   textContent: string;
@@ -44,10 +45,9 @@ export function startSubmit(
   draft: MemoryDraft,
   deps: Deps = { compress: compressImage },
 ): Promise<SubmitResult> {
+  const textError = validateMemoryText(draft.textContent);
+  if (textError) return Promise.resolve({ ok: false, error: textError });
   const text = draft.textContent.trim();
-  if (text.length === 0) return Promise.resolve({ ok: false, error: 'Write something to remember.' });
-  if (text.length > MAX_MEMORY_LENGTH)
-    return Promise.resolve({ ok: false, error: 'Memories can be at most 2000 characters.' });
 
   const now = services.now();
   const privacyError = validatePrivacy({
