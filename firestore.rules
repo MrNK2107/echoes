@@ -55,6 +55,7 @@ service cloud.firestore {
           'communityId',
           'releaseDate',
           'imageUrl',
+          'audioUrl',
           'updatedAt'
         ]);
     }
@@ -90,8 +91,8 @@ service cloud.firestore {
     }
 
     match /memories/{memoryId} {
-      allow get: if isVisibleMemory(resource.data);
-      allow list: if isVisibleMemory(resource.data);
+      allow get, list: if isVisibleMemory(resource.data) ||
+        (signedIn() && resource.data.userId == request.auth.uid);
       allow create: if signedIn() &&
         request.resource.data.userId == request.auth.uid &&
         request.resource.data.isDeleted == false;

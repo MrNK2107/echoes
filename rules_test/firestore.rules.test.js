@@ -113,6 +113,81 @@ test("memory image url can be attached after upload", async () => {
   );
 });
 
+async function seedDeletedMemory() {
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await setDoc(doc(context.firestore(), "memories/deleted-memory"), {
+      ...memoryDoc({ privacy: "public" }),
+      isDeleted: true,
+      deletedAt: Timestamp.now(),
+    });
+  });
+}
+
+test("authors can get and list their own deleted memories", async () => {
+  await seedDeletedMemory();
+  const creatorDb = testEnv.authenticatedContext("creator").firestore();
+  const strangerDb = testEnv.authenticatedContext("stranger").firestore();
+
+  await assertSucceeds(getDoc(doc(creatorDb, "memories/deleted-memory")));
+  await assertFails(getDoc(doc(strangerDb, "memories/deleted-memory")));
+  await assertSucceeds(
+    getDocs(
+      query(
+        collection(creatorDb, "memories"),
+        where("userId", "==", "creator"),
+        where("isDeleted", "==", true),
+      ),
+    ),
+  );
+  await assertFails(
+    getDocs(
+      query(
+        collection(strangerDb, "memories"),
+        where("placeId", "==", "place-1"),
+        where("isDeleted", "==", true),
+      ),
+    ),
+  );
+});
+
+test("audioUrl is attachable by the author only; placeId stays immutable", async () => {
+  // changedKeys() only reports keys present on both sides, so audioUrl must
+  // already exist on the stored doc for the allowlist to be exercised.
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    for (const id of ["private-memory", "public-memory"]) {
+      await setDoc(
+        doc(context.firestore(), `memories/${id}`),
+        { audioUrl: "https://example.test/old.m4a" },
+        { merge: true },
+      );
+    }
+  });
+  const creatorDb = testEnv.authenticatedContext("creator").firestore();
+  const strangerDb = testEnv.authenticatedContext("stranger").firestore();
+
+  await assertSucceeds(
+    setDoc(
+      doc(creatorDb, "memories/private-memory"),
+      { audioUrl: "https://example.test/a.m4a", updatedAt: Timestamp.now() },
+      { merge: true },
+    ),
+  );
+  await assertFails(
+    setDoc(
+      doc(creatorDb, "memories/private-memory"),
+      { placeId: "place-2", updatedAt: Timestamp.now() },
+      { merge: true },
+    ),
+  );
+  await assertFails(
+    setDoc(
+      doc(strangerDb, "memories/public-memory"),
+      { audioUrl: "https://example.test/a.m4a", updatedAt: Timestamp.now() },
+      { merge: true },
+    ),
+  );
+});
+
 test("community create batch may include owner membership", async () => {
   const creatorDb = testEnv.authenticatedContext("creator").firestore();
   const batch = writeBatch(creatorDb);
