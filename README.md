@@ -64,11 +64,14 @@ The Firestore rules tests must run through `firebase emulators:exec`; running `n
 
 The app lives in `mobile/` (React Native + Expo SDK 58). Choose a backend with `EXPO_PUBLIC_BACKEND` (copy `mobile/.env.example` to `mobile/.env`):
 
-- **memory** (default): seeded demo data, no network. Sign in with `demo@echoes.app` / `echoes-demo`.
+- **memory** (default): seeded demo data, no network. Sign in with `demo@echoes.app` / `echoes-demo`. Demo mode pins your location to the demo neighbourhood (Bengaluru) so the seeded map is never empty, wherever you are.
 - **emulator**: Firebase emulators. Start them from the repo root with
   `npx firebase emulators:start --project demo-echoes --only auth,firestore,storage,functions`,
   then set `EXPO_PUBLIC_BACKEND=emulator`. On a physical phone also set `EXPO_PUBLIC_EMULATOR_HOST` to your PC's LAN IP.
-  `firebase.json` binds every emulator to `0.0.0.0` (not the default 127.0.0.1) so a phone on the same network can reach them; allow the ports (9099, 8080, 9199, 5001) through your firewall.
+  Emulators bind to localhost only by default. For a physical phone, use the opt-in LAN config instead:
+  `npx firebase --config firebase.lan.json emulators:start --project demo-echoes --only auth,firestore,storage,functions`.
+  **Warning:** `firebase.lan.json` binds the emulators to `0.0.0.0`, exposing them (unauthenticated, with open demo data) to everyone on your network. Use it only on a trusted network, and allow ports 9099, 8080, 9199 and 5001 through your firewall.
+  On the Android emulator set `EXPO_PUBLIC_EMULATOR_HOST=10.0.2.2` (the emulator's alias for the host PC).
 - **firebase**: a real project. Set `EXPO_PUBLIC_BACKEND=firebase` plus all `EXPO_PUBLIC_FIREBASE_*` keys from `.env.example`; a missing key fails at startup with `Missing EXPO_PUBLIC_FIREBASE_<KEY>`.
 
 Expo Go steps:
@@ -150,7 +153,7 @@ npx firebase emulators:exec --only firestore "npm test --prefix rules_test"
 `firebase.json` also configures the Auth (`9099`), Storage (`9199`) and Functions (`5001`) emulators. The Expo app's Firestore backend is verified against the backend contract suites (`mobile/test/contracts`) under the real `firestore.rules`/`storage.rules`. All mobile emulator commands use the demo project id `demo-echoes` (no real Firebase project needed); run from the repo root:
 
 ```powershell
-npx firebase emulators:exec --project demo-echoes --only auth,firestore,storage "npm --prefix mobile run test:emulator"
+npx firebase emulators:exec --project demo-echoes --only auth,firestore,storage,functions "npm --prefix mobile run test:emulator"
 ```
 
 ## Beta Smoke Checklist

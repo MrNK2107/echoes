@@ -1,6 +1,6 @@
 // Runs the backend contract suites against the Firebase emulators (auth 9099, firestore 8080,
-// storage 9199). Invoke from the repo root via:
-//   npx firebase emulators:exec --project demo-echoes --only auth,firestore,storage "npm --prefix mobile run test:emulator"
+// storage 9199, functions 5001). Invoke from the repo root via:
+//   npx firebase emulators:exec --project demo-echoes --only auth,firestore,storage,functions "npm --prefix mobile run test:emulator"
 const expoPreset = require('jest-expo/jest-preset');
 
 const JS_TS = '\\.[jt]sx?$';
