@@ -151,11 +151,11 @@ export interface AuthSession { userId: string; email: string; displayName: strin
   - `isMemoryVisibleTo(memory: Pick<Memory,'userId'|'privacy'|'taggedUserIds'|'releaseDate'|'isDeleted'>, viewer: { viewerId: string; viewerIsCommunityMember: boolean; now: Date }): boolean`
   - `validatePrivacy(input: { privacy: PrivacyType; taggedUserIds: string[]; releaseDate: Date | null; communityId: string | null; now: Date }): string | null` — returns the spec's privacy error strings.
 
-- [ ] **Step 1: Write failing tests:** `it.each(visibility.json)` → `isMemoryVisibleTo(...) === visible` (parse ISO dates); `validatePrivacy` cases: tagged + `[]` → `'Add at least one tagged user.'`; timeRelease + null → `'Choose a release date.'`; timeRelease + releaseDate == now → `'Choose a future release date.'`; community + null → `'Choose a community.'`; public → `null`.
-- [ ] **Step 2: Run** `npm --prefix mobile test -- privacy` — Expected: FAIL (module not found).
-- [ ] **Step 3: Implement** both functions per the spec's Visibility rule.
-- [ ] **Step 4: Run** — Expected: PASS.
-- [ ] **Step 5: Commit** `feat(domain): port memory types and privacy rules`.
+- [x] **Step 1: Write failing tests:** `it.each(visibility.json)` → `isMemoryVisibleTo(...) === visible` (parse ISO dates); `validatePrivacy` cases: tagged + `[]` → `'Add at least one tagged user.'`; timeRelease + null → `'Choose a release date.'`; timeRelease + releaseDate == now → `'Choose a future release date.'`; community + null → `'Choose a community.'`; public → `null`.
+- [x] **Step 2: Run** `npm --prefix mobile test -- privacy` — Expected: FAIL (module not found).
+- [x] **Step 3: Implement** both functions per the spec's Visibility rule.
+- [x] **Step 4: Run** — Expected: PASS.
+- [x] **Step 5: Commit** `feat(domain): port memory types and privacy rules`.
 
 ---
 
