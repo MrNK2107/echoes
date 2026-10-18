@@ -15,8 +15,21 @@ import type { MemoryRepository } from '../types';
 import { subscribeUnion } from './snapshots';
 
 const LIST_LIMIT = 50;
-/** Firestore caps `in` disjunctions at 30 values. */
-const IN_CHUNK = 30;
+/**
+ * Community ids per `in` query. Each value costs one `exists()` document access in the rules,
+ * and production rules allow at most 10 per request.
+ */
+export const COMMUNITY_IN_CHUNK = 10;
+/**
+ * The rules compare `releaseDate <= request.time` (server clock). Bounding the query a little
+ * below the client clock keeps a fast device clock from getting the branch denied; memories
+ * released in the last few minutes simply appear a little later.
+ */
+export const TIME_RELEASE_SKEW_MS = 5 * 60 * 1000;
+
+export function timeReleaseBound(now: Date, clientNow: number = Date.now()): Date {
+  return new Date(Math.min(now.getTime(), clientNow) - TIME_RELEASE_SKEW_MS);
+}
 
 function chunk<T>(xs: T[], size: number): T[][] {
   const out: T[][] = [];
@@ -29,7 +42,8 @@ export function createMemoryRepository(db: Firestore): MemoryRepository {
   return {
     subscribeVisibleForPlace(q, cb, onError) {
       // Each query carries exactly the constraints `isVisibleMemory` in firestore.rules needs to
-      // prove every result readable; a `list` that cannot be proven is rejected wholesale.
+      // prove every result readable; a `list` that cannot be proven is rejected wholesale, and
+      // subscribeUnion then drops only that branch.
       const visible = (...constraints: QueryConstraint[]) =>
         query(
           memories,
@@ -45,9 +59,9 @@ export function createMemoryRepository(db: Firestore): MemoryRepository {
         visible(where('privacy', '==', 'tagged'), where('taggedUserIds', 'array-contains', q.viewerId)),
         visible(
           where('privacy', '==', 'timeRelease'),
-          where('releaseDate', '<=', Timestamp.fromDate(q.now)),
+          where('releaseDate', '<=', Timestamp.fromDate(timeReleaseBound(q.now))),
         ),
-        ...chunk(q.viewerCommunityIds, IN_CHUNK).map((ids) =>
+        ...chunk(q.viewerCommunityIds, COMMUNITY_IN_CHUNK).map((ids) =>
           visible(where('privacy', '==', 'community'), where('communityId', 'in', ids)),
         ),
       ];

@@ -137,6 +137,37 @@ describe('firestore backend specifics', () => {
     }
   });
 
+  it('a client clock far ahead of the server still shows public memories without a denial', async () => {
+    // `now` +1 day simulates a fast device clock. The timeRelease bound is clamped below the
+    // real client clock, so the rules (releaseDate <= request.time) still accept that branch:
+    // public memories appear, released ones appear, and onError never fires.
+    await ctx.signInAs('author');
+    const base = communityMemory('pub', 'unused');
+    await ctx.repos.memories.create({ ...base, privacy: 'public', communityId: null });
+    await ctx.repos.memories.create({
+      ...base, id: 'released', privacy: 'timeRelease', communityId: null,
+      releaseDate: new Date('2026-02-01T00:00:00Z'),
+    });
+    await ctx.signInAs('viewer');
+
+    let latest: string[] | null = null;
+    let error: Error | null = null;
+    const unsub = ctx.repos.memories.subscribeVisibleForPlace(
+      {
+        placeId: 'place-1', viewerId: 'viewer', viewerCommunityIds: [],
+        now: new Date(Date.now() + 86_400_000),
+      },
+      (ms) => { latest = ms.map((m) => m.id).sort(); },
+      (e) => { error = e; },
+    );
+    try {
+      await waitFor(() => expect(latest).toEqual(['pub', 'released']));
+      expect(error).toBeNull();
+    } finally {
+      unsub();
+    }
+  });
+
   it('register creates the users doc with public default privacy', async () => {
     const s = await ctx.repos.auth.register('u@example.com', 'secret12', 'U');
     const user = await ctx.repos.users.get(s.userId);
