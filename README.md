@@ -74,6 +74,8 @@ The app lives in `mobile/` (React Native + Expo SDK 58). Choose a backend with `
   On the Android emulator set `EXPO_PUBLIC_EMULATOR_HOST=10.0.2.2` (the emulator's alias for the host PC).
 - **firebase**: a real project. Set `EXPO_PUBLIC_BACKEND=firebase` plus all `EXPO_PUBLIC_FIREBASE_*` keys from `.env.example`; a missing key fails at startup with `Missing EXPO_PUBLIC_FIREBASE_<KEY>`.
 
+Expo app features: map and places, add memories with photos and 60 s voice notes, memory detail with edit, delete and restore (Recently deleted keeps items 30 days), an offline outbox that retries saves, profile with default privacy, and account deletion with re-authentication.
+
 Expo Go steps:
 
 ```bash

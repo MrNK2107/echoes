@@ -3,6 +3,38 @@
 **Updated:** October 19, 2026  
 **Target:** Production-ready v1 for Android and iOS, age 13+
 
+## Expo rewrite — Plan 2
+
+Plan 2 (memory lifecycle) adds memory detail/edit/delete/restore (Recently deleted, 30-day window, daily purge function), 60 s voice notes, a persisted offline outbox with permanent-failure parking (ADR-0006), profile with default privacy, and account deletion with re-authentication. Rules changed: authors read their own deleted memories; `audioUrl` and `sentiment` are mutable; update guards use `affectedKeys()`.
+
+| Command | Result |
+| --- | --- |
+| `npm --prefix mobile test` | Pass (34 suites, 428 tests; 3 consecutive runs plus 1 `--randomize` run, all green) |
+| `npm --prefix mobile run typecheck` | Pass |
+| `npm --prefix mobile run lint` | Pass |
+| `npm test --prefix functions` | Pass (36 tests) |
+| `npx firebase emulators:exec --project demo-echoes --only auth,firestore,storage,functions "npm --prefix mobile run test:emulator"` | Pass (32 tests) |
+| `npx firebase emulators:exec --only firestore "npm test --prefix rules_test"` | Pass (16 tests) |
+| `cd mobile && npx expo export --platform android --output-dir dist && npx expo export --platform ios --output-dir dist-ios` | Pass (both bundles exported) |
+
+### Manual Expo Go checklist
+
+- [ ] Edit a memory's text and privacy; the change shows on the detail screen
+- [ ] Delete a memory; it leaves the place and appears in Recently deleted
+- [ ] Restore it from Recently deleted; it returns to the place
+- [ ] Record a voice note (up to 60 s), then play it back
+- [ ] Airplane mode: save a memory, reconnect, and confirm it syncs from the outbox
+- [ ] Profile: change default privacy and confirm a new memory uses it
+- [ ] Delete account (re-authenticate when prompted); you are signed out and data is gone
+
+### Known follow-ups
+
+- Real microphone recording and playback are not verified on a device.
+- Offline airplane-mode save and reconnect is not verified on a phone.
+- Account deletion in Firebase mode is not verified against a real project.
+
+---
+
 ## Expo rewrite — Plan 1
 
 The active client is now the React Native + Expo app in `mobile/` (branch `expo-rewrite`). Plan 1 (foundation and core loop) is verified by the gates below; the Flutter notes further down are historical.
