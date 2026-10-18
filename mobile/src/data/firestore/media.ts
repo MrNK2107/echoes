@@ -1,14 +1,25 @@
 import { getDownloadURL, ref, uploadBytes, type FirebaseStorage } from 'firebase/storage';
 import type { MediaRepository } from '../types';
 
+async function upload(
+  storage: FirebaseStorage,
+  path: string,
+  localUri: string,
+  contentType: string,
+): Promise<string> {
+  const blob = await (await fetch(localUri)).blob();
+  const target = ref(storage, path);
+  await uploadBytes(target, blob, { contentType });
+  return getDownloadURL(target);
+}
+
 export function createMediaRepository(storage: FirebaseStorage): MediaRepository {
   return {
-    async uploadMemoryImage({ userId, memoryId, localUri }) {
-      const blob = await (await fetch(localUri)).blob();
-      const target = ref(storage, `memory-images/${userId}/${memoryId}.jpg`);
-      await uploadBytes(target, blob, { contentType: 'image/jpeg' });
-      return getDownloadURL(target);
+    uploadMemoryImage({ userId, memoryId, localUri }) {
+      return upload(storage, `memory-images/${userId}/${memoryId}.jpg`, localUri, 'image/jpeg');
     },
-    async uploadMemoryAudio() { throw new Error('not implemented'); }, // Task 4
+    uploadMemoryAudio({ userId, memoryId, localUri }) {
+      return upload(storage, `memory-audio/${userId}/${memoryId}.m4a`, localUri, 'audio/mp4');
+    },
   };
 }

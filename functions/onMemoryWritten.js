@@ -14,6 +14,9 @@ function toDate(value) {
   return new Date(0);
 }
 
+// gRPC status code Firestore uses when an update targets a missing document.
+const NOT_FOUND = 5;
+
 function buildPlaceAggregate(memories, now) {
   const live = memories.filter((m) => !m.isDeleted);
   const livePublic = live.filter((m) => m.privacy === "public");
@@ -48,7 +51,14 @@ async function recomputePlace(db, placeId, now) {
     now,
   );
 
-  await placeRef.set(aggregate, { merge: true });
+  // update (not set/merge) so a place deleted meanwhile is never recreated as a fragment
+  // without name or custodianIds.
+  try {
+    await placeRef.update(aggregate);
+  } catch (error) {
+    if (error?.code === NOT_FOUND) return;
+    throw error;
+  }
   await placeRef.collection("auraHistory").add({
     placeId,
     aura: aggregate.aura,
@@ -78,4 +88,4 @@ const onMemoryWritten = onDocumentWritten("memories/{memoryId}", async (event) =
   }
 });
 
-module.exports = { onMemoryWritten, buildPlaceAggregate, toDate };
+module.exports = { onMemoryWritten, buildPlaceAggregate, recomputePlace, toDate };

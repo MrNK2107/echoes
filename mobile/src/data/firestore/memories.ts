@@ -1,15 +1,20 @@
 import {
   collection,
   doc,
+  getDoc,
   limit,
   orderBy,
   query,
   setDoc,
   Timestamp,
+  updateDoc,
   where,
+  type DocumentData,
   type Firestore,
   type QueryConstraint,
 } from 'firebase/firestore';
+import { normalizePrivacyFields } from '@/domain/memoryLifecycle';
+import type { Memory } from '@/domain/types';
 import { memoryFromDoc, memoryToDoc } from '../mappers';
 import type { MemoryRepository } from '../types';
 import { subscribeUnion } from './snapshots';
@@ -29,6 +34,20 @@ export const TIME_RELEASE_SKEW_MS = 5 * 60 * 1000;
 
 export function timeReleaseBound(now: Date, clientNow: number = Date.now()): Date {
   return new Date(Math.min(now.getTime(), clientNow) - TIME_RELEASE_SKEW_MS);
+}
+
+export const RESTORE_EXPIRED = 'This memory can no longer be restored.';
+
+function errorCode(e: unknown): unknown {
+  return typeof e === 'object' && e !== null ? (e as { code?: unknown }).code : undefined;
+}
+
+const isPermissionDenied = (e: unknown) => errorCode(e) === 'permission-denied';
+
+/** Newest first; the query already orders, this keeps the order explicit after the union. */
+function newestFirst(ms: Memory[], key: (m: Memory) => Date | null): Memory[] {
+  const t = (m: Memory) => key(m)?.getTime() ?? 0;
+  return ms.sort((a, b) => t(b) - t(a)).slice(0, LIST_LIMIT);
 }
 
 function chunk<T>(xs: T[], size: number): T[][] {
@@ -80,13 +99,83 @@ export function createMemoryRepository(db: Firestore): MemoryRepository {
     async create(memory) {
       await setDoc(doc(db, 'memories', memory.id), memoryToDoc(memory));
     },
-    // Task 4 implements the lifecycle below.
-    async findById() { throw new Error('not implemented'); },
-    subscribeForUser() { throw new Error('not implemented'); },
-    subscribeDeletedForUser() { throw new Error('not implemented'); },
-    async update() { throw new Error('not implemented'); },
-    async attachMedia() { throw new Error('not implemented'); },
-    async softDelete() { throw new Error('not implemented'); },
-    async restore() { throw new Error('not implemented'); },
+    async findById(id) {
+      // The rules allow `get` for visible memories and for the author's own (deleted or not).
+      // Anything else, including a missing document, is denied, which reads as "not found".
+      try {
+        const snap = await getDoc(doc(db, 'memories', id));
+        const data = snap.data();
+        return data === undefined ? null : memoryFromDoc(snap.id, data);
+      } catch (e) {
+        const code = errorCode(e);
+        if (code === 'permission-denied' || code === 'not-found') return null;
+        throw e;
+      }
+    },
+    subscribeForUser(userId, cb, onError) {
+      // `userId ==` lets the rules prove every result is the caller's own memory.
+      const q = query(
+        memories,
+        where('userId', '==', userId),
+        where('isDeleted', '==', false),
+        orderBy('createdAt', 'desc'),
+        limit(LIST_LIMIT),
+      );
+      return subscribeUnion(
+        [q],
+        (docs) => cb(newestFirst(docs.map((d) => memoryFromDoc(d.id, d.data())), (m) => m.createdAt)),
+        onError,
+      );
+    },
+    subscribeDeletedForUser(userId, cb, onError) {
+      const q = query(
+        memories,
+        where('userId', '==', userId),
+        where('isDeleted', '==', true),
+        orderBy('deletedAt', 'desc'),
+        limit(LIST_LIMIT),
+      );
+      return subscribeUnion(
+        [q],
+        (docs) => cb(newestFirst(docs.map((d) => memoryFromDoc(d.id, d.data())), (m) => m.deletedAt)),
+        onError,
+      );
+    },
+    async update(id, patch, updatedAt) {
+      // Only fields in the rules' `mutableMemoryEditOnly` list; `affectedKeys` rejects any other.
+      const privacy = normalizePrivacyFields(patch);
+      await updateDoc(doc(db, 'memories', id), {
+        textContent: patch.textContent,
+        privacy: privacy.privacy,
+        taggedUserIds: privacy.taggedUserIds,
+        communityId: privacy.communityId,
+        releaseDate: privacy.releaseDate === null ? null : Timestamp.fromDate(privacy.releaseDate),
+        updatedAt: Timestamp.fromDate(updatedAt),
+      });
+    },
+    async attachMedia(id, media, updatedAt) {
+      const fields: DocumentData = { updatedAt: Timestamp.fromDate(updatedAt) };
+      if (media.imageUrl !== undefined) fields.imageUrl = media.imageUrl;
+      if (media.audioUrl !== undefined) fields.audioUrl = media.audioUrl;
+      await updateDoc(doc(db, 'memories', id), fields);
+    },
+    async softDelete(id, at) {
+      const stamp = Timestamp.fromDate(at);
+      await updateDoc(doc(db, 'memories', id), { isDeleted: true, deletedAt: stamp, updatedAt: stamp });
+    },
+    async restore(id, at) {
+      // `restoreOnly` judges the 30-day window against the server clock (`request.time`); the
+      // author meets every other condition, so a denial here means the window has closed.
+      try {
+        await updateDoc(doc(db, 'memories', id), {
+          isDeleted: false,
+          deletedAt: null,
+          updatedAt: Timestamp.fromDate(at),
+        });
+      } catch (e) {
+        if (isPermissionDenied(e)) throw new Error(RESTORE_EXPIRED);
+        throw e;
+      }
+    },
   };
 }

@@ -34,3 +34,9 @@ test("stringifyData ignores non-object payloads", () => {
   assert.deepEqual(__private__.stringifyData(null), {});
   assert.deepEqual(__private__.stringifyData(["not", "a", "map"]), {});
 });
+
+test("exports the daily purgeDeletedMemories job", () => {
+  const index = require("./index");
+  assert.ok(index.purgeDeletedMemories, "purgeDeletedMemories is exported");
+  assert.ok(index.cleanupDeletedUser, "cleanupDeletedUser is still exported");
+});

@@ -1,8 +1,15 @@
 const admin = require("firebase-admin");
+// The modular import works under the functions emulator, whose proxied `admin.firestore`
+// lacks the FieldValue namespace.
+const { FieldValue } = require("firebase-admin/firestore");
 const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 const { logger } = require("firebase-functions");
 const functionsV1 = require("firebase-functions/v1");
 const { onMemoryWritten } = require("./onMemoryWritten");
+const {
+  purgeDeletedMemories,
+  __private__: { purgeExpired },
+} = require("./purgeDeletedMemories");
 
 admin.initializeApp();
 
@@ -10,6 +17,7 @@ const db = admin.firestore();
 const messaging = admin.messaging();
 
 exports.onMemoryWritten = onMemoryWritten;
+exports.purgeDeletedMemories = purgeDeletedMemories;
 
 exports.dispatchNotificationRequest = onDocumentCreated(
   "notificationRequests/{requestId}",
@@ -25,7 +33,7 @@ exports.dispatchNotificationRequest = onDocumentCreated(
       await snapshot.ref.update({
         status: "failed",
         error: "Missing recipientUserId",
-        processedAt: admin.firestore.FieldValue.serverTimestamp(),
+        processedAt: FieldValue.serverTimestamp(),
       });
       return;
     }
@@ -43,7 +51,7 @@ exports.dispatchNotificationRequest = onDocumentCreated(
       await snapshot.ref.update({
         status: "skipped",
         skippedReason: "No notification tokens",
-        processedAt: admin.firestore.FieldValue.serverTimestamp(),
+        processedAt: FieldValue.serverTimestamp(),
       });
       return;
     }
@@ -56,7 +64,7 @@ exports.dispatchNotificationRequest = onDocumentCreated(
       status: response.failureCount > 0 ? "partial" : "sent",
       successCount: response.successCount,
       failureCount: response.failureCount,
-      processedAt: admin.firestore.FieldValue.serverTimestamp(),
+      processedAt: FieldValue.serverTimestamp(),
     });
 
     await pruneInvalidTokens({
@@ -94,7 +102,7 @@ exports.cleanupDeletedUser = functionsV1.auth.user().onDelete(async (user) => {
     .get();
   places.docs.forEach((doc) => {
     writer.update(doc.ref, {
-      custodianIds: admin.firestore.FieldValue.arrayRemove(userId),
+      custodianIds: FieldValue.arrayRemove(userId),
       updatedAt: new Date().toISOString(),
     });
   });
@@ -173,4 +181,5 @@ async function pruneInvalidTokens({ recipientUserId, tokens, responses }) {
 exports.__private__ = {
   buildMulticastMessage,
   stringifyData,
+  purgeExpired,
 };

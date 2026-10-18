@@ -1,6 +1,9 @@
 import {
   createUserWithEmailAndPassword,
+  deleteUser,
+  EmailAuthProvider,
   onAuthStateChanged,
+  reauthenticateWithCredential,
   signInWithEmailAndPassword,
   signOut,
   updateProfile,
@@ -12,6 +15,12 @@ import type { AuthRepository, UserRepository } from '../types';
 
 const BAD_CREDENTIALS = 'Incorrect email or password.';
 const EMAIL_IN_USE = 'An account already exists for that email.';
+const WRONG_PASSWORD = 'Incorrect password.';
+const WRONG_PASSWORD_CODES = new Set([
+  'auth/invalid-credential',
+  'auth/wrong-password',
+  'auth/invalid-login-credentials',
+]);
 const BAD_CREDENTIAL_CODES = new Set([
   'auth/invalid-credential',
   'auth/wrong-password',
@@ -84,6 +93,17 @@ export function createAuthRepository(
     async signOut() {
       await signOut(auth);
     },
-    async deleteAccount() { throw new Error('not implemented'); }, // Task 4
+    async deleteAccount(password) {
+      const user = auth.currentUser;
+      if (!user || !user.email) throw new Error('Not signed in.');
+      try {
+        await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, password));
+      } catch (e) {
+        if (WRONG_PASSWORD_CODES.has(errorCode(e) ?? '')) throw new Error(WRONG_PASSWORD);
+        throw e;
+      }
+      // Server-side `cleanupDeletedUser` (Auth onDelete) removes the profile, memories and files.
+      await deleteUser(user);
+    },
   };
 }

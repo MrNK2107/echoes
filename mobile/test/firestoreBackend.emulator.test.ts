@@ -94,10 +94,11 @@ const make = async () => {
 };
 
 placeRepositoryContract('firestore', make);
-// Task 4 flips supportsLifecycle to true once the Firestore lifecycle is implemented.
-memoryRepositoryContract('firestore', make, { supportsLifecycle: false });
-authRepositoryContract('firestore', make, { supportsLifecycle: false });
-userRepositoryContract('firestore', make, { supportsLifecycle: false });
+// Aggregation runs through `onMemoryWritten`; account cleanup through `cleanupDeletedUser`
+// (both need the functions emulator, see jest.emulator.config.js).
+memoryRepositoryContract('firestore', make, { supportsLifecycle: true });
+authRepositoryContract('firestore', make, { supportsLifecycle: true });
+userRepositoryContract('firestore', make, { supportsLifecycle: true });
 
 describe('firestore backend specifics', () => {
   let ctx: Ctx;
@@ -189,6 +190,38 @@ describe('firestore backend specifics', () => {
       localUri: `data:image/jpeg;base64,${btoa(jpegBytes)}`,
     });
     expect(url).toContain('memory-images%2Fauthor%2Fm1.jpg');
+  });
+
+  it('uploads a voice note to memory-audio/{uid}/{memoryId}.m4a and returns a URL', async () => {
+    await ctx.signInAs('author');
+    const m4aBytes = String.fromCharCode(0, 0, 0, 0x18, 0x66, 0x74, 0x79, 0x70, 0x4d, 0x34, 0x41, 0x20);
+    const url = await ctx.repos.media.uploadMemoryAudio({
+      userId: 'author',
+      memoryId: 'm1',
+      localUri: `data:audio/mp4;base64,${btoa(m4aBytes)}`,
+    });
+    expect(url).toContain('memory-audio%2Fauthor%2Fm1.m4a');
+  });
+
+  it('update writes only mutable fields and clears privacy fields that no longer apply', async () => {
+    await ctx.signInAs('author');
+    const base = communityMemory('edit-me', 'unused');
+    await ctx.repos.memories.create({
+      ...base, privacy: 'timeRelease', communityId: null, releaseDate: new Date('2026-02-01T00:00:00Z'),
+    });
+    const at = new Date('2026-03-01T00:00:00Z');
+    await ctx.repos.memories.update(
+      'edit-me',
+      {
+        textContent: 'now public', privacy: 'public', taggedUserIds: ['x'],
+        releaseDate: new Date('2027-01-01T00:00:00Z'), communityId: 'c',
+      },
+      at,
+    );
+    expect(await ctx.repos.memories.findById('edit-me')).toMatchObject({
+      textContent: 'now public', privacy: 'public', taggedUserIds: [], releaseDate: null,
+      communityId: null, createdAt: T, updatedAt: at,
+    });
   });
 
   it('places round-trip through findById with the aura mapped', async () => {

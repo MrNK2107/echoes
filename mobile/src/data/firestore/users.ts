@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc, type Firestore } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, type Firestore } from 'firebase/firestore';
 import { userFromDoc, userToDoc } from '../mappers';
 import type { UserRepository } from '../types';
 
@@ -12,6 +12,9 @@ export function createUserRepository(db: Firestore): UserRepository {
     async create(user) {
       await setDoc(doc(db, 'users', user.id), userToDoc(user));
     },
-    async updateDefaultPrivacy() { throw new Error('not implemented'); }, // Task 4
+    async updateDefaultPrivacy(userId, privacy, at) {
+      // Users docs store dates as ISO strings (see userToDoc).
+      await updateDoc(doc(db, 'users', userId), { defaultPrivacy: privacy, updatedAt: at.toISOString() });
+    },
   };
 }

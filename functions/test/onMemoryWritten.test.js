@@ -46,3 +46,29 @@ test("toDate handles Timestamp-like, ISO string, Date", () => {
   assert.equal(toDate(now.toISOString()).getTime(), now.getTime());
   assert.equal(toDate({ toDate: () => now }).getTime(), now.getTime());
 });
+
+/** A place that vanishes between the existence check and the write (e.g. a reset). */
+function vanishingPlaceDb() {
+  const writes = [];
+  const notFound = Object.assign(new Error("NOT_FOUND"), { code: 5 });
+  const placeRef = {
+    async get() { return { exists: true }; },
+    async set(data, opts) { writes.push({ op: "set", data, opts }); },
+    async update() { throw notFound; },
+    collection: () => ({ add: async (d) => { writes.push({ op: "history", d }); } }),
+  };
+  return {
+    writes,
+    collection(name) {
+      if (name === "places") return { doc: () => placeRef };
+      return { where: () => ({ get: async () => ({ docs: [] }) }) };
+    },
+  };
+}
+
+test("recomputePlace never recreates a place that disappeared mid-recompute", async () => {
+  const { recomputePlace } = require("../onMemoryWritten");
+  const db = vanishingPlaceDb();
+  await recomputePlace(db, "gone", now);
+  assert.deepEqual(db.writes, []);
+});
