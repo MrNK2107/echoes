@@ -6,6 +6,7 @@ const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 const { logger } = require("firebase-functions");
 const functionsV1 = require("firebase-functions/v1");
 const { onMemoryWritten } = require("./onMemoryWritten");
+const { onPublicProfileWritten } = require("./onPublicProfileWritten");
 const {
   purgeDeletedMemories,
   __private__: { purgeExpired },
@@ -17,6 +18,7 @@ const db = admin.firestore();
 const messaging = admin.messaging();
 
 exports.onMemoryWritten = onMemoryWritten;
+exports.onPublicProfileWritten = onPublicProfileWritten;
 exports.purgeDeletedMemories = purgeDeletedMemories;
 
 exports.dispatchNotificationRequest = onDocumentCreated(
