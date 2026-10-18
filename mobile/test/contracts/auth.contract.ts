@@ -71,7 +71,7 @@ export function authRepositoryContract(
       try {
         const t = new Date('2026-01-01T00:00:00Z');
         await ctx.repos.places.create({
-          id: 'dp', name: 'dp', latitude: 1, longitude: 2, geohash: 's01mtw', communityId: null,
+          id: 'dp', name: 'Memory Place', latitude: 1, longitude: 2, geohash: 's01mtw', communityId: null,
           custodianIds: [s.userId], aura: emptyAura(t), memoryCount: 0,
           publicMemoryCount: 0, createdAt: t, updatedAt: t,
         });

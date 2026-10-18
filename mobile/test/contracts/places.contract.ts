@@ -18,7 +18,7 @@ const Z_POINT = { latitude: 12.97057, longitude: 77.59063 };
 
 function placeAt(id: string, p: { latitude: number; longitude: number }): Place {
   return {
-    id, name: id, latitude: p.latitude, longitude: p.longitude,
+    id, name: 'Memory Place', latitude: p.latitude, longitude: p.longitude,
     geohash: encodeGeohash(p.latitude, p.longitude),
     communityId: null, custodianIds: [CUSTODIAN], aura: emptyAura(T),
     memoryCount: 0, publicMemoryCount: 0, createdAt: T, updatedAt: T,

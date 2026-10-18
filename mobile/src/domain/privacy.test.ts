@@ -1,5 +1,5 @@
 import visibilityJson from '../../../fixtures/domain/visibility.json';
-import { isMemoryVisibleTo, validatePrivacy } from './privacy';
+import { isMemoryVisibleTo, MAX_TAGS, validatePrivacy } from './privacy';
 import type { PrivacyType } from './types';
 
 interface VisibilityCase {
@@ -42,6 +42,14 @@ describe('validatePrivacy', () => {
 
   it('requires tagged users', () => {
     expect(validatePrivacy({ ...base, privacy: 'tagged' })).toBe('Add at least one tagged user.');
+  });
+  it('caps tags at MAX_TAGS (ruling R24)', () => {
+    const people = (n: number) => Array.from({ length: n }, (_, i) => `u${i}`);
+    expect(MAX_TAGS).toBe(20);
+    expect(validatePrivacy({ ...base, privacy: 'tagged', taggedUserIds: people(20) })).toBeNull();
+    expect(validatePrivacy({ ...base, privacy: 'tagged', taggedUserIds: people(21) })).toBe(
+      'You can tag up to 20 people.',
+    );
   });
   it('requires a release date', () => {
     expect(validatePrivacy({ ...base, privacy: 'timeRelease' })).toBe('Choose a release date.');

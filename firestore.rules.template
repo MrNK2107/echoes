@@ -83,12 +83,25 @@ service cloud.firestore {
         validMediaUrl(data.get('audioUrl', null), 'memory-audio', data.userId);
     }
 
+    // Ruling R24: at most MAX_TAGS (mobile/src/domain/privacy.ts) tagged users.
+    function validTags(data) {
+      return data.taggedUserIds is list && data.taggedUserIds.size() <= 20;
+    }
+
+    // Only members may share a memory with a community (its feed and members can see it).
+    function validCommunityShare(data) {
+      return data.privacy != 'community' ||
+        (data.communityId is string && isCommunityMember(data.communityId));
+    }
+
     // `moderation` and `flags` are server-written (reportMemory, onMemoryWritten) and appear in no
     // client-writable list below.
     function mutableMemoryEditOnly() {
       return resource.data.isDeleted == false &&
         validSentiment(request.resource.data.sentiment) &&
         validMemoryMedia(request.resource.data) &&
+        validTags(request.resource.data) &&
+        validCommunityShare(request.resource.data) &&
         request.resource.data.diff(resource.data).affectedKeys()
         .hasOnly([
           'textContent',
@@ -245,11 +258,24 @@ service cloud.firestore {
           'createdAt',
           'updatedAt'
         ]) &&
+        // The only name the client writes (submitMemory.ts); renaming is a future server feature.
+        data.name == 'Memory Place' &&
+        data.latitude is number &&
+        data.longitude is number &&
+        data.geohash is string &&
         data.custodianIds == [request.auth.uid] &&
         data.memoryCount == 0 &&
         data.publicMemoryCount == 0 &&
         data.communityId == null &&
         data.aura is map &&
+        data.aura.keys().hasOnly([
+          'dominantSentiment',
+          'compoundScore',
+          'intensity',
+          'memoryCount',
+          'colorHex',
+          'updatedAt'
+        ]) &&
         data.aura.memoryCount == 0 &&
         data.aura.intensity == 0;
     }
@@ -277,7 +303,9 @@ service cloud.firestore {
         request.resource.data.moderation == null &&
         validNewMemoryKeys(request.resource.data) &&
         validSentiment(request.resource.data.sentiment) &&
-        validMemoryMedia(request.resource.data);
+        validMemoryMedia(request.resource.data) &&
+        validTags(request.resource.data) &&
+        validCommunityShare(request.resource.data);
       allow update: if signedIn() &&
         immutableMemoryFieldsUnchanged() &&
         (

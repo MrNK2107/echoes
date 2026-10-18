@@ -9,7 +9,7 @@ const PLACE_ID = 'place-1';
 
 function mkPlace(): Place {
   return {
-    id: PLACE_ID, name: 'Spot', latitude: 12.97, longitude: 77.59, geohash: 'tdr1vz',
+    id: PLACE_ID, name: 'Memory Place', latitude: 12.97, longitude: 77.59, geohash: 'tdr1vz',
     communityId: null, custodianIds: ['custodian'], aura: emptyAura(T),
     memoryCount: 0, publicMemoryCount: 0, createdAt: T, updatedAt: T,
   };

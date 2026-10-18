@@ -999,6 +999,68 @@ test("clients create only empty places they look after, and never update places"
   );
 });
 
+test("community-privacy memories require membership of that community (create and edit)", async () => {
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await setDoc(doc(context.firestore(), "memories/member-memory"), memoryDoc({ userId: "member" }));
+  });
+  const memberDb = testEnv.authenticatedContext("member").firestore();
+  const creatorDb = testEnv.authenticatedContext("creator").firestore();
+  const community = (userId, communityId = "community-1") =>
+    memoryDoc({ userId, privacy: "community", communityId });
+  const edit = (db, id, fields) =>
+    updateDoc(doc(db, `memories/${id}`), {
+      privacy: "community",
+      taggedUserIds: [],
+      releaseDate: null,
+      updatedAt: Timestamp.now(),
+      ...fields,
+    });
+
+  // create: "member" belongs to community-1; "creator" (its owner in the seed) has no member doc
+  await assertSucceeds(setDoc(doc(memberDb, "memories/c-ok"), community("member")));
+  await assertFails(setDoc(doc(creatorDb, "memories/c-outsider"), community("creator")));
+  await assertFails(setDoc(doc(memberDb, "memories/c-other"), community("member", "community-2")));
+  await assertFails(setDoc(doc(memberDb, "memories/c-null"), { ...community("member"), communityId: null }));
+
+  // edit: switching a memory to a community needs membership too
+  await assertSucceeds(edit(memberDb, "member-memory", { communityId: "community-1" }));
+  await assertFails(edit(creatorDb, "private-memory", { communityId: "community-1" }));
+  await assertFails(edit(memberDb, "member-memory", { communityId: "community-2" }));
+});
+
+test("a memory tags at most 20 people (ruling R24)", async () => {
+  const creatorDb = testEnv.authenticatedContext("creator").firestore();
+  const people = (n) => Array.from({ length: n }, (_, i) => `user-${i}`);
+  const tagged = (n) => memoryDoc({ privacy: "tagged", taggedUserIds: people(n) });
+
+  await assertSucceeds(setDoc(doc(creatorDb, "memories/t20"), tagged(20)));
+  await assertFails(setDoc(doc(creatorDb, "memories/t21"), tagged(21)));
+  await assertFails(setDoc(doc(creatorDb, "memories/t-str"), { ...memoryDoc(), taggedUserIds: "user-1" }));
+
+  const edit = (ids) =>
+    updateDoc(doc(creatorDb, "memories/private-memory"), {
+      privacy: "tagged",
+      taggedUserIds: ids,
+      updatedAt: Timestamp.now(),
+    });
+  await assertFails(edit(people(21)));
+  await assertFails(edit(null));
+  await assertSucceeds(edit(people(20)));
+});
+
+test("client-created places carry only the client's default name and typed coordinates", async () => {
+  const creatorDb = testEnv.authenticatedContext("creator").firestore();
+  const create = (id, fields) => setDoc(doc(creatorDb, `places/${id}`), placeDoc(fields));
+  const aura = placeDoc().aura;
+
+  await assertFails(create("n1", { name: "Free crypto here" }));
+  await assertFails(create("n2", { latitude: "12.97" }));
+  await assertFails(create("n3", { longitude: null }));
+  await assertFails(create("n4", { geohash: 42 }));
+  await assertFails(create("n5", { aura: { ...aura, label: "best place" } }));
+  await assertSucceeds(create("n-ok", {}));
+});
+
 async function seedBaseDocuments() {
   await testEnv.withSecurityRulesDisabled(async (context) => {
     const db = context.firestore();

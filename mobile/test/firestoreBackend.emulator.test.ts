@@ -142,6 +142,9 @@ describe('firestore backend specifics', () => {
   }
 
   it('community memories are visible to members of that community only', async () => {
+    // Only members may share with a community; memberships are server-written (ADR-0007).
+    await adminSetDoc('communities/club/members/author', { role: 'member' });
+    await adminSetDoc('communities/other-club/members/author', { role: 'member' });
     await ctx.signInAs('author');
     await ctx.repos.memories.create(communityMemory('c-mine', 'club'));
     await ctx.repos.memories.create(communityMemory('c-other', 'other-club'));
@@ -230,7 +233,7 @@ describe('firestore backend specifics', () => {
 
   it('the rules accept the download URLs the Storage emulator issues', async () => {
     await ctx.signInAs('author');
-    await ctx.repos.memories.create(communityMemory('with-media', 'unused'));
+    await ctx.repos.memories.create({ ...communityMemory('with-media', 'unused'), privacy: 'public', communityId: null });
     const jpegBytes = String.fromCharCode(0xff, 0xd8, 0xff, 0xe0, 0, 0x10, 0x4a, 0x46, 0x49, 0x46, 0xff, 0xd9);
     const imageUrl = await ctx.repos.media.uploadMemoryImage({
       userId: 'author',
@@ -266,7 +269,7 @@ describe('firestore backend specifics', () => {
   it('places round-trip through findById with the aura mapped', async () => {
     await ctx.signInAs('custodian');
     await ctx.repos.places.create({
-      id: 'p', name: 'P', latitude: 1, longitude: 2, geohash: 's01mtw', communityId: null,
+      id: 'p', name: 'Memory Place', latitude: 1, longitude: 2, geohash: 's01mtw', communityId: null,
       custodianIds: ['custodian'], aura: emptyAura(T), memoryCount: 0, publicMemoryCount: 0,
       createdAt: T, updatedAt: T,
     });
