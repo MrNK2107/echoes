@@ -470,6 +470,23 @@ describe('memory backend communities, transfers and institutions emulation', () 
     expect((await repos.places.findById('p'))?.custodianIds).toEqual(['author', 'friend']);
   });
 
+  it('expiry re-emits to open transfer subscriptions', async () => {
+    await repos.profiles.setDisplayName('friend', 'Fen', T);
+    await signInAs('author');
+    await repos.transfers.initiate({ placeId: 'p', toUserId: 'friend' });
+    const seen: string[][] = [];
+    const unsub = repos.transfers.subscribeHistory('author', (ts) => seen.push(ts.map((t) => t.status)));
+    try {
+      expect(seen).toEqual([['pending']]);
+      now = new Date(T.getTime() + 7 * DAY + 1);
+      // Any transfer read runs the expiry; the already-open history subscription must hear of it.
+      latest<unknown[]>((cb) => repos.transfers.subscribeIncoming('friend', cb));
+      expect(seen[seen.length - 1]).toEqual(['expired']);
+    } finally {
+      unsub();
+    }
+  });
+
   it('pending requests expire after 7 days and cannot be accepted', async () => {
     await repos.profiles.setDisplayName('friend', 'Fen', T);
     await signInAs('author');

@@ -37,6 +37,6 @@ export function createFirestoreBackend(deps: {
     safety: createSafetyRepository(deps.db, callables),
     communities: createCommunityRepository(deps.db, callables),
     transfers: createTransferRepository(deps.db, callables),
-    institutions: createInstitutionRepository(deps.db, callables),
+    institutions: createInstitutionRepository(deps.db, deps.auth, callables),
   };
 }

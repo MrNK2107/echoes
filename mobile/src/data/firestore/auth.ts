@@ -122,10 +122,11 @@ export function createAuthRepository(
     async refreshUser() {
       const user = auth.currentUser;
       if (!user) throw new Error(NOT_SIGNED_IN);
-      // reload() picks up a verified email; the forced token refresh carries it (and the staff
-      // claim) to the callables, which read the ID token.
-      await reload(user);
+      // The forced refresh mints a token with the current claims (verified email, staff) for the
+      // callables, from the refresh token, so it also works after an account change invalidated
+      // the cached ID token; reload() then updates the local user's emailVerified.
       const token = await user.getIdTokenResult(true);
+      await reload(user);
       return { email: user.email ?? '', emailVerified: user.emailVerified, staff: token.claims.staff === true };
     },
   };

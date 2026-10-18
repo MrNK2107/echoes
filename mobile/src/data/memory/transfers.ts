@@ -16,12 +16,18 @@ const newestFirst = (a: Transfer, b: Transfer) =>
 /**
  * functions/transfers.js expireStale, the daily job: pending transfers created more than 7 days
  * ago become expired. Demo mode has no scheduler, so it runs before every transfer read or call.
+ * Returns whether anything expired; callers then notify the transfer listeners.
  */
-function expireStale(store: Store): void {
+function expireStale(store: Store): boolean {
   const cutoff = store.now().getTime() - WINDOW_MS;
+  let changed = false;
   for (const [id, t] of store.transfers) {
-    if (t.status === 'pending' && t.createdAt.getTime() < cutoff) store.transfers.set(id, { ...t, status: 'expired' });
+    if (t.status === 'pending' && t.createdAt.getTime() < cutoff) {
+      store.transfers.set(id, { ...t, status: 'expired' });
+      changed = true;
+    }
   }
+  return changed;
 }
 
 /**
@@ -44,9 +50,23 @@ export function createTransferRepository(store: Store): TransferRepository {
     store.notify(store.placeListeners);
   };
   const pastWindow = (t: StoredTransfer) => store.now().getTime() > t.revokeUntil.getTime();
+  // Runs the expiry and, if it changed anything, notifies every open transfer subscription
+  // (as the job's writes would). The flag stops the re-emits from re-entering.
+  let expiring = false;
+  const expire = (): boolean => {
+    if (expiring || !expireStale(store)) return false;
+    expiring = true;
+    try {
+      store.notify(store.transferListeners);
+    } finally {
+      expiring = false;
+    }
+    return true;
+  };
   const subscribe = (filter: (t: StoredTransfer) => boolean, cb: (ts: Transfer[]) => void) => {
     const emit = () => {
-      expireStale(store);
+      // When something expired, this listener already re-emitted through the notify.
+      if (expire()) return;
       cb([...store.transfers.values()].filter(filter).map(toTransfer).sort(newestFirst).slice(0, LIST_LIMIT));
     };
     store.transferListeners.add(emit);
@@ -61,7 +81,7 @@ export function createTransferRepository(store: Store): TransferRepository {
         const placeId = validId(input.placeId);
         const toUserId = validId(input.toUserId);
         rateLimit(store, uid, 'initiateTransfer', 20);
-        expireStale(store);
+        expire();
         if (toUserId === uid) throw callableFailure('invalid-argument');
         if (store.isBlocked(uid, toUserId)) throw callableFailure('permission-denied');
         const place = store.places.get(placeId);
@@ -91,7 +111,7 @@ export function createTransferRepository(store: Store): TransferRepository {
         const uid = callerId(store);
         validId(id);
         if (typeof accept !== 'boolean') throw callableFailure('invalid-argument');
-        expireStale(store);
+        expire();
         const status = accept ? 'accepted' : 'rejected';
         const t = store.transfers.get(id);
         if (!t) throw callableFailure('not-found');
@@ -123,7 +143,7 @@ export function createTransferRepository(store: Store): TransferRepository {
       return runCallable(() => {
         const uid = callerId(store);
         validId(id);
-        expireStale(store);
+        expire();
         const t = store.transfers.get(id);
         if (!t) throw callableFailure('not-found');
         if (t.fromUserId !== uid) throw callableFailure('permission-denied');

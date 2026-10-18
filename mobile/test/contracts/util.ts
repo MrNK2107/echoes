@@ -12,8 +12,8 @@ export type ContractFactory = () => Promise<{
   repos: Repositories;
   signInAs(uid: string): Promise<void>;
   /**
-   * Changes an existing account (the uid must have signed in once) and refreshes its token when
-   * it is the signed-in user, so the next callable sees the new claims.
+   * Changes an existing account (the uid must have signed in once), as an admin would. It does not
+   * refresh the signed-in user's ID token: repositories that depend on claims must do that.
    */
   setAccount(uid: string, patch: AccountPatch): Promise<void>;
   cleanup(): Promise<void>;

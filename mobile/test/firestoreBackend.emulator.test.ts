@@ -96,7 +96,7 @@ async function adminSetDoc(path: string, fields: Record<string, string>): Promis
 
 /**
  * Changes an Auth emulator account as the Admin SDK would (`Bearer owner`): email, its
- * verification and the `staff` custom claim. ID tokens only carry the change once refreshed.
+ * verification and the `staff` custom claim. Cached ID tokens only carry the change once refreshed.
  */
 async function adminUpdateAccount(uid: string, patch: AccountPatch): Promise<void> {
   const body: Record<string, unknown> = { localId: uid };
@@ -140,9 +140,10 @@ async function makeCtx(): Promise<Ctx> {
       if (auth.currentUser?.uid === uid) return;
       await signInWithCustomToken(auth, emulatorCustomToken(uid));
     },
+    // No token refresh here: the repositories must refresh claims themselves (a real user who
+    // verifies their email or is granted staff keeps a stale cached ID token).
     async setAccount(uid, patch) {
       await adminUpdateAccount(uid, patch);
-      if (auth.currentUser?.uid === uid) await auth.currentUser.getIdToken(true);
     },
     async cleanup() {
       await signOut(auth);
