@@ -1,22 +1,16 @@
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import type { LatLng, PrivacyType } from '@/domain/types';
+import type { LatLng } from '@/domain/types';
 import { useSession } from '@/features/auth/useSession';
 import { useOutboxContext } from '@/features/outbox/useOutbox';
 import { useServices } from '@/services/ServicesProvider';
 import { colors } from '@/ui/theme';
 
+import { PrivacyPicker, type PrivacyChoice } from './PrivacyPicker';
 import { MAX_MEMORY_LENGTH, submitMemory } from './submitMemory';
 
-type Choice = Extract<PrivacyType, 'public' | 'private' | 'timeRelease'>;
-const CHOICES: { value: Choice; label: string }[] = [
-  { value: 'public', label: 'Public' },
-  { value: 'private', label: 'Private' },
-  { value: 'timeRelease', label: 'Time release' },
-];
 const PERMISSION_COPY = 'Location permission is needed to save a memory here.';
 const QUEUED_COPY = "Saved offline. It will upload when you're back online.";
 /** How long the queued notice stays up before returning to the map. */
@@ -28,9 +22,8 @@ export function AddMemoryScreen() {
   const services = useServices();
   const { session } = useSession();
   const [text, setText] = useState('');
-  const [privacy, setPrivacy] = useState<Choice>('public');
+  const [privacy, setPrivacy] = useState<PrivacyChoice>('public');
   const [releaseDate, setReleaseDate] = useState<Date | null>(null);
-  const [pickerOpen, setPickerOpen] = useState(false);
   const [location, setLocation] = useState<LatLng | null>(null);
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -128,42 +121,13 @@ export function AddMemoryScreen() {
       />
       <Text style={styles.counter}>{`${text.length}/${MAX_MEMORY_LENGTH}`}</Text>
 
-      <View style={styles.segmented}>
-        {CHOICES.map((c) => (
-          <Pressable
-            key={c.value}
-            testID={`privacy-${c.value}`}
-            accessibilityRole="button"
-            accessibilityState={{ selected: privacy === c.value }}
-            onPress={() => setPrivacy(c.value)}
-            style={[styles.segment, privacy === c.value && styles.segmentOn]}
-          >
-            <Text style={[styles.segmentText, privacy === c.value && styles.segmentTextOn]}>{c.label}</Text>
-          </Pressable>
-        ))}
-      </View>
-
-      {privacy === 'timeRelease' ? (
-        <Pressable
-          testID="release-date-button"
-          accessibilityRole="button"
-          onPress={() => setPickerOpen(true)}
-          style={styles.row}
-        >
-          <Text style={styles.rowText}>{releaseDate ? releaseDate.toDateString() : 'Choose release date'}</Text>
-        </Pressable>
-      ) : null}
-      {pickerOpen ? (
-        <DateTimePicker
-          value={releaseDate ?? services.now()}
-          mode="date"
-          minimumDate={services.now()}
-          onChange={(event, date) => {
-            setPickerOpen(false);
-            if (event.type === 'set' && date) setReleaseDate(date);
-          }}
-        />
-      ) : null}
+      <PrivacyPicker
+        privacy={privacy}
+        onPrivacyChange={setPrivacy}
+        releaseDate={releaseDate}
+        onReleaseDateChange={setReleaseDate}
+        now={services.now()}
+      />
 
       <Pressable testID="use-location-button" accessibilityRole="button" onPress={captureLocation} style={styles.row}>
         <Text style={styles.rowText}>Use my location</Text>
@@ -222,11 +186,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   counter: { color: colors.textSecondary, alignSelf: 'flex-end', marginTop: 4, marginBottom: 12 },
-  segmented: { flexDirection: 'row', backgroundColor: colors.surface, borderRadius: 12, padding: 4, marginBottom: 12 },
-  segment: { flex: 1, paddingVertical: 10, alignItems: 'center', borderRadius: 8 },
-  segmentOn: { backgroundColor: colors.elevated },
-  segmentText: { color: colors.textSecondary },
-  segmentTextOn: { color: colors.text, fontWeight: '600' },
   row: { backgroundColor: colors.surface, borderRadius: 12, padding: 14, marginBottom: 8 },
   rowText: { color: colors.accent, fontSize: 16 },
   ok: { color: colors.gold, marginBottom: 8 },

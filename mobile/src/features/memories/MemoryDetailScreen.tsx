@@ -74,7 +74,7 @@ export function MemoryDetailScreen({ memoryId }: { memoryId: string }) {
           <View style={styles.actions}>
             <Pressable
               accessibilityRole="button"
-              onPress={() => router.push(`/memory/${memory.id}/edit` as never)}
+              onPress={() => router.push(`/memory/${memory.id}/edit`)}
               style={styles.action}
             >
               <Text style={styles.actionText}>Edit</Text>
