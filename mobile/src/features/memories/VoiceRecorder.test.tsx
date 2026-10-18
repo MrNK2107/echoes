@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 
 import { fakeAudioRecorder, testServices } from '@/device/fakes';
 import type { AudioRecorderService } from '@/device/types';
@@ -74,5 +74,58 @@ describe('VoiceRecorder', () => {
     });
     expect(screen.getByText('Voice note ready (60s)')).toBeOnTheScreen();
     expect(onChange).toHaveBeenLastCalledWith({ uri: 'file:///v.m4a', durationMs: 60_000 });
+  });
+
+  it('derives elapsed time from the clock, not tick counts', async () => {
+    jest.useFakeTimers();
+    await setup(fakeAudioRecorder({ result: { uri: 'file:///v.m4a', durationMs: 60_000 } }));
+    await fireEvent.press(screen.getByText('Record voice note'));
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(0);
+    });
+    // One throttled tick fires after 61 s of wall-clock time.
+    await act(async () => {
+      jest.setSystemTime(Date.now() + 61_000);
+      await jest.advanceTimersByTimeAsync(1000);
+    });
+    expect(screen.getByText('Voice note ready (60s)')).toBeOnTheScreen();
+  });
+
+  it('stops the recorder when unmounted mid-recording', async () => {
+    const stop = jest.fn(async () => null);
+    const recorder: AudioRecorderService = { ...fakeAudioRecorder(), stop };
+    const view = await render(
+      <ServicesProvider services={testServices({ audioRecorder: recorder })}>
+        <VoiceRecorder onChange={() => {}} />
+      </ServicesProvider>,
+    );
+    await fireEvent.press(screen.getByText('Record voice note'));
+    await screen.findByText('Stop');
+    await view.unmount();
+    expect(stop).toHaveBeenCalledTimes(1);
+  });
+
+  it('stops the recorder once a pending start resolves after unmount', async () => {
+    let finishStart: () => void = () => {};
+    const stop = jest.fn(async () => null);
+    const recorder: AudioRecorderService = {
+      requestPermission: async () => 'granted',
+      start: () => new Promise<void>((res) => (finishStart = res)),
+      stop,
+    };
+    const view = await render(
+      <ServicesProvider services={testServices({ audioRecorder: recorder })}>
+        <VoiceRecorder onChange={() => {}} />
+      </ServicesProvider>,
+    );
+    void fireEvent.press(screen.getByText('Record voice note'));
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    await view.unmount();
+    expect(stop).not.toHaveBeenCalled();
+    finishStart();
+    await waitFor(() => expect(stop).toHaveBeenCalledTimes(1));
   });
 });

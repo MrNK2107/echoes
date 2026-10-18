@@ -21,10 +21,27 @@ export function VoiceRecorder({ onChange }: { onChange: (r: { uri: string; durat
   const [error, setError] = useState<string | null>(null);
   const stopping = useRef(false);
   const stopRef = useRef<() => Promise<void>>(async () => {});
+  // Mirrors the native recorder: it is a process-wide singleton, so it must be stopped if we unmount mid-recording.
+  const active = useRef<'starting' | 'recording' | null>(null);
+  const unmounted = useRef(false);
+  const startedAt = useRef(0);
+
+  useEffect(() => {
+    unmounted.current = false;
+    return () => {
+      unmounted.current = true;
+      if (active.current === 'recording') {
+        active.current = null;
+        audioRecorder.stop().catch(() => {});
+      }
+      // 'starting': start() stops the recorder itself once it resolves.
+    };
+  }, [audioRecorder]);
 
   const stop = async () => {
     if (stopping.current) return;
     stopping.current = true;
+    active.current = null;
     try {
       const result = await audioRecorder.stop();
       if (result) {
@@ -48,7 +65,8 @@ export function VoiceRecorder({ onChange }: { onChange: (r: { uri: string; durat
   useEffect(() => {
     if (!recording) return;
     const timer = setInterval(() => {
-      setState((s) => (s.kind === 'recording' ? { kind: 'recording', seconds: s.seconds + 1 } : s));
+      const elapsed = Math.min(MAX_VOICE_SECONDS, Math.floor((Date.now() - startedAt.current) / 1000));
+      setState((s) => (s.kind === 'recording' ? { kind: 'recording', seconds: elapsed } : s));
     }, 1000);
     return () => clearInterval(timer);
   }, [recording]);
@@ -61,15 +79,25 @@ export function VoiceRecorder({ onChange }: { onChange: (r: { uri: string; durat
   const start = async () => {
     setError(null);
     setState({ kind: 'starting' });
+    active.current = 'starting';
     try {
       if ((await audioRecorder.requestPermission()) !== 'granted') {
+        active.current = null;
         setState({ kind: 'idle' });
         setError(DENIED_COPY);
         return;
       }
       await audioRecorder.start();
+      if (unmounted.current) {
+        active.current = null;
+        audioRecorder.stop().catch(() => {});
+        return;
+      }
+      startedAt.current = Date.now();
+      active.current = 'recording';
       setState({ kind: 'recording', seconds: 0 });
     } catch {
+      active.current = null;
       setState({ kind: 'idle' });
       setError(ERROR_COPY);
     }
