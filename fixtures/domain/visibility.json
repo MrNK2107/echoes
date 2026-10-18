@@ -1,0 +1,334 @@
+[
+  {
+    "name": "public author",
+    "memory": {
+      "userId": "author",
+      "privacy": "public",
+      "taggedUserIds": [
+        "friend"
+      ],
+      "releaseDate": "2026-10-17T09:00:00.000Z",
+      "isDeleted": false
+    },
+    "viewerId": "author",
+    "viewerIsCommunityMember": false,
+    "now": "2026-10-18T09:00:00.000Z",
+    "visible": true
+  },
+  {
+    "name": "public stranger",
+    "memory": {
+      "userId": "author",
+      "privacy": "public",
+      "taggedUserIds": [
+        "friend"
+      ],
+      "releaseDate": "2026-10-17T09:00:00.000Z",
+      "isDeleted": false
+    },
+    "viewerId": "stranger",
+    "viewerIsCommunityMember": false,
+    "now": "2026-10-18T09:00:00.000Z",
+    "visible": true
+  },
+  {
+    "name": "private author",
+    "memory": {
+      "userId": "author",
+      "privacy": "private",
+      "taggedUserIds": [
+        "friend"
+      ],
+      "releaseDate": "2026-10-17T09:00:00.000Z",
+      "isDeleted": false
+    },
+    "viewerId": "author",
+    "viewerIsCommunityMember": false,
+    "now": "2026-10-18T09:00:00.000Z",
+    "visible": true
+  },
+  {
+    "name": "private stranger",
+    "memory": {
+      "userId": "author",
+      "privacy": "private",
+      "taggedUserIds": [
+        "friend"
+      ],
+      "releaseDate": "2026-10-17T09:00:00.000Z",
+      "isDeleted": false
+    },
+    "viewerId": "stranger",
+    "viewerIsCommunityMember": false,
+    "now": "2026-10-18T09:00:00.000Z",
+    "visible": false
+  },
+  {
+    "name": "tagged author",
+    "memory": {
+      "userId": "author",
+      "privacy": "tagged",
+      "taggedUserIds": [
+        "friend"
+      ],
+      "releaseDate": "2026-10-17T09:00:00.000Z",
+      "isDeleted": false
+    },
+    "viewerId": "author",
+    "viewerIsCommunityMember": false,
+    "now": "2026-10-18T09:00:00.000Z",
+    "visible": true
+  },
+  {
+    "name": "tagged stranger",
+    "memory": {
+      "userId": "author",
+      "privacy": "tagged",
+      "taggedUserIds": [
+        "friend"
+      ],
+      "releaseDate": "2026-10-17T09:00:00.000Z",
+      "isDeleted": false
+    },
+    "viewerId": "stranger",
+    "viewerIsCommunityMember": false,
+    "now": "2026-10-18T09:00:00.000Z",
+    "visible": false
+  },
+  {
+    "name": "timeRelease author",
+    "memory": {
+      "userId": "author",
+      "privacy": "timeRelease",
+      "taggedUserIds": [
+        "friend"
+      ],
+      "releaseDate": "2026-10-17T09:00:00.000Z",
+      "isDeleted": false
+    },
+    "viewerId": "author",
+    "viewerIsCommunityMember": false,
+    "now": "2026-10-18T09:00:00.000Z",
+    "visible": true
+  },
+  {
+    "name": "timeRelease stranger",
+    "memory": {
+      "userId": "author",
+      "privacy": "timeRelease",
+      "taggedUserIds": [
+        "friend"
+      ],
+      "releaseDate": "2026-10-17T09:00:00.000Z",
+      "isDeleted": false
+    },
+    "viewerId": "stranger",
+    "viewerIsCommunityMember": false,
+    "now": "2026-10-18T09:00:00.000Z",
+    "visible": true
+  },
+  {
+    "name": "community author",
+    "memory": {
+      "userId": "author",
+      "privacy": "community",
+      "taggedUserIds": [
+        "friend"
+      ],
+      "releaseDate": "2026-10-17T09:00:00.000Z",
+      "isDeleted": false
+    },
+    "viewerId": "author",
+    "viewerIsCommunityMember": false,
+    "now": "2026-10-18T09:00:00.000Z",
+    "visible": true
+  },
+  {
+    "name": "community stranger",
+    "memory": {
+      "userId": "author",
+      "privacy": "community",
+      "taggedUserIds": [
+        "friend"
+      ],
+      "releaseDate": "2026-10-17T09:00:00.000Z",
+      "isDeleted": false
+    },
+    "viewerId": "stranger",
+    "viewerIsCommunityMember": false,
+    "now": "2026-10-18T09:00:00.000Z",
+    "visible": false
+  },
+  {
+    "name": "tagged viewer is tagged",
+    "memory": {
+      "userId": "author",
+      "privacy": "tagged",
+      "taggedUserIds": [
+        "friend"
+      ],
+      "releaseDate": null,
+      "isDeleted": false
+    },
+    "viewerId": "friend",
+    "viewerIsCommunityMember": false,
+    "now": "2026-10-18T09:00:00.000Z",
+    "visible": true
+  },
+  {
+    "name": "tagged viewer not tagged",
+    "memory": {
+      "userId": "author",
+      "privacy": "tagged",
+      "taggedUserIds": [
+        "friend"
+      ],
+      "releaseDate": null,
+      "isDeleted": false
+    },
+    "viewerId": "other",
+    "viewerIsCommunityMember": false,
+    "now": "2026-10-18T09:00:00.000Z",
+    "visible": false
+  },
+  {
+    "name": "tagged with empty list",
+    "memory": {
+      "userId": "author",
+      "privacy": "tagged",
+      "taggedUserIds": [],
+      "releaseDate": null,
+      "isDeleted": false
+    },
+    "viewerId": "friend",
+    "viewerIsCommunityMember": false,
+    "now": "2026-10-18T09:00:00.000Z",
+    "visible": false
+  },
+  {
+    "name": "timeRelease releaseDate equals now",
+    "memory": {
+      "userId": "author",
+      "privacy": "timeRelease",
+      "taggedUserIds": [],
+      "releaseDate": "2026-10-18T09:00:00.000Z",
+      "isDeleted": false
+    },
+    "viewerId": "stranger",
+    "viewerIsCommunityMember": false,
+    "now": "2026-10-18T09:00:00.000Z",
+    "visible": true
+  },
+  {
+    "name": "timeRelease releaseDate now minus 1ms",
+    "memory": {
+      "userId": "author",
+      "privacy": "timeRelease",
+      "taggedUserIds": [],
+      "releaseDate": "2026-10-18T08:59:59.999Z",
+      "isDeleted": false
+    },
+    "viewerId": "stranger",
+    "viewerIsCommunityMember": false,
+    "now": "2026-10-18T09:00:00.000Z",
+    "visible": true
+  },
+  {
+    "name": "timeRelease releaseDate now plus 1ms",
+    "memory": {
+      "userId": "author",
+      "privacy": "timeRelease",
+      "taggedUserIds": [],
+      "releaseDate": "2026-10-18T09:00:00.001Z",
+      "isDeleted": false
+    },
+    "viewerId": "stranger",
+    "viewerIsCommunityMember": false,
+    "now": "2026-10-18T09:00:00.000Z",
+    "visible": false
+  },
+  {
+    "name": "timeRelease null releaseDate",
+    "memory": {
+      "userId": "author",
+      "privacy": "timeRelease",
+      "taggedUserIds": [],
+      "releaseDate": null,
+      "isDeleted": false
+    },
+    "viewerId": "stranger",
+    "viewerIsCommunityMember": false,
+    "now": "2026-10-18T09:00:00.000Z",
+    "visible": false
+  },
+  {
+    "name": "timeRelease future but author",
+    "memory": {
+      "userId": "author",
+      "privacy": "timeRelease",
+      "taggedUserIds": [],
+      "releaseDate": "2026-10-23T09:00:00.000Z",
+      "isDeleted": false
+    },
+    "viewerId": "author",
+    "viewerIsCommunityMember": false,
+    "now": "2026-10-18T09:00:00.000Z",
+    "visible": true
+  },
+  {
+    "name": "community member",
+    "memory": {
+      "userId": "author",
+      "privacy": "community",
+      "taggedUserIds": [],
+      "releaseDate": null,
+      "isDeleted": false
+    },
+    "viewerId": "stranger",
+    "viewerIsCommunityMember": true,
+    "now": "2026-10-18T09:00:00.000Z",
+    "visible": true
+  },
+  {
+    "name": "community non-member",
+    "memory": {
+      "userId": "author",
+      "privacy": "community",
+      "taggedUserIds": [],
+      "releaseDate": null,
+      "isDeleted": false
+    },
+    "viewerId": "stranger",
+    "viewerIsCommunityMember": false,
+    "now": "2026-10-18T09:00:00.000Z",
+    "visible": false
+  },
+  {
+    "name": "public deleted author",
+    "memory": {
+      "userId": "author",
+      "privacy": "public",
+      "taggedUserIds": [],
+      "releaseDate": null,
+      "isDeleted": true
+    },
+    "viewerId": "author",
+    "viewerIsCommunityMember": false,
+    "now": "2026-10-18T09:00:00.000Z",
+    "visible": false
+  },
+  {
+    "name": "public deleted stranger",
+    "memory": {
+      "userId": "author",
+      "privacy": "public",
+      "taggedUserIds": [],
+      "releaseDate": null,
+      "isDeleted": true
+    },
+    "viewerId": "stranger",
+    "viewerIsCommunityMember": false,
+    "now": "2026-10-18T09:00:00.000Z",
+    "visible": false
+  }
+]

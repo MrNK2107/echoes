@@ -1,0 +1,74 @@
+[
+  {
+    "latitude": 12.9716,
+    "longitude": 77.5946,
+    "radiusMeters": 50.0,
+    "precision": 7,
+    "prefixes": [
+      "tdr1v9q"
+    ]
+  },
+  {
+    "latitude": 12.9716,
+    "longitude": 77.5946,
+    "radiusMeters": 100.0,
+    "precision": 7,
+    "prefixes": [
+      "tdr1v9q"
+    ]
+  },
+  {
+    "latitude": 12.9716,
+    "longitude": 77.5946,
+    "radiusMeters": 101.0,
+    "precision": 6,
+    "prefixes": [
+      "tdr1v9"
+    ]
+  },
+  {
+    "latitude": 12.9716,
+    "longitude": 77.5946,
+    "radiusMeters": 500.0,
+    "precision": 6,
+    "prefixes": [
+      "tdr1v9"
+    ]
+  },
+  {
+    "latitude": 12.9716,
+    "longitude": 77.5946,
+    "radiusMeters": 1500.0,
+    "precision": 5,
+    "prefixes": [
+      "tdr1v"
+    ]
+  },
+  {
+    "latitude": 12.9716,
+    "longitude": 77.5946,
+    "radiusMeters": 4000.0,
+    "precision": 5,
+    "prefixes": [
+      "tdr1v"
+    ]
+  },
+  {
+    "latitude": 12.9716,
+    "longitude": 77.5946,
+    "radiusMeters": 4001.0,
+    "precision": 4,
+    "prefixes": [
+      "tdr1"
+    ]
+  },
+  {
+    "latitude": 12.9716,
+    "longitude": 77.5946,
+    "radiusMeters": 20000.0,
+    "precision": 4,
+    "prefixes": [
+      "tdr1"
+    ]
+  }
+]

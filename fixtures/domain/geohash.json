@@ -1,0 +1,128 @@
+[
+  {
+    "latitude": 12.9716,
+    "longitude": 77.5946,
+    "precision": 5,
+    "hash": "tdr1v"
+  },
+  {
+    "latitude": 12.9716,
+    "longitude": 77.5946,
+    "precision": 7,
+    "hash": "tdr1v9q"
+  },
+  {
+    "latitude": 12.9716,
+    "longitude": 77.5946,
+    "precision": 9,
+    "hash": "tdr1v9qtj"
+  },
+  {
+    "latitude": 28.6139,
+    "longitude": 77.209,
+    "precision": 5,
+    "hash": "ttnfu"
+  },
+  {
+    "latitude": 28.6139,
+    "longitude": 77.209,
+    "precision": 7,
+    "hash": "ttnfucj"
+  },
+  {
+    "latitude": 28.6139,
+    "longitude": 77.209,
+    "precision": 9,
+    "hash": "ttnfucjbh"
+  },
+  {
+    "latitude": 19.076,
+    "longitude": 72.8777,
+    "precision": 5,
+    "hash": "te7ud"
+  },
+  {
+    "latitude": 19.076,
+    "longitude": 72.8777,
+    "precision": 7,
+    "hash": "te7ud2e"
+  },
+  {
+    "latitude": 19.076,
+    "longitude": 72.8777,
+    "precision": 9,
+    "hash": "te7ud2evv"
+  },
+  {
+    "latitude": 0.0,
+    "longitude": 0.0,
+    "precision": 5,
+    "hash": "s0000"
+  },
+  {
+    "latitude": 0.0,
+    "longitude": 0.0,
+    "precision": 7,
+    "hash": "s000000"
+  },
+  {
+    "latitude": 0.0,
+    "longitude": 0.0,
+    "precision": 9,
+    "hash": "s00000000"
+  },
+  {
+    "latitude": -33.8688,
+    "longitude": 151.2093,
+    "precision": 5,
+    "hash": "r3gx2"
+  },
+  {
+    "latitude": -33.8688,
+    "longitude": 151.2093,
+    "precision": 7,
+    "hash": "r3gx2f7"
+  },
+  {
+    "latitude": -33.8688,
+    "longitude": 151.2093,
+    "precision": 9,
+    "hash": "r3gx2f77b"
+  },
+  {
+    "latitude": 89.9,
+    "longitude": 179.9,
+    "precision": 5,
+    "hash": "zzzzm"
+  },
+  {
+    "latitude": 89.9,
+    "longitude": 179.9,
+    "precision": 7,
+    "hash": "zzzzmtz"
+  },
+  {
+    "latitude": 89.9,
+    "longitude": 179.9,
+    "precision": 9,
+    "hash": "zzzzmtz1m"
+  },
+  {
+    "latitude": -89.9,
+    "longitude": -179.9,
+    "precision": 5,
+    "hash": "0000d"
+  },
+  {
+    "latitude": -89.9,
+    "longitude": -179.9,
+    "precision": 7,
+    "hash": "0000d60"
+  },
+  {
+    "latitude": -89.9,
+    "longitude": -179.9,
+    "precision": 9,
+    "hash": "0000d60yd"
+  }
+]

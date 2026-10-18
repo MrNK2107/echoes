@@ -1,0 +1,450 @@
+[
+  {
+    "text": "happy",
+    "compound": 1.0,
+    "positive": 0.5,
+    "neutral": 0.33333333333333337,
+    "negative": 0.0,
+    "category": "positive"
+  },
+  {
+    "text": "good",
+    "compound": 1.0,
+    "positive": 0.5,
+    "neutral": 0.33333333333333337,
+    "negative": 0.0,
+    "category": "positive"
+  },
+  {
+    "text": "wonderful day",
+    "compound": 1.0,
+    "positive": 0.5,
+    "neutral": 0.33333333333333337,
+    "negative": 0.0,
+    "category": "positive"
+  },
+  {
+    "text": "I love this place",
+    "compound": 1.0,
+    "positive": 0.5,
+    "neutral": 0.33333333333333337,
+    "negative": 0.0,
+    "category": "positive"
+  },
+  {
+    "text": "so beautiful",
+    "compound": 1.0,
+    "positive": 0.574468085106383,
+    "neutral": 0.09999999999999998,
+    "negative": 0.0,
+    "category": "positive"
+  },
+  {
+    "text": "sad",
+    "compound": -1.0,
+    "positive": 0.0,
+    "neutral": 0.33333333333333337,
+    "negative": 0.5,
+    "category": "heavy"
+  },
+  {
+    "text": "bad",
+    "compound": -1.0,
+    "positive": 0.0,
+    "neutral": 0.33333333333333337,
+    "negative": 0.5,
+    "category": "heavy"
+  },
+  {
+    "text": "terrible experience",
+    "compound": -1.0,
+    "positive": 0.0,
+    "neutral": 0.33333333333333337,
+    "negative": 0.5,
+    "category": "heavy"
+  },
+  {
+    "text": "I hate this",
+    "compound": -1.0,
+    "positive": 0.0,
+    "neutral": 0.33333333333333337,
+    "negative": 0.5,
+    "category": "heavy"
+  },
+  {
+    "text": "awful and painful",
+    "compound": -1.0,
+    "positive": 0.0,
+    "neutral": 0.33333333333333337,
+    "negative": 0.6666666666666666,
+    "category": "heavy"
+  },
+  {
+    "text": "not happy",
+    "compound": -1.0,
+    "positive": 0.0,
+    "neutral": 0.6000000000000001,
+    "negative": 0.37499999999999994,
+    "category": "heavy"
+  },
+  {
+    "text": "never good",
+    "compound": -1.0,
+    "positive": 0.0,
+    "neutral": 0.6000000000000001,
+    "negative": 0.37499999999999994,
+    "category": "heavy"
+  },
+  {
+    "text": "not bad",
+    "compound": 1.0,
+    "positive": 0.37499999999999994,
+    "neutral": 0.6000000000000001,
+    "negative": 0.0,
+    "category": "positive"
+  },
+  {
+    "text": "never sad",
+    "compound": 1.0,
+    "positive": 0.37499999999999994,
+    "neutral": 0.6000000000000001,
+    "negative": 0.0,
+    "category": "positive"
+  },
+  {
+    "text": "is not good",
+    "compound": -1.0,
+    "positive": 0.0,
+    "neutral": 0.6000000000000001,
+    "negative": 0.37499999999999994,
+    "category": "heavy"
+  },
+  {
+    "text": "very good",
+    "compound": 1.0,
+    "positive": 0.574468085106383,
+    "neutral": 0.09999999999999998,
+    "negative": 0.0,
+    "category": "positive"
+  },
+  {
+    "text": "extremely sad",
+    "compound": -1.0,
+    "positive": 0.0,
+    "neutral": 0.09999999999999998,
+    "negative": 0.574468085106383,
+    "category": "heavy"
+  },
+  {
+    "text": "slightly bad",
+    "compound": -1.0,
+    "positive": 0.0,
+    "neutral": 0.2333333333333334,
+    "negative": 0.5348837209302325,
+    "category": "heavy"
+  },
+  {
+    "text": "really happy",
+    "compound": 1.0,
+    "positive": 0.574468085106383,
+    "neutral": 0.09999999999999998,
+    "negative": 0.0,
+    "category": "positive"
+  },
+  {
+    "text": "extremely wonderful",
+    "compound": 1.0,
+    "positive": 0.574468085106383,
+    "neutral": 0.09999999999999998,
+    "negative": 0.0,
+    "category": "positive"
+  },
+  {
+    "text": "slightly good",
+    "compound": 1.0,
+    "positive": 0.5348837209302325,
+    "neutral": 0.2333333333333334,
+    "negative": 0.0,
+    "category": "positive"
+  },
+  {
+    "text": "good but sad",
+    "compound": 0.0,
+    "positive": 0.3333333333333333,
+    "neutral": 0.33333333333333337,
+    "negative": 0.3333333333333333,
+    "category": "neutral"
+  },
+  {
+    "text": "sad but beautiful",
+    "compound": 0.0,
+    "positive": 0.3333333333333333,
+    "neutral": 0.33333333333333337,
+    "negative": 0.3333333333333333,
+    "category": "neutral"
+  },
+  {
+    "text": "happy but tired",
+    "compound": 0.0,
+    "positive": 0.3333333333333333,
+    "neutral": 0.33333333333333337,
+    "negative": 0.3333333333333333,
+    "category": "neutral"
+  },
+  {
+    "text": "bad but ultimately wonderful",
+    "compound": 0.0,
+    "positive": 0.3333333333333333,
+    "neutral": 0.33333333333333337,
+    "negative": 0.3333333333333333,
+    "category": "neutral"
+  },
+  {
+    "text": "GREAT",
+    "compound": 1.0,
+    "positive": 0.5,
+    "neutral": 0.33333333333333337,
+    "negative": 0.0,
+    "category": "positive"
+  },
+  {
+    "text": "TERRIBLE",
+    "compound": -1.0,
+    "positive": 0.0,
+    "neutral": 0.33333333333333337,
+    "negative": 0.5,
+    "category": "heavy"
+  },
+  {
+    "text": "I AM SO HAPPY",
+    "compound": 1.0,
+    "positive": 0.574468085106383,
+    "neutral": 0.09999999999999998,
+    "negative": 0.0,
+    "category": "positive"
+  },
+  {
+    "text": "This is AWFUL",
+    "compound": -1.0,
+    "positive": 0.0,
+    "neutral": 0.33333333333333337,
+    "negative": 0.5,
+    "category": "heavy"
+  },
+  {
+    "text": "great!!!",
+    "compound": 1.0,
+    "positive": 0.5,
+    "neutral": 0.33333333333333337,
+    "negative": 0.0,
+    "category": "positive"
+  },
+  {
+    "text": "terrible!!!",
+    "compound": -1.0,
+    "positive": 0.0,
+    "neutral": 0.33333333333333337,
+    "negative": 0.5,
+    "category": "heavy"
+  },
+  {
+    "text": "good!",
+    "compound": 1.0,
+    "positive": 0.5,
+    "neutral": 0.33333333333333337,
+    "negative": 0.0,
+    "category": "positive"
+  },
+  {
+    "text": "what a day!!!",
+    "compound": 0.0,
+    "positive": 0.0,
+    "neutral": 1.0,
+    "negative": 0.0,
+    "category": "neutral"
+  },
+  {
+    "text": "🎉🎉",
+    "compound": 0.0,
+    "positive": 0.0,
+    "neutral": 1.0,
+    "negative": 0.0,
+    "category": "neutral"
+  },
+  {
+    "text": "😢",
+    "compound": 0.0,
+    "positive": 0.0,
+    "neutral": 1.0,
+    "negative": 0.0,
+    "category": "neutral"
+  },
+  {
+    "text": "   ",
+    "compound": 0.0,
+    "positive": 0.0,
+    "neutral": 1.0,
+    "negative": 0.0,
+    "category": "neutral"
+  },
+  {
+    "text": "the table is brown",
+    "compound": 0.0,
+    "positive": 0.0,
+    "neutral": 1.0,
+    "negative": 0.0,
+    "category": "neutral"
+  },
+  {
+    "text": "I went to the market",
+    "compound": 0.0,
+    "positive": 0.0,
+    "neutral": 1.0,
+    "negative": 0.0,
+    "category": "neutral"
+  },
+  {
+    "text": "happy and heartbroken",
+    "compound": 1.0,
+    "positive": 0.5,
+    "neutral": 0.33333333333333337,
+    "negative": 0.0,
+    "category": "positive"
+  },
+  {
+    "text": "joyful yet miserable",
+    "compound": 0.0,
+    "positive": 0.3333333333333333,
+    "neutral": 0.33333333333333337,
+    "negative": 0.3333333333333333,
+    "category": "neutral"
+  },
+  {
+    "text": "bahut khushi, so happy",
+    "compound": 1.0,
+    "positive": 0.574468085106383,
+    "neutral": 0.09999999999999998,
+    "negative": 0.0,
+    "category": "positive"
+  },
+  {
+    "text": "bahut dukh, so sad",
+    "compound": -1.0,
+    "positive": 0.0,
+    "neutral": 0.09999999999999998,
+    "negative": 0.574468085106383,
+    "category": "heavy"
+  },
+  {
+    "text": "mast place hai",
+    "compound": 0.0,
+    "positive": 0.0,
+    "neutral": 1.0,
+    "negative": 0.0,
+    "category": "neutral"
+  },
+  {
+    "text": "peaceful calm quiet",
+    "compound": 1.0,
+    "positive": 0.6666666666666666,
+    "neutral": 0.33333333333333337,
+    "negative": 0.0,
+    "category": "positive"
+  },
+  {
+    "text": "a bit nice",
+    "compound": 1.0,
+    "positive": 0.5348837209302325,
+    "neutral": 0.2333333333333334,
+    "negative": 0.0,
+    "category": "positive"
+  },
+  {
+    "text": "okay",
+    "compound": 0.0,
+    "positive": 0.0,
+    "neutral": 1.0,
+    "negative": 0.0,
+    "category": "neutral"
+  },
+  {
+    "text": "love love love love love",
+    "compound": 1.0,
+    "positive": 0.8333333333333334,
+    "neutral": 0.33333333333333337,
+    "negative": 0.0,
+    "category": "positive"
+  },
+  {
+    "text": "hate hate hate hate hate",
+    "compound": -1.0,
+    "positive": 0.0,
+    "neutral": 0.33333333333333337,
+    "negative": 0.8333333333333334,
+    "category": "heavy"
+  },
+  {
+    "text": "good not happy",
+    "compound": 0.25,
+    "positive": 0.3846153846153846,
+    "neutral": 0.4666666666666667,
+    "negative": 0.23076923076923075,
+    "category": "peaceful"
+  },
+  {
+    "text": "love not nice",
+    "compound": 0.25,
+    "positive": 0.3846153846153846,
+    "neutral": 0.4666666666666667,
+    "negative": 0.23076923076923075,
+    "category": "peaceful"
+  },
+  {
+    "text": "great never kind",
+    "compound": 0.25,
+    "positive": 0.3846153846153846,
+    "neutral": 0.4666666666666667,
+    "negative": 0.23076923076923075,
+    "category": "peaceful"
+  },
+  {
+    "text": "happy good sad bad",
+    "compound": 0.0,
+    "positive": 0.4,
+    "neutral": 0.33333333333333337,
+    "negative": 0.4,
+    "category": "mixed"
+  },
+  {
+    "text": "love joy hate pain",
+    "compound": 0.0,
+    "positive": 0.4,
+    "neutral": 0.33333333333333337,
+    "negative": 0.4,
+    "category": "mixed"
+  },
+  {
+    "text": "wonderful great awful terrible",
+    "compound": 0.0,
+    "positive": 0.4,
+    "neutral": 0.33333333333333337,
+    "negative": 0.4,
+    "category": "mixed"
+  },
+  {
+    "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "compound": 0.0,
+    "positive": 0.0,
+    "neutral": 1.0,
+    "negative": 0.0,
+    "category": "neutral"
+  },
+  {
+    "text": "happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy happy ",
+    "compound": 1.0,
+    "positive": 0.9970059880239521,
+    "neutral": 0.33333333333333337,
+    "negative": 0.0,
+    "category": "positive"
+  }
+]
