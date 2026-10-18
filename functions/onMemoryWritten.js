@@ -28,11 +28,17 @@ function buildPlaceAggregate(memories, now) {
   };
 }
 
+// The rules validate sentiment on write, but legacy or Admin-written docs are not covered; clamp
+// so one bad value cannot swamp a place's aura. Non-numeric values (NaN) count as neutral.
+function clampCompound(value) {
+  return Math.max(-1, Math.min(1, Number(value) || 0));
+}
+
 function memoryFromData(data) {
   return {
     privacy: data.privacy,
     isDeleted: data.isDeleted === true,
-    sentiment: { compound: Number(data.sentiment?.compound ?? 0) },
+    sentiment: { compound: clampCompound(data.sentiment?.compound) },
     createdAt: toDate(data.createdAt),
   };
 }
@@ -88,4 +94,4 @@ const onMemoryWritten = onDocumentWritten("memories/{memoryId}", async (event) =
   }
 });
 
-module.exports = { onMemoryWritten, buildPlaceAggregate, recomputePlace, toDate };
+module.exports = { onMemoryWritten, buildPlaceAggregate, memoryFromData, recomputePlace, toDate };

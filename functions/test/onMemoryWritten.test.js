@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { buildPlaceAggregate, toDate } = require("../onMemoryWritten");
+const { buildPlaceAggregate, memoryFromData, toDate } = require("../onMemoryWritten");
 
 const now = new Date("2026-10-18T09:00:00.000Z");
 const mem = (over = {}) => ({
@@ -71,4 +71,32 @@ test("recomputePlace never recreates a place that disappeared mid-recompute", as
   const db = vanishingPlaceDb();
   await recomputePlace(db, "gone", now);
   assert.deepEqual(db.writes, []);
+});
+
+test("memoryFromData clamps compound sentiment to [-1, 1]", () => {
+  const compound = (value) => memoryFromData({ sentiment: { compound: value } }).sentiment.compound;
+  assert.equal(compound(1e9), 1);
+  assert.equal(compound(-1e9), -1);
+  assert.equal(compound(0.4), 0.4);
+});
+
+test("memoryFromData maps non-numeric sentiment to 0", () => {
+  const compound = (value) => memoryFromData({ sentiment: { compound: value } }).sentiment.compound;
+  assert.equal(compound(NaN), 0);
+  assert.equal(compound("abc"), 0);
+  assert.equal(compound(undefined), 0);
+  assert.equal(memoryFromData({}).sentiment.compound, 0);
+});
+
+test("one out-of-range memory cannot dominate the aura", () => {
+  const r = buildPlaceAggregate(
+    [
+      memoryFromData({ privacy: "public", sentiment: { compound: -1e9 }, createdAt: now }),
+      memoryFromData({ privacy: "public", sentiment: { compound: 0.9 }, createdAt: now }),
+      memoryFromData({ privacy: "public", sentiment: { compound: 0.9 }, createdAt: now }),
+    ],
+    now,
+  );
+  assert.ok(r.aura.compoundScore >= -1 && r.aura.compoundScore <= 1);
+  assert.ok(r.aura.compoundScore > 0);
 });
