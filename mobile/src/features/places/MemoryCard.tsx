@@ -1,19 +1,20 @@
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import type { Memory, PrivacyType } from '@/domain/types';
+import type { Memory } from '@/domain/types';
+import { privacyLabel } from '@/ui/privacyLabel';
 import { colors } from '@/ui/theme';
 
-const BADGES: Partial<Record<PrivacyType, string>> = {
-  private: 'Private',
-  tagged: 'Tagged',
-  timeRelease: 'Time release',
-  community: 'Community',
-};
-
 export function MemoryCard({ memory }: { memory: Memory }) {
-  const badge = BADGES[memory.privacy];
+  const router = useRouter();
+  const badge = privacyLabel(memory);
   return (
-    <View testID={`memory-${memory.id}`} style={styles.card}>
+    <Pressable
+      accessibilityRole="button"
+      testID={`memory-${memory.id}`}
+      style={styles.card}
+      onPress={() => router.push(`/memory/${memory.id}` as never)}
+    >
       {memory.imageUrl ? <Image source={{ uri: memory.imageUrl }} style={styles.image} /> : null}
       <Text style={styles.text}>{memory.textContent}</Text>
       <View style={styles.metaRow}>
@@ -24,7 +25,7 @@ export function MemoryCard({ memory }: { memory: Memory }) {
           </View>
         ) : null}
       </View>
-    </View>
+    </Pressable>
   );
 }
 
