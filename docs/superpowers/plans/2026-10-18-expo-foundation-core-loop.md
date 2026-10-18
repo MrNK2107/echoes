@@ -290,12 +290,12 @@ export interface Repositories { places: PlaceRepository; memories: MemoryReposit
   - `media.uploadMemoryImage`: `fetch(localUri).blob()` → `uploadBytes(ref('memory-images/{uid}/{memoryId}.jpg'), blob, { contentType: 'image/jpeg' })` → `getDownloadURL`.
 - Aggregation contract case (`memoryCount` increments) is skipped here until Task 10; enable it in Task 10.
 
-- [ ] **Step 1: Write the emulator test** that runs all three contract suites against `createFirestoreBackend` connected via `connectFirestoreEmulator(db,'127.0.0.1',8080)`, `connectAuthEmulator(auth,'http://127.0.0.1:9099')`, `connectStorageEmulator(storage,'127.0.0.1',9199)`; `cleanup` calls the emulator REST reset endpoints. Add the Review Focus case **`finds a place whose geohash continues with z`** (place at a geohash `<prefix>z…` inside radius). `jest.emulator.config.js`: `testEnvironment: 'node'`, `testMatch: ['**/*.emulator.test.ts']`.
-- [ ] **Step 2: Run** `npx firebase emulators:exec --project demo-echoes --only auth,firestore,storage "npm --prefix mobile run test:emulator"` — Expected: FAIL (backend not implemented).
-- [ ] **Step 3: Implement** the Firestore backend.
-- [ ] **Step 4: Run** the same command — Expected: PASS (aggregation case skipped). Rules are the real `firestore.rules`/`storage.rules`; a permission error means the query shape does not match the rules — fix the query, not the rules.
-- [ ] **Step 5: Run** `npx firebase emulators:exec --only firestore "npm test --prefix rules_test"` — Expected: PASS (unchanged).
-- [ ] **Step 6: Commit** `feat(data): Firestore backend verified against emulator contracts`.
+- [x] **Step 1: Write the emulator test** that runs all three contract suites against `createFirestoreBackend` connected via `connectFirestoreEmulator(db,'127.0.0.1',8080)`, `connectAuthEmulator(auth,'http://127.0.0.1:9099')`, `connectStorageEmulator(storage,'127.0.0.1',9199)`; `cleanup` calls the emulator REST reset endpoints. Add the Review Focus case **`finds a place whose geohash continues with z`** (place at a geohash `<prefix>z…` inside radius). `jest.emulator.config.js`: `testEnvironment: 'node'`, `testMatch: ['**/*.emulator.test.ts']`.
+- [x] **Step 2: Run** `npx firebase emulators:exec --project demo-echoes --only auth,firestore,storage "npm --prefix mobile run test:emulator"` — Expected: FAIL (backend not implemented).
+- [x] **Step 3: Implement** the Firestore backend.
+- [x] **Step 4: Run** the same command — Expected: PASS (aggregation case skipped). Rules are the real `firestore.rules`/`storage.rules`; a permission error means the query shape does not match the rules — fix the query, not the rules.
+- [x] **Step 5: Run** `npx firebase emulators:exec --only firestore "npm test --prefix rules_test"` — Expected: PASS (unchanged).
+- [x] **Step 6: Commit** `feat(data): Firestore backend verified against emulator contracts`.
 
 ---
 
