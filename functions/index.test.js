@@ -47,3 +47,10 @@ test("exports the transfer callables and the daily expiry job", () => {
     assert.ok(index[name], `${name} is exported`);
   }
 });
+
+test("exports the institution and safety callables", () => {
+  const index = require("./index");
+  for (const name of ["createInstitution", "claimInstitutionAdmin", "addInstitutionSubZone", "reportMemory"]) {
+    assert.ok(index[name], `${name} is exported`);
+  }
+});

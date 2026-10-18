@@ -3,7 +3,13 @@ const { FieldValue } = require("firebase-admin/firestore");
 const { onDocumentWritten } = require("firebase-functions/v2/firestore");
 const { logger } = require("firebase-functions");
 const { calculateAura } = require("./aura");
-const { GEO_THRESHOLD, yearCommunity, eraCommunity, geoCommunity } = require("./lib/domain");
+const {
+  GEO_THRESHOLD,
+  yearCommunity,
+  eraCommunity,
+  geoCommunity,
+  containsProfanity,
+} = require("./lib/domain");
 
 // Memory dates are Firestore Timestamps; legacy docs may hold ISO strings. Returns null when the
 // value cannot be parsed.
@@ -187,8 +193,25 @@ async function ensureGeoCommunity(db, placeId, now) {
   }
 }
 
+// ADR-0008: memories whose text contains profanity get flags.profanity = true so staff can
+// find them; they are not hidden. Only writes when the flag is missing: no write for clean text,
+// and the re-trigger caused by this update skips it (the place recompute does run again, once).
+// Edits are covered too, so
+// text changed after creation cannot dodge the flag. update() never recreates a deleted doc.
+async function flagProfanity(db, memoryId, after) {
+  if (typeof memoryId !== "string" || !memoryId) return;
+  if (typeof after.textContent !== "string" || after.flags?.profanity === true) return;
+  if (!containsProfanity(after.textContent)) return;
+  try {
+    await db.collection("memories").doc(memoryId).update({ "flags.profanity": true });
+  } catch (error) {
+    if (error?.code !== NOT_FOUND) throw error;
+  }
+}
+
 // Testable core of the trigger. `before`/`after` are memory data or null.
-async function handleMemoryWrite(db, { before, after }, now) {
+async function handleMemoryWrite(db, { memoryId, before, after }, now) {
+  if (after) await flagProfanity(db, memoryId, after);
   const placeIds = new Set(
     [after?.placeId, before?.placeId].filter(
       (id) => typeof id === "string" && id.length > 0,
@@ -228,6 +251,7 @@ const onMemoryWritten = onDocumentWritten("memories/{memoryId}", async (event) =
 module.exports = {
   onMemoryWritten,
   handleMemoryWrite,
+  flagProfanity,
   ensureTimeCommunities,
   ensureGeoCommunity,
   buildPlaceAggregate,

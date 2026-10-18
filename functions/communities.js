@@ -203,6 +203,9 @@ async function removeMembership(db, member, community, { extra, ...fields }) {
 module.exports = {
   definitions,
   cleanupUserCommunities,
+  linkUser,
+  newCommunity,
+  member,
   createCommunity: callable("createCommunity", definitions.createCommunity, createCommunity),
   joinCommunity: callable("joinCommunity", definitions.joinCommunity, joinCommunity),
   leaveCommunity: callable("leaveCommunity", definitions.leaveCommunity, leaveCommunity),

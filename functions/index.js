@@ -9,6 +9,8 @@ const { onMemoryWritten } = require("./onMemoryWritten");
 const { onPublicProfileWritten } = require("./onPublicProfileWritten");
 const communities = require("./communities");
 const transfers = require("./transfers");
+const institutions = require("./institutions");
+const safety = require("./safety");
 const { cleanupUserSocialData } = require("./accountCleanup");
 const { onMemoryCreatedTags } = require("./tags");
 const {
@@ -33,6 +35,10 @@ exports.initiateTransfer = transfers.initiateTransfer;
 exports.respondToTransfer = transfers.respondToTransfer;
 exports.revokeTransfer = transfers.revokeTransfer;
 exports.expireTransfers = transfers.expireTransfers;
+exports.createInstitution = institutions.createInstitution;
+exports.claimInstitutionAdmin = institutions.claimInstitutionAdmin;
+exports.addInstitutionSubZone = institutions.addInstitutionSubZone;
+exports.reportMemory = safety.reportMemory;
 
 exports.dispatchNotificationRequest = onDocumentCreated(
   "notificationRequests/{requestId}",
