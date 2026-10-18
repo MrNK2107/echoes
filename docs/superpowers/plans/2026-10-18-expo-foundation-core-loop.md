@@ -204,11 +204,11 @@ export interface AuthSession { userId: string; email: string; displayName: strin
 - Produces (`aura.ts`): `AURA_COLORS: Record<SentimentCategory,string>` (spec hex values), `emptyAura(now: Date): AuraZone`, `calculateAura(memories: Pick<Memory,'sentiment'|'createdAt'|'isDeleted'>[], now: Date): AuraZone`. `ageDays = Math.max(Math.trunc((now - createdAt) / 86_400_000), 0)` (Dart `inDays` truncation). Caller passes public memories only.
 - Produces (`mappers.ts`): `memoryToDoc(m: Memory): DocumentData`, `memoryFromDoc(id: string, d: DocumentData): Memory`, `placeToDoc(p: Place)`, `placeFromDoc(id, d)`, `userToDoc(u: AppUser)`, `userFromDoc(id, d)`. Memory dates ↔ `Timestamp`; place/user/aura dates ↔ ISO strings; `toDate(v: Timestamp | string | null | undefined): Date | null` accepts both.
 
-- [ ] **Step 1: Write failing tests:** `it.each(aura.json)` (dominantSentiment, colorHex, memoryCount equal; compoundScore/intensity `toBeCloseTo(_,10)`); mappers: `memoryFromDoc(id, memoryToDoc(m))` deep-equals `m`; `memoryToDoc(m).createdAt instanceof Timestamp`; `placeToDoc(p).createdAt === p.createdAt.toISOString()`; `reads legacy ISO date strings` — memory doc with `createdAt: '2025-01-02T03:04:05.000Z'` maps to that Date; missing `imageUrl` maps to `null`.
-- [ ] **Step 2: Run** `npm --prefix mobile test -- aura mappers` — Expected: FAIL.
-- [ ] **Step 3: Implement** `aura.ts` from `lib/features/aura/domain/aura_calculator.dart`; mappers per spec Data contract.
-- [ ] **Step 4: Run** — Expected: PASS.
-- [ ] **Step 5: Commit** `feat(domain): aura calculator and Firestore mappers`.
+- [x] **Step 1: Write failing tests:** `it.each(aura.json)` (dominantSentiment, colorHex, memoryCount equal; compoundScore/intensity `toBeCloseTo(_,10)`); mappers: `memoryFromDoc(id, memoryToDoc(m))` deep-equals `m`; `memoryToDoc(m).createdAt instanceof Timestamp`; `placeToDoc(p).createdAt === p.createdAt.toISOString()`; `reads legacy ISO date strings` — memory doc with `createdAt: '2025-01-02T03:04:05.000Z'` maps to that Date; missing `imageUrl` maps to `null`.
+- [x] **Step 2: Run** `npm --prefix mobile test -- aura mappers` — Expected: FAIL.
+- [x] **Step 3: Implement** `aura.ts` from `lib/features/aura/domain/aura_calculator.dart`; mappers per spec Data contract.
+- [x] **Step 4: Run** — Expected: PASS.
+- [x] **Step 5: Commit** `feat(domain): aura calculator and Firestore mappers`.
 
 ---
 
