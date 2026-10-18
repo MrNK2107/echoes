@@ -246,7 +246,7 @@ function useOutbox(): { pending: number; retry(): void }
 
 **Files:** Modify `status.md` (Plan 2 section above Plan 1's), `README.md` (features list).
 
-- [ ] **Step 1: Run every gate**
+- [x] **Step 1: Run every gate**
 ```bash
 npm --prefix mobile test
 npm --prefix mobile run typecheck
@@ -257,5 +257,5 @@ npx firebase emulators:exec --only firestore "npm test --prefix rules_test"
 cd mobile && npx expo export --platform android --output-dir dist && npx expo export --platform ios --output-dir dist-ios
 ```
 Expected: all exit 0.
-- [ ] **Step 2: Update `status.md`** with the gate table and the manual Expo Go checklist for Plan 2 (edit, delete, restore, voice note record/play, airplane-mode save then reconnect, profile default privacy, delete account).
-- [ ] **Step 3: Commit** `docs: record Expo Plan 2 verification`.
+- [x] **Step 2: Update `status.md`** with the gate table and the manual Expo Go checklist for Plan 2 (edit, delete, restore, voice note record/play, airplane-mode save then reconnect, profile default privacy, delete account).
+- [x] **Step 3: Commit** `docs: record Expo Plan 2 verification`.
