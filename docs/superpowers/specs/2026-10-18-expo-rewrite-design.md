@@ -84,6 +84,23 @@ compatibility the Dart DTO already provides.
 Dark theme: background `#0D1117`, surface `#161B22`, elevated `#21262D`, accent
 `#58A6FF`, gold `#F0B429`, text `#F0F6FC` / secondary `#8B949E`.
 
+## Plan 2 decisions (2026-10-19)
+Fixes to Flutter gaps found while porting:
+- **Recently deleted** — authors can read their own soft-deleted memories (rules change) and restore within **30 days** (`RESTORE_WINDOW_DAYS = 30`, already enforced by `restoreOnly` in rules). A daily scheduled function `purgeDeletedMemories` hard-deletes memories whose `deletedAt` is older than 30 days, plus their Storage files.
+- **Offline outbox** — ADR-0006 replaces Plan 1's single-flight retry.
+- **Voice notes** — `expo-audio`, max **60 s**, AAC `.m4a`, `contentType 'audio/mp4'`, Storage `memory-audio/{uid}/{memoryId}.m4a` (≤ 5 MiB). Rules gain `audioUrl` in the mutable field list so a queued voice note can be attached later.
+- **Account deletion** — requires the current password (re-authentication) and states accurately that all of the user's memories, photos and voice notes are deleted (that is what `cleanupDeletedUser` does).
+- **Edit** — text and privacy (Public / Private / Time release) are editable; the same validation as Add (future release date required).
+
+Copy (exact):
+- Delete confirm: title `Delete this memory?`, body `You can restore it from Recently deleted for 30 days.`, buttons `Cancel` / `Delete`.
+- Edit: title `Edit memory`, button `Save changes`.
+- Recently deleted: title `Recently deleted`, row `Restorable for {n} days` / `Restorable for 1 day`, button `Restore`, empty `Nothing here. Deleted memories stay restorable for 30 days.`, expired `This memory can no longer be restored.`
+- Voice: `Record voice note`, `Stop`, `Remove voice note`, `Recording {s}s / 60s`, `Voice note ready ({s}s)`, mic denied `Microphone permission is needed for voice notes.`; player `Play voice note` / `Pause voice note`, label `Voice note`, error `Voice note unavailable`.
+- Outbox: after queueing `Saved offline. It will upload when you're back online.`; banner `{n} memory waiting to upload` / `{n} memories waiting to upload`, button `Retry`.
+- Profile: title `Profile`, name fallback `ECHOES custodian`, stat `Memories`, setting `Default privacy for new memories` (Public / Private), section `Your memories`, empty `No memories yet.` / `Memories you leave will appear here.`, buttons `Recently deleted`, `Sign out`, `Delete account`. Map header button accessibilityLabel `Profile`.
+- Delete account: title `Delete account`, body `This permanently deletes your account, your profile, and every memory, photo and voice note you created. This cannot be undone.`, field `Confirm your password`, buttons `Cancel` / `Delete permanently`, wrong password `Incorrect password.`
+
 ## Roadmap
 | Plan | Scope | Runs in |
 |---|---|---|
