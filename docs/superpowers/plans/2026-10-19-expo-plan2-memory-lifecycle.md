@@ -142,9 +142,9 @@ interface Services { connectivity; keyValue; files; audioRecorder; audioPlayer }
 ```
 Fakes: `fakeConnectivity(initial = true)` with `.setOnline(b)`; `memoryKeyValue()`; `fakeFiles()` (returns `'persisted://'+name`); `fakeAudioRecorder({ permission?, result? })`; `fakeAudioPlayer()` recording calls. Expo impls: `expo-network` (`getNetworkStateAsync().isInternetReachable ?? isConnected`, `addNetworkStateListener`), AsyncStorage, `expo-file-system` `File`/`Directory`/`Paths.document` (verify SDK 58 API), `expo-audio` recorder with AAC `.m4a` preset (verify API; `RecordingPresets.HIGH_QUALITY` on SDK 58) and `createAudioPlayer`.
 
-- [ ] **Step 1: Failing tests** — fakes behave as specified; `createServices` wires Expo impls and `testServices` wires fakes (identity checks).
-- [ ] **Step 2: Run** → FAIL. **Step 3: Implement.** **Step 4: Run** gates + `npx expo export --platform android` → PASS.
-- [ ] **Step 5: Commit** `feat(device): connectivity, key-value, file and audio services`.
+- [x] **Step 1: Failing tests** — fakes behave as specified; `createServices` wires Expo impls and `testServices` wires fakes (identity checks).
+- [x] **Step 2: Run** → FAIL. **Step 3: Implement.** **Step 4: Run** gates + `npx expo export --platform android` → PASS.
+- [x] **Step 5: Commit** `feat(device): connectivity, key-value, file and audio services`.
 
 ---
 

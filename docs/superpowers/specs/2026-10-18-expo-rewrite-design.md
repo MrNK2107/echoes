@@ -98,6 +98,7 @@ Copy (exact):
 - Recently deleted: title `Recently deleted`, row `Restorable for {n} days` / `Restorable for 1 day`, button `Restore`, empty `Nothing here. Deleted memories stay restorable for 30 days.`, expired `This memory can no longer be restored.`
 - Voice: `Record voice note`, `Stop`, `Remove voice note`, `Recording {s}s / 60s`, `Voice note ready ({s}s)`, mic denied `Microphone permission is needed for voice notes.`; player `Play voice note` / `Pause voice note`, label `Voice note`, error `Voice note unavailable`.
 - Outbox: after queueing `Saved offline. It will upload when you're back online.`; banner `{n} memory waiting to upload` / `{n} memories waiting to upload`, button `Retry`.
+- Outbox permanent failures (ruling R14): banner `{n} memory couldn't upload` / `{n} memories couldn't upload`, button `Discard`; confirm title `Discard memories that couldn't upload?`, body `They can't be recovered.`, buttons `Cancel` / `Discard`.
 - Profile: title `Profile`, name fallback `ECHOES custodian`, stat `Memories`, setting `Default privacy for new memories` (Public / Private), section `Your memories`, empty `No memories yet.` / `Memories you leave will appear here.`, buttons `Recently deleted`, `Sign out`, `Delete account`. Map header button accessibilityLabel `Profile`.
 - Delete account: title `Delete account`, body `This permanently deletes your account, your profile, and every memory, photo and voice note you created. This cannot be undone.`, field `Confirm your password`, buttons `Cancel` / `Delete permanently`, wrong password `Incorrect password.`
 
