@@ -223,14 +223,14 @@ mobile/app/(app)/{notifications,communities/index,communities/[id],institutions/
   - In a transaction, counts distinct reports. At 3, sets `memories/{id}.moderation = 'hidden'` (once).
 - `onMemoryWritten`/create: if `containsProfanity(textContent)` (mirror in functions/lib/domain.js), set `flags: { profanity: true }` via Admin SDK.
 
-- [ ] **Step 1: Failing tests:**
+- [x] **Step 1: Failing tests:**
   - staff-only create; **`rejects subdomain and unverified email`**; exact-domain success;
   - sub-zone by a non-admin denied;
   - **`three distinct reporters hide once`**; **`duplicate reporter does not count`**;
   - a reporter can't report their own memory or a memory not visible to them;
   - the profanity flag set.
-- [ ] **Step 2–4:** FAIL → implement → PASS.
-- [ ] **Step 5: Commit** `feat(functions): institutions, reporting and auto-hide`.
+- [x] **Step 2–4:** FAIL → implement → PASS.
+- [x] **Step 5: Commit** `feat(functions): institutions, reporting and auto-hide`.
 
 ---
 
