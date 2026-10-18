@@ -168,11 +168,11 @@ export interface AuthSession { userId: string; email: string; displayName: strin
 **Interfaces:**
 - Produces: `encodeGeohash(lat: number, lng: number, precision = 9): string`, `distanceMeters(a: LatLng, b: LatLng): number` (haversine, R = 6371000), `geohashPrecisionFor(radiusMeters: number): number`, `queryPrefixes(origin: LatLng, radiusMeters: number): string[]`, `geohashRangeEnd(prefix: string): string` (= `prefix + ''`).
 
-- [ ] **Step 1: Write failing tests:** `it.each(geohash.json)`, `it.each(nearby.json)` (precision and prefixes exactly equal); `distanceMeters({0,0},{1,0})` `toBeCloseTo(111194.93, 1)`; `distanceMeters(p,p) === 0`; `geohashRangeEnd('tdr1')` > `'tdr1zzzz'`.
-- [ ] **Step 2: Run** `npm --prefix mobile test -- geo` — Expected: FAIL.
-- [ ] **Step 3: Implement** by porting `lib/core/geo/geohash.dart` and `NearbyPlaceQuery` (`lib/features/places/domain/nearby_place_query.dart`), including its cell-width table and 33-entry neighbour expansion verbatim.
-- [ ] **Step 4: Run** — Expected: PASS.
-- [ ] **Step 5: Commit** `feat(domain): port geohash, haversine and nearby prefixes`.
+- [x] **Step 1: Write failing tests:** `it.each(geohash.json)`, `it.each(nearby.json)` (precision and prefixes exactly equal); `distanceMeters({0,0},{1,0})` `toBeCloseTo(111194.93, 1)`; `distanceMeters(p,p) === 0`; `geohashRangeEnd('tdr1')` > `'tdr1zzzz'`.
+- [x] **Step 2: Run** `npm --prefix mobile test -- geo` — Expected: FAIL.
+- [x] **Step 3: Implement** by porting `lib/core/geo/geohash.dart` and `NearbyPlaceQuery` (`lib/features/places/domain/nearby_place_query.dart`), including its cell-width table and 33-entry neighbour expansion verbatim.
+- [x] **Step 4: Run** — Expected: PASS.
+- [x] **Step 5: Commit** `feat(domain): port geohash, haversine and nearby prefixes`.
 
 ---
 
