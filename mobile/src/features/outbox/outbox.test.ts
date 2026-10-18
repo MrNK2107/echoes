@@ -110,6 +110,18 @@ describe('Outbox', () => {
     expect(files.removed).toEqual(['persisted://bad.jpg']);
   });
 
+  it('clear removes every draft and its files', async () => {
+    const files = spyFiles();
+    const store = memoryKeyValue();
+    const outbox = new Outbox(store, files, 'user-demo');
+    await outbox.add(outboxDraft({ memoryId: 'a', imageUri: 'file:///a.jpg' }));
+    await outbox.add(outboxDraft({ memoryId: 'b', audioUri: 'file:///b.m4a' }));
+    await outbox.markFailed('b', 'permission-denied: no');
+    await outbox.clear();
+    expect(await outbox.list()).toEqual([]);
+    expect(files.removed.sort()).toEqual(['persisted://a.jpg', 'persisted://b.m4a']);
+  });
+
   it('tracks in-flight submits in memory only', async () => {
     const store = memoryKeyValue();
     const outbox = new Outbox(store, fakeFiles(), 'user-demo');

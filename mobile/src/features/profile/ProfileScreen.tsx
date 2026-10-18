@@ -141,7 +141,7 @@ export function ProfileScreen() {
       <Pressable accessibilityRole="button" onPress={signOut} style={styles.row}>
         <Text style={styles.rowText}>Sign out</Text>
       </Pressable>
-      <Pressable accessibilityRole="button" onPress={() => router.push('/delete-account' as never)} style={styles.row}>
+      <Pressable accessibilityRole="button" onPress={() => router.push('/delete-account')} style={styles.row}>
         <Text style={styles.dangerText}>Delete account</Text>
       </Pressable>
     </ScrollView>

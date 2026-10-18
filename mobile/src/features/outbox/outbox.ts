@@ -101,6 +101,11 @@ export class Outbox {
     await this.removeWhere((x) => x.failed === true);
   }
 
+  /** Removes every draft and its persisted files (account deletion). */
+  async clear(): Promise<void> {
+    await this.removeWhere(() => true);
+  }
+
   /** Parks the draft after a permanent error so the processor stops retrying it. */
   async markFailed(memoryId: string, reason: string): Promise<void> {
     await this.update((all) =>
