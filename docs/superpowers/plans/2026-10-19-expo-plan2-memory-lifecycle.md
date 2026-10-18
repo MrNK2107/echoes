@@ -104,11 +104,11 @@ interface MediaRepository { uploadMemoryAudio(input: { userId: string; memoryId:
 ```
 Memory backend: `update`/`softDelete`/`restore` recompute the place aggregate (deleted memories drop out of counts/aura, restore brings them back); `deleteAccount` removes the user's memories, user doc, credentials and signs out, then recomputes affected places; `register` now also creates the `users` record (Plan 1 gap). Media audio returns `localUri`.
 
-- [ ] **Step 1: Failing contract cases** (backend-agnostic, polling where aggregation is async): findById own deleted → returned for author, null for stranger; subscribeForUser excludes deleted, newest first; subscribeDeletedForUser lists deleted; update changes text/privacy and keeps createdAt; softDelete → place memoryCount decreases (poll); restore within window → back; restore after 31 days → rejects with the expired message; attachMedia sets audioUrl; updateDefaultPrivacy persists; deleteAccount wrong password rejects `Incorrect password.` and session stays; deleteAccount right password → session null and user's memories gone (poll).
-- [ ] **Step 2: Run** `npm --prefix mobile test -- memoryBackend` → FAIL.
-- [ ] **Step 3: Implement** the memory backend changes (inject `now` for the 31-day case via the backend clock).
-- [ ] **Step 4: Run** → PASS.
-- [ ] **Step 5: Commit** `feat(data): memory lifecycle, voice upload and account deletion in memory backend`.
+- [x] **Step 1: Failing contract cases** (backend-agnostic, polling where aggregation is async): findById own deleted → returned for author, null for stranger; subscribeForUser excludes deleted, newest first; subscribeDeletedForUser lists deleted; update changes text/privacy and keeps createdAt; softDelete → place memoryCount decreases (poll); restore within window → back; restore after 31 days → rejects with the expired message; attachMedia sets audioUrl; updateDefaultPrivacy persists; deleteAccount wrong password rejects `Incorrect password.` and session stays; deleteAccount right password → session null and user's memories gone (poll).
+- [x] **Step 2: Run** `npm --prefix mobile test -- memoryBackend` → FAIL.
+- [x] **Step 3: Implement** the memory backend changes (inject `now` for the 31-day case via the backend clock).
+- [x] **Step 4: Run** → PASS.
+- [x] **Step 5: Commit** `feat(data): memory lifecycle, voice upload and account deletion in memory backend`.
 
 ---
 
