@@ -10,9 +10,10 @@ import {
   type Auth,
   type User,
 } from 'firebase/auth';
+import { DEFAULT_NOTIFICATION_PREFS, validateDisplayName } from '@/domain/profiles';
 import type { AuthSession } from '@/domain/types';
 import { BAD_CREDENTIALS, EMAIL_IN_USE, INCORRECT_PASSWORD, NOT_SIGNED_IN } from '../errors';
-import type { AuthRepository, UserRepository } from '../types';
+import type { AuthRepository, ProfileRepository, UserRepository } from '../types';
 
 const WRONG_PASSWORD_CODES = new Set([
   'auth/invalid-credential',
@@ -41,6 +42,7 @@ function toSession(u: User): AuthSession {
 export function createAuthRepository(
   auth: Auth,
   users: UserRepository,
+  profiles: ProfileRepository,
   now: () => Date = () => new Date(),
 ): AuthRepository {
   // onAuthStateChanged fires before updateProfile during register; re-emit once the name is set.
@@ -63,7 +65,11 @@ export function createAuthRepository(
         throw e;
       }
     },
-    async register(email, password, displayName) {
+    async register(email, password, rawName, acceptedTermsAt) {
+      // Checked before the account exists: the publicProfiles rules refuse other names.
+      const nameError = validateDisplayName(rawName);
+      if (nameError !== null) throw new Error(nameError);
+      const displayName = rawName.trim();
       let user: User;
       try {
         user = (await createUserWithEmailAndPassword(auth, email, password)).user;
@@ -81,9 +87,12 @@ export function createAuthRepository(
         defaultPrivacy: 'public',
         managedPlaceIds: [],
         communityIds: [],
+        notificationPrefs: { ...DEFAULT_NOTIFICATION_PREFS },
+        acceptedTermsAt,
         createdAt: at,
         updatedAt: at,
       });
+      await profiles.setDisplayName(user.uid, displayName, at);
       const session: AuthSession = { userId: user.uid, email: user.email ?? email, displayName };
       if (auth.currentUser?.uid === user.uid) for (const cb of listeners) cb(session);
       return session;

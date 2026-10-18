@@ -3,8 +3,10 @@ import { isMemoryVisibleTo } from '@/domain/privacy';
 import type { Memory } from '@/domain/types';
 import { RESTORE_EXPIRED } from '../errors';
 import type { MemoryRepository } from '../types';
+import { emulateTagNotifications } from './notify';
 import { recomputePlace } from './recompute';
 import type { Store } from './store';
+import { canRead } from './visibility';
 
 const LIST_LIMIT = 50;
 
@@ -58,23 +60,21 @@ export function createMemoryRepository(store: Store): MemoryRepository {
       emit();
       return () => { store.memoryListeners.delete(emit); };
     },
-    async create(memory) {
+    async create(input) {
+      // The rules require moderation: null on create; only reportMemory sets it.
+      const memory: Memory = { ...input, moderation: null };
       store.memories.set(memory.id, memory);
       recomputePlace(store, memory.placeId);
       store.notify(store.memoryListeners);
       store.notify(store.placeListeners);
+      emulateTagNotifications(store, memory);
     },
     async findById(id) {
       const m = store.memories.get(id);
       if (!m) return null;
       const viewerId = store.session?.userId ?? null;
-      if (viewerId === m.userId) return m;
       if (viewerId === null) return null;
-      const communityIds = store.users.get(viewerId)?.communityIds ?? [];
-      const member = m.communityId !== null && communityIds.includes(m.communityId);
-      return isMemoryVisibleTo(m, { viewerId, viewerIsCommunityMember: member, now: store.now() })
-        ? m
-        : null;
+      return canRead(store, m, viewerId) ? m : null;
     },
     subscribeForUser(userId, cb) {
       return subscribeUserList(userId, false, cb);

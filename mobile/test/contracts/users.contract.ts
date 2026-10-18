@@ -18,13 +18,25 @@ export function userRepositoryContract(
     afterEach(async () => { await ctx.cleanup(); });
 
     itLifecycle('updateDefaultPrivacy persists', async () => {
-      const s = await ctx.repos.auth.register('pref@example.com', 'secret12', 'Pref');
+      const s = await ctx.repos.auth.register('pref@example.com', 'secret12', 'Pref', new Date());
       expect((await ctx.repos.users.get(s.userId))?.defaultPrivacy).toBe('public');
       const at = new Date();
       await ctx.repos.users.updateDefaultPrivacy(s.userId, 'private', at);
       await waitFor(async () => {
         const u = await ctx.repos.users.get(s.userId);
         expect(u?.defaultPrivacy).toBe('private');
+        expect(u?.updatedAt).toEqual(at);
+      });
+    });
+
+    it('updateNotificationPrefs persists', async () => {
+      const s = await ctx.repos.auth.register('notif@example.com', 'secret12', 'Notif', new Date());
+      const at = new Date();
+      const prefs = { transfers: false, tags: true, communityInvites: false };
+      await ctx.repos.users.updateNotificationPrefs(s.userId, prefs, at);
+      await waitFor(async () => {
+        const u = await ctx.repos.users.get(s.userId);
+        expect(u?.notificationPrefs).toEqual(prefs);
         expect(u?.updatedAt).toEqual(at);
       });
     });

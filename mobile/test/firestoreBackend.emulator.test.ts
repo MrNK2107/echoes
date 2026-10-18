@@ -1,6 +1,7 @@
 import { deleteApp, initializeApp, type FirebaseApp } from 'firebase/app';
 import { connectAuthEmulator, getAuth, signInWithCustomToken, signOut, type Auth } from 'firebase/auth';
 import { connectFirestoreEmulator, getFirestore, type Firestore } from 'firebase/firestore';
+import { connectFunctionsEmulator, getFunctions } from 'firebase/functions';
 import { connectStorageEmulator, getStorage, type FirebaseStorage } from 'firebase/storage';
 
 import { createFirestoreBackend } from '@/data/firestore';
@@ -14,6 +15,11 @@ import { authRepositoryContract } from './contracts/auth.contract';
 import { memoryRepositoryContract } from './contracts/memories.contract';
 import { placeRepositoryContract } from './contracts/places.contract';
 import { userRepositoryContract } from './contracts/users.contract';
+import {
+  notificationRepositoryContract,
+  profileRepositoryContract,
+  safetyRepositoryContract,
+} from './contracts/social.contract';
 import { waitFor } from './contracts/util';
 
 // runDraft's module pulls in the native image compressor; the outbox replay never calls it.
@@ -97,7 +103,9 @@ async function makeCtx(): Promise<Ctx> {
   connectAuthEmulator(auth, `http://${HOST}:9099`, { disableWarnings: true });
   const storage = getStorage(app);
   connectStorageEmulator(storage, HOST, 9199);
-  const repos = createFirestoreBackend({ db, auth, storage });
+  const functions = getFunctions(app);
+  connectFunctionsEmulator(functions, HOST, 5001);
+  const repos = createFirestoreBackend({ db, auth, storage, functions });
   return {
     app, db, auth, storage, repos,
     async signInAs(uid) {
@@ -124,6 +132,10 @@ placeRepositoryContract('firestore', make);
 memoryRepositoryContract('firestore', make, { supportsLifecycle: true, supportsClientDeletionTime: false });
 authRepositoryContract('firestore', make, { supportsLifecycle: true });
 userRepositoryContract('firestore', make, { supportsLifecycle: true });
+// Tag notifications (onMemoryCreatedTags) and reports (reportMemory) run in the functions emulator.
+profileRepositoryContract('firestore', make);
+notificationRepositoryContract('firestore', make);
+safetyRepositoryContract('firestore', make);
 
 describe('firestore backend specifics', () => {
   let ctx: Ctx;
@@ -137,7 +149,7 @@ describe('firestore backend specifics', () => {
       textContent: 'together', latitude: 12.97, longitude: 77.59, geohash: 'tdr1v9q',
       sentiment: { compound: 0.5, positive: 0.5, neutral: 0.5, negative: 0 },
       privacy: 'community', taggedUserIds: [], communityId, releaseDate: null,
-      isDeleted: false, deletedAt: null, createdAt: T, updatedAt: T,
+      isDeleted: false, deletedAt: null, moderation: null, createdAt: T, updatedAt: T,
     };
   }
 
@@ -200,10 +212,10 @@ describe('firestore backend specifics', () => {
   });
 
   it('register creates the users doc with public default privacy', async () => {
-    const s = await ctx.repos.auth.register('u@example.com', 'secret12', 'U');
+    const s = await ctx.repos.auth.register('u@example.com', 'secret12', 'Uma', new Date());
     const user = await ctx.repos.users.get(s.userId);
     expect(user).toMatchObject({
-      id: s.userId, displayName: 'U', email: 'u@example.com', photoUrl: null,
+      id: s.userId, displayName: 'Uma', email: 'u@example.com', photoUrl: null,
       defaultPrivacy: 'public', managedPlaceIds: [], communityIds: [],
     });
   });

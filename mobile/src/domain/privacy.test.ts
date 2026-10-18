@@ -36,6 +36,21 @@ describe('isMemoryVisibleTo (golden fixtures)', () => {
   });
 });
 
+describe('isMemoryVisibleTo moderation (ADR-0008)', () => {
+  const hidden = {
+    userId: 'author', privacy: 'public' as const, taggedUserIds: [], releaseDate: null,
+    isDeleted: false, moderation: 'hidden' as const,
+  };
+  const viewer = (viewerId: string) => ({ viewerId, viewerIsCommunityMember: false, now: new Date() });
+  it('hides a hidden memory from everyone but its author', () => {
+    expect(isMemoryVisibleTo(hidden, viewer('someone'))).toBe(false);
+    expect(isMemoryVisibleTo(hidden, viewer('author'))).toBe(true);
+  });
+  it('treats null moderation as visible', () => {
+    expect(isMemoryVisibleTo({ ...hidden, moderation: null }, viewer('someone'))).toBe(true);
+  });
+});
+
 describe('validatePrivacy', () => {
   const now = new Date('2026-10-18T09:00:00.000Z');
   const base = { privacy: 'public' as PrivacyType, taggedUserIds: [], releaseDate: null, communityId: null, now };

@@ -2,7 +2,10 @@ import type { Repositories } from '../types';
 import { createAuthRepository } from './auth';
 import { createMediaRepository } from './media';
 import { createMemoryRepository } from './memories';
+import { createNotificationRepository } from './notifications';
 import { createPlaceRepository } from './places';
+import { createProfileRepository } from './profiles';
+import { createSafetyRepository } from './safety';
 import { Store, type MemoryBackendOptions, type MemorySeed } from './store';
 import { createUserRepository } from './users';
 
@@ -16,5 +19,8 @@ export function createMemoryBackend(seed?: MemorySeed, options?: MemoryBackendOp
     users: createUserRepository(store),
     auth: createAuthRepository(store),
     media: createMediaRepository(),
+    profiles: createProfileRepository(store),
+    notifications: createNotificationRepository(store),
+    safety: createSafetyRepository(store),
   };
 }

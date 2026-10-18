@@ -1,3 +1,4 @@
+import { DEFAULT_NOTIFICATION_PREFS, validateDisplayName } from '@/domain/profiles';
 import type { AuthSession } from '@/domain/types';
 import { BAD_CREDENTIALS, EMAIL_IN_USE, INCORRECT_PASSWORD, NOT_SIGNED_IN } from '../errors';
 import type { AuthRepository } from '../types';
@@ -23,7 +24,10 @@ export function createAuthRepository(store: Store): AuthRepository {
       setSession(session);
       return session;
     },
-    async register(email, password, displayName) {
+    async register(email, password, rawName, acceptedTermsAt) {
+      const nameError = validateDisplayName(rawName);
+      if (nameError !== null) throw new Error(nameError);
+      const displayName = rawName.trim();
       const key = email.toLowerCase();
       if (store.accounts.has(key)) throw new Error(EMAIL_IN_USE);
       const acct = { userId: store.nextUserId(), email, password, displayName };
@@ -31,8 +35,10 @@ export function createAuthRepository(store: Store): AuthRepository {
       const at = store.now();
       store.users.set(acct.userId, {
         id: acct.userId, displayName, email, photoUrl: null, defaultPrivacy: 'public',
-        managedPlaceIds: [], communityIds: [], createdAt: at, updatedAt: at,
+        managedPlaceIds: [], communityIds: [], notificationPrefs: { ...DEFAULT_NOTIFICATION_PREFS },
+        acceptedTermsAt, createdAt: at, updatedAt: at,
       });
+      store.setProfile(acct.userId, displayName, at);
       const session = { userId: acct.userId, email, displayName };
       setSession(session);
       return session;
@@ -52,10 +58,16 @@ export function createAuthRepository(store: Store): AuthRepository {
         store.memories.delete(id);
       }
       for (const placeId of placeIds) recomputePlace(store, placeId);
+      // cleanupDeletedUser: the users doc with its inbox and blocks, and the public profile.
       store.users.delete(session.userId);
+      store.profiles.delete(session.userId);
+      store.notifications.delete(session.userId);
+      store.blocks.delete(session.userId);
       store.accounts.delete(acct.email.toLowerCase());
       store.notify(store.memoryListeners);
       store.notify(store.placeListeners);
+      store.notify(store.notificationListeners);
+      store.notify(store.blockListeners);
       setSession(null);
     },
   };

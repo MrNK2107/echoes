@@ -24,7 +24,7 @@ function mem(over: Partial<Memory> = {}): Memory {
     textContent: 'a lovely day', latitude: 12.97, longitude: 77.59, geohash: 'tdr1vz',
     sentiment: { compound: 0.6, positive: 0.6, neutral: 0.4, negative: 0 },
     privacy: 'public', taggedUserIds: [], communityId: null, releaseDate: null,
-    isDeleted: false, deletedAt: null, createdAt: created, updatedAt: created,
+    isDeleted: false, deletedAt: null, moderation: null, createdAt: created, updatedAt: created,
     ...over,
   };
 }

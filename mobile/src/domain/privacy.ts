@@ -1,11 +1,19 @@
 import type { Memory, PrivacyType } from './types';
 
+/**
+ * Mirrors firestore.rules `isVisibleMemory` plus the author's own-read clause. A memory hidden by
+ * moderation (ADR-0008) stays visible to its author only. `moderation` is optional so the golden
+ * fixtures (which predate it) still apply.
+ */
 export function isMemoryVisibleTo(
-  memory: Pick<Memory, 'userId' | 'privacy' | 'taggedUserIds' | 'releaseDate' | 'isDeleted'>,
+  memory: Pick<Memory, 'userId' | 'privacy' | 'taggedUserIds' | 'releaseDate' | 'isDeleted'> & {
+    moderation?: Memory['moderation'];
+  },
   viewer: { viewerId: string; viewerIsCommunityMember: boolean; now: Date },
 ): boolean {
   if (memory.isDeleted) return false;
   if (viewer.viewerId === memory.userId) return true;
+  if (memory.moderation === 'hidden') return false;
   switch (memory.privacy) {
     case 'public':
       return true;

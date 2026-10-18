@@ -10,3 +10,5 @@ export const BAD_CREDENTIALS = 'Incorrect email or password.';
 export const EMAIL_IN_USE = 'An account already exists for that email.';
 export const NOT_SIGNED_IN = 'Not signed in.';
 export const PHOTO_TOO_LARGE = 'Photo is too large to upload.';
+export const REPORT_DUPLICATE = 'You already reported this memory.';
+export const REPORT_RATE = "You've sent a lot of reports today. Try again tomorrow.";

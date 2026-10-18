@@ -1,5 +1,5 @@
 import { doc, getDoc, setDoc, updateDoc, type Firestore } from 'firebase/firestore';
-import { userFromDoc, userToDoc } from '../mappers';
+import { notificationPrefsToDoc, userFromDoc, userToDoc } from '../mappers';
 import type { UserRepository } from '../types';
 
 export function createUserRepository(db: Firestore): UserRepository {
@@ -15,6 +15,12 @@ export function createUserRepository(db: Firestore): UserRepository {
     async updateDefaultPrivacy(userId, privacy, at) {
       // Users docs store dates as ISO strings (see userToDoc).
       await updateDoc(doc(db, 'users', userId), { defaultPrivacy: privacy, updatedAt: at.toISOString() });
+    },
+    async updateNotificationPrefs(userId, prefs, at) {
+      await updateDoc(doc(db, 'users', userId), {
+        notificationPrefs: notificationPrefsToDoc(prefs),
+        updatedAt: at.toISOString(),
+      });
     },
   };
 }

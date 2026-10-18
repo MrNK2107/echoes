@@ -11,6 +11,8 @@ describe('shared error copy', () => {
       EMAIL_IN_USE: 'An account already exists for that email.',
       NOT_SIGNED_IN: 'Not signed in.',
       PHOTO_TOO_LARGE: 'Photo is too large to upload.',
+      REPORT_DUPLICATE: 'You already reported this memory.',
+      REPORT_RATE: "You've sent a lot of reports today. Try again tomorrow.",
     });
   });
 });

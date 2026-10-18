@@ -7,6 +7,7 @@ import {
   type Auth,
 } from 'firebase/auth';
 import { connectFirestoreEmulator, getFirestore, type Firestore } from 'firebase/firestore';
+import { connectFunctionsEmulator, getFunctions, type Functions } from 'firebase/functions';
 import { connectStorageEmulator, getStorage, type FirebaseStorage } from 'firebase/storage';
 
 import type { AppConfig } from './config';
@@ -16,16 +17,24 @@ import type { AppConfig } from './config';
  * (package.json `exports["."]["react-native"]`), which Metro picks up for `firebase/auth`.
  * Its types live in `dist/index.rn.d.ts`, so tsconfig maps `firebase/auth` to that file.
  */
-export function initFirebase(config: AppConfig): { db: Firestore; auth: Auth; storage: FirebaseStorage } {
+export function initFirebase(config: AppConfig): {
+  db: Firestore;
+  auth: Auth;
+  storage: FirebaseStorage;
+  functions: Functions;
+} {
   if (!config.firebase) throw new Error('Firebase config is required for this backend');
   const app = initializeApp(config.firebase);
   const auth = initializeAuth(app, { persistence: getReactNativePersistence(AsyncStorage) });
   const db = getFirestore(app);
   const storage = getStorage(app);
+  // Callables (ADR-0007) are deployed to the default region, us-central1.
+  const functions = getFunctions(app);
   if (config.backend === 'emulator') {
     connectAuthEmulator(auth, `http://${config.emulatorHost}:9099`, { disableWarnings: true });
     connectFirestoreEmulator(db, config.emulatorHost, 8080);
     connectStorageEmulator(storage, config.emulatorHost, 9199);
+    connectFunctionsEmulator(functions, config.emulatorHost, 5001);
   }
-  return { db, auth, storage };
+  return { db, auth, storage, functions };
 }

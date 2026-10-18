@@ -13,6 +13,7 @@ import {
 
 import { BAD_CREDENTIALS, EMAIL_IN_USE, GENERIC_ERROR } from '@/data/errors';
 import { DEMO_USER } from '@/data/seed';
+import { DISPLAY_NAME_ERROR } from '@/domain/profiles';
 import { useServices } from '@/services/ServicesProvider';
 import { colors } from '@/ui/theme';
 
@@ -20,7 +21,7 @@ import { validateDisplayName, validateEmail, validatePassword } from './validato
 
 const NETWORK_ERROR = "Couldn't reach the server. Check your connection and try again.";
 /** Domain messages the auth repositories throw on purpose; everything else is mapped to generic copy. */
-const KNOWN_AUTH_MESSAGES = new Set([BAD_CREDENTIALS, EMAIL_IN_USE]);
+const KNOWN_AUTH_MESSAGES = new Set([BAD_CREDENTIALS, EMAIL_IN_USE, DISPLAY_NAME_ERROR]);
 
 function authErrorCopy(e: unknown): string {
   if (e instanceof Error && KNOWN_AUTH_MESSAGES.has(e.message)) return e.message;
@@ -32,7 +33,7 @@ function authErrorCopy(e: unknown): string {
 type Errors = { email?: string; password?: string; name?: string; age?: string };
 
 export function SignInScreen() {
-  const { repos, config } = useServices();
+  const { repos, config, now } = useServices();
   const [mode, setMode] = useState<'signIn' | 'register'>('signIn');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -68,7 +69,9 @@ export function SignInScreen() {
 
     setBusy(true);
     try {
-      if (register) await repos.auth.register(email.trim(), password, name.trim());
+      // TODO(Plan 3 Task 9): pass the time the terms checkbox was ticked; until that checkbox
+      // exists, registering is taken as accepting the terms now.
+      if (register) await repos.auth.register(email.trim(), password, name.trim(), now());
       else await repos.auth.signIn(email.trim(), password);
     } catch (e) {
       setFormError(authErrorCopy(e));

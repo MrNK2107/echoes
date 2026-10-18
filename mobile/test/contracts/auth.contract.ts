@@ -3,6 +3,8 @@ import type { AuthSession } from '@/domain/types';
 import type { ContractFactory } from './util';
 import { waitFor } from './util';
 
+const TERMS_AT = new Date('2026-04-01T10:00:00.000Z');
+
 export interface AuthContractOptions {
   /** Firestore passes `false` until Task 4 implements deleteAccount. */
   supportsLifecycle?: boolean;
@@ -23,7 +25,7 @@ export function authRepositoryContract(
       const emitted: (AuthSession | null)[] = [];
       const unsub = ctx.repos.auth.subscribe((s) => emitted.push(s));
       try {
-        const session = await ctx.repos.auth.register('new@example.com', 'secret12', 'Newbie');
+        const session = await ctx.repos.auth.register('new@example.com', 'secret12', 'Newbie', TERMS_AT);
         expect(session.displayName).toBe('Newbie');
         expect(session.email).toBe('new@example.com');
         expect(session.userId).toBeTruthy();
@@ -36,7 +38,7 @@ export function authRepositoryContract(
     });
 
     it('signIn works after register; wrong password rejects', async () => {
-      const s = await ctx.repos.auth.register('a@example.com', 'secret12', 'A');
+      const s = await ctx.repos.auth.register('a@example.com', 'secret12', 'Al', TERMS_AT);
       await ctx.repos.auth.signOut();
       expect((await ctx.repos.auth.signIn('a@example.com', 'secret12')).userId).toBe(s.userId);
       await expect(ctx.repos.auth.signIn('a@example.com', 'wrong-pass')).rejects.toThrow(
@@ -44,15 +46,35 @@ export function authRepositoryContract(
       );
     });
 
+    it('register stores acceptedTermsAt, default notification prefs and the public profile', async () => {
+      const s = await ctx.repos.auth.register('terms@example.com', 'secret12', ' Terry ', TERMS_AT);
+      expect(s.displayName).toBe('Terry');
+      await waitFor(async () => {
+        const user = await ctx.repos.users.get(s.userId);
+        expect(user?.acceptedTermsAt).toEqual(TERMS_AT);
+        expect(user?.notificationPrefs).toEqual({ transfers: true, tags: true, communityInvites: true });
+      });
+      expect(await ctx.repos.profiles.get(s.userId)).toEqual({ id: s.userId, displayName: 'Terry' });
+    });
+
+    it('register rejects a display name outside 2 to 40 characters before creating the account', async () => {
+      await expect(ctx.repos.auth.register('short@example.com', 'secret12', 'Z', TERMS_AT)).rejects.toThrow(
+        'Use 2 to 40 characters.',
+      );
+      await expect(ctx.repos.auth.signIn('short@example.com', 'secret12')).rejects.toThrow(
+        'Incorrect email or password.',
+      );
+    });
+
     it('duplicate register rejects', async () => {
-      await ctx.repos.auth.register('dup@example.com', 'secret12', 'D');
-      await expect(ctx.repos.auth.register('dup@example.com', 'secret12', 'D2')).rejects.toThrow(
+      await ctx.repos.auth.register('dup@example.com', 'secret12', 'Dee', TERMS_AT);
+      await expect(ctx.repos.auth.register('dup@example.com', 'secret12', 'Dee2', TERMS_AT)).rejects.toThrow(
         'An account already exists for that email.',
       );
     });
 
     itLifecycle('deleteAccount with a wrong password rejects and the session stays', async () => {
-      const s = await ctx.repos.auth.register('del1@example.com', 'secret12', 'Del');
+      const s = await ctx.repos.auth.register('del1@example.com', 'secret12', 'Del', TERMS_AT);
       const emitted: (AuthSession | null)[] = [];
       const unsub = ctx.repos.auth.subscribe((x) => emitted.push(x));
       try {
@@ -65,7 +87,7 @@ export function authRepositoryContract(
     });
 
     itLifecycle('deleteAccount with the right password signs out and removes the memories', async () => {
-      const s = await ctx.repos.auth.register('del2@example.com', 'secret12', 'Del');
+      const s = await ctx.repos.auth.register('del2@example.com', 'secret12', 'Del', TERMS_AT);
       const emitted: (AuthSession | null)[] = [];
       const unsub = ctx.repos.auth.subscribe((x) => emitted.push(x));
       try {
@@ -80,7 +102,7 @@ export function authRepositoryContract(
           latitude: 1, longitude: 2, geohash: 's01mtw',
           sentiment: { compound: 0, positive: 0, neutral: 1, negative: 0 },
           privacy: 'public', taggedUserIds: [], communityId: null, releaseDate: null,
-          isDeleted: false, deletedAt: null, createdAt: t, updatedAt: t,
+          isDeleted: false, deletedAt: null, moderation: null, createdAt: t, updatedAt: t,
         });
         await ctx.repos.auth.deleteAccount('secret12');
         await waitFor(() => expect(emitted[emitted.length - 1]).toBeNull());

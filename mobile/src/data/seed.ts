@@ -1,5 +1,6 @@
 import { calculateAura } from '@/domain/aura';
 import { encodeGeohash } from '@/domain/geo';
+import { DEFAULT_NOTIFICATION_PREFS } from '@/domain/profiles';
 import { analyzeSentiment } from '@/domain/sentiment';
 import type { AppUser, LatLng, Memory, Place, PrivacyType } from '@/domain/types';
 import type { Account } from './memory/store';
@@ -106,6 +107,7 @@ export function buildSeed(
       releaseDate: d.releaseInDays ? new Date(now.getTime() + d.releaseInDays * DAY_MS) : null,
       isDeleted: false,
       deletedAt: null,
+      moderation: null,
       createdAt,
       updatedAt: createdAt,
     };
@@ -140,6 +142,8 @@ export function buildSeed(
     defaultPrivacy: 'public',
     managedPlaceIds: [],
     communityIds: [],
+    notificationPrefs: { ...DEFAULT_NOTIFICATION_PREFS },
+    acceptedTermsAt: joined,
     createdAt: joined,
     updatedAt: joined,
     ...extra,

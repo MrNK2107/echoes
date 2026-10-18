@@ -62,7 +62,7 @@ describe('SignInScreen', () => {
     await press('age-checkbox');
     expect(screen.getByTestId('age-checkbox').props.accessibilityState).toEqual({ checked: true });
     await press('submit-button');
-    expect(register).toHaveBeenCalledWith('ada@example.com', 'longenough', 'Ada');
+    expect(register).toHaveBeenCalledWith('ada@example.com', 'longenough', 'Ada', expect.any(Date));
     expect(screen.getByTestId('status')).toHaveTextContent('signedIn');
   });
 

@@ -14,5 +14,10 @@ export function createUserRepository(store: Store): UserRepository {
       if (!u) throw new Error('User not found.');
       store.users.set(userId, { ...u, defaultPrivacy: privacy, updatedAt: at });
     },
+    async updateNotificationPrefs(userId, prefs, at) {
+      const u = store.users.get(userId);
+      if (!u) throw new Error('User not found.');
+      store.users.set(userId, { ...u, notificationPrefs: { ...prefs }, updatedAt: at });
+    },
   };
 }

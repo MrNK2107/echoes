@@ -1,10 +1,16 @@
 import { Timestamp, type DocumentData } from 'firebase/firestore';
+import { normalizeName } from '../domain/communities';
+import { DEFAULT_NOTIFICATION_PREFS } from '../domain/profiles';
 import type {
+  AppNotification,
   AppUser,
   AuraZone,
   Memory,
+  NotificationPrefs,
+  NotificationType,
   Place,
   PrivacyType,
+  PublicProfile,
   SentimentCategory,
   SentimentResult,
 } from '../domain/types';
@@ -60,7 +66,8 @@ export function memoryToDoc(m: Memory): DocumentData {
     releaseDate: ts(m.releaseDate),
     isDeleted: m.isDeleted,
     deletedAt: ts(m.deletedAt),
-    // Server-written (reportMemory sets 'hidden'); firestore.rules requires null on create.
+    // Server-written (reportMemory sets 'hidden'); firestore.rules requires null on create, which
+    // is the only write this mapper is used for.
     moderation: null,
     createdAt: Timestamp.fromDate(m.createdAt),
     updatedAt: Timestamp.fromDate(m.updatedAt),
@@ -85,6 +92,7 @@ export function memoryFromDoc(id: string, d: DocumentData): Memory {
     releaseDate: toDate(d.releaseDate as Timestamp | string | null | undefined),
     isDeleted: d.isDeleted as boolean,
     deletedAt: toDate(d.deletedAt as Timestamp | string | null | undefined),
+    moderation: d.moderation === 'hidden' ? 'hidden' : null,
     createdAt: requiredDate(d.createdAt, 'createdAt'),
     updatedAt: requiredDate(d.updatedAt, 'updatedAt'),
   };
@@ -145,17 +153,32 @@ export function placeFromDoc(id: string, d: DocumentData): Place {
   };
 }
 
+export function notificationPrefsToDoc(p: NotificationPrefs): DocumentData {
+  return { transfers: p.transfers, tags: p.tags, communityInvites: p.communityInvites };
+}
+
+function notificationPrefsFromDoc(d: unknown): NotificationPrefs {
+  const p = (typeof d === 'object' && d !== null ? d : {}) as Record<string, unknown>;
+  // A missing pref means enabled (functions/lib/notify.js only skips on an explicit false).
+  const on = (k: keyof NotificationPrefs) => (typeof p[k] === 'boolean' ? (p[k] as boolean) : DEFAULT_NOTIFICATION_PREFS[k]);
+  return { transfers: on('transfers'), tags: on('tags'), communityInvites: on('communityInvites') };
+}
+
 export function userToDoc(u: AppUser): DocumentData {
-  return {
+  const doc: DocumentData = {
     displayName: u.displayName,
     email: u.email,
     photoUrl: u.photoUrl,
     defaultPrivacy: u.defaultPrivacy,
     managedPlaceIds: u.managedPlaceIds,
     communityIds: u.communityIds,
+    notificationPrefs: notificationPrefsToDoc(u.notificationPrefs),
     createdAt: u.createdAt.toISOString(),
     updatedAt: u.updatedAt.toISOString(),
   };
+  // The rules accept acceptedTermsAt only as a string, so an unknown value is left out.
+  if (u.acceptedTermsAt !== null) doc.acceptedTermsAt = u.acceptedTermsAt.toISOString();
+  return doc;
 }
 
 export function userFromDoc(id: string, d: DocumentData): AppUser {
@@ -167,7 +190,37 @@ export function userFromDoc(id: string, d: DocumentData): AppUser {
     defaultPrivacy: d.defaultPrivacy as PrivacyType,
     managedPlaceIds: [...((d.managedPlaceIds as string[] | undefined) ?? [])],
     communityIds: [...((d.communityIds as string[] | undefined) ?? [])],
+    notificationPrefs: notificationPrefsFromDoc(d.notificationPrefs),
+    acceptedTermsAt: toDate(d.acceptedTermsAt as Timestamp | string | null | undefined),
     createdAt: requiredDate(d.createdAt, 'createdAt'),
     updatedAt: requiredDate(d.updatedAt, 'updatedAt'),
+  };
+}
+
+/**
+ * publicProfiles/{uid}. `displayNameLower` is the search key; onPublicProfileWritten recomputes
+ * it server-side, so this value only has to be right for the client's own immediate reads.
+ */
+export function profileToDoc(displayName: string, at: Date): DocumentData {
+  const name = displayName.trim();
+  return { displayName: name, displayNameLower: normalizeName(name), updatedAt: at.toISOString() };
+}
+
+export function profileFromDoc(id: string, d: DocumentData): PublicProfile {
+  return { id, displayName: String(d.displayName) };
+}
+
+export function notificationFromDoc(id: string, d: DocumentData): AppNotification {
+  const raw = (typeof d.data === 'object' && d.data !== null ? d.data : {}) as Record<string, unknown>;
+  const data: Record<string, string> = {};
+  for (const [k, v] of Object.entries(raw)) if (typeof v === 'string') data[k] = v;
+  return {
+    id,
+    type: d.type as NotificationType,
+    title: String(d.title),
+    body: String(d.body),
+    data,
+    createdAt: requiredDate(d.createdAt, 'createdAt'),
+    readAt: toDate(d.readAt as Timestamp | string | null | undefined),
   };
 }

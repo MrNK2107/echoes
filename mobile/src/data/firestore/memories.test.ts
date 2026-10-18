@@ -47,6 +47,9 @@ describe('timeReleaseBound', () => {
 describe('community chunking', () => {
   it('chunks community ids into `in` queries of at most 10', () => {
     expect(COMMUNITY_IN_CHUNK).toBe(10);
+    // Other tests in this file also build queries; count only this subscription's.
+    mockInFilters.length = 0;
+    mockQueryCount = 0;
     const communityIds = Array.from({ length: 25 }, (_, i) => `c${i}`);
     const repo = createMemoryRepository({} as Firestore);
     const unsub = repo.subscribeVisibleForPlace(

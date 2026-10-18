@@ -215,6 +215,7 @@ export async function runDraft(services: Services, d: OutboxDraft): Promise<{ me
     releaseDate: d.releaseDate ? new Date(d.releaseDate) : null,
     isDeleted: false,
     deletedAt: null,
+    moderation: null,
     createdAt,
     updatedAt: createdAt,
   };
