@@ -93,8 +93,7 @@ const make = async () => {
 };
 
 placeRepositoryContract('firestore', make);
-// Aggregation (place counts / aura) is done by a Cloud Function: flip to true in Task 10.
-memoryRepositoryContract('firestore', make, { supportsAggregation: false });
+memoryRepositoryContract('firestore', make);
 authRepositoryContract('firestore', make);
 
 describe('firestore backend specifics', () => {

@@ -2,11 +2,14 @@ const admin = require("firebase-admin");
 const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 const { logger } = require("firebase-functions");
 const functionsV1 = require("firebase-functions/v1");
+const { onMemoryWritten } = require("./onMemoryWritten");
 
 admin.initializeApp();
 
 const db = admin.firestore();
 const messaging = admin.messaging();
+
+exports.onMemoryWritten = onMemoryWritten;
 
 exports.dispatchNotificationRequest = onDocumentCreated(
   "notificationRequests/{requestId}",

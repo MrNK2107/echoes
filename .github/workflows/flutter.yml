@@ -35,6 +35,19 @@ jobs:
       - name: Firestore rules tests
         run: npx firebase-tools emulators:exec --only firestore "npm test --prefix rules_test"
 
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Install mobile and functions dependencies
+        run: |
+          npm ci --prefix mobile
+          npm ci --prefix functions
+
+      - name: Backend emulator contract tests
+        run: npx firebase-tools emulators:exec --project demo-echoes --only auth,firestore,storage,functions "npm --prefix mobile run test:emulator"
+
   android-integration:
     runs-on: ubuntu-latest
     steps:
