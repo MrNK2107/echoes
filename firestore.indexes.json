@@ -85,6 +85,49 @@
       ]
     },
     {
+      "collectionGroup": "memories",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "placeId", "order": "ASCENDING" },
+        { "fieldPath": "isDeleted", "order": "ASCENDING" },
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "memories",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "placeId", "order": "ASCENDING" },
+        { "fieldPath": "isDeleted", "order": "ASCENDING" },
+        { "fieldPath": "privacy", "order": "ASCENDING" },
+        { "fieldPath": "taggedUserIds", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "memories",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "placeId", "order": "ASCENDING" },
+        { "fieldPath": "isDeleted", "order": "ASCENDING" },
+        { "fieldPath": "privacy", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" },
+        { "fieldPath": "releaseDate", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "memories",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "placeId", "order": "ASCENDING" },
+        { "fieldPath": "isDeleted", "order": "ASCENDING" },
+        { "fieldPath": "privacy", "order": "ASCENDING" },
+        { "fieldPath": "communityId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "transfers",
       "queryScope": "COLLECTION",
       "fields": [

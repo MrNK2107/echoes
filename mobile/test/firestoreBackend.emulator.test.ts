@@ -1,0 +1,170 @@
+import { deleteApp, initializeApp, type FirebaseApp } from 'firebase/app';
+import { connectAuthEmulator, getAuth, signInWithCustomToken, signOut, type Auth } from 'firebase/auth';
+import { connectFirestoreEmulator, doc, getFirestore, setDoc, type Firestore } from 'firebase/firestore';
+import { connectStorageEmulator, getStorage, type FirebaseStorage } from 'firebase/storage';
+
+import { createFirestoreBackend } from '@/data/firestore';
+import type { Repositories } from '@/data/types';
+import { emptyAura } from '@/domain/aura';
+import type { Memory } from '@/domain/types';
+
+import { authRepositoryContract } from './contracts/auth.contract';
+import { memoryRepositoryContract } from './contracts/memories.contract';
+import { placeRepositoryContract } from './contracts/places.contract';
+import { waitFor } from './contracts/util';
+
+const PROJECT_ID = 'demo-echoes';
+const HOST = '127.0.0.1';
+
+interface Ctx {
+  app: FirebaseApp;
+  db: Firestore;
+  auth: Auth;
+  storage: FirebaseStorage;
+  repos: Repositories;
+  signInAs(uid: string): Promise<void>;
+  cleanup(): Promise<void>;
+}
+
+const b64url = (s: string) => btoa(s).replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
+
+/** The Auth emulator accepts unsigned custom tokens, which lets tests act as any uid. */
+function emulatorCustomToken(uid: string): string {
+  const iat = Math.floor(Date.now() / 1000);
+  const header = b64url(JSON.stringify({ alg: 'none', typ: 'JWT' }));
+  const payload = b64url(
+    JSON.stringify({
+      iss: 'firebase-auth-emulator@example.com',
+      sub: 'firebase-auth-emulator@example.com',
+      aud: 'https://identitytoolkit.googleapis.com/google.identity.identitytoolkit.v1.IdentityToolkit',
+      iat,
+      exp: iat + 3600,
+      uid,
+    }),
+  );
+  return `${header}.${payload}.`;
+}
+
+async function resetEmulators(): Promise<void> {
+  const urls = [
+    `http://${HOST}:8080/emulator/v1/projects/${PROJECT_ID}/databases/(default)/documents`,
+    `http://${HOST}:9099/emulator/v1/projects/${PROJECT_ID}/accounts`,
+  ];
+  for (const url of urls) {
+    const res = await fetch(url, { method: 'DELETE' });
+    if (!res.ok) throw new Error(`Emulator reset failed (${res.status}) for ${url}`);
+  }
+}
+
+let appSeq = 0;
+
+/** A fresh app per test so Firestore's local cache never leaks documents between tests. */
+async function makeCtx(): Promise<Ctx> {
+  await resetEmulators();
+  appSeq += 1;
+  const app = initializeApp(
+    { projectId: PROJECT_ID, apiKey: 'demo-api-key', storageBucket: `${PROJECT_ID}.appspot.com` },
+    `emulator-test-${appSeq}`,
+  );
+  const db = getFirestore(app);
+  connectFirestoreEmulator(db, HOST, 8080);
+  const auth = getAuth(app);
+  connectAuthEmulator(auth, `http://${HOST}:9099`, { disableWarnings: true });
+  const storage = getStorage(app);
+  connectStorageEmulator(storage, HOST, 9199);
+  const repos = createFirestoreBackend({ db, auth, storage });
+  return {
+    app, db, auth, storage, repos,
+    async signInAs(uid) {
+      if (auth.currentUser?.uid === uid) return;
+      await signInWithCustomToken(auth, emulatorCustomToken(uid));
+    },
+    async cleanup() {
+      await signOut(auth);
+      await deleteApp(app);
+      await resetEmulators();
+    },
+  };
+}
+
+const make = async () => {
+  const ctx = await makeCtx();
+  return { repos: ctx.repos, signInAs: ctx.signInAs, cleanup: ctx.cleanup };
+};
+
+placeRepositoryContract('firestore', make);
+// Aggregation (place counts / aura) is done by a Cloud Function: flip to true in Task 10.
+memoryRepositoryContract('firestore', make, { supportsAggregation: false });
+authRepositoryContract('firestore', make);
+
+describe('firestore backend specifics', () => {
+  let ctx: Ctx;
+  beforeEach(async () => { ctx = await makeCtx(); });
+  afterEach(async () => { await ctx.cleanup(); });
+
+  const T = new Date('2026-01-01T00:00:00Z');
+  function communityMemory(id: string, communityId: string): Memory {
+    return {
+      id, userId: 'author', placeId: 'place-1', imageUrl: null, audioUrl: null,
+      textContent: 'together', latitude: 12.97, longitude: 77.59, geohash: 'tdr1v9q',
+      sentiment: { compound: 0.5, positive: 0.5, neutral: 0.5, negative: 0 },
+      privacy: 'community', taggedUserIds: [], communityId, releaseDate: null,
+      isDeleted: false, deletedAt: null, createdAt: T, updatedAt: T,
+    };
+  }
+
+  it('community memories are visible to members of that community only', async () => {
+    await ctx.signInAs('author');
+    await ctx.repos.memories.create(communityMemory('c-mine', 'club'));
+    await ctx.repos.memories.create(communityMemory('c-other', 'other-club'));
+    await ctx.signInAs('member');
+    await setDoc(doc(ctx.db, 'communities', 'club', 'members', 'member'), { role: 'member' });
+
+    let latest: string[] | null = null;
+    let error: Error | null = null;
+    const unsub = ctx.repos.memories.subscribeVisibleForPlace(
+      { placeId: 'place-1', viewerId: 'member', viewerCommunityIds: ['club'], now: new Date() },
+      (ms) => { latest = ms.map((m) => m.id); },
+      (e) => { error = e; },
+    );
+    try {
+      await waitFor(() => {
+        expect(error).toBeNull();
+        expect(latest).toEqual(['c-mine']);
+      });
+    } finally {
+      unsub();
+    }
+  });
+
+  it('register creates the users doc with public default privacy', async () => {
+    const s = await ctx.repos.auth.register('u@example.com', 'secret12', 'U');
+    const user = await ctx.repos.users.get(s.userId);
+    expect(user).toMatchObject({
+      id: s.userId, displayName: 'U', email: 'u@example.com', photoUrl: null,
+      defaultPrivacy: 'public', managedPlaceIds: [], communityIds: [],
+    });
+  });
+
+  it('uploads a memory image to memory-images/{uid}/{memoryId}.jpg and returns a URL', async () => {
+    await ctx.signInAs('author');
+    // Node cannot fetch a device file path; a data: URI exercises the same fetch -> blob path.
+    const jpegBytes = String.fromCharCode(0xff, 0xd8, 0xff, 0xe0, 0, 0x10, 0x4a, 0x46, 0x49, 0x46, 0xff, 0xd9);
+    const url = await ctx.repos.media.uploadMemoryImage({
+      userId: 'author',
+      memoryId: 'm1',
+      localUri: `data:image/jpeg;base64,${btoa(jpegBytes)}`,
+    });
+    expect(url).toContain('memory-images%2Fauthor%2Fm1.jpg');
+  });
+
+  it('places round-trip through findById with the aura mapped', async () => {
+    await ctx.signInAs('custodian');
+    await ctx.repos.places.create({
+      id: 'p', name: 'P', latitude: 1, longitude: 2, geohash: 's01mtw', communityId: null,
+      custodianIds: ['custodian'], aura: emptyAura(T), memoryCount: 0, publicMemoryCount: 0,
+      createdAt: T, updatedAt: T,
+    });
+    expect(await ctx.repos.places.findById('p')).toMatchObject({ id: 'p', aura: emptyAura(T) });
+  });
+});

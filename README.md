@@ -124,6 +124,12 @@ For a one-shot rules test, prefer:
 npx firebase emulators:exec --only firestore "npm test --prefix rules_test"
 ```
 
+`firebase.json` also configures the Auth (`9099`), Storage (`9199`) and Functions (`5001`) emulators. The Expo app's Firestore backend is verified against the backend contract suites (`mobile/test/contracts`) under the real `firestore.rules`/`storage.rules`. All mobile emulator commands use the demo project id `demo-echoes` (no real Firebase project needed); run from the repo root:
+
+```powershell
+npx firebase emulators:exec --project demo-echoes --only auth,firestore,storage "npm --prefix mobile run test:emulator"
+```
+
 ## Beta Smoke Checklist
 
 Use this checklist on Android first, then iOS if available:

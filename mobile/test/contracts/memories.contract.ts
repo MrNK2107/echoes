@@ -10,7 +10,7 @@ const PLACE_ID = 'place-1';
 function mkPlace(): Place {
   return {
     id: PLACE_ID, name: 'Spot', latitude: 12.97, longitude: 77.59, geohash: 'tdr1vz',
-    communityId: null, custodianIds: [], aura: emptyAura(T),
+    communityId: null, custodianIds: ['custodian'], aura: emptyAura(T),
     memoryCount: 0, publicMemoryCount: 0, createdAt: T, updatedAt: T,
   };
 }
@@ -29,11 +29,25 @@ function mem(over: Partial<Memory> = {}): Memory {
   };
 }
 
-export function memoryRepositoryContract(name: string, make: ContractFactory): void {
+export interface MemoryContractOptions {
+  /**
+   * Whether creating a memory updates the place's counts/aura. The Firestore backend relies on a
+   * Cloud Function for this (Task 10); until then it passes `false` and the case is skipped.
+   */
+  supportsAggregation?: boolean;
+}
+
+export function memoryRepositoryContract(
+  name: string,
+  make: ContractFactory,
+  options: MemoryContractOptions = {},
+): void {
+  const itAggregation = options.supportsAggregation === false ? it.skip : it;
   describe(`MemoryRepository contract: ${name}`, () => {
     let ctx: Awaited<ReturnType<ContractFactory>>;
     beforeEach(async () => {
       ctx = await make();
+      await ctx.signInAs('custodian');
       await ctx.repos.places.create(mkPlace());
     });
     afterEach(async () => { await ctx.cleanup(); });
@@ -103,7 +117,7 @@ export function memoryRepositoryContract(name: string, make: ContractFactory): v
       expect(ids[0]).toBe(ms[54]!.id);
     });
 
-    it('creating a public memory increases place counts and aura.memoryCount by 1', async () => {
+    itAggregation('creating a public memory increases place counts and aura.memoryCount by 1', async () => {
       const before = await ctx.repos.places.findById(PLACE_ID);
       expect(before).not.toBeNull();
       await seed(mem());

@@ -1,5 +1,6 @@
 import type { Place } from '@/domain/types';
 import { emptyAura } from '@/domain/aura';
+import { encodeGeohash, queryPrefixes } from '@/domain/geo';
 import type { ContractFactory } from './util';
 import { waitFor } from './util';
 
@@ -10,20 +11,31 @@ const at = (meters: number) => ({
   longitude: CENTER.longitude,
 });
 const T = new Date('2026-01-01T00:00:00Z');
+/** Places are created by this user; real backends require the creator to be a custodian. */
+const CUSTODIAN = 'custodian';
+/** A point whose 9-char geohash continues the 100 m query prefix with 'z' (tdr1v95 + z…). */
+const Z_POINT = { latitude: 12.97057, longitude: 77.59063 };
 
-function place(id: string, meters: number): Place {
-  const p = at(meters);
+function placeAt(id: string, p: { latitude: number; longitude: number }): Place {
   return {
-    id, name: id, latitude: p.latitude, longitude: p.longitude, geohash: 'tdr1vz',
-    communityId: null, custodianIds: [], aura: emptyAura(T),
+    id, name: id, latitude: p.latitude, longitude: p.longitude,
+    geohash: encodeGeohash(p.latitude, p.longitude),
+    communityId: null, custodianIds: [CUSTODIAN], aura: emptyAura(T),
     memoryCount: 0, publicMemoryCount: 0, createdAt: T, updatedAt: T,
   };
+}
+
+function place(id: string, meters: number): Place {
+  return placeAt(id, at(meters));
 }
 
 export function placeRepositoryContract(name: string, make: ContractFactory): void {
   describe(`PlaceRepository contract: ${name}`, () => {
     let ctx: Awaited<ReturnType<ContractFactory>>;
-    beforeEach(async () => { ctx = await make(); });
+    beforeEach(async () => {
+      ctx = await make();
+      await ctx.signInAs(CUSTODIAN);
+    });
     afterEach(async () => { await ctx.cleanup(); });
 
     it('findById returns created place or null', async () => {
@@ -40,6 +52,24 @@ export function placeRepositoryContract(name: string, make: ContractFactory): vo
     it('findNearest returns null for a place 150 m away (radius 100)', async () => {
       await ctx.repos.places.create(place('far', 150));
       expect(await ctx.repos.places.findNearest({ center: CENTER, radiusMeters: 100 })).toBeNull();
+    });
+
+    it('finds a place whose geohash continues with z', async () => {
+      const zPlace = placeAt('zed', Z_POINT);
+      const [prefix] = queryPrefixes(Z_POINT, 100);
+      expect(zPlace.geohash.startsWith(`${prefix}z`)).toBe(true);
+      await ctx.repos.places.create(zPlace);
+      expect((await ctx.repos.places.findNearest({ center: Z_POINT, radiusMeters: 100 }))?.id).toBe('zed');
+      let latest: string[] = [];
+      const unsub = ctx.repos.places.subscribeNearby(
+        { center: Z_POINT, radiusMeters: 100 },
+        (ps) => { latest = ps.map((p) => p.id); },
+      );
+      try {
+        await waitFor(() => expect(latest).toEqual(['zed']));
+      } finally {
+        unsub();
+      }
     });
 
     it('subscribeNearby emits within 1500 m sorted by distance, excludes 2 km, re-emits after create', async () => {

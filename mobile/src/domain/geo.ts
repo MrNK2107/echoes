@@ -71,3 +71,39 @@ export function queryPrefixes(origin: LatLng, radiusMeters: number): string[] {
 export function geohashRangeEnd(prefix: string): string {
   return `${prefix}`;
 }
+
+const METERS_PER_DEGREE_LAT = 111195;
+
+/**
+ * Geohash prefixes whose ranges together cover every point within `radiusMeters` of `origin`.
+ * `queryPrefixes` (a verbatim port) only expands into child cells, so a point a few metres
+ * across a cell boundary is missed; this adds every same-precision cell that intersects the
+ * radius bounding box, then drops prefixes already covered by a shorter one.
+ */
+export function coveringPrefixes(origin: LatLng, radiusMeters: number): string[] {
+  const precision = geohashPrecisionFor(radiusMeters);
+  const totalBits = precision * 5;
+  const cellHeightDeg = 180 / 2 ** Math.floor(totalBits / 2);
+  const cellWidthDeg = 360 / 2 ** Math.ceil(totalBits / 2);
+  const latSpan = radiusMeters / METERS_PER_DEGREE_LAT;
+  const cosLat = Math.max(Math.cos((origin.latitude * Math.PI) / 180), 1e-6);
+  const lngSpan = Math.min(radiusMeters / (METERS_PER_DEGREE_LAT * cosLat), 180);
+
+  const steps = (span: number, cell: number): number[] => {
+    const n = Math.ceil((2 * span) / cell);
+    return Array.from({ length: n + 1 }, (_, i) => -span + (2 * span * i) / n);
+  };
+  const clampLat = (v: number) => Math.min(90, Math.max(-90, v));
+  const wrapLng = (v: number) => ((((v + 180) % 360) + 360) % 360) - 180;
+
+  const cells = new Set<string>(queryPrefixes(origin, radiusMeters));
+  for (const dLat of steps(latSpan, cellHeightDeg)) {
+    for (const dLng of steps(lngSpan, cellWidthDeg)) {
+      cells.add(
+        encodeGeohash(clampLat(origin.latitude + dLat), wrapLng(origin.longitude + dLng), precision),
+      );
+    }
+  }
+  const all = [...cells];
+  return all.filter((p) => !all.some((q) => q !== p && p.startsWith(q)));
+}

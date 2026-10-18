@@ -1,6 +1,7 @@
 import geohashJson from '../../../fixtures/domain/geohash.json';
 import nearbyJson from '../../../fixtures/domain/nearby.json';
 import {
+  coveringPrefixes,
   distanceMeters,
   encodeGeohash,
   geohashRangeEnd,
@@ -56,5 +57,39 @@ describe('distanceMeters', () => {
 describe('geohashRangeEnd', () => {
   it('sorts after any continuation including z', () => {
     expect(geohashRangeEnd('tdr1') > 'tdr1zzzz').toBe(true);
+  });
+});
+
+describe('coveringPrefixes', () => {
+  const center = { latitude: 12.9716, longitude: 77.5946 };
+  const covered = (prefixes: string[], p: { latitude: number; longitude: number }) =>
+    prefixes.some((x) => encodeGeohash(p.latitude, p.longitude).startsWith(x));
+
+  it('covers a point 60 m away in a neighbouring cell that queryPrefixes misses', () => {
+    const near = { latitude: center.latitude + 60 / 111195, longitude: center.longitude };
+    expect(covered(queryPrefixes(center, 100), near)).toBe(false);
+    expect(covered(coveringPrefixes(center, 100), near)).toBe(true);
+  });
+
+  it('covers every point on the radius circle for several radii', () => {
+    for (const r of [50, 100, 500, 1500, 4000, 10000]) {
+      const prefixes = coveringPrefixes(center, r);
+      for (let deg = 0; deg < 360; deg += 15) {
+        const a = (deg * Math.PI) / 180;
+        const p = {
+          latitude: center.latitude + (r * Math.cos(a)) / 111195,
+          longitude: center.longitude + (r * Math.sin(a)) / (111195 * Math.cos((center.latitude * Math.PI) / 180)),
+        };
+        expect(covered(prefixes, p)).toBe(true);
+      }
+    }
+  });
+
+  it('includes the origin cell and has no redundant prefixes', () => {
+    const prefixes = coveringPrefixes(center, 1500);
+    expect(prefixes).toContain(queryPrefixes(center, 1500)[0]);
+    for (const p of prefixes) {
+      expect(prefixes.filter((q) => p.startsWith(q))).toEqual([p]);
+    }
   });
 });
