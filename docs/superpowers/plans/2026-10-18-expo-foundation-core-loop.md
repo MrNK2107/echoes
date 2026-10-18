@@ -77,19 +77,19 @@ functions/aura.js  functions/onMemoryWritten.js  functions/test/*.test.js
   - `aura.json`: `[{ name, now (ISO), memories: [{ compound, createdAt (ISO), isDeleted }], expected: { dominantSentiment, compoundScore, intensity, memoryCount, colorHex } }]`
   - `visibility.json`: `[{ name, memory: { userId, privacy, taggedUserIds, releaseDate (ISO|null), isDeleted }, viewerId, viewerIsCommunityMember, now (ISO), visible }]`
 
-- [ ] **Step 1: Write the exporter as a Flutter test** that builds the cases below with the real Dart classes (`LexiconSentimentAnalyzer`, `Geohash.encode`, `NearbyPlaceQuery`, `AuraCalculator`, `Memory.isVisibleTo`), writes pretty JSON to `fixtures/domain/`, and asserts each file has at least the listed number of cases.
+- [x] **Step 1: Write the exporter as a Flutter test** that builds the cases below with the real Dart classes (`LexiconSentimentAnalyzer`, `Geohash.encode`, `NearbyPlaceQuery`, `AuraCalculator`, `Memory.isVisibleTo`), writes pretty JSON to `fixtures/domain/`, and asserts each file has at least the listed number of cases.
   - Sentiment (≥40): plain positive/negative words, negations (`not happy`, `never good`), intensifiers (`very good`, `extremely sad`, `slightly bad`), contrast (`good but sad`, `sad but beautiful`), all-caps, punctuation `!!!`, emoji-only `🎉🎉`, empty-after-trim `"   "`, mixed (`happy and heartbroken`), 2000-char repeated text, Hindi/English mix (`bahut khushi, so happy`), every category at least 3 times.
   - Geohash (≥12): Bengaluru `12.9716,77.5946`, Delhi, Mumbai, `0,0`, `-33.8688,151.2093`, `89.9,179.9`, `-89.9,-179.9`, precisions 5, 7, 9.
   - Nearby (≥8): radii `50, 100, 101, 500, 1500, 4000, 4001, 20000` at Bengaluru.
   - Aura (≥10): empty; one positive today; one heavy 90 days old; positive+negative → mixed; deleted-only → empty; 25 neutral → intensity 1; ages 0/29/30/31/365 days with fractional-day offsets (e.g. 30 days minus 1 hour — Dart `inDays` truncates); compound exactly 0.1, 0.35, −0.35, −0.1.
   - Visibility (≥14): each privacy × (author, stranger), tagged member vs not, timeRelease with releaseDate = now (visible), now − 1 ms (visible), now + 1 ms (hidden), null; community member vs not; deleted author memory (hidden).
 
-- [ ] **Step 2: Run it**
+- [x] **Step 2: Run it**
 
 Run: `flutter test test/tool/export_domain_fixtures_test.dart`
 Expected: PASS; five JSON files exist under `fixtures/domain/`.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add test/tool/export_domain_fixtures_test.dart fixtures/domain
