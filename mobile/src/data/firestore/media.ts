@@ -9,5 +9,6 @@ export function createMediaRepository(storage: FirebaseStorage): MediaRepository
       await uploadBytes(target, blob, { contentType: 'image/jpeg' });
       return getDownloadURL(target);
     },
+    async uploadMemoryAudio() { throw new Error('not implemented'); }, // Task 4
   };
 }

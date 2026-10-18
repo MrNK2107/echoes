@@ -11,6 +11,7 @@ import type { Memory } from '@/domain/types';
 import { authRepositoryContract } from './contracts/auth.contract';
 import { memoryRepositoryContract } from './contracts/memories.contract';
 import { placeRepositoryContract } from './contracts/places.contract';
+import { userRepositoryContract } from './contracts/users.contract';
 import { waitFor } from './contracts/util';
 
 const PROJECT_ID = 'demo-echoes';
@@ -93,8 +94,10 @@ const make = async () => {
 };
 
 placeRepositoryContract('firestore', make);
-memoryRepositoryContract('firestore', make);
-authRepositoryContract('firestore', make);
+// Task 4 flips supportsLifecycle to true once the Firestore lifecycle is implemented.
+memoryRepositoryContract('firestore', make, { supportsLifecycle: false });
+authRepositoryContract('firestore', make, { supportsLifecycle: false });
+userRepositoryContract('firestore', make, { supportsLifecycle: false });
 
 describe('firestore backend specifics', () => {
   let ctx: Ctx;

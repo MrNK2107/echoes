@@ -6,5 +6,8 @@ export function createMediaRepository(): MediaRepository {
     async uploadMemoryImage({ localUri }) {
       return localUri;
     },
+    async uploadMemoryAudio({ localUri }) {
+      return localUri;
+    },
   };
 }

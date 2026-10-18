@@ -12,5 +12,6 @@ export function createUserRepository(db: Firestore): UserRepository {
     async create(user) {
       await setDoc(doc(db, 'users', user.id), userToDoc(user));
     },
+    async updateDefaultPrivacy() { throw new Error('not implemented'); }, // Task 4
   };
 }

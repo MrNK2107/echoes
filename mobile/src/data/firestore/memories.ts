@@ -80,5 +80,13 @@ export function createMemoryRepository(db: Firestore): MemoryRepository {
     async create(memory) {
       await setDoc(doc(db, 'memories', memory.id), memoryToDoc(memory));
     },
+    // Task 4 implements the lifecycle below.
+    async findById() { throw new Error('not implemented'); },
+    subscribeForUser() { throw new Error('not implemented'); },
+    subscribeDeletedForUser() { throw new Error('not implemented'); },
+    async update() { throw new Error('not implemented'); },
+    async attachMedia() { throw new Error('not implemented'); },
+    async softDelete() { throw new Error('not implemented'); },
+    async restore() { throw new Error('not implemented'); },
   };
 }

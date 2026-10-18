@@ -35,7 +35,15 @@ export interface MemoryContractOptions {
    * Cloud Function for this (Task 10); until then it passes `false` and the case is skipped.
    */
   supportsAggregation?: boolean;
+  /**
+   * Whether the backend implements the Plan 2 lifecycle (update/softDelete/restore/attachMedia,
+   * findById, subscribeForUser/subscribeDeletedForUser). The Firestore backend passes `false`
+   * until Task 4 and the cases are skipped.
+   */
+  supportsLifecycle?: boolean;
 }
+
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 export function memoryRepositoryContract(
   name: string,
@@ -43,6 +51,9 @@ export function memoryRepositoryContract(
   options: MemoryContractOptions = {},
 ): void {
   const itAggregation = options.supportsAggregation === false ? it.skip : it;
+  const itLifecycle = options.supportsLifecycle === false ? it.skip : it;
+  const itLifecycleAgg =
+    options.supportsLifecycle === false || options.supportsAggregation === false ? it.skip : it;
   describe(`MemoryRepository contract: ${name}`, () => {
     let ctx: Awaited<ReturnType<ContractFactory>>;
     beforeEach(async () => {
@@ -127,6 +138,107 @@ export function memoryRepositoryContract(
         expect(after?.publicMemoryCount).toBe(before!.publicMemoryCount + 1);
         expect(after?.aura.memoryCount).toBe(before!.aura.memoryCount + 1);
       });
+    });
+
+    async function listFor(
+      kind: 'subscribeForUser' | 'subscribeDeletedForUser',
+      userId: string,
+    ): Promise<Memory[]> {
+      await ctx.signInAs(userId);
+      let latest: Memory[] | null = null;
+      const unsub = ctx.repos.memories[kind](userId, (ms) => { latest = ms; });
+      try {
+        await waitFor(() => expect(latest).not.toBeNull());
+        return (latest as Memory[] | null) ?? [];
+      } finally {
+        unsub();
+      }
+    }
+
+    async function placeCount(): Promise<number | undefined> {
+      return (await ctx.repos.places.findById(PLACE_ID))?.memoryCount;
+    }
+
+    const EDIT = {
+      textContent: 'edited text', privacy: 'private' as const, taggedUserIds: [] as string[],
+      releaseDate: null, communityId: null,
+    };
+
+    itLifecycle('findById returns own deleted memory for the author, null for a stranger', async () => {
+      const m = mem();
+      await seed(m);
+      await ctx.signInAs('author');
+      await ctx.repos.memories.softDelete(m.id, new Date());
+      expect((await ctx.repos.memories.findById(m.id))?.isDeleted).toBe(true);
+      await ctx.signInAs('stranger');
+      expect(await ctx.repos.memories.findById(m.id)).toBeNull();
+      expect(await ctx.repos.memories.findById('missing')).toBeNull();
+    });
+
+    itLifecycle('subscribeForUser excludes deleted and is newest first', async () => {
+      const a = mem(); const b = mem(); const c = mem();
+      await seed(a, b, c);
+      await ctx.signInAs('author');
+      await ctx.repos.memories.softDelete(b.id, new Date());
+      expect((await listFor('subscribeForUser', 'author')).map((m) => m.id)).toEqual([c.id, a.id]);
+    });
+
+    itLifecycle('subscribeDeletedForUser lists deleted memories, newest deletion first', async () => {
+      const a = mem(); const b = mem(); const live = mem();
+      await seed(a, b, live);
+      await ctx.signInAs('author');
+      await ctx.repos.memories.softDelete(a.id, new Date(Date.now() - 2000));
+      await ctx.repos.memories.softDelete(b.id, new Date(Date.now() - 1000));
+      expect((await listFor('subscribeDeletedForUser', 'author')).map((m) => m.id)).toEqual([b.id, a.id]);
+    });
+
+    itLifecycle('update changes text and privacy and keeps createdAt', async () => {
+      const m = mem();
+      await seed(m);
+      await ctx.signInAs('author');
+      const at = new Date();
+      await ctx.repos.memories.update(m.id, EDIT, at);
+      const got = await ctx.repos.memories.findById(m.id);
+      expect(got?.textContent).toBe('edited text');
+      expect(got?.privacy).toBe('private');
+      expect(got?.createdAt).toEqual(m.createdAt);
+      expect(got?.updatedAt).toEqual(at);
+    });
+
+    itLifecycleAgg('softDelete lowers the place count and restore brings it back', async () => {
+      const m = mem();
+      await seed(m);
+      await waitFor(async () => expect(await placeCount()).toBe(1));
+      await ctx.signInAs('author');
+      await ctx.repos.memories.softDelete(m.id, new Date());
+      await waitFor(async () => expect(await placeCount()).toBe(0));
+      await ctx.repos.memories.restore(m.id, new Date());
+      await waitFor(async () => expect(await placeCount()).toBe(1));
+      expect((await ctx.repos.memories.findById(m.id))?.isDeleted).toBe(false);
+    });
+
+    /**
+     * Works on any backend: the deletion timestamp is client-supplied (`softDelete(id, at)`), so a
+     * memory deleted 31 days ago is made by passing an old `at`; restore is then judged against
+     * the backend's clock (real time here; `request.time` in the Firestore rules).
+     */
+    itLifecycle('restore after 31 days rejects with the expired message', async () => {
+      const m = mem();
+      await seed(m);
+      await ctx.signInAs('author');
+      await ctx.repos.memories.softDelete(m.id, new Date(Date.now() - 31 * DAY_MS));
+      await expect(ctx.repos.memories.restore(m.id, new Date())).rejects.toThrow(
+        'This memory can no longer be restored.',
+      );
+      expect((await ctx.repos.memories.findById(m.id))?.isDeleted).toBe(true);
+    });
+
+    itLifecycle('attachMedia sets audioUrl', async () => {
+      const m = mem();
+      await seed(m);
+      await ctx.signInAs('author');
+      await ctx.repos.memories.attachMedia(m.id, { audioUrl: 'file:///a.m4a' }, new Date());
+      expect((await ctx.repos.memories.findById(m.id))?.audioUrl).toBe('file:///a.m4a');
     });
   });
 }

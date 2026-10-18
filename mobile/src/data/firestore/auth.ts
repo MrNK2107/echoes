@@ -84,5 +84,6 @@ export function createAuthRepository(
     async signOut() {
       await signOut(auth);
     },
+    async deleteAccount() { throw new Error('not implemented'); }, // Task 4
   };
 }

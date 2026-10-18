@@ -3,15 +3,29 @@ import { placeRepositoryContract } from '../../../test/contracts/places.contract
 import { memoryRepositoryContract } from '../../../test/contracts/memories.contract';
 import { authRepositoryContract } from '../../../test/contracts/auth.contract';
 
-const make = async () => ({
-  repos: createMemoryBackend(),
-  signInAs: async () => {},
-  cleanup: async () => {},
-});
+import { userRepositoryContract } from '../../../test/contracts/users.contract';
+
+/** Contract identities are pre-registered so `signInAs(uid)` yields a session with that uid. */
+const CONTRACT_UIDS = ['author', 'viewer', 'stranger', 'friend', 'custodian', 'observer'];
+
+const make = async () => {
+  const repos = createMemoryBackend({
+    places: [], memories: [], users: [],
+    credentials: CONTRACT_UIDS.map((uid) => ({
+      userId: uid, email: `${uid}@contract.test`, password: 'pw-contract', displayName: uid,
+    })),
+  });
+  return {
+    repos,
+    signInAs: async (uid: string) => { await repos.auth.signIn(`${uid}@contract.test`, 'pw-contract'); },
+    cleanup: async () => {},
+  };
+};
 
 placeRepositoryContract('memory', make);
 memoryRepositoryContract('memory', make);
 authRepositoryContract('memory', make);
+userRepositoryContract('memory', make);
 
 describe('memory backend specifics', () => {
   it('upload returns the local uri unchanged', async () => {
