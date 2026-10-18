@@ -387,11 +387,11 @@ export function testServices(overrides?: Partial<Services>): Services; // memory
 - Produces: `NEARBY_RADIUS_METERS = 1500`; `useNearbyPlaces(): { status: 'locating' | 'denied' | 'error' | 'ready'; center: LatLng | null; places: Place[]; retry(): void }`.
 - MapScreen: `MapView` centered on `center` showing the user location; one `Marker` per place (`testID="marker-{id}"`, `pinColor = place.aura.colorHex`, title = name); below it a list (`testID="place-row-{id}"`) with name, memory count `"{n} memories"` (`"1 memory"`), distance `"{m} m"` or `"{km.toFixed(1)} km"`; tap marker or row → `router.push('/place/{id}')`. Denied: text `Location permission is needed to find memories near you.` + button `Try again`. Error: `Couldn't get your location.` + `Try again`. Empty ready: `No memories within 1.5 km yet. Be the first to leave one.` Floating button `Add memory` → `/add-memory`.
 
-- [ ] **Step 1: Write failing tests:** hook with `fakeLocation({permission:'denied'})` → `denied`; **`shows error when position lookup throws`** (`fakeLocation({error})` → `error`); `retry()` re-requests; ready lists seeded places sorted by distance; screen renders a row and a marker per seeded place; pressing a row navigates to `/place/{id}`; **`shows denied state`** with the exact copy; `1 memory` singular.
-- [ ] **Step 2: Run** `npm --prefix mobile test -- map` — Expected: FAIL.
-- [ ] **Step 3: Implement.**
-- [ ] **Step 4: Run** — Expected: PASS.
-- [ ] **Step 5: Commit** `feat(map): nearby places map and list`.
+- [x] **Step 1: Write failing tests:** hook with `fakeLocation({permission:'denied'})` → `denied`; **`shows error when position lookup throws`** (`fakeLocation({error})` → `error`); `retry()` re-requests; ready lists seeded places sorted by distance; screen renders a row and a marker per seeded place; pressing a row navigates to `/place/{id}`; **`shows denied state`** with the exact copy; `1 memory` singular.
+- [x] **Step 2: Run** `npm --prefix mobile test -- map` — Expected: FAIL.
+- [x] **Step 3: Implement.**
+- [x] **Step 4: Run** — Expected: PASS.
+- [x] **Step 5: Commit** `feat(map): nearby places map and list`.
 
 ---
 
