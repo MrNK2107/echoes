@@ -489,6 +489,23 @@ test("deleted memories cannot be edited", async () => {
   );
 });
 
+test("user docs (which hold emails) are readable only by their owner", async () => {
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await setDoc(doc(context.firestore(), "users/creator"), {
+      displayName: "Creator",
+      email: "creator@example.com",
+    });
+  });
+  const creatorDb = testEnv.authenticatedContext("creator").firestore();
+  const strangerDb = testEnv.authenticatedContext("stranger").firestore();
+  const unauthenticatedDb = testEnv.unauthenticatedContext().firestore();
+
+  await assertSucceeds(getDoc(doc(creatorDb, "users/creator")));
+  await assertFails(getDoc(doc(strangerDb, "users/creator")));
+  await assertFails(getDoc(doc(unauthenticatedDb, "users/creator")));
+  await assertFails(getDocs(collection(strangerDb, "users")));
+});
+
 test("author write identical to stored doc (empty diff) is allowed", async () => {
   const creatorDb = testEnv.authenticatedContext("creator").firestore();
   await assertSucceeds(

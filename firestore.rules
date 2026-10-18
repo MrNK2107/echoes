@@ -128,9 +128,11 @@ service cloud.firestore {
         request.time < resource.data.deletedAt + duration.value(30, 'd');
     }
 
+    // User docs hold the account email, so only the owner may read them. The app reads only the
+    // signed-in user's doc; cleanupDeletedUser uses the Admin SDK, which bypasses these rules.
     match /users/{userId} {
       allow create: if isSelf(userId);
-      allow read: if signedIn();
+      allow read: if isSelf(userId);
       allow update, delete: if isSelf(userId);
     }
 
