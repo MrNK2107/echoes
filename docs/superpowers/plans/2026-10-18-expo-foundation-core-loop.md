@@ -110,21 +110,21 @@ git commit -m "test: export golden domain fixtures from Dart implementation"
 - Produces scripts: `test` (`jest`), `test:emulator` (`jest -c jest.emulator.config.js`, config created in Task 9), `typecheck` (`tsc --noEmit`), `lint` (`expo lint`).
 - Produces `theme` export in `src/ui/theme.ts`: `colors = { background:'#0D1117', surface:'#161B22', elevated:'#21262D', accent:'#58A6FF', gold:'#F0B429', text:'#F0F6FC', textSecondary:'#8B949E' }`.
 
-- [ ] **Step 1: Scaffold and install dev deps:** `npx expo install jest-expo jest @types/jest @testing-library/react-native -- --save-dev`. `jest.config.js`: preset `jest-expo`, `moduleNameMapper` for `^@/(.*)$`, `setupFilesAfterEnv: ['./jest.setup.ts']`, `testPathIgnorePatterns` includes `\\.emulator\\.test\\.ts$`.
+- [x] **Step 1: Scaffold and install dev deps:** `npx expo install jest-expo jest @types/jest @testing-library/react-native -- --save-dev`. `jest.config.js`: preset `jest-expo`, `moduleNameMapper` for `^@/(.*)$`, `setupFilesAfterEnv: ['./jest.setup.ts']`, `testPathIgnorePatterns` includes `\\.emulator\\.test\\.ts$`.
 
-- [ ] **Step 2: Write the failing smoke test** `test/smoke.test.tsx`: render `app/(app)/index.tsx`'s default export and `expect(screen.getByText('ECHOES')).toBeOnTheScreen()`.
+- [x] **Step 2: Write the failing smoke test** `test/smoke.test.tsx`: render `app/(app)/index.tsx`'s default export and `expect(screen.getByText('ECHOES')).toBeOnTheScreen()`.
 
-- [ ] **Step 3: Run** `npm --prefix mobile test` — Expected: FAIL (text not found).
+- [x] **Step 3: Run** `npm --prefix mobile test` — Expected: FAIL (text not found).
 
-- [ ] **Step 4: Implement** the placeholder screen rendering `ECHOES` on `colors.background`; root `_layout.tsx` renders `<Stack screenOptions={{ headerShown:false }} />`.
+- [x] **Step 4: Implement** the placeholder screen rendering `ECHOES` on `colors.background`; root `_layout.tsx` renders `<Stack screenOptions={{ headerShown:false }} />`.
 
-- [ ] **Step 5: Run** `npm --prefix mobile test && npm --prefix mobile run typecheck && npm --prefix mobile run lint` — Expected: all PASS.
+- [x] **Step 5: Run** `npm --prefix mobile test && npm --prefix mobile run typecheck && npm --prefix mobile run lint` — Expected: all PASS.
 
-- [ ] **Step 6: Add CI job** `mobile` (ubuntu, `actions/setup-node@v5` Node 22, `npm ci` in `mobile`, then test/typecheck/lint).
+- [x] **Step 6: Add CI job** `mobile` (ubuntu, `actions/setup-node@v5` Node 22, `npm ci` in `mobile`, then test/typecheck/lint).
 
-- [ ] **Step 7: Verify the bundle builds without a device:** `cd mobile && npx expo export --platform android --output-dir dist` — Expected: exits 0.
+- [x] **Step 7: Verify the bundle builds without a device:** `cd mobile && npx expo export --platform android --output-dir dist` — Expected: exits 0.
 
-- [ ] **Step 8: Commit** `feat(mobile): scaffold Expo SDK 58 app with jest, lint, typecheck, CI`.
+- [x] **Step 8: Commit** `feat(mobile): scaffold Expo SDK 58 app with jest, lint, typecheck, CI`.
 
 ---
 
