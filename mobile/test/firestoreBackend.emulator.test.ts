@@ -7,12 +7,17 @@ import { createFirestoreBackend } from '@/data/firestore';
 import type { Repositories } from '@/data/types';
 import { emptyAura } from '@/domain/aura';
 import type { Memory } from '@/domain/types';
+import { runDraft } from '@/features/memories/submitMemory';
+import type { Services } from '@/services/services';
 
 import { authRepositoryContract } from './contracts/auth.contract';
 import { memoryRepositoryContract } from './contracts/memories.contract';
 import { placeRepositoryContract } from './contracts/places.contract';
 import { userRepositoryContract } from './contracts/users.contract';
 import { waitFor } from './contracts/util';
+
+// runDraft's module pulls in the native image compressor; the outbox replay never calls it.
+jest.mock('@/features/memories/compressImage', () => ({ compressImage: async (u: string) => u }));
 
 const PROJECT_ID = 'demo-echoes';
 const HOST = '127.0.0.1';
@@ -232,5 +237,21 @@ describe('firestore backend specifics', () => {
       createdAt: T, updatedAt: T,
     });
     expect(await ctx.repos.places.findById('p')).toMatchObject({ id: 'p', aura: emptyAura(T) });
+  });
+
+  it('replaying an outbox draft twice writes one place and one memory (ADR-0006)', async () => {
+    await ctx.signInAs('author');
+    const services = { repos: ctx.repos } as unknown as Services;
+    const draft = {
+      memoryId: 'q1', placeIdIfNew: 'p_q1', userId: 'author', createdAt: T.toISOString(),
+      textContent: 'queued offline', privacy: 'public' as const, releaseDate: null, taggedUserIds: [],
+      communityId: null, location: { latitude: 12.97, longitude: 77.59 }, imageUri: null, audioUri: null,
+    };
+    await expect(runDraft(services, draft)).resolves.toEqual({ memoryId: 'q1', placeId: 'p_q1' });
+    // Replay: the place now exists within 100 m and the memory is re-set with identical data.
+    await expect(runDraft(services, draft)).resolves.toEqual({ memoryId: 'q1', placeId: 'p_q1' });
+    expect(await ctx.repos.memories.findById('q1')).toMatchObject({
+      id: 'q1', placeId: 'p_q1', textContent: 'queued offline', createdAt: T, updatedAt: T,
+    });
   });
 });

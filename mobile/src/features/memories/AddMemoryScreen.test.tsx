@@ -1,12 +1,13 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 
 import { DEMO_USER } from '@/data/seed';
-import { fakeImagePicker, fakeLocation, testServices } from '@/device/fakes';
+import { fakeConnectivity, fakeImagePicker, fakeLocation, testServices } from '@/device/fakes';
 import type { Memory } from '@/domain/types';
+import { OutboxProvider } from '@/features/outbox/useOutbox';
 import { ServicesProvider } from '@/services/ServicesProvider';
 import type { Services } from '@/services/services';
 
-import { AddMemoryScreen } from './AddMemoryScreen';
+import { AddMemoryScreen, QUEUED_NOTICE_MS } from './AddMemoryScreen';
 import { SUBMIT_TIMEOUT_MS } from './submitMemory';
 
 const mockReplace = jest.fn();
@@ -34,7 +35,9 @@ async function setup(overrides: Partial<Services> = {}) {
   });
   await render(
     <ServicesProvider services={services}>
-      <AddMemoryScreen />
+      <OutboxProvider userId="user-demo">
+        <AddMemoryScreen />
+      </OutboxProvider>
     </ServicesProvider>,
   );
   return services;
@@ -114,34 +117,16 @@ describe('AddMemoryScreen', () => {
     await screen.findByText('Location captured');
   }
 
-  async function memoriesNear(services: Services, placeId: string): Promise<Memory[]> {
-    let memories: Memory[] = [];
-    const off = services.repos.memories.subscribeVisibleForPlace(
-      { placeId, viewerId: 'user-demo', viewerCommunityIds: [], now: services.now() },
-      (m) => {
-        memories = m;
-      },
-    );
-    await Promise.resolve();
-    off();
-    return memories;
-  }
-
   describe('submit reliability', () => {
     afterEach(() => jest.useRealTimers());
 
-    it('does not duplicate the memory when Save is pressed again after a timeout', async () => {
-      const base = testServices();
-      const realCreate = base.repos.memories.create.bind(base.repos.memories);
-      let release: () => void = () => {};
-      const gate = new Promise<void>((resolve) => {
-        release = resolve;
+    it('queues the draft after 15 s, tells the user, and returns to the map', async () => {
+      const base = testServices({ connectivity: fakeConnectivity(false) });
+      const create = jest.fn((_m: Memory) => new Promise<void>(() => {}));
+      const services = await setup({
+        connectivity: base.connectivity,
+        repos: { ...base.repos, memories: { ...base.repos.memories, create } },
       });
-      const create = jest.fn(async (m: Memory) => {
-        await gate;
-        return realCreate(m);
-      });
-      const services = await setup({ repos: { ...base.repos, memories: { ...base.repos.memories, create } } });
       await fillAndLocate();
       jest.useFakeTimers();
 
@@ -149,22 +134,25 @@ describe('AddMemoryScreen', () => {
         void fireEvent.press(screen.getByTestId('save-button'));
         await jest.advanceTimersByTimeAsync(SUBMIT_TIMEOUT_MS);
       });
-      expect(await screen.findByRole('alert')).toHaveTextContent(
-        'Could not reach the server. Check your connection and try again.',
-      );
+      expect(await screen.findByText("Saved offline. It will upload when you're back online.")).toBeOnTheScreen();
+      expect(screen.queryByRole('alert')).toBeNull();
       expect(mockReplace).not.toHaveBeenCalled();
+      const queued = JSON.parse((await services.keyValue.get('outbox:user-demo'))!) as { memoryId: string }[];
+      expect(queued.map((d) => d.memoryId)).toEqual([create.mock.calls[0]![0].id]);
 
       await act(async () => {
-        release();
-        await Promise.resolve();
+        await jest.advanceTimersByTimeAsync(QUEUED_NOTICE_MS);
       });
-      await fireEvent.press(screen.getByTestId('save-button'));
-      await waitFor(() => expect(mockReplace).toHaveBeenCalledTimes(1));
-
+      expect(mockReplace).toHaveBeenCalledWith('/');
       expect(create).toHaveBeenCalledTimes(1);
-      const placeId = (mockReplace.mock.calls[0]![0] as string).replace('/place/', '');
-      const found = (await memoriesNear(services, placeId)).filter((m) => m.textContent === 'Retry me safely');
-      expect(found).toHaveLength(1);
+    });
+
+    it('shows a validation error without queueing', async () => {
+      const services = await setup();
+      await fireEvent.changeText(screen.getByTestId('text-input'), 'no location yet');
+      await fireEvent.press(screen.getByTestId('save-button'));
+      expect(await screen.findByRole('alert')).toHaveTextContent('Capture location before saving.');
+      expect(await services.keyValue.get('outbox:user-demo')).toBeNull();
     });
 
     it('starts only one submit for two taps in the same tick', async () => {

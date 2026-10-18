@@ -1,6 +1,9 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 
-import { fakeLocation, testServices } from '@/device/fakes';
+import { fakeConnectivity, fakeLocation, testServices } from '@/device/fakes';
+import { outboxDraft } from '@/features/outbox/fixtures';
+import { Outbox } from '@/features/outbox/outbox';
+import { OutboxProvider } from '@/features/outbox/useOutbox';
 import { ServicesProvider } from '@/services/ServicesProvider';
 import type { Services } from '@/services/services';
 
@@ -12,7 +15,9 @@ jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush }) }));
 async function setup(services: Services = testServices()) {
   await render(
     <ServicesProvider services={services}>
-      <MapScreen />
+      <OutboxProvider userId="user-demo">
+        <MapScreen />
+      </OutboxProvider>
     </ServicesProvider>,
   );
   return services;
@@ -91,5 +96,13 @@ describe('MapScreen', () => {
       fireEvent.press(screen.getByText('Add memory'));
     });
     expect(mockPush).toHaveBeenCalledWith('/add-memory');
+  });
+
+  it('shows the outbox banner when drafts are waiting', async () => {
+    const services = testServices({ connectivity: fakeConnectivity(false) });
+    await new Outbox(services.keyValue, services.files, 'user-demo').add(outboxDraft());
+    await setup(services);
+    expect(await screen.findByText('1 memory waiting to upload')).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeOnTheScreen();
   });
 });

@@ -4,6 +4,7 @@ import MapView, { Marker } from 'react-native-maps';
 
 import { distanceMeters } from '@/domain/geo';
 import type { Place } from '@/domain/types';
+import { OutboxBanner } from '@/features/outbox/OutboxBanner';
 import { formatCount } from '@/ui/format';
 import { colors } from '@/ui/theme';
 
@@ -61,6 +62,9 @@ export function MapScreen() {
           />
         ))}
       </MapView>
+      <View style={styles.banner}>
+        <OutboxBanner />
+      </View>
       <FlatList
         style={styles.list}
         data={places}
@@ -89,6 +93,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background, padding: 24 },
   map: { flex: 1 },
+  banner: { position: 'absolute', top: 48, left: 16, right: 16 },
   list: { flex: 1, backgroundColor: colors.surface },
   row: { padding: 16, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.elevated },
   name: { color: colors.text, fontSize: 16 },

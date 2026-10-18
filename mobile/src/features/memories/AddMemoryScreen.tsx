@@ -1,14 +1,15 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import type { LatLng, PrivacyType } from '@/domain/types';
 import { useSession } from '@/features/auth/useSession';
+import { useOutboxContext } from '@/features/outbox/useOutbox';
 import { useServices } from '@/services/ServicesProvider';
 import { colors } from '@/ui/theme';
 
-import { awaitWithTimeout, MAX_MEMORY_LENGTH, startSubmit, type SubmitResult } from './submitMemory';
+import { MAX_MEMORY_LENGTH, submitMemory } from './submitMemory';
 
 type Choice = Extract<PrivacyType, 'public' | 'private' | 'timeRelease'>;
 const CHOICES: { value: Choice; label: string }[] = [
@@ -17,6 +18,9 @@ const CHOICES: { value: Choice; label: string }[] = [
   { value: 'timeRelease', label: 'Time release' },
 ];
 const PERMISSION_COPY = 'Location permission is needed to save a memory here.';
+const QUEUED_COPY = "Saved offline. It will upload when you're back online.";
+/** How long the queued notice stays up before returning to the map. */
+export const QUEUED_NOTICE_MS = 2_500;
 
 /** testIDs: text-input, privacy-{value}, release-date-button, use-location-button, add-photo-button, photo-thumbnail, save-button, back-button */
 export function AddMemoryScreen() {
@@ -31,10 +35,16 @@ export function AddMemoryScreen() {
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  // Single-flight per draft: after a timeout the work keeps running (Firestore queues writes), so the next Save
-  // re-awaits this same promise instead of minting a new memory. Cleared once an attempt definitively settles.
-  const inFlight = useRef<Promise<SubmitResult> | null>(null);
+  const [queued, setQueued] = useState(false);
+  const { outbox } = useOutboxContext();
+  // Guards against a double tap starting two submits; offline retries belong to the outbox (ADR-0006).
   const saving = useRef(false);
+
+  useEffect(() => {
+    if (!queued) return;
+    const timer = setTimeout(() => router.replace('/'), QUEUED_NOTICE_MS);
+    return () => clearTimeout(timer);
+  }, [queued, router]);
 
   const captureLocation = async () => {
     setError(null);
@@ -60,27 +70,38 @@ export function AddMemoryScreen() {
   };
 
   const save = async () => {
-    if (!session || saving.current) return;
+    if (!session || saving.current || queued) return;
     saving.current = true;
     setError(null);
     setSubmitting(true);
+    let done = false;
     try {
-      inFlight.current ??= startSubmit(services, session.userId, {
-        textContent: text,
-        privacy,
-        releaseDate: privacy === 'timeRelease' ? releaseDate : null,
-        taggedUserIds: [],
-        communityId: null,
-        location,
-        imageUri,
-      });
-      const { result, timedOut } = await awaitWithTimeout(inFlight.current);
-      if (!timedOut) inFlight.current = null;
-      if (result.ok) router.replace(`/place/${result.placeId}`);
-      else setError(result.error);
+      const result = await submitMemory(
+        services,
+        session.userId,
+        {
+          textContent: text,
+          privacy,
+          releaseDate: privacy === 'timeRelease' ? releaseDate : null,
+          taggedUserIds: [],
+          communityId: null,
+          location,
+          imageUri,
+          audioUri: null,
+        },
+        outbox,
+      );
+      if (!result.ok) setError(result.error);
+      else if (result.queued) {
+        done = true;
+        setQueued(true);
+      } else {
+        done = true;
+        router.replace(`/place/${result.placeId}`);
+      }
     } finally {
       saving.current = false;
-      setSubmitting(false);
+      if (!done) setSubmitting(false);
     }
   };
 
@@ -161,6 +182,11 @@ export function AddMemoryScreen() {
         </View>
       ) : null}
 
+      {queued ? (
+        <Text role="status" style={styles.notice}>
+          {QUEUED_COPY}
+        </Text>
+      ) : null}
       {error ? (
         <Text role="alert" style={styles.error}>
           {error}
@@ -207,6 +233,7 @@ const styles = StyleSheet.create({
   photoRow: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 8 },
   thumb: { width: 72, height: 72, borderRadius: 8, backgroundColor: colors.elevated },
   error: { color: '#F85149', marginVertical: 8 },
+  notice: { color: colors.gold, marginVertical: 8 },
   save: { backgroundColor: colors.accent, borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 16 },
   saveDisabled: { opacity: 0.5 },
   saveText: { color: colors.background, fontSize: 16, fontWeight: '600' },

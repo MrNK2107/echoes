@@ -1,9 +1,11 @@
-import { SEED_CENTER, testServices } from '@/device/fakes';
+import { fakeFiles, memoryKeyValue, SEED_CENTER, testServices, TEST_NOW } from '@/device/fakes';
 import { analyzeSentiment } from '@/domain/sentiment';
 import type { Memory } from '@/domain/types';
+import { outboxDraft } from '@/features/outbox/fixtures';
+import { Outbox } from '@/features/outbox/outbox';
 
 import type { MemoryDraft } from './submitMemory';
-import { startSubmit, submitMemory, SUBMIT_TIMEOUT_MS } from './submitMemory';
+import { isNetworkError, prepareDraft, runDraft, submitMemory, SUBMIT_TIMEOUT_MS } from './submitMemory';
 
 const draft = (o: Partial<MemoryDraft> = {}): MemoryDraft => ({
   textContent: 'A lovely quiet morning',
@@ -13,9 +15,16 @@ const draft = (o: Partial<MemoryDraft> = {}): MemoryDraft => ({
   communityId: null,
   location: SEED_CENTER,
   imageUri: null,
+  audioUri: null,
   ...o,
 });
 const USER = 'user-demo';
+const QUEUED_FAR = { latitude: 13.5, longitude: 78.5 };
+const identity = { compress: async (u: string) => u };
+
+function newOutbox() {
+  return new Outbox(memoryKeyValue(), fakeFiles(), USER);
+}
 
 async function memoriesAt(services: ReturnType<typeof testServices>, placeId: string): Promise<Memory[]> {
   let latest: Memory[] = [];
@@ -30,12 +39,16 @@ async function memoriesAt(services: ReturnType<typeof testServices>, placeId: st
   return latest;
 }
 
+function firestoreError(code: string): Error {
+  return Object.assign(new Error(code), { code });
+}
+
 describe('submitMemory', () => {
-  it('creates a new place when none is within 100 m', async () => {
+  it('creates place p_<memoryId> when none is within 100 m', async () => {
     const s = testServices();
-    const far = { latitude: 13.5, longitude: 78.5 };
-    const r = await submitMemory(s, USER, draft({ location: far }));
-    if (!r.ok) throw new Error(r.error);
+    const r = await submitMemory(s, USER, draft({ location: QUEUED_FAR }), newOutbox());
+    if (!r.ok || r.queued) throw new Error('expected an online save');
+    expect(r.placeId).toBe(`p_${r.memoryId}`);
     const place = await s.repos.places.findById(r.placeId);
     expect(place?.name).toBe('Memory Place');
     expect(place?.custodianIds).toEqual([USER]);
@@ -46,82 +59,109 @@ describe('submitMemory', () => {
     const seeded = await s.repos.places.findById('place-2');
     if (!seeded) throw new Error('seed missing');
     const near = { latitude: seeded.latitude + 0.00036, longitude: seeded.longitude };
-    const r = await submitMemory(s, USER, draft({ location: near }));
-    if (!r.ok) throw new Error(r.error);
+    const r = await submitMemory(s, USER, draft({ location: near }), newOutbox());
+    if (!r.ok || r.queued) throw new Error('expected an online save');
     expect(r.placeId).toBe('place-2');
   });
 
   it('stores sentiment from the text', async () => {
     const s = testServices();
-    const r = await submitMemory(s, USER, draft({ textContent: '  I love this wonderful place  ' }));
-    if (!r.ok) throw new Error(r.error);
+    const r = await submitMemory(s, USER, draft({ textContent: '  I love this wonderful place  ' }), newOutbox());
+    if (!r.ok || r.queued) throw new Error('expected an online save');
     const m = (await memoriesAt(s, r.placeId)).find((x) => x.id === r.memoryId);
     expect(m?.sentiment).toEqual(analyzeSentiment('I love this wonderful place'));
     expect(m?.textContent).toBe('I love this wonderful place');
   });
 
   it('rejects whitespace-only text', async () => {
-    const r = await submitMemory(testServices(), USER, draft({ textContent: '   ' }));
+    const r = await submitMemory(testServices(), USER, draft({ textContent: '   ' }), newOutbox());
     expect(r).toEqual({ ok: false, error: 'Write something to remember.' });
   });
 
   it('rejects text over 2000 characters', async () => {
-    const r = await submitMemory(testServices(), USER, draft({ textContent: 'a'.repeat(2001) }));
+    const r = await submitMemory(testServices(), USER, draft({ textContent: 'a'.repeat(2001) }), newOutbox());
     expect(r).toEqual({ ok: false, error: 'Memories can be at most 2000 characters.' });
   });
 
-  it('rejects a time release in the past', async () => {
+  it('rejects a time release in the past and never queues it', async () => {
+    const outbox = newOutbox();
     const r = await submitMemory(
       testServices(),
       USER,
       draft({ privacy: 'timeRelease', releaseDate: new Date('2020-01-01') }),
+      outbox,
     );
     expect(r).toEqual({ ok: false, error: 'Choose a future release date.' });
+    expect(await outbox.list()).toEqual([]);
   });
 
   it('requires a location', async () => {
-    const r = await submitMemory(testServices(), USER, draft({ location: null }));
+    const r = await submitMemory(testServices(), USER, draft({ location: null }), newOutbox());
     expect(r).toEqual({ ok: false, error: 'Capture location before saving.' });
   });
 
   it('uploads the image and sets imageUrl', async () => {
     const s = testServices();
     const upload = jest.spyOn(s.repos.media, 'uploadMemoryImage').mockResolvedValue('https://img/1.jpg');
-    const r = await submitMemory(s, USER, draft({ imageUri: 'file:///p.jpg' }), { compress: async (u) => u });
-    if (!r.ok) throw new Error(r.error);
+    const r = await submitMemory(s, USER, draft({ imageUri: 'file:///p.jpg' }), newOutbox(), identity);
+    if (!r.ok || r.queued) throw new Error('expected an online save');
     expect(upload).toHaveBeenCalledWith({ userId: USER, memoryId: r.memoryId, localUri: 'file:///p.jpg' });
     const m = (await memoriesAt(s, r.placeId)).find((x) => x.id === r.memoryId);
     expect(m?.imageUrl).toBe('https://img/1.jpg');
   });
 
-  it('reports upload failure and creates no memory', async () => {
+  it('uploads a voice note and sets audioUrl', async () => {
     const s = testServices();
-    jest.spyOn(s.repos.media, 'uploadMemoryImage').mockRejectedValue(new Error('boom'));
+    const upload = jest.spyOn(s.repos.media, 'uploadMemoryAudio').mockResolvedValue('https://audio/1.m4a');
+    const r = await submitMemory(s, USER, draft({ audioUri: 'file:///v.m4a' }), newOutbox());
+    if (!r.ok || r.queued) throw new Error('expected an online save');
+    expect(upload).toHaveBeenCalledWith({ userId: USER, memoryId: r.memoryId, localUri: 'file:///v.m4a' });
+    const m = (await memoriesAt(s, r.placeId)).find((x) => x.id === r.memoryId);
+    expect(m?.audioUrl).toBe('https://audio/1.m4a');
+  });
+
+  it('reports a non-network upload failure, creates no memory and does not queue', async () => {
+    const s = testServices();
+    jest.spyOn(s.repos.media, 'uploadMemoryImage').mockRejectedValue(firestoreError('storage/unauthorized'));
     const create = jest.spyOn(s.repos.memories, 'create');
-    const r = await submitMemory(s, USER, draft({ imageUri: 'file:///p.jpg' }), { compress: async (u) => u });
+    const outbox = newOutbox();
+    const r = await submitMemory(s, USER, draft({ imageUri: 'file:///p.jpg' }), outbox, identity);
     expect(r).toEqual({ ok: false, error: 'Photo upload failed. Try again or remove the photo.' });
     expect(create).not.toHaveBeenCalled();
+    expect(await outbox.list()).toEqual([]);
   });
 
-  it('maps an unknown backend error to generic copy and logs the raw error', async () => {
-    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+  it('queues the draft when the photo upload hits the retry limit', async () => {
     const s = testServices();
     jest
-      .spyOn(s.repos.memories, 'create')
-      .mockRejectedValue(new Error('PERMISSION_DENIED: missing or insufficient permissions'));
-    const r = await submitMemory(s, USER, draft());
-    expect(r).toEqual({ ok: false, error: 'Something went wrong. Please try again.' });
-    expect(warn).toHaveBeenCalledTimes(1);
-    warn.mockRestore();
+      .spyOn(s.repos.media, 'uploadMemoryImage')
+      .mockRejectedValue(firestoreError('storage/retry-limit-exceeded'));
+    const outbox = newOutbox();
+    const r = await submitMemory(s, USER, draft({ imageUri: 'file:///p.jpg' }), outbox, identity);
+    expect(r).toEqual({ ok: true, queued: true, memoryId: 'id-1' });
+    const [queued] = await outbox.list();
+    expect(queued!.imageUri).toBe('persisted://id-1.jpg');
   });
 
-  it('startSubmit mints ids once so a second await cannot duplicate', async () => {
+  it('queues the draft on a Firestore unavailable error', async () => {
     const s = testServices();
-    const create = jest.spyOn(s.repos.memories, 'create');
-    const work = startSubmit(s, USER, draft());
-    const [a, b] = await Promise.all([work, work]);
-    expect(a).toEqual(b);
-    expect(create).toHaveBeenCalledTimes(1);
+    jest.spyOn(s.repos.memories, 'create').mockRejectedValue(firestoreError('unavailable'));
+    const outbox = newOutbox();
+    const r = await submitMemory(s, USER, draft(), outbox);
+    expect(r).toEqual({ ok: true, queued: true, memoryId: 'id-1' });
+    expect((await outbox.list()).map((d) => d.memoryId)).toEqual(['id-1']);
+  });
+
+  it('maps an unknown backend error to generic copy, logs it and does not queue', async () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const s = testServices();
+    jest.spyOn(s.repos.memories, 'create').mockRejectedValue(firestoreError('permission-denied'));
+    const outbox = newOutbox();
+    const r = await submitMemory(s, USER, draft(), outbox);
+    expect(r).toEqual({ ok: false, error: 'Something went wrong. Please try again.' });
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(await outbox.list()).toEqual([]);
+    warn.mockRestore();
   });
 
   describe('timeout', () => {
@@ -129,15 +169,110 @@ describe('submitMemory', () => {
     afterEach(() => jest.useRealTimers());
 
     it('times out after 15 s with a connection error', async () => {
+      // ADR-0006: the timed-out draft is queued instead of surfacing a connection error.
       const s = testServices();
       jest.spyOn(s.repos.memories, 'create').mockReturnValue(new Promise(() => {}));
-      const p = submitMemory(s, USER, draft());
+      const outbox = newOutbox();
+      const p = submitMemory(s, USER, draft(), outbox);
       await jest.advanceTimersByTimeAsync(SUBMIT_TIMEOUT_MS);
-      await expect(p).resolves.toEqual({
-        ok: false,
-        error: 'Could not reach the server. Check your connection and try again.',
-      });
+      await expect(p).resolves.toEqual({ ok: true, queued: true, memoryId: 'id-1' });
+      expect((await outbox.list()).map((d) => d.memoryId)).toEqual(['id-1']);
       expect(jest.getTimerCount()).toBe(0);
     });
+
+    it('drops the queued draft when the timed-out write finally lands', async () => {
+      const s = testServices();
+      let release: () => void = () => {};
+      const gate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      const realCreate = s.repos.memories.create.bind(s.repos.memories);
+      jest.spyOn(s.repos.memories, 'create').mockImplementation(async (m) => {
+        await gate;
+        return realCreate(m);
+      });
+      const outbox = newOutbox();
+      const p = submitMemory(s, USER, draft(), outbox);
+      await jest.advanceTimersByTimeAsync(SUBMIT_TIMEOUT_MS);
+      await expect(p).resolves.toMatchObject({ queued: true });
+      release();
+      await jest.advanceTimersByTimeAsync(0);
+      expect(await outbox.list()).toEqual([]);
+    });
+  });
+});
+
+describe('prepareDraft', () => {
+  it('fixes ids and createdAt and normalizes privacy fields', () => {
+    const r = prepareDraft(testServices(), USER, draft({ taggedUserIds: ['x'], textContent: '  hi  ' }));
+    expect(r).toEqual({
+      ok: true,
+      draft: {
+        memoryId: 'id-1',
+        placeIdIfNew: 'p_id-1',
+        userId: USER,
+        createdAt: TEST_NOW.toISOString(),
+        textContent: 'hi',
+        privacy: 'public',
+        releaseDate: null,
+        taggedUserIds: [],
+        communityId: null,
+        location: SEED_CENTER,
+        imageUri: null,
+        audioUri: null,
+      },
+    });
+  });
+});
+
+describe('runDraft', () => {
+  it('replay after partial success creates nothing twice', async () => {
+    const s = testServices({ now: () => new Date('2026-12-01T00:00:00Z') });
+    const d = outboxDraft({ location: QUEUED_FAR, imageUri: 'persisted://m1.jpg' });
+    // First attempt got as far as the place and the photo before the connection dropped.
+    const createPlace = jest.spyOn(s.repos.places, 'create');
+    const createMemory = jest.spyOn(s.repos.memories, 'create').mockRejectedValueOnce(firestoreError('unavailable'));
+    const upload = jest.spyOn(s.repos.media, 'uploadMemoryImage');
+    await expect(runDraft(s, d)).rejects.toMatchObject({ code: 'unavailable' });
+    expect(await s.repos.places.findById('p_m1')).not.toBeNull();
+
+    const r = await runDraft(s, d);
+    expect(r).toEqual({ memoryId: 'm1', placeId: 'p_m1' });
+    expect(createPlace).toHaveBeenCalledTimes(1);
+    expect(createMemory).toHaveBeenCalledTimes(2);
+    expect(upload.mock.calls.map(([i]) => i)).toEqual([
+      { userId: USER, memoryId: 'm1', localUri: 'persisted://m1.jpg' },
+      { userId: USER, memoryId: 'm1', localUri: 'persisted://m1.jpg' },
+    ]);
+    const memories = await memoriesAt(s, 'p_m1');
+    expect(memories.map((m) => m.id)).toEqual(['m1']);
+    expect(memories[0]!.createdAt.toISOString()).toBe('2026-10-18T09:00:00.000Z');
+    const near = await new Promise<number>((resolve) =>
+      s.repos.places.subscribeNearby({ center: QUEUED_FAR, radiusMeters: 1000 }, (ps) => resolve(ps.length))(),
+    );
+    expect(near).toBe(1);
+  });
+
+  it('does not recreate place p_<id> when it exists but is outside the match radius', async () => {
+    const s = testServices();
+    const d = outboxDraft({ location: QUEUED_FAR });
+    await runDraft(s, d);
+    const createPlace = jest.spyOn(s.repos.places, 'create');
+    jest.spyOn(s.repos.places, 'findNearest').mockResolvedValue(null);
+    await expect(runDraft(s, d)).resolves.toEqual({ memoryId: 'm1', placeId: 'p_m1' });
+    expect(createPlace).not.toHaveBeenCalled();
+  });
+});
+
+describe('isNetworkError', () => {
+  it.each([
+    [firestoreError('unavailable'), true],
+    [firestoreError('storage/retry-limit-exceeded'), true],
+    [new TypeError('Network request failed'), true],
+    [firestoreError('permission-denied'), false],
+    [new TypeError('x is not a function'), false],
+    [null, false],
+  ])('%p -> %p', (e, expected) => {
+    expect(isNetworkError(e)).toBe(expected);
   });
 });
