@@ -266,11 +266,11 @@ export interface Repositories { places: PlaceRepository; memories: MemoryReposit
 **Interfaces:**
 - Produces: `DEMO_USER = { email: 'demo@echoes.app', password: 'echoes-demo', displayName: 'Demo Custodian' }`, `buildSeed(now: Date, center: LatLng = { latitude: 12.9716, longitude: 77.5946 }): { places: Place[]; memories: Memory[]; users: AppUser[] }`. The memory backend's auth pre-registers `DEMO_USER` when seeded.
 
-- [ ] **Step 1: Write failing tests:** seed has ≥ 6 places within 1500 m of `center`, covering all five aura categories; ≥ 20 memories across all five privacy modes; every place's `aura` equals `calculateAura` of its public memories; `signIn(DEMO_USER.email, DEMO_USER.password)` succeeds on `createMemoryBackend(buildSeed(now))`.
-- [ ] **Step 2: Run** `npm --prefix mobile test -- seed` — Expected: FAIL.
-- [ ] **Step 3: Implement** with hand-written memory texts whose analyzed sentiment yields the intended category (use `analyzeSentiment`, not hard-coded scores).
-- [ ] **Step 4: Run** — Expected: PASS.
-- [ ] **Step 5: Commit** `feat(data): seeded demo data for memory backend`.
+- [x] **Step 1: Write failing tests:** seed has ≥ 6 places within 1500 m of `center`, covering all five aura categories; ≥ 20 memories across all five privacy modes; every place's `aura` equals `calculateAura` of its public memories; `signIn(DEMO_USER.email, DEMO_USER.password)` succeeds on `createMemoryBackend(buildSeed(now))`.
+- [x] **Step 2: Run** `npm --prefix mobile test -- seed` — Expected: FAIL.
+- [x] **Step 3: Implement** with hand-written memory texts whose analyzed sentiment yields the intended category (use `analyzeSentiment`, not hard-coded scores).
+- [x] **Step 4: Run** — Expected: PASS.
+- [x] **Step 5: Commit** `feat(data): seeded demo data for memory backend`.
 
 ---
 
