@@ -77,7 +77,9 @@ export function createMemoryRepository(db: Firestore): MemoryRepository {
     subscribeVisibleForPlace(q, cb, onError) {
       // Each query carries exactly the constraints `isVisibleMemory` in firestore.rules needs to
       // prove every result readable; a `list` that cannot be proven is rejected wholesale, and
-      // subscribeUnion then drops only that branch.
+      // subscribeUnion then drops only that branch. Non-own branches also filter
+      // `moderation == null` so the rules can prove reported-and-hidden memories are excluded;
+      // the viewer's own branch keeps them (authors still see their hidden memories).
       const visible = (...constraints: QueryConstraint[]) =>
         query(
           memories,
@@ -87,16 +89,22 @@ export function createMemoryRepository(db: Firestore): MemoryRepository {
           orderBy('createdAt', 'desc'),
           limit(LIST_LIMIT),
         );
+      const unmoderated = where('moderation', '==', null);
       const queries = [
-        visible(where('privacy', '==', 'public')),
+        visible(where('privacy', '==', 'public'), unmoderated),
         visible(where('userId', '==', q.viewerId)),
-        visible(where('privacy', '==', 'tagged'), where('taggedUserIds', 'array-contains', q.viewerId)),
+        visible(
+          where('privacy', '==', 'tagged'),
+          where('taggedUserIds', 'array-contains', q.viewerId),
+          unmoderated,
+        ),
         visible(
           where('privacy', '==', 'timeRelease'),
           where('releaseDate', '<=', Timestamp.fromDate(timeReleaseBound(q.now))),
+          unmoderated,
         ),
         ...chunk(q.viewerCommunityIds, COMMUNITY_IN_CHUNK).map((ids) =>
-          visible(where('privacy', '==', 'community'), where('communityId', 'in', ids)),
+          visible(where('privacy', '==', 'community'), where('communityId', 'in', ids), unmoderated),
         ),
       ];
       return subscribeUnion(

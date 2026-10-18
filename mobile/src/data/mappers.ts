@@ -60,6 +60,8 @@ export function memoryToDoc(m: Memory): DocumentData {
     releaseDate: ts(m.releaseDate),
     isDeleted: m.isDeleted,
     deletedAt: ts(m.deletedAt),
+    // Server-written (reportMemory sets 'hidden'); firestore.rules requires null on create.
+    moderation: null,
     createdAt: Timestamp.fromDate(m.createdAt),
     updatedAt: Timestamp.fromDate(m.updatedAt),
   };

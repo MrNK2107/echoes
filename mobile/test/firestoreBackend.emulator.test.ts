@@ -1,6 +1,6 @@
 import { deleteApp, initializeApp, type FirebaseApp } from 'firebase/app';
 import { connectAuthEmulator, getAuth, signInWithCustomToken, signOut, type Auth } from 'firebase/auth';
-import { connectFirestoreEmulator, doc, getFirestore, setDoc, type Firestore } from 'firebase/firestore';
+import { connectFirestoreEmulator, getFirestore, type Firestore } from 'firebase/firestore';
 import { connectStorageEmulator, getStorage, type FirebaseStorage } from 'firebase/storage';
 
 import { createFirestoreBackend } from '@/data/firestore';
@@ -60,6 +60,25 @@ async function resetEmulators(): Promise<void> {
     const res = await fetch(url, { method: 'DELETE' });
     if (!res.ok) throw new Error(`Emulator reset failed (${res.status}) for ${url}`);
   }
+}
+
+/**
+ * Writes a document as the server would: the emulator's `Bearer owner` token bypasses the rules.
+ * Memberships are server-written (ADR-0007), so tests seed them this way.
+ */
+async function adminSetDoc(path: string, fields: Record<string, string>): Promise<void> {
+  const body = {
+    fields: Object.fromEntries(Object.entries(fields).map(([k, v]) => [k, { stringValue: v }])),
+  };
+  const res = await fetch(
+    `http://${HOST}:8080/v1/projects/${PROJECT_ID}/databases/(default)/documents/${path}`,
+    {
+      method: 'PATCH',
+      headers: { Authorization: 'Bearer owner', 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    },
+  );
+  if (!res.ok) throw new Error(`Admin write failed (${res.status}) for ${path}`);
 }
 
 let appSeq = 0;
@@ -127,7 +146,7 @@ describe('firestore backend specifics', () => {
     await ctx.repos.memories.create(communityMemory('c-mine', 'club'));
     await ctx.repos.memories.create(communityMemory('c-other', 'other-club'));
     await ctx.signInAs('member');
-    await setDoc(doc(ctx.db, 'communities', 'club', 'members', 'member'), { role: 'member' });
+    await adminSetDoc('communities/club/members/member', { role: 'member' });
 
     let latest: string[] | null = null;
     let error: Error | null = null;

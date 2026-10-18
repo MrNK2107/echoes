@@ -76,6 +76,8 @@ describe('memory mapper', () => {
     expect(doc.releaseDate).toBeInstanceOf(Timestamp);
     expect(doc.imageUrl).toBeNull();
     expect(doc.deletedAt).toBeNull();
+    // firestore.rules requires new memories to carry moderation: null (ADR-0008)
+    expect(doc).toHaveProperty('moderation', null);
     expect(doc).not.toHaveProperty('id');
   });
   it('reads legacy ISO date strings', () => {

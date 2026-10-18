@@ -1,6 +1,6 @@
 {
   "firestore": {
-    "rules": "firestore.rules",
+    "rules": "firestore.lan.rules",
     "indexes": "firestore.indexes.json"
   },
   "storage": {

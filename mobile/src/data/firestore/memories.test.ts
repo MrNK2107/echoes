@@ -3,6 +3,8 @@ import { COMMUNITY_IN_CHUNK, createMemoryRepository, timeReleaseBound } from './
 
 const mockInFilters: unknown[][] = [];
 let mockQueryCount = 0;
+type MockFilter = { field: string; op: string; value: unknown };
+const mockQueries: MockFilter[][] = [];
 const mockUpdates: unknown[] = [];
 const mockListeners: ((snap: unknown) => void)[] = [];
 let mockGetDoc: () => Promise<unknown> = async () => ({ id: 'x', data: () => undefined });
@@ -16,10 +18,14 @@ jest.mock('firebase/firestore', () => ({
   serverTimestamp: () => 'SERVER_TIMESTAMP',
   limit: () => ({}),
   orderBy: () => ({}),
-  query: () => { mockQueryCount += 1; return {}; },
+  query: (_c: unknown, ...constraints: unknown[]) => {
+    mockQueryCount += 1;
+    mockQueries.push(constraints.filter((c): c is MockFilter => typeof c === 'object' && c !== null && 'field' in c));
+    return {};
+  },
   where: (field: string, op: string, value: unknown) => {
     if (op === 'in') mockInFilters.push(value as unknown[]);
-    return {};
+    return { field, op, value };
   },
   Timestamp: { fromDate: (d: Date) => d },
   onSnapshot: (_q: unknown, next: (snap: unknown) => void) => {
@@ -51,6 +57,25 @@ describe('community chunking', () => {
     expect(mockInFilters.map((ids) => ids.length)).toEqual([10, 10, 5]);
     expect(mockInFilters.flat()).toEqual(communityIds);
     expect(mockQueryCount).toBe(4 + 3);
+  });
+});
+
+describe('moderation (ADR-0008)', () => {
+  it("every visibility branch except the viewer's own filters moderation == null", () => {
+    mockQueries.length = 0;
+    const unsub = createMemoryRepository({} as Firestore).subscribeVisibleForPlace(
+      { placeId: 'p', viewerId: 'v', viewerCommunityIds: ['c1'], now: new Date() },
+      () => {},
+    );
+    unsub();
+    const moderated = (fs: MockFilter[]) =>
+      fs.some((f) => f.field === 'moderation' && f.op === '==' && f.value === null);
+    const own = mockQueries.filter((fs) => fs.some((f) => f.field === 'userId'));
+    const others = mockQueries.filter((fs) => !fs.some((f) => f.field === 'userId'));
+    expect(own).toHaveLength(1);
+    expect(moderated(own[0])).toBe(false);
+    expect(others).toHaveLength(4);
+    expect(others.every(moderated)).toBe(true);
   });
 });
 
