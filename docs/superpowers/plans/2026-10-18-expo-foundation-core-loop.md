@@ -451,7 +451,7 @@ export function compressImage(uri: string, deps?: { manipulate: typeof manipulat
 **Files:**
 - Modify: `status.md` (add "Expo rewrite — Plan 1" section with the gate table below), `README.md` (point to `mobile/` as the active client)
 
-- [ ] **Step 1: Run every gate and record results**
+- [x] **Step 1: Run every gate and record results**
 
 ```bash
 npm --prefix mobile test
@@ -464,5 +464,5 @@ cd mobile && npx expo export --platform android --output-dir dist && npx expo ex
 ```
 Expected: every command exits 0. Any failure → fix in the owning task's files and re-run; do not mark this step done while anything fails.
 
-- [ ] **Step 2: Update `status.md`** with the gate table (command → Pass + test count) and the manual Expo Go check list: `cd mobile && npx expo start` → scan QR → sign in with demo credentials → map shows 6+ markers → open a place → add a memory → it appears on the place.
-- [ ] **Step 3: Commit** `docs: record Expo Plan 1 verification`.
+- [x] **Step 2: Update `status.md`** with the gate table (command → Pass + test count) and the manual Expo Go check list: `cd mobile && npx expo start` → scan QR → sign in with demo credentials → map shows 6+ markers → open a place → add a memory → it appears on the place.
+- [x] **Step 3: Commit** `docs: record Expo Plan 1 verification`.
