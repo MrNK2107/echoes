@@ -310,11 +310,11 @@ export interface Repositories { places: PlaceRepository; memories: MemoryReposit
 **Interfaces:**
 - Produces: `calculateAura(memories, now)` in `functions/aura.js` (CommonJS, same contract as `mobile/src/domain/aura.ts`, returns ISO `updatedAt`); `buildPlaceAggregate(memories: {privacy, isDeleted, sentiment, createdAt: Date}[], now: Date) => { aura, memoryCount, publicMemoryCount, updatedAt }`; trigger `onMemoryWritten = onDocumentWritten('memories/{memoryId}', handler)` which reads all memories with the after-or-before `placeId`, writes the aggregate to `places/{placeId}` with `{ merge: true }`, and adds `places/{placeId}/auraHistory/{autoId}` = `{ placeId, aura, recordedAt: ISO }`. If the place doc does not exist, do nothing.
 
-- [ ] **Step 1: Write failing tests:** `aura.test.js` iterates `../fixtures/domain/aura.json` (path relative to repo root) with the same assertions as Task 6; `onMemoryWritten.test.js`: `buildPlaceAggregate` counts non-deleted (`memoryCount`), non-deleted public (`publicMemoryCount`), and computes aura from non-deleted public only.
-- [ ] **Step 2: Run** `npm test --prefix functions` — Expected: FAIL.
-- [ ] **Step 3: Implement.**
-- [ ] **Step 4: Run** `npm test --prefix functions`, then `npx firebase emulators:exec --project demo-echoes --only auth,firestore,storage,functions "npm --prefix mobile run test:emulator"` — Expected: PASS including the aggregation contract case.
-- [ ] **Step 5: Commit** `feat(functions): compute place aura and counts on memory writes`.
+- [x] **Step 1: Write failing tests:** `aura.test.js` iterates `../fixtures/domain/aura.json` (path relative to repo root) with the same assertions as Task 6; `onMemoryWritten.test.js`: `buildPlaceAggregate` counts non-deleted (`memoryCount`), non-deleted public (`publicMemoryCount`), and computes aura from non-deleted public only.
+- [x] **Step 2: Run** `npm test --prefix functions` — Expected: FAIL.
+- [x] **Step 3: Implement.**
+- [x] **Step 4: Run** `npm test --prefix functions`, then `npx firebase emulators:exec --project demo-echoes --only auth,firestore,storage,functions "npm --prefix mobile run test:emulator"` — Expected: PASS including the aggregation contract case.
+- [x] **Step 5: Commit** `feat(functions): compute place aura and counts on memory writes`.
 
 ---
 
