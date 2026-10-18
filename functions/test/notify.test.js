@@ -96,3 +96,12 @@ test("a disabled pref does not block other types", async () => {
 test("unknown type throws", async () => {
   await assert.rejects(notify(base(), { to: "bob", type: "nope", actorId: "alice" }), /Unknown notification type/);
 });
+
+test("a deterministic id makes notify idempotent", async () => {
+  const db = base();
+  const a = await notify(db, { to: "bob", type: "memoryTagged", actorId: "alice", id: "memoryTagged_m1_bob" });
+  const b = await notify(db, { to: "bob", type: "memoryTagged", actorId: "alice", id: "memoryTagged_m1_bob" });
+  assert.deepEqual(a, { sent: true, id: "memoryTagged_m1_bob" });
+  assert.deepEqual(b, { sent: false, reason: "duplicate" });
+  assert.deepEqual(db._list("users/bob/notifications/"), ["users/bob/notifications/memoryTagged_m1_bob"]);
+});

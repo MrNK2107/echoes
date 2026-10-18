@@ -112,3 +112,25 @@ test("assertNotBlocked checks both directions", async () => {
   assert.equal(await isBlocked(db, "a", "b"), true);
   assert.equal(await isBlocked(db, "a", "c"), false);
 });
+
+test("incrementRateLimit consumes `amount` units atomically and denies when they would exceed", async () => {
+  const db = createFakeFirestore();
+  const d = new Date("2026-10-19T10:00:00Z");
+  await incrementRateLimit(db, "u1", "invite", 10, d, 7);
+  assert.equal(await codeOf(incrementRateLimit(db, "u1", "invite", 10, d, 4)), "resource-exhausted");
+  await incrementRateLimit(db, "u1", "invite", 10, d, 3);
+  assert.equal(db._get("rateLimits/u1_invite_2026-10-19").count, 10);
+  assert.equal(await codeOf(incrementRateLimit(db, "u1", "invite", 10, d)), "resource-exhausted");
+});
+
+test("buildHandler charges rateLimit.cost(data) units", async () => {
+  const db = createFakeFirestore();
+  const h = buildHandler(
+    { name: "x", schema: { ids: { type: "array" } }, rateLimit: { action: "a", perDay: 5, cost: (d) => d.ids.length } },
+    async () => "ok",
+    () => db,
+  );
+  assert.equal(await h({ auth: { uid: "u" }, data: { ids: [1, 2, 3] } }), "ok");
+  assert.equal(await codeOf(h({ auth: { uid: "u" }, data: { ids: [1, 2, 3] } })), "resource-exhausted");
+  assert.equal(await h({ auth: { uid: "u" }, data: { ids: [1, 2] } }), "ok");
+});

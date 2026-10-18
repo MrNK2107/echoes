@@ -12,7 +12,7 @@ const seed = (extra = {}) =>
     ...extra,
   });
 const inbox = (db, uid) => db._list(`users/${uid}/notifications/`).map((p) => db._get(p));
-const memory = (taggedUserIds) => ({ userId: "alice", placeId: "p1", taggedUserIds });
+const memory = (taggedUserIds, over = {}) => ({ userId: "alice", placeId: "p1", privacy: "public", taggedUserIds, ...over });
 
 test("the tag trigger notifies each tagged user once and skips the author", async () => {
   const db = seed();
@@ -53,4 +53,28 @@ test("ignores missing, malformed and unknown tagged ids", async () => {
   await notifyTaggedUsers(db, "m1", memory([5, null, "", "ghost"]));
   assert.equal(inbox(db, "bob").length, 0);
   assert.equal(db._list("users/ghost").length, 0);
+});
+
+test("tags notify only when the tagged user can read the memory", async () => {
+  for (const over of [
+    { privacy: "private" },
+    { privacy: "community", communityId: "c1" },
+    { privacy: "timeRelease", releaseDate: "2030-01-01T00:00:00.000Z" },
+    { privacy: "public", moderation: "hidden" },
+    { privacy: "tagged", isDeleted: true },
+  ]) {
+    const db = seed();
+    await notifyTaggedUsers(db, "m1", memory(["bob"], over));
+    assert.equal(inbox(db, "bob").length, 0, JSON.stringify(over));
+  }
+  const db = seed();
+  await notifyTaggedUsers(db, "m1", memory(["bob"], { privacy: "tagged" }));
+  assert.equal(inbox(db, "bob").length, 1);
+});
+
+test("a retried tag trigger does not duplicate notifications", async () => {
+  const db = seed();
+  await notifyTaggedUsers(db, "m1", memory(["bob"]));
+  await notifyTaggedUsers(db, "m1", memory(["bob"]));
+  assert.deepEqual(db._list("users/bob/notifications/"), ["users/bob/notifications/memoryTagged_m1_bob"]);
 });

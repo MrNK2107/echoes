@@ -60,7 +60,10 @@ function buildHandler({ name, schema, rateLimit }, handler, getDb) {
     try {
       const data = validate(schema || {}, request.data ?? {});
       const db = getDb();
-      if (rateLimit) await incrementRateLimit(db, uid, rateLimit.action, rateLimit.perDay);
+      if (rateLimit) {
+        const amount = rateLimit.cost ? rateLimit.cost(data) : 1;
+        await incrementRateLimit(db, uid, rateLimit.action, rateLimit.perDay, new Date(), amount);
+      }
       return await handler({ uid, data, db, request });
     } catch (err) {
       if (err instanceof HttpsError) throw err;
@@ -70,7 +73,8 @@ function buildHandler({ name, schema, rateLimit }, handler, getDb) {
   };
 }
 
-// callable(name, { schema, rateLimit?: { action, perDay } }, async ({ uid, data, db, request }) => result)
+// callable(name, { schema, rateLimit?: { action, perDay, cost?: (data) => units } },
+//   async ({ uid, data, db, request }) => result)
 function callable(name, options, handler) {
   // Lazy so unit tests can load this module without initializing the admin app.
   const getDb = () => require("firebase-admin").firestore();

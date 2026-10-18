@@ -1,5 +1,8 @@
 const { isBlocked } = require("./blocks");
 
+// gRPC status Firestore uses when create() targets an existing document.
+const ALREADY_EXISTS = 6;
+
 // Single source of notification copy (spec "Plan 3 decisions"). `pref` is the key in
 // users/{uid}.notificationPrefs; a missing pref means enabled.
 const TEMPLATES = {
@@ -37,9 +40,10 @@ async function displayNameOf(db, uid) {
   return typeof name === "string" && name.trim() ? name : "Someone";
 }
 
-// notify(db, { to, type, actorId, params: { place?, community? }, data? })
-// -> { sent: true, id } or { sent: false, reason: "self" | "blocked" | "pref" }
-async function notify(db, { to, type, actorId, params = {}, data = {} }) {
+// notify(db, { to, type, actorId, params: { place?, community? }, data?, id? })
+// -> { sent: true, id } or { sent: false, reason: "self" | "blocked" | "pref" | "duplicate" }
+// With a deterministic `id` the write is a create(), so a retried trigger never duplicates.
+async function notify(db, { to, type, actorId, params = {}, data = {}, id }) {
   const template = TEMPLATES[type];
   if (!template) throw new Error(`Unknown notification type: ${type}`);
   if (to === actorId) return { sent: false, reason: "self" };
@@ -50,15 +54,26 @@ async function notify(db, { to, type, actorId, params = {}, data = {} }) {
   if (prefs[template.pref] === false) return { sent: false, reason: "pref" };
 
   const name = await displayNameOf(db, actorId);
-  const ref = db.collection(`users/${to}/notifications`).doc();
-  await ref.set({
+  const notifications = db.collection(`users/${to}/notifications`);
+  const ref = id ? notifications.doc(id) : notifications.doc();
+  const doc = {
     type,
     title: template.title,
     body: template.body({ ...params, name }),
     data,
     createdAt: new Date().toISOString(),
     readAt: null,
-  });
+  };
+  if (!id) {
+    await ref.set(doc);
+    return { sent: true, id: ref.id };
+  }
+  try {
+    await ref.create(doc);
+  } catch (error) {
+    if (error?.code === ALREADY_EXISTS) return { sent: false, reason: "duplicate" };
+    throw error;
+  }
   return { sent: true, id: ref.id };
 }
 

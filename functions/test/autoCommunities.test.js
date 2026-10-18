@@ -41,7 +41,7 @@ test("a created memory ensures its year and era communities and joins the author
   const year = db._get("communities/time-2024");
   assert.equal(year.name, "2024 Memories");
   assert.equal(year.type, "timeBased");
-  assert.equal(year.ownerId, "alice");
+  assert.equal(year.ownerId, "system");
   assert.equal(year.placeId, null);
   assert.equal(year.institutionId, null);
   assert.equal(year.memberCount, 1);
@@ -50,10 +50,10 @@ test("a created memory ensures its year and era communities and joins the author
   const era = db._get("communities/era-2020s");
   assert.equal(era.name, "2020s Era");
   assert.equal(era.type, "timeBased");
-  assert.equal(era.ownerId, "alice");
+  assert.equal(era.ownerId, "system");
   assert.equal(era.memberCount, 0);
   const m = db._get("communities/time-2024/members/alice");
-  assert.deepEqual(m, { userId: "alice", role: "owner", joinedAt: now.toISOString() });
+  assert.deepEqual(m, { userId: "alice", role: "member", joinedAt: now.toISOString() });
   assert.deepEqual(db._get("users/alice").communityIds, ["time-2024"]);
   assert.equal(db._list("communities/era-2020s/members/").length, 0);
 });
@@ -66,10 +66,10 @@ test("auto communities are created once over repeated triggers", async () => {
   await createMemory(db, { userId: "bob" });
   await createMemory(db, { userId: "bob" });
   const year = db._get("communities/time-2024");
-  assert.equal(year.ownerId, "alice");
+  assert.equal(year.ownerId, "system");
   assert.equal(year.memberCount, 2);
   assert.equal(db._get("communities/time-2024/members/bob").role, "member");
-  assert.equal(db._get("communities/era-2020s").ownerId, "alice");
+  assert.equal(db._get("communities/era-2020s").ownerId, "system");
   assert.deepEqual(db._get("users/alice").communityIds, ["time-2024"]);
   assert.deepEqual(db._get("users/bob").communityIds, ["time-2024"]);
   assert.deepEqual(
@@ -91,7 +91,7 @@ test("a missing author profile doc is not recreated by the auto-join", async () 
   const db = seed();
   await createMemory(db, { userId: "zed" });
   assert.equal(db._get("users/zed"), undefined);
-  assert.equal(db._get("communities/time-2024/members/zed").role, "owner");
+  assert.equal(db._get("communities/time-2024/members/zed").role, "member");
 });
 
 test("geo community is created at exactly GEO_THRESHOLD public memories, once", async () => {
@@ -108,7 +108,7 @@ test("geo community is created at exactly GEO_THRESHOLD public memories, once", 
   const geo = db._get("communities/geo-p1");
   assert.equal(geo.name, "Old Mill Circle");
   assert.equal(geo.type, "geographic");
-  assert.equal(geo.ownerId, "carol");
+  assert.equal(geo.ownerId, "system");
   assert.equal(geo.placeId, "p1");
   assert.equal(geo.institutionId, null);
   assert.equal(geo.memberCount, 0);
@@ -120,10 +120,28 @@ test("geo community is created at exactly GEO_THRESHOLD public memories, once", 
   assert.equal(db._get("communities/geo-p1").createdAt, geo.createdAt);
 });
 
-test("geo community falls back to the author when the place has no custodian", async () => {
-  const db = seed({ "places/p1": { name: "Old Mill", custodianIds: [] } });
+test("a place linked to a missing geo community gets it recreated", async () => {
+  const db = seed({ "places/p1": { name: "Old Mill", custodianIds: [], communityId: "geo-p1" } });
   for (let i = 0; i < GEO_THRESHOLD; i++) await createMemory(db);
-  assert.equal(db._get("communities/geo-p1").ownerId, "alice");
+  const geo = db._get("communities/geo-p1");
+  assert.equal(geo.ownerId, "system");
+  assert.equal(geo.name, "Old Mill Circle");
+  assert.equal(db._get("places/p1").communityId, "geo-p1");
+});
+
+test("leaving is sticky: the year auto-join skips communities in leftCommunityIds", async () => {
+  const db = seed({ "users/alice": { communityIds: [], leftCommunityIds: ["time-2024"] } });
+  await createMemory(db);
+  assert.equal(db._get("communities/time-2024/members/alice"), undefined);
+  assert.equal(db._get("communities/time-2024").memberCount, 0);
+  assert.deepEqual(db._get("users/alice").communityIds, []);
+});
+
+test("an unparseable createdAt creates no time communities", async () => {
+  const db = seed();
+  await createMemory(db, { createdAt: "not a date" });
+  await createMemory(db, { createdAt: undefined });
+  assert.deepEqual(db._list("communities/"), []);
 });
 
 test("an existing geo community is relinked to its place without being rewritten", async () => {
@@ -154,7 +172,7 @@ test("time communities are ensured without transactions (emulator resets abort o
   assert.equal(db._get("places/p1").communityId, "geo-p1");
 });
 
-test("the era owner joining their own era community gets role owner", async () => {
+test("joining a system-owned era community gives role member", async () => {
   const { definitions } = require("../communities");
   const { buildHandler } = require("../lib/callable");
   const db = seed();
@@ -164,6 +182,22 @@ test("the era owner joining their own era community gets role owner", async () =
     auth: { uid: "alice" },
     data: { communityId: "era-2020s" },
   });
-  assert.equal(db._get("communities/era-2020s/members/alice").role, "owner");
+  assert.equal(db._get("communities/era-2020s/members/alice").role, "member");
   assert.equal(db._get("communities/era-2020s").memberCount, 1);
+});
+
+test("a year community deleted mid-join is a quiet no-op", async () => {
+  const db = seed();
+  const realBatch = db.batch;
+  db.batch = () => {
+    const b = realBatch();
+    const commit = b.commit;
+    b.commit = async () => {
+      db._store.delete("communities/time-2024"); // e.g. a reset or admin delete races the join
+      return commit();
+    };
+    return b;
+  };
+  await createMemory(db);
+  assert.equal(db._get("communities/time-2024/members/alice"), undefined);
 });

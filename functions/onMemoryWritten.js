@@ -5,15 +5,21 @@ const { logger } = require("firebase-functions");
 const { calculateAura } = require("./aura");
 const { GEO_THRESHOLD, yearCommunity, eraCommunity, geoCommunity } = require("./lib/domain");
 
-// Memory dates are Firestore Timestamps; legacy docs may hold ISO strings.
-function toDate(value) {
-  if (value instanceof Date) return value;
+// Memory dates are Firestore Timestamps; legacy docs may hold ISO strings. Returns null when the
+// value cannot be parsed.
+function parseDate(value) {
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
   if (value && typeof value.toDate === "function") return value.toDate();
   if (typeof value === "string" || typeof value === "number") {
     const d = new Date(value);
     if (!Number.isNaN(d.getTime())) return d;
   }
-  return new Date(0);
+  return null;
+}
+
+// Aura input: unparseable dates count as the epoch (maximally decayed).
+function toDate(value) {
+  return parseDate(value) ?? new Date(0);
 }
 
 // gRPC status code Firestore uses when an update targets a missing document.
@@ -102,8 +108,13 @@ async function createIfMissing(ref, data) {
   }
 }
 
-// Spec "Plan 3 decisions": a created memory ensures `time-<y>` and `era-<d>s` (owner = the
-// first author to need them) and joins its author to the year community.
+// Auto communities are owned by "system" (R25): no user owns them, so no user is blocked from
+// leaving and account deletion never removes them.
+const SYSTEM_OWNER = "system";
+
+// Spec "Plan 3 decisions": a created memory ensures `time-<y>` and `era-<d>s` and joins its
+// author to the year community as a member, unless they left it before (R26:
+// users/{uid}.leftCommunityIds).
 // No transactions here on purpose: this trigger runs asynchronously, and an open transaction
 // makes the Firestore emulator's reset fail (409) between contract tests. Instead the
 // membership, its count and the user's communityIds go in one atomic batch whose create()
@@ -118,7 +129,7 @@ async function ensureTimeCommunities(db, authorId, createdAt, now) {
   const memberRef = yearRef.collection("members").doc(authorId);
   const userRef = db.collection("users").doc(authorId);
 
-  const timeBased = { type: "timeBased", ownerId: authorId, memberCount: 0 };
+  const timeBased = { type: "timeBased", ownerId: SYSTEM_OWNER, memberCount: 0 };
   await createIfMissing(
     communities.doc(era.id),
     autoCommunity(era, { ...timeBased, description: `Memories from the ${era.id.slice(4)}.` }, at),
@@ -134,9 +145,10 @@ async function ensureTimeCommunities(db, authorId, createdAt, now) {
     userRef.get(),
   ]);
   if (memberSnap.exists || !yearSnap.exists) return;
-  const role = yearSnap.data().ownerId === authorId ? "owner" : "member";
+  const left = userSnap.exists ? userSnap.data().leftCommunityIds : undefined;
+  if (Array.isArray(left) && left.includes(year.id)) return;
   const batch = db.batch();
-  batch.create(memberRef, { userId: authorId, role, joinedAt: at });
+  batch.create(memberRef, { userId: authorId, role: "member", joinedAt: at });
   batch.update(yearRef, { memberCount: FieldValue.increment(1) });
   // Lets the author pick the year community for community privacy; never recreates a
   // deleted users doc.
@@ -145,37 +157,29 @@ async function ensureTimeCommunities(db, authorId, createdAt, now) {
     await batch.commit();
   } catch (error) {
     if (error?.code === ALREADY_EXISTS) return; // a concurrent delivery joined them first
+    if (error?.code === NOT_FOUND) return; // the community or users doc vanished: nothing to join
     throw error;
   }
 }
 
-// Creates `geo-<placeId>` once the place has GEO_THRESHOLD public memories (owner = first
-// custodian, else the triggering author) and links it from place.communityId. Idempotent: an
-// existing community is never rewritten, only relinked.
-async function ensureGeoCommunity(db, placeId, fallbackOwnerId, now) {
+// Creates `geo-<placeId>` (owner "system", R25) once the place has GEO_THRESHOLD public
+// memories and links it from place.communityId. Idempotent: an existing community is never
+// rewritten, only relinked; a link to a missing community gets the community recreated.
+async function ensureGeoCommunity(db, placeId, now) {
   const placeRef = db.collection("places").doc(placeId);
   const place = await placeRef.get();
   if (!place.exists) return;
   const data = place.data();
   if ((data.publicMemoryCount ?? 0) < GEO_THRESHOLD) return;
   const geo = geoCommunity({ id: placeId, name: data.name ?? "Unnamed place" });
+  const geoRef = db.collection("communities").doc(geo.id);
+  // A read is cheaper than a failing create() on every later write to a busy place.
+  if (!(await geoRef.get()).exists) {
+    const description = `Memories shared at ${data.name ?? "this place"}.`;
+    const fields = { type: "geographic", ownerId: SYSTEM_OWNER, placeId, memberCount: 0, description };
+    await createIfMissing(geoRef, autoCommunity(geo, fields, now.toISOString()));
+  }
   if (data.communityId === geo.id) return;
-
-  const custodians = Array.isArray(data.custodianIds) ? data.custodianIds : [];
-  await createIfMissing(
-    db.collection("communities").doc(geo.id),
-    autoCommunity(
-      geo,
-      {
-        type: "geographic",
-        ownerId: custodians[0] ?? fallbackOwnerId ?? null,
-        placeId,
-        memberCount: 0,
-        description: `Memories shared at ${data.name ?? "this place"}.`,
-      },
-      now.toISOString(),
-    ),
-  );
   try {
     await placeRef.update({ communityId: geo.id });
   } catch (error) {
@@ -196,16 +200,18 @@ async function handleMemoryWrite(db, { before, after }, now) {
       // Checked on every write, not only creates: the >= threshold + communityId guard keeps it
       // idempotent, and a memory made public by an edit can also tip a place over.
       if (aggregate && aggregate.publicMemoryCount >= GEO_THRESHOLD) {
-        await ensureGeoCommunity(db, placeId, after?.userId ?? before?.userId, now);
+        await ensureGeoCommunity(db, placeId, now);
       }
     } catch (error) {
       logger.error("Failed to recompute place aggregate", { placeId, error });
       throw error;
     }
   }
-  if (!before && after && after.isDeleted !== true) {
+  const createdAt = after ? parseDate(after.createdAt) : null;
+  // Unparseable dates would otherwise land everything in 1970 communities.
+  if (!before && after && after.isDeleted !== true && createdAt) {
     try {
-      await ensureTimeCommunities(db, after.userId, toDate(after.createdAt), now);
+      await ensureTimeCommunities(db, after.userId, createdAt, now);
     } catch (error) {
       logger.error("Failed to ensure time communities", { userId: after.userId, error });
       throw error;
@@ -227,5 +233,6 @@ module.exports = {
   buildPlaceAggregate,
   memoryFromData,
   recomputePlace,
+  parseDate,
   toDate,
 };

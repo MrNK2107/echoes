@@ -143,6 +143,17 @@ test("leaving a community that no longer exists clears the stale id", async () =
   assert.equal(db._get("communities/gone"), undefined);
 });
 
+test("leaving is sticky: leftCommunityIds records it, joining clears it", async () => {
+  const db = seed();
+  const id = await created(db);
+  await call(db, "joinCommunity", "bob", { communityId: id });
+  await call(db, "leaveCommunity", "bob", { communityId: id });
+  assert.deepEqual(db._get("users/bob").leftCommunityIds, [id]);
+  await call(db, "joinCommunity", "bob", { communityId: id });
+  assert.deepEqual(db._get("users/bob").leftCommunityIds, []);
+  assert.deepEqual(db._get("users/bob").communityIds, [id]);
+});
+
 // --- inviteToCommunity ---
 
 test("inviteToCommunity notifies each invitee once with the community name", async () => {
@@ -189,16 +200,25 @@ test("inviteToCommunity errors: non-member, missing community, too many ids", as
   assert.equal(inbox(db, "carol").length, 0);
 });
 
-test("inviteToCommunity is rate limited to 50 per day", async () => {
+test("inviteToCommunity rate limit counts invitees: 200 per day", async () => {
   const db = seed();
   const id = await created(db);
-  for (let i = 0; i < 50; i++) {
-    await call(db, "inviteToCommunity", "alice", { communityId: id, userIds: ["bob"] });
+  const twenty = Array.from({ length: 20 }, (_, i) => `u${i}`);
+  for (let i = 0; i < 10; i++) {
+    await call(db, "inviteToCommunity", "alice", { communityId: id, userIds: twenty });
   }
   assert.equal(
     await codeOf(call(db, "inviteToCommunity", "alice", { communityId: id, userIds: ["bob"] })),
     "resource-exhausted",
   );
+});
+
+test("inviteToCommunity charges unique invitees only", async () => {
+  const db = seed();
+  const id = await created(db);
+  await call(db, "inviteToCommunity", "alice", { communityId: id, userIds: ["bob", "bob", "carol"] });
+  const day = new Date().toISOString().slice(0, 10);
+  assert.equal(db._get(`rateLimits/alice_inviteToCommunity_${day}`).count, 2);
 });
 
 test("blocked users cannot tag, invite or transfer (invite part)", async () => {
@@ -213,27 +233,41 @@ test("blocked users cannot tag, invite or transfer (invite part)", async () => {
 
 // --- account deletion (R24) ---
 
-test("cleanupUserCommunities removes memberships, decrements counts and unlinks owned communities", async () => {
+test("cleanupUserCommunities removes memberships elsewhere and hands owned communities to the earliest member", async () => {
   const db = seed();
   const mine = await created(db, "alice");
   const theirs = await created(db, "bob");
   await call(db, "joinCommunity", "alice", { communityId: theirs });
   await call(db, "joinCommunity", "carol", { communityId: theirs });
-  await call(db, "joinCommunity", "bob", { communityId: mine });
-  await call(db, "joinCommunity", "carol", { communityId: mine });
+  // carol joined alice's community before bob.
+  db._put(`communities/${mine}/members/bob`, { userId: "bob", role: "member", joinedAt: "2026-02-01T00:00:00.000Z" });
+  db._put(`communities/${mine}/members/carol`, { userId: "carol", role: "member", joinedAt: "2026-01-01T00:00:00.000Z" });
+  db._put(`communities/${mine}`, { ...db._get(`communities/${mine}`), memberCount: 3 });
   assert.equal(db._get(`communities/${theirs}`).memberCount, 3);
 
   await cleanupUserCommunities(db, "alice");
 
   assert.equal(db._get(`communities/${theirs}/members/alice`), undefined);
   assert.equal(db._get(`communities/${theirs}`).memberCount, 2);
-  assert.equal(db._list(`communities/${mine}`).length, 0);
-  assert.deepEqual(db._get("users/bob").communityIds, [theirs]);
-  assert.deepEqual(db._get("users/carol").communityIds, [theirs]);
+  const c = db._get(`communities/${mine}`);
+  assert.equal(c.ownerId, "carol");
+  assert.equal(c.memberCount, 2);
+  assert.equal(db._get(`communities/${mine}/members/carol`).role, "owner");
+  assert.equal(db._get(`communities/${mine}/members/bob`).role, "member");
+  assert.equal(db._get(`communities/${mine}/members/alice`), undefined);
 
   // Re-running (function retry) changes nothing further.
   await cleanupUserCommunities(db, "alice");
   assert.equal(db._get(`communities/${theirs}`).memberCount, 2);
+  assert.equal(db._get(`communities/${mine}`).memberCount, 2);
+  assert.equal(db._get(`communities/${mine}`).ownerId, "carol");
+});
+
+test("cleanupUserCommunities deletes an owned community with no other member", async () => {
+  const db = seed();
+  const mine = await created(db, "alice");
+  await cleanupUserCommunities(db, "alice");
+  assert.equal(db._list(`communities/${mine}`).length, 0);
 });
 
 test("cleanupUserCommunities uses no transactions (async trigger; emulator resets abort on open ones)", async () => {

@@ -116,7 +116,7 @@ exports.cleanupDeletedUser = functionsV1.auth.user().onDelete(async (user) => {
   });
 
   // Memberships elsewhere are removed with their memberCount decremented; owned communities
-  // are deleted after unlinking them from their members' communityIds (R24).
+  // pass to their earliest-joined member, or are deleted when no one else is left (R24, R25).
   await communities.cleanupUserCommunities(db, userId);
 
   await writer.close();

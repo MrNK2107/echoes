@@ -4,7 +4,6 @@
 // communities/{id}.memberCount == number of members/* docs.
 const { HttpsError } = require("firebase-functions/v2/https");
 const { FieldValue } = require("firebase-admin/firestore");
-const { logger } = require("firebase-functions");
 const { callable } = require("./lib/callable");
 const { notify } = require("./lib/notify");
 
@@ -17,12 +16,17 @@ const communityRef = (db, id) => db.collection("communities").doc(id);
 const memberRef = (db, id, uid) => communityRef(db, id).collection("members").doc(uid);
 const userRef = (db, uid) => db.collection("users").doc(uid);
 
-// Adds/removes a community id on users/{uid}.communityIds inside a transaction, but never
-// recreates a missing users doc as a fragment. Call only after every tx.get.
-function linkUser(tx, userSnap, communityId, add) {
+// Joining adds the id to users/{uid}.communityIds and clears it from leftCommunityIds; leaving
+// does the reverse. leftCommunityIds (server-written; not in the rules' owner allowlist) makes
+// leaving sticky: onMemoryWritten's year auto-join skips those ids (R26). Runs inside a
+// transaction after every tx.get, and never recreates a missing users doc as a fragment.
+function linkUser(tx, userSnap, communityId, joined) {
   if (!userSnap.exists) return;
+  const add = FieldValue.arrayUnion(communityId);
+  const remove = FieldValue.arrayRemove(communityId);
   tx.update(userSnap.ref, {
-    communityIds: add ? FieldValue.arrayUnion(communityId) : FieldValue.arrayRemove(communityId),
+    communityIds: joined ? add : remove,
+    leftCommunityIds: joined ? remove : add,
   });
 }
 
@@ -53,7 +57,6 @@ async function joinCommunity({ uid, data: { communityId }, db }) {
     ]);
     if (!community.exists) throw new HttpsError("not-found", "Community not found.");
     if (!existing.exists) {
-      // An auto community's owner (e.g. an era community's first author) joins as owner.
       const role = community.data().ownerId === uid ? "owner" : "member";
       tx.set(memberRef(db, communityId, uid), member(uid, role, new Date().toISOString()));
       tx.update(community.ref, { memberCount: FieldValue.increment(1) });
@@ -131,19 +134,21 @@ const definitions = {
       communityId: idField,
       userIds: { type: "array", min: 1, max: MAX_INVITES, items: "string" },
     },
-    rateLimit: { action: "inviteToCommunity", perDay: 50 },
+    // R27: counts invitees (unique ids), not calls.
+    rateLimit: { action: "inviteToCommunity", perDay: 200, cost: (data) => new Set(data.userIds).size },
     handler: inviteToCommunity,
   },
 };
 
-// Account deletion (R24). Memberships in other people's communities are removed and their
-// counts decremented. No transactions: this runs in an async auth trigger, and an open
-// transaction makes the Firestore emulator's reset fail between contract tests. Each membership
-// goes in its own atomic batch whose delete requires the doc to exist, so a retried run or a
-// concurrent leave never decrements twice. Communities the
-// user owns are deleted with their members; each remaining member's users/{x}.communityIds is
-// unlinked first so the privacy picker never offers a deleted community. Memories already shared
-// with a deleted community keep their communityId and become visible to nobody but the author.
+// Account deletion (R24, R25). No transactions: this runs in an async auth trigger, and an open
+// transaction makes the Firestore emulator's reset fail between contract tests. Every step is a
+// batch whose delete requires the member doc to exist, so a retried run or a concurrent leave
+// never decrements twice.
+// - Memberships in other people's communities: delete + decrement memberCount.
+// - Owned communities: ownership passes to the earliest-joined remaining member (community
+//   ownerId, their member role), and the old owner's membership is removed. Only a community
+//   with no other member is deleted. Auto communities are owned by "system" (R25), so they are
+//   never owned by a user here. Applies to every type a user can own (thematic today).
 async function cleanupUserCommunities(db, uid) {
   const owned = await db.collection("communities").where("ownerId", "==", uid).get();
   const ownedIds = new Set(owned.docs.map((d) => d.id));
@@ -152,34 +157,49 @@ async function cleanupUserCommunities(db, uid) {
   for (const doc of memberships.docs) {
     const community = doc.ref.parent.parent;
     if (ownedIds.has(community.id)) continue;
-    const batch = db.batch();
-    batch.delete(doc.ref, { exists: true });
-    batch.update(community, { memberCount: FieldValue.increment(-1) });
-    try {
-      await batch.commit();
-    } catch (error) {
-      // NOT_FOUND: the membership (or an orphaned member's community) is already gone.
-      if (error?.code !== 5) throw error;
-      await doc.ref.delete();
-    }
+    await removeMembership(db, doc.ref, community, {});
   }
 
   for (const c of owned.docs) {
-    const members = await c.ref.collection("members").get();
-    await Promise.all(
-      members.docs
-        .map((m) => m.id)
-        .filter((memberId) => memberId !== uid)
-        .map((memberId) =>
-          userRef(db, memberId)
-            .update({ communityIds: FieldValue.arrayRemove(c.id) })
-            .catch((error) => {
-              // A member whose users doc is already gone has nothing to unlink.
-              if (error?.code !== 5) logger.warn("Failed to unlink community", { memberId, error });
-            }),
-        ),
-    );
-    await db.recursiveDelete(c.ref);
+    const members = await c.ref.collection("members").orderBy("joinedAt", "asc").get();
+    const heir = members.docs.find((m) => m.id !== uid && m.data().userId !== uid);
+    if (!heir) {
+      await db.recursiveDelete(c.ref);
+      continue;
+    }
+    const at = new Date().toISOString();
+    await removeMembership(db, c.ref.collection("members").doc(uid), c.ref, {
+      ownerId: heir.id,
+      updatedAt: at,
+      extra: (batch) => batch.update(heir.ref, { role: "owner" }),
+    });
+  }
+}
+
+// One atomic batch: delete the member doc (must exist) and decrement the count, plus optional
+// community fields / extra writes. If the member doc is already gone, apply only the extras.
+async function removeMembership(db, member, community, { extra, ...fields }) {
+  const batch = db.batch();
+  batch.delete(member, { exists: true });
+  batch.update(community, { ...fields, memberCount: FieldValue.increment(-1) });
+  if (extra) extra(batch);
+  try {
+    await batch.commit();
+    return;
+  } catch (error) {
+    if (error?.code !== 5) throw error; // NOT_FOUND
+  }
+  // The membership or the community is already gone.
+  await member.delete();
+  if (Object.keys(fields).length || extra) {
+    const rest = db.batch();
+    if (Object.keys(fields).length) rest.update(community, fields);
+    if (extra) extra(rest);
+    try {
+      await rest.commit();
+    } catch (error) {
+      if (error?.code !== 5) throw error;
+    }
   }
 }
 
