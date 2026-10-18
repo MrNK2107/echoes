@@ -4,6 +4,7 @@ import MapView, { Marker } from 'react-native-maps';
 
 import { distanceMeters } from '@/domain/geo';
 import type { Place } from '@/domain/types';
+import { formatCount } from '@/ui/format';
 import { colors } from '@/ui/theme';
 
 import { useNearbyPlaces } from './useNearbyPlaces';
@@ -11,8 +12,6 @@ import { useNearbyPlaces } from './useNearbyPlaces';
 function formatDistance(m: number): string {
   return m < 1000 ? `${Math.round(m)} m` : `${(m / 1000).toFixed(1)} km`;
 }
-
-const formatCount = (n: number) => (n === 1 ? '1 memory' : `${n} memories`);
 
 export function MapScreen() {
   const router = useRouter();
