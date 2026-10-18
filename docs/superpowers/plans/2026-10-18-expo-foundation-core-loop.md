@@ -185,11 +185,11 @@ export interface AuthSession { userId: string; email: string; displayName: strin
 **Interfaces:**
 - Produces: `analyzeSentiment(text: string): SentimentResult`, `sentimentCategory(r: SentimentResult): SentimentCategory`.
 
-- [ ] **Step 1: Write failing tests:** `it.each(sentiment.json)` — each of `compound/positive/neutral/negative` `toBeCloseTo(expected, 10)` and `sentimentCategory(result) === category`; plus `sentimentCategory({compound:0.5,positive:0.4,neutral:0.2,negative:0.4})` → `'mixed'`.
-- [ ] **Step 2: Run** `npm --prefix mobile test -- sentiment` — Expected: FAIL.
-- [ ] **Step 3: Implement** as a line-for-line port of `lib/features/aura/data/lexicon_sentiment_analyzer.dart` (tokenisation, negation window, intensifier factors, `but` weighting, normalisation) — copy every word set verbatim into `sentimentLexicon.ts`. Category thresholds from `sentiment_result.dart`.
-- [ ] **Step 4: Run** — Expected: PASS for every fixture. A mismatch means the port differs from Dart; fix the port, never the fixture.
-- [ ] **Step 5: Commit** `feat(domain): port lexicon sentiment analyzer`.
+- [x] **Step 1: Write failing tests:** `it.each(sentiment.json)` — each of `compound/positive/neutral/negative` `toBeCloseTo(expected, 10)` and `sentimentCategory(result) === category`; plus `sentimentCategory({compound:0.5,positive:0.4,neutral:0.2,negative:0.4})` → `'mixed'`.
+- [x] **Step 2: Run** `npm --prefix mobile test -- sentiment` — Expected: FAIL.
+- [x] **Step 3: Implement** as a line-for-line port of `lib/features/aura/data/lexicon_sentiment_analyzer.dart` (tokenisation, negation window, intensifier factors, `but` weighting, normalisation) — copy every word set verbatim into `sentimentLexicon.ts`. Category thresholds from `sentiment_result.dart`.
+- [x] **Step 4: Run** — Expected: PASS for every fixture. A mismatch means the port differs from Dart; fix the port, never the fixture.
+- [x] **Step 5: Commit** `feat(domain): port lexicon sentiment analyzer`.
 
 ---
 
