@@ -8,6 +8,9 @@ class AddMemoryState extends Equatable {
     required this.status,
     this.privacy = PrivacyType.public,
     this.imagePath,
+    this.audioPath,
+    this.isRecording = false,
+    this.recordingSeconds = 0,
     this.taggedUserIds = const [],
     this.releaseDate,
     this.communityId,
@@ -21,6 +24,9 @@ class AddMemoryState extends Equatable {
   final AddMemoryStatus status;
   final PrivacyType privacy;
   final String? imagePath;
+  final String? audioPath;
+  final bool isRecording;
+  final int recordingSeconds;
   final List<String> taggedUserIds;
   final DateTime? releaseDate;
   final String? communityId;
@@ -31,6 +37,10 @@ class AddMemoryState extends Equatable {
     AddMemoryStatus? status,
     PrivacyType? privacy,
     String? imagePath,
+    String? audioPath,
+    bool clearAudioPath = false,
+    bool? isRecording,
+    int? recordingSeconds,
     List<String>? taggedUserIds,
     DateTime? releaseDate,
     String? communityId,
@@ -41,6 +51,9 @@ class AddMemoryState extends Equatable {
       status: status ?? this.status,
       privacy: privacy ?? this.privacy,
       imagePath: imagePath ?? this.imagePath,
+      audioPath: clearAudioPath ? null : audioPath ?? this.audioPath,
+      isRecording: isRecording ?? this.isRecording,
+      recordingSeconds: recordingSeconds ?? this.recordingSeconds,
       taggedUserIds: taggedUserIds ?? this.taggedUserIds,
       releaseDate: releaseDate ?? this.releaseDate,
       communityId: communityId ?? this.communityId,
@@ -54,6 +67,9 @@ class AddMemoryState extends Equatable {
     status,
     privacy,
     imagePath,
+    audioPath,
+    isRecording,
+    recordingSeconds,
     taggedUserIds,
     releaseDate,
     communityId,

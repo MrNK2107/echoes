@@ -130,6 +130,20 @@ class _EmptyPlaceRepository implements PlaceRepository {
   Future<void> save(Place place) async {}
 
   @override
+  Future<void> addCustodian({
+    required String placeId,
+    required String userId,
+    required DateTime updatedAt,
+  }) async {}
+
+  @override
+  Future<void> removeCustodian({
+    required String placeId,
+    required String userId,
+    required DateTime updatedAt,
+  }) async {}
+
+  @override
   Stream<List<Place>> watchNearbyPlaces({
     required double latitude,
     required double longitude,

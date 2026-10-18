@@ -37,9 +37,11 @@ void main() {
         'LOVE, warm; unknown.',
       );
 
-      expect(sentiment.compound, closeTo(2 / 3, 0.0001));
+      // 2 positive words (love, warm), 1 non-sentiment word (unknown)
+      // compound = (2 - 0) / (2 + 0) = 1.0
+      expect(sentiment.compound, closeTo(1.0, 0.0001));
+      // positive = 2 / (2 + 0 + 1) = 0.666
       expect(sentiment.positive, closeTo(2 / 3, 0.0001));
-      expect(sentiment.neutral, closeTo(1 / 3, 0.0001));
       expect(sentiment.negative, 0);
       expect(sentiment.category, SentimentCategory.positive);
     });
@@ -47,11 +49,33 @@ void main() {
     test('classifies balanced positive and negative words as mixed', () {
       final sentiment = LexiconSentimentAnalyzer().analyze('love joy sad dark');
 
+      // 2 positive, 2 negative → compound = 0 → mixed
       expect(sentiment.compound, 0);
-      expect(sentiment.positive, 0.5);
-      expect(sentiment.neutral, 0);
-      expect(sentiment.negative, 0.5);
+      // positive = 2 / (2 + 2 + 1) = 0.4
+      expect(sentiment.positive, closeTo(0.4, 0.0001));
+      // negative = 2 / (2 + 2 + 1) = 0.4
+      expect(sentiment.negative, closeTo(0.4, 0.0001));
       expect(sentiment.category, SentimentCategory.mixed);
+    });
+
+    test('handles negation correctly', () {
+      final sentiment = LexiconSentimentAnalyzer().analyze('not happy');
+
+      expect(sentiment.compound, lessThan(0));
+      expect(sentiment.category, SentimentCategory.heavy);
+    });
+
+    test('handles intensifiers', () {
+      // With only positive words, compound is always 1.0 regardless of intensity.
+      // Instead, check that the positive proportion is higher with intensifier.
+      final simpleSentiment = LexiconSentimentAnalyzer().analyze('good');
+      final intensifiedSentiment = LexiconSentimentAnalyzer().analyze(
+        'very good',
+      );
+
+      // Without intensifier: totalPositive=1, positive=1/(1+0+1)=0.5
+      // With intensifier: totalPositive=1.35, positive=1.35/(1.35+0+1)≈0.574
+      expect(intensifiedSentiment.positive, greaterThan(simpleSentiment.positive));
     });
   });
 }

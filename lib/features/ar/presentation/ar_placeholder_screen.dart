@@ -1,5 +1,6 @@
 import 'package:echoes/app/theme.dart';
 import 'package:echoes/core/location/location_service.dart';
+import 'package:echoes/features/ar/data/device_ar_session_service.dart';
 import 'package:echoes/features/ar/domain/ar_availability_service.dart';
 import 'package:echoes/features/ar/domain/ar_permission_service.dart';
 import 'package:echoes/features/ar/domain/ar_scene_place.dart';
@@ -7,12 +8,14 @@ import 'package:echoes/features/ar/domain/ar_session_service.dart';
 import 'package:echoes/features/ar/presentation/ar_cubit.dart';
 import 'package:echoes/features/ar/presentation/ar_state.dart';
 import 'package:echoes/features/ar/presentation/ar_status.dart';
+import 'package:echoes/features/ar/presentation/native_ar_scene.dart';
 import 'package:echoes/features/memories/domain/memory_repository.dart';
 import 'package:echoes/features/memories/presentation/memory_detail_sheet.dart';
 import 'package:echoes/features/places/domain/place_repository.dart';
 import 'package:echoes/shared/widgets/feature_placeholder.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class ArPlaceholderScreen extends StatelessWidget {
   const ArPlaceholderScreen({super.key});
@@ -55,8 +58,7 @@ class _ArView extends StatelessWidget {
             title: 'AR is not available here.',
             description:
                 'This device or build does not currently support AR mode, so ECHOES will use the 2D map experience.',
-            nextStep:
-                'Next: wire ARCore/ARKit device checks and render aura domes on supported devices.',
+            nextStep: 'Use the map to explore the same nearby memory places.',
             action: FilledButton.icon(
               onPressed: () =>
                   DefaultTabController.maybeOf(context)?.animateTo(0),
@@ -102,10 +104,14 @@ class _ArPermissionPrompt extends StatelessWidget {
       action: FilledButton.icon(
         key: const ValueKey('requestArPermissionButton'),
         onPressed: isPermanentlyDenied
-            ? null
+            ? openAppSettings
             : () => context.read<ArCubit>().requestPermission(),
-        icon: const Icon(Icons.photo_camera_outlined),
-        label: const Text('Allow camera'),
+        icon: Icon(
+          isPermanentlyDenied
+              ? Icons.settings_outlined
+              : Icons.photo_camera_outlined,
+        ),
+        label: Text(isPermanentlyDenied ? 'Open settings' : 'Allow camera'),
       ),
     );
   }
@@ -333,6 +339,19 @@ class _ArScenePreviewState extends State<_ArScenePreview>
 
   @override
   Widget build(BuildContext context) {
+    final usesDeviceSession =
+        context.read<ArSessionService>() is DeviceArSessionService;
+    if (NativeArScene.isSupportedPlatform &&
+        usesDeviceSession &&
+        !widget.isBusy) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: NativeArScene(
+          scenePlaces: widget.scenePlaces,
+          onPlaceTap: widget.onScenePlaceTap,
+        ),
+      );
+    }
     return DecoratedBox(
       decoration: BoxDecoration(
         color: EchoesColors.surface,

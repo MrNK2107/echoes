@@ -1,5 +1,25 @@
 # ECHOES Complete Implementation Design
 
+## July 31, 2026 Production-v1 Decision Addendum
+
+### Confirmed outcome
+
+- Ship the full current specification for Android API 24+ and iOS 15+, targeting a regional launch of roughly 50,000 first-year users.
+- Require users to be at least 13; parental-consent flows and under-13 accounts are outside v1.
+- Preserve Firebase, clean-architecture repository boundaries, on-device sentiment, foreground-only location, and the 2D fallback for non-AR devices.
+- Treat Android device validation as executable in the current environment and iOS build/device validation as a mandatory macOS release gate.
+
+### Decision log
+
+| Decision | Alternatives | Rationale |
+|---|---|---|
+| Extend existing adapters | Rewrite feature modules | Most product flows are tested and working; adapters close production gaps with lower regression risk. |
+| Use native ARCore/ARKit platform views | Keep the canvas simulation; replace both plugins | Meets the specification while retaining the canvas as a safe unsupported-platform fallback. |
+| Use `record` + `just_audio` | Platform channels; omit voice notes | Maintained cross-platform packages provide the required 60-second capture and playback flow. |
+| Trigger cleanup from Auth deletion | Client-only cascading deletes | A server-side trigger is authoritative and also covers administrative account deletion. |
+| Restrict Firestore list rules to visible documents | Trust client filtering | Client filtering is not a security boundary. |
+| Require external release secrets | Commit keys or retain debug signing | Credentials stay outside source control and release builds fail closed. |
+
 **Date:** 2026-05-27
 **Status:** Approved
 **Scope:** Complete all remaining work to make ECHOES production-ready with zero mock/placeholder implementations

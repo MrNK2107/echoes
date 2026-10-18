@@ -50,6 +50,44 @@ class LocalPlaceRepository implements PlaceRepository {
   }
 
   @override
+  Future<void> addCustodian({
+    required String placeId,
+    required String userId,
+    required DateTime updatedAt,
+  }) async {
+    final index = _places.indexWhere((current) => current.id == placeId);
+    if (index == -1) {
+      return;
+    }
+    final place = _places[index];
+    if (place.custodianIds.contains(userId)) {
+      return;
+    }
+    _places[index] = place.copyWith(
+      custodianIds: [...place.custodianIds, userId],
+      updatedAt: updatedAt,
+    );
+  }
+
+  @override
+  Future<void> removeCustodian({
+    required String placeId,
+    required String userId,
+    required DateTime updatedAt,
+  }) async {
+    final index = _places.indexWhere((current) => current.id == placeId);
+    if (index == -1) {
+      return;
+    }
+    final place = _places[index];
+    _places[index] = place.copyWith(
+      custodianIds:
+          place.custodianIds.where((id) => id != userId).toList(),
+      updatedAt: updatedAt,
+    );
+  }
+
+  @override
   Future<void> save(Place place) async {
     final index = _places.indexWhere((current) => current.id == place.id);
     if (index == -1) {

@@ -15,4 +15,7 @@ abstract interface class AuthRepository {
   });
 
   Future<void> signOut();
+
+  /// Deletes the authenticated user account.
+  Future<void> deleteAccount();
 }

@@ -80,6 +80,47 @@ class CachedPlaceRepository implements PlaceRepository, AppCacheClient {
   }
 
   @override
+  Future<void> addCustodian({
+    required String placeId,
+    required String userId,
+    required DateTime updatedAt,
+  }) async {
+    await _delegate.addCustodian(
+      placeId: placeId,
+      userId: userId,
+      updatedAt: updatedAt,
+    );
+    final cached = _placesById[placeId];
+    if (cached != null) {
+      _placesById[placeId] = cached.copyWith(
+        custodianIds: [...cached.custodianIds, userId],
+        updatedAt: updatedAt,
+      );
+    }
+  }
+
+  @override
+  Future<void> removeCustodian({
+    required String placeId,
+    required String userId,
+    required DateTime updatedAt,
+  }) async {
+    await _delegate.removeCustodian(
+      placeId: placeId,
+      userId: userId,
+      updatedAt: updatedAt,
+    );
+    final cached = _placesById[placeId];
+    if (cached != null) {
+      _placesById[placeId] = cached.copyWith(
+        custodianIds:
+            cached.custodianIds.where((id) => id != userId).toList(),
+        updatedAt: updatedAt,
+      );
+    }
+  }
+
+  @override
   Stream<List<Place>> watchNearbyPlaces({
     required double latitude,
     required double longitude,

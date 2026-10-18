@@ -1,5 +1,6 @@
 import 'package:echoes/app/theme.dart';
 import 'package:echoes/core/location/location_service.dart';
+import 'package:echoes/core/media/audio_recording_service.dart';
 import 'package:echoes/core/media/image_compression_service.dart';
 import 'package:echoes/core/media/media_picker_service.dart';
 import 'package:echoes/core/media/media_upload_service.dart';
@@ -39,6 +40,7 @@ class AddMemoryPlaceholderScreen extends StatelessWidget {
             locationService: context.read<LocationService>(),
             mediaPickerService: context.read<MediaPickerService>(),
             imageCompressionService: context.read<ImageCompressionService>(),
+            audioRecordingService: context.read<AudioRecordingService?>(),
             mediaUploadService: context.read<MediaUploadService>(),
             sentimentAnalyzer: context.read<SentimentAnalyzer>(),
             placeRepository: context.read<PlaceRepository>(),
@@ -110,7 +112,7 @@ class _AddMemoryViewState extends State<_AddMemoryView> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Add text, privacy, and the current GPS point. Photos and audio come next.',
+                  'Add text, an optional photo or voice note, privacy, and the current GPS point.',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                     color: EchoesColors.textSecondary,
                     height: 1.35,
@@ -121,6 +123,8 @@ class _AddMemoryViewState extends State<_AddMemoryView> {
                 const _ErrorRecoveryBanner(),
                 const SizedBox(height: 16),
                 const _PhotoSelector(),
+                const SizedBox(height: 16),
+                const _AudioRecorder(),
                 const SizedBox(height: 16),
                 TextFormField(
                   key: const ValueKey('memoryTextField'),
@@ -182,6 +186,59 @@ class _AddMemoryViewState extends State<_AddMemoryView> {
     context.read<AddMemoryCubit>().submit(
       userId: session.userId,
       textContent: _textController.text,
+    );
+  }
+}
+
+class _AudioRecorder extends StatelessWidget {
+  const _AudioRecorder();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<AddMemoryCubit, AddMemoryState>(
+      builder: (context, state) {
+        final cubit = context.read<AddMemoryCubit>();
+        return DecoratedBox(
+          decoration: BoxDecoration(
+            color: EchoesColors.surface,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: EchoesColors.elevatedSurface),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                const Icon(Icons.mic_none, color: EchoesColors.sunsetGold),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    state.isRecording
+                        ? 'Recording ${state.recordingSeconds}s / 60s'
+                        : state.audioPath == null
+                        ? 'Optional voice note (up to 60 seconds)'
+                        : 'Voice note ready',
+                  ),
+                ),
+                if (state.audioPath != null && !state.isRecording)
+                  IconButton(
+                    key: const ValueKey('removeAudioButton'),
+                    tooltip: 'Remove voice note',
+                    onPressed: cubit.removeAudioRecording,
+                    icon: const Icon(Icons.delete_outline),
+                  ),
+                IconButton(
+                  key: const ValueKey('recordAudioButton'),
+                  tooltip: state.isRecording ? 'Stop recording' : 'Record',
+                  onPressed: state.isRecording
+                      ? cubit.stopAudioRecording
+                      : cubit.startAudioRecording,
+                  icon: Icon(state.isRecording ? Icons.stop : Icons.mic),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

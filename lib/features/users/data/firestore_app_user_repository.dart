@@ -90,6 +90,15 @@ class FirestoreAppUserRepository implements AppUserRepository {
   }
 
   @override
+  Future<void> delete(String id) async {
+    await _collection.doc(id).delete();
+    if (_currentUserId == id) {
+      _currentUserId = null;
+      _controller.add(null);
+    }
+  }
+
+  @override
   Future<void> updateDefaultPrivacy(PrivacyType privacy) async {
     final userId = _currentUserId;
     if (userId == null) {

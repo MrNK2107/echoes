@@ -24,17 +24,19 @@ class MemoryCard extends StatelessWidget {
               Row(
                 children: [
                   Icon(
-                    memory.privacy == PrivacyType.public
-                        ? Icons.public
-                        : Icons.lock_outline,
+                    _privacyIcon(memory.privacy),
                     size: 18,
                     color: EchoesColors.sunsetGold,
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    memory.privacy == PrivacyType.public ? 'Public' : 'Private',
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: EchoesColors.sunsetGold,
+                  Flexible(
+                    child: Text(
+                      _privacyLabel(memory),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: EchoesColors.sunsetGold,
+                      ),
                     ),
                   ),
                   const Spacer(),
@@ -93,6 +95,31 @@ class MemoryCard extends StatelessWidget {
   String _formatDate(DateTime dateTime) {
     final local = dateTime.toLocal();
     return '${local.day.toString().padLeft(2, '0')}/${local.month.toString().padLeft(2, '0')}/${local.year}';
+  }
+
+  IconData _privacyIcon(PrivacyType privacy) {
+    return switch (privacy) {
+      PrivacyType.public => Icons.public,
+      PrivacyType.private => Icons.lock_outline,
+      PrivacyType.tagged => Icons.alternate_email,
+      PrivacyType.timeRelease => Icons.schedule,
+      PrivacyType.community => Icons.groups_outlined,
+    };
+  }
+
+  String _privacyLabel(Memory memory) {
+    return switch (memory.privacy) {
+      PrivacyType.public => 'Public',
+      PrivacyType.private => 'Private',
+      PrivacyType.tagged =>
+        'Tagged (${memory.taggedUserIds.length} user${memory.taggedUserIds.length == 1 ? '' : 's'})',
+      PrivacyType.timeRelease =>
+        memory.releaseDate == null
+            ? 'Time-release'
+            : 'Releases ${_formatDate(memory.releaseDate!)}',
+      PrivacyType.community =>
+        memory.communityId == null ? 'Community' : 'Community memory',
+    };
   }
 
   bool _showsCreator(Memory memory) {

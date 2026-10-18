@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:echoes/features/aura/data/sentiment_result_dto.dart';
 import 'package:echoes/features/memories/domain/memory.dart';
 import 'package:echoes/features/privacy/domain/privacy_type.dart';
@@ -67,8 +68,8 @@ class MemoryDto {
       releaseDate: _optionalDate(map['releaseDate']),
       isDeleted: map['isDeleted']! as bool,
       deletedAt: _optionalDate(map['deletedAt']),
-      createdAt: DateTime.parse(map['createdAt']! as String),
-      updatedAt: DateTime.parse(map['updatedAt']! as String),
+      createdAt: _requiredDate(map['createdAt']),
+      updatedAt: _requiredDate(map['updatedAt']),
     );
   }
 
@@ -128,15 +129,25 @@ class MemoryDto {
       'privacy': privacy,
       'taggedUserIds': taggedUserIds,
       'communityId': communityId,
-      'releaseDate': releaseDate?.toUtc().toIso8601String(),
+      'releaseDate': releaseDate == null
+          ? null
+          : Timestamp.fromDate(releaseDate!.toUtc()),
       'isDeleted': isDeleted,
-      'deletedAt': deletedAt?.toUtc().toIso8601String(),
-      'createdAt': createdAt.toUtc().toIso8601String(),
-      'updatedAt': updatedAt.toUtc().toIso8601String(),
+      'deletedAt': deletedAt == null
+          ? null
+          : Timestamp.fromDate(deletedAt!.toUtc()),
+      'createdAt': Timestamp.fromDate(createdAt.toUtc()),
+      'updatedAt': Timestamp.fromDate(updatedAt.toUtc()),
     };
   }
 
   static DateTime? _optionalDate(Object? value) {
-    return value == null ? null : DateTime.parse(value as String);
+    return value == null ? null : _requiredDate(value);
+  }
+
+  static DateTime _requiredDate(Object? value) {
+    if (value is Timestamp) return value.toDate().toUtc();
+    if (value is String) return DateTime.parse(value);
+    throw FormatException('Unsupported Firestore date: $value');
   }
 }

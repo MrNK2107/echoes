@@ -5,6 +5,7 @@ import 'package:echoes/features/communities/domain/community_repository.dart';
 import 'package:echoes/features/communities/domain/community_type.dart';
 import 'package:echoes/features/communities/presentation/community_badge.dart';
 import 'package:echoes/features/communities/presentation/community_detail_screen.dart';
+import 'package:echoes/features/institutions/presentation/institution_list_screen.dart';
 import 'package:echoes/features/notifications/domain/notification_delivery_service.dart';
 import 'package:echoes/shared/widgets/empty_state.dart';
 import 'package:echoes/shared/widgets/loading_state.dart';
@@ -79,7 +80,7 @@ class _CommunityModePreview extends StatelessWidget {
     return Wrap(
       spacing: 8,
       runSpacing: 8,
-      children: const [
+      children: [
         _CommunityModeChip(
           icon: Icons.place_outlined,
           title: 'Geographic',
@@ -94,6 +95,11 @@ class _CommunityModePreview extends StatelessWidget {
           icon: Icons.account_balance_outlined,
           title: 'Institution',
           subtitle: 'Schools and venues',
+          onTap: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const InstitutionListScreen(),
+            ),
+          ),
         ),
       ],
     );
@@ -105,42 +111,47 @@ class _CommunityModeChip extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.subtitle,
+    this.onTap,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 156,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: EchoesColors.surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: EchoesColors.elevatedSurface),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: EchoesColors.celestialBlue),
-          const SizedBox(height: 8),
-          Text(
-            title,
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              color: EchoesColors.textPrimary,
-              fontWeight: FontWeight.w700,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 156,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: EchoesColors.surface,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: EchoesColors.elevatedSurface),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: EchoesColors.celestialBlue),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                color: EchoesColors.textPrimary,
+                fontWeight: FontWeight.w700,
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: EchoesColors.textSecondary),
-          ),
-        ],
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: EchoesColors.textSecondary),
+            ),
+          ],
+        ),
       ),
     );
   }

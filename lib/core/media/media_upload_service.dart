@@ -4,4 +4,10 @@ abstract interface class MediaUploadService {
     required String imagePath,
     required String memoryId,
   });
+
+  Future<String?> uploadMemoryAudio({
+    required String userId,
+    required String audioPath,
+    required String memoryId,
+  });
 }

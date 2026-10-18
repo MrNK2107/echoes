@@ -100,6 +100,11 @@ class _FakeAppUserRepository implements AppUserRepository {
   }
 
   @override
+  Future<void> delete(String id) async {
+    users.remove(id);
+  }
+
+  @override
   Future<void> updateDefaultPrivacy(PrivacyType privacy) async {
     final userId = currentUserId;
     final user = userId == null ? null : users[userId];

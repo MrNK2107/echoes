@@ -1,6 +1,7 @@
 import 'package:echoes/core/media/local_image_cache.dart';
 import 'package:echoes/features/aura/domain/sentiment_result.dart';
 import 'package:echoes/features/memories/domain/memory.dart';
+import 'package:echoes/features/memories/domain/memory_repository.dart';
 import 'package:echoes/features/memories/presentation/memory_detail_sheet.dart';
 import 'package:echoes/features/memories/presentation/memory_image_preview.dart';
 import 'package:echoes/features/privacy/domain/privacy_type.dart';
@@ -10,15 +11,22 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   testWidgets(
-    'MemoryDetailSheet renders memory details and restore placeholder',
+    'MemoryDetailSheet renders memory details and restore for deleted memories',
     (tester) async {
       await tester.pumpWidget(
-        RepositoryProvider(
-          create: (_) => LocalImageCache(),
+        MultiRepositoryProvider(
+          providers: [
+            RepositoryProvider<LocalImageCache>(
+              create: (_) => LocalImageCache(),
+            ),
+            RepositoryProvider<MemoryRepository>(
+              create: (_) => _FakeMemoryRepository(),
+            ),
+          ],
           child: MaterialApp(
             home: Scaffold(
               body: MemoryDetailSheet(
-                memory: _memory(),
+                memory: _memory(isDeleted: true),
                 onEdit: () {},
                 onDelete: () {},
               ),
@@ -35,7 +43,7 @@ void main() {
       expect(find.byKey(const ValueKey('editMemoryButton')), findsOneWidget);
       expect(find.byKey(const ValueKey('deleteMemoryButton')), findsOneWidget);
       expect(
-        find.byKey(const ValueKey('restoreMemoryPlaceholderButton')),
+        find.byKey(const ValueKey('restoreMemoryButton')),
         findsOneWidget,
       );
     },
@@ -61,7 +69,7 @@ void main() {
   });
 }
 
-Memory _memory({PrivacyType privacy = PrivacyType.public}) {
+Memory _memory({PrivacyType privacy = PrivacyType.public, bool isDeleted = false}) {
   return Memory(
     id: 'memory-1',
     userId: 'user-1',
@@ -79,8 +87,73 @@ Memory _memory({PrivacyType privacy = PrivacyType.public}) {
     ),
     privacy: privacy,
     taggedUserIds: const [],
-    isDeleted: false,
+    isDeleted: isDeleted,
     createdAt: DateTime.utc(2026, 5, 14),
     updatedAt: DateTime.utc(2026, 5, 14),
   );
+}
+
+class _FakeMemoryRepository implements MemoryRepository {
+  @override
+  Future<void> create(Memory memory) async {}
+
+  @override
+  Future<Memory?> findById(String id) async => null;
+
+  @override
+  Future<void> restore({
+    required String memoryId,
+    required DateTime restoredAt,
+  }) async {}
+
+  @override
+  Future<void> softDelete({
+    required String memoryId,
+    required DateTime deletedAt,
+  }) async {}
+
+  @override
+  Future<void> updateImageUrl({
+    required String memoryId,
+    required String imageUrl,
+    required DateTime updatedAt,
+  }) async {}
+
+  @override
+  Stream<List<Memory>> watchCommunityMemories(
+    String communityId, {
+    int limit = 50,
+  }) {
+    return Stream.value([]);
+  }
+
+  @override
+  Future<void> updateTextAndPrivacy({
+    required String memoryId,
+    required String textContent,
+    required PrivacyType privacy,
+    required List<String> taggedUserIds,
+    required DateTime? releaseDate,
+    required String? communityId,
+  }) async {}
+
+  @override
+  Stream<List<Memory>> watchMemoriesForPlace(String placeId) {
+    return Stream.value([]);
+  }
+
+  @override
+  Stream<List<Memory>> watchMemoriesForUser(String userId) {
+    return Stream.value([]);
+  }
+
+  @override
+  Stream<List<Memory>> watchVisibleMemoriesForPlace({
+    required String placeId,
+    required String viewerId,
+    required Set<String> viewerCommunityIds,
+    required DateTime now,
+  }) {
+    return Stream.value([]);
+  }
 }

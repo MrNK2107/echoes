@@ -26,4 +26,18 @@ class FirebaseStorageMediaUploadService implements MediaUploadService {
     );
     return task.ref.getDownloadURL();
   }
+
+  @override
+  Future<String?> uploadMemoryAudio({
+    required String userId,
+    required String audioPath,
+    required String memoryId,
+  }) async {
+    final ref = _storage.ref('memory-audio/$userId/$memoryId.m4a');
+    final task = await ref.putFile(
+      File(audioPath),
+      SettableMetadata(contentType: 'audio/mp4'),
+    );
+    return task.ref.getDownloadURL();
+  }
 }

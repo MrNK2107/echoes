@@ -13,5 +13,13 @@ service firebase.storage {
         request.resource.size <= 1 * 1024 * 1024 &&
         request.resource.contentType.matches('image/.*');
     }
+
+    match /memory-audio/{userId}/{fileName} {
+      allow read: if signedIn();
+      allow write: if signedIn() &&
+        request.auth.uid == userId &&
+        request.resource.size <= 5 * 1024 * 1024 &&
+        request.resource.contentType.matches('audio/.*');
+    }
   }
 }

@@ -1,4 +1,5 @@
 import 'package:echoes/app/theme.dart';
+import 'package:echoes/features/aura/presentation/aura_history_chart.dart';
 import 'package:echoes/features/aura/presentation/aura_preview.dart';
 import 'package:echoes/features/memories/domain/memory.dart';
 import 'package:echoes/features/memories/domain/memory_repository.dart';
@@ -6,7 +7,7 @@ import 'package:echoes/features/memories/presentation/memory_card.dart';
 import 'package:echoes/features/memories/presentation/memory_detail_sheet.dart';
 import 'package:echoes/features/places/domain/place.dart';
 import 'package:echoes/features/places/presentation/custodianship_transfer_button.dart';
-import 'package:echoes/features/places/presentation/guardian_reassignment_placeholder.dart';
+import 'package:echoes/features/places/presentation/guardian_reassignment_placeholder.dart' as reassign;
 import 'package:echoes/features/places/presentation/place_custodians.dart';
 import 'package:echoes/shared/widgets/empty_state.dart';
 import 'package:echoes/shared/widgets/loading_state.dart';
@@ -45,6 +46,8 @@ class PlaceDetailSheet extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           AuraPreview(aura: place.aura),
+          const SizedBox(height: 12),
+          AuraHistoryChart(placeId: place.id),
           const SizedBox(height: 16),
           PlaceCustodians(custodianIds: place.custodianIds),
           if (currentUserId != null) ...[
@@ -54,7 +57,7 @@ class PlaceDetailSheet extends StatelessWidget {
               currentUserId: currentUserId!,
             ),
             const SizedBox(height: 12),
-            GuardianReassignmentPlaceholder(
+            reassign.GuardianReassignment(
               place: place,
               currentUserId: currentUserId!,
             ),

@@ -3,13 +3,16 @@ import 'package:echoes/features/memories/domain/memory_repository.dart';
 import 'package:echoes/features/memories/domain/pending_memory_upload_queue.dart';
 
 class PendingMemoryUploadSync {
-  const PendingMemoryUploadSync({
+  PendingMemoryUploadSync({
     required PendingMemoryUploadQueue queue,
     required MediaUploadService mediaUploadService,
     required MemoryRepository memoryRepository,
+    this.maxRetries = 5,
   }) : _queue = queue,
        _mediaUploadService = mediaUploadService,
        _memoryRepository = memoryRepository;
+
+  final int maxRetries;
 
   final PendingMemoryUploadQueue _queue;
   final MediaUploadService _mediaUploadService;
@@ -20,6 +23,11 @@ class PendingMemoryUploadSync {
     final uploads = await _queue.pendingUploads();
 
     for (final upload in uploads) {
+      if (upload.attempts >= maxRetries) {
+        await _queue.remove(upload.memoryId);
+        continue;
+      }
+
       final attemptedAt = DateTime.now().toUtc();
       try {
         await _queue.recordAttempt(

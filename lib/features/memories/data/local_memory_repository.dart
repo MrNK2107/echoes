@@ -15,8 +15,58 @@ class LocalMemoryRepository implements MemoryRepository {
   }
 
   @override
+  Stream<List<Memory>> watchCommunityMemories(
+    String communityId, {
+    int limit = 50,
+  }) async* {
+    yield _memories
+        .where(
+          (m) => m.communityId == communityId && !m.isDeleted,
+        )
+        .toList();
+    yield* _controller.stream.map(
+      (_) => _memories
+          .where((m) => m.communityId == communityId && !m.isDeleted)
+          .toList(),
+    );
+  }
+
+  @override
   Future<Memory?> findById(String id) async {
     return _memories.where((memory) => memory.id == id).firstOrNull;
+  }
+
+  @override
+  Future<void> restore({
+    required String memoryId,
+    required DateTime restoredAt,
+  }) async {
+    final index = _memories.indexWhere((memory) => memory.id == memoryId);
+    if (index == -1) {
+      return;
+    }
+    final current = _memories[index];
+    _memories[index] = Memory(
+      id: current.id,
+      userId: current.userId,
+      placeId: current.placeId,
+      imageUrl: current.imageUrl,
+      audioUrl: current.audioUrl,
+      textContent: current.textContent,
+      latitude: current.latitude,
+      longitude: current.longitude,
+      geohash: current.geohash,
+      sentiment: current.sentiment,
+      privacy: current.privacy,
+      taggedUserIds: current.taggedUserIds,
+      communityId: current.communityId,
+      releaseDate: current.releaseDate,
+      isDeleted: false,
+      deletedAt: null,
+      createdAt: current.createdAt,
+      updatedAt: restoredAt,
+    );
+    _controller.add(List.unmodifiable(_memories));
   }
 
   @override

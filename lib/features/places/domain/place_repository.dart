@@ -18,4 +18,18 @@ abstract interface class PlaceRepository {
   Future<void> create(Place place);
 
   Future<void> save(Place place);
+
+  /// Adds a [userId] as a custodian of the place identified by [placeId].
+  Future<void> addCustodian({
+    required String placeId,
+    required String userId,
+    required DateTime updatedAt,
+  });
+
+  /// Removes a [userId] from the custodians of the place identified by [placeId].
+  Future<void> removeCustodian({
+    required String placeId,
+    required String userId,
+    required DateTime updatedAt,
+  });
 }

@@ -13,6 +13,12 @@ abstract interface class MemoryRepository {
 
   Stream<List<Memory>> watchMemoriesForUser(String userId);
 
+  /// Watches memories scoped to a specific community.
+  Stream<List<Memory>> watchCommunityMemories(
+    String communityId, {
+    int limit = 50,
+  });
+
   Future<Memory?> findById(String id);
 
   Future<void> create(Memory memory);
@@ -35,5 +41,11 @@ abstract interface class MemoryRepository {
   Future<void> softDelete({
     required String memoryId,
     required DateTime deletedAt,
+  });
+
+  /// Restores a soft-deleted memory by clearing [isDeleted] and [deletedAt].
+  Future<void> restore({
+    required String memoryId,
+    required DateTime restoredAt,
   });
 }

@@ -19,6 +19,7 @@ class _AuthScreenState extends State<AuthScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isRegistering = false;
+  bool _isAgeConfirmed = false;
 
   @override
   void dispose() {
@@ -92,6 +93,23 @@ class _AuthScreenState extends State<AuthScreen> {
                             prefixIcon: Icon(Icons.lock_outline),
                           ),
                         ),
+                        if (_isRegistering) ...[
+                          const SizedBox(height: 12),
+                          CheckboxListTile(
+                            key: const ValueKey('ageConfirmationCheckbox'),
+                            contentPadding: EdgeInsets.zero,
+                            controlAffinity: ListTileControlAffinity.leading,
+                            value: _isAgeConfirmed,
+                            onChanged: isSubmitting
+                                ? null
+                                : (value) => setState(
+                                    () => _isAgeConfirmed = value ?? false,
+                                  ),
+                            title: const Text(
+                              'I confirm that I am at least 13 years old.',
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 24),
                         FilledButton.icon(
                           key: const ValueKey('authSubmitButton'),
@@ -119,9 +137,10 @@ class _AuthScreenState extends State<AuthScreen> {
                           onPressed: isSubmitting
                               ? null
                               : () {
-                                  setState(
-                                    () => _isRegistering = !_isRegistering,
-                                  );
+                                  setState(() {
+                                    _isRegistering = !_isRegistering;
+                                    _isAgeConfirmed = false;
+                                  });
                                 },
                           child: Text(
                             _isRegistering
@@ -151,6 +170,14 @@ class _AuthScreenState extends State<AuthScreen> {
     final password = _passwordController.text;
 
     if (_isRegistering) {
+      if (!_isAgeConfirmed) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('You must be at least 13 to create an account.'),
+          ),
+        );
+        return;
+      }
       cubit.register(
         email: email,
         password: password,

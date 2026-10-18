@@ -10,7 +10,9 @@ typedef AppBuilder = Widget Function();
 void bootstrap(AppBuilder builder, {CrashReportingService? crashReporting}) {
   FlutterError.onError = (details) {
     FlutterError.presentError(details);
-    unawaited(crashReporting?.recordFlutterError(details));
+    unawaited(
+      crashReporting?.recordFlutterError(details).catchError((_) {}),
+    );
     Zone.current.handleUncaughtError(
       details.exception,
       details.stack ?? StackTrace.current,
@@ -22,7 +24,10 @@ void bootstrap(AppBuilder builder, {CrashReportingService? crashReporting}) {
   };
 
   runZonedGuarded(() => runApp(builder()), (error, stackTrace) {
-    unawaited(crashReporting?.recordError(error, stackTrace, fatal: true));
+    unawaited(
+      crashReporting?.recordError(error, stackTrace, fatal: true)
+          .catchError((_) {}),
+    );
     if (kDebugMode) {
       FlutterError.dumpErrorToConsole(
         FlutterErrorDetails(exception: error, stack: stackTrace),

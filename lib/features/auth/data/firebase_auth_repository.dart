@@ -58,6 +58,15 @@ class FirebaseAuthRepository implements AuthRepository {
     return _firebaseAuth.signOut();
   }
 
+  @override
+  Future<void> deleteAccount() async {
+    final user = _firebaseAuth.currentUser;
+    if (user == null) {
+      throw Exception('No authenticated user to delete.');
+    }
+    await user.delete();
+  }
+
   AuthSession? _toSession(User? user) {
     if (user == null || user.email == null) {
       return null;

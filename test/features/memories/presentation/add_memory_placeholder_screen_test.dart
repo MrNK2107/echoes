@@ -338,6 +338,13 @@ class _NoOpMediaUploadService implements MediaUploadService {
   const _NoOpMediaUploadService();
 
   @override
+  Future<String?> uploadMemoryAudio({
+    required String userId,
+    required String audioPath,
+    required String memoryId,
+  }) async => audioPath;
+
+  @override
   Future<String?> uploadMemoryImage({
     required String userId,
     required String imagePath,

@@ -13,4 +13,7 @@ abstract interface class AppUserRepository {
   Future<void> create(AppUser user);
 
   Future<void> updateDefaultPrivacy(PrivacyType privacy);
+
+  /// Deletes the user document with the given [id].
+  Future<void> delete(String id);
 }

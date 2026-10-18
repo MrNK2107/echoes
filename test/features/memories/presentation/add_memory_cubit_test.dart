@@ -499,6 +499,13 @@ class _FakeMediaUploadService implements MediaUploadService {
   final List<String> uploadedImagePaths = [];
 
   @override
+  Future<String?> uploadMemoryAudio({
+    required String userId,
+    required String audioPath,
+    required String memoryId,
+  }) async => audioPath;
+
+  @override
   Future<String?> uploadMemoryImage({
     required String userId,
     required String imagePath,
@@ -510,6 +517,13 @@ class _FakeMediaUploadService implements MediaUploadService {
 }
 
 class _FailingMediaUploadService implements MediaUploadService {
+  @override
+  Future<String?> uploadMemoryAudio({
+    required String userId,
+    required String audioPath,
+    required String memoryId,
+  }) async => throw StateError('offline');
+
   @override
   Future<String?> uploadMemoryImage({
     required String userId,

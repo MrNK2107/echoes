@@ -27,3 +27,37 @@ jobs:
 
       - name: Test
         run: flutter test
+
+      - name: Functions tests
+        working-directory: functions
+        run: npm test
+
+      - name: Firestore rules tests
+        run: npx firebase-tools emulators:exec --only firestore "npm test --prefix rules_test"
+
+  android-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Android integration smoke test
+        uses: ReactiveCircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          script: flutter test integration_test -d emulator-5554

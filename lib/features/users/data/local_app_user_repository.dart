@@ -52,6 +52,15 @@ class LocalAppUserRepository implements AppUserRepository {
   }
 
   @override
+  Future<void> delete(String id) async {
+    _users.remove(id);
+    if (_currentUserId == id) {
+      _currentUserId = null;
+    }
+    _controller.add(null);
+  }
+
+  @override
   Future<void> updateDefaultPrivacy(PrivacyType privacy) async {
     final user = _currentUser;
     if (user == null) {

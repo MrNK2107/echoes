@@ -15,6 +15,11 @@ service cloud.firestore {
         exists(/databases/$(database)/documents/communities/$(communityId)/members/$(request.auth.uid));
     }
 
+    function isCommunityMemberAfter(communityId) {
+      return signedIn() &&
+        existsAfter(/databases/$(database)/documents/communities/$(communityId)/members/$(request.auth.uid));
+    }
+
     function isPlaceCustodian(placeId) {
       return signedIn() &&
         request.auth.uid in get(/databases/$(database)/documents/places/$(placeId)).data.custodianIds;
@@ -49,6 +54,7 @@ service cloud.firestore {
           'taggedUserIds',
           'communityId',
           'releaseDate',
+          'imageUrl',
           'updatedAt'
         ]);
     }
@@ -58,6 +64,16 @@ service cloud.firestore {
         .hasOnly(['isDeleted', 'deletedAt', 'updatedAt']) &&
         resource.data.isDeleted == false &&
         request.resource.data.isDeleted == true;
+    }
+
+    function restoreOnly() {
+      return request.resource.data.diff(resource.data).changedKeys()
+        .hasOnly(['isDeleted', 'deletedAt', 'updatedAt']) &&
+        resource.data.isDeleted == true &&
+        request.resource.data.isDeleted == false &&
+        resource.data.userId == request.auth.uid &&
+        resource.data.deletedAt != null &&
+        request.time < resource.data.deletedAt + duration.value(30, 'd');
     }
 
     match /users/{userId} {
@@ -74,7 +90,8 @@ service cloud.firestore {
     }
 
     match /memories/{memoryId} {
-      allow read: if isVisibleMemory(resource.data);
+      allow get: if isVisibleMemory(resource.data);
+      allow list: if isVisibleMemory(resource.data);
       allow create: if signedIn() &&
         request.resource.data.userId == request.auth.uid &&
         request.resource.data.isDeleted == false;
@@ -88,6 +105,10 @@ service cloud.firestore {
           (
             (resource.data.userId == request.auth.uid || isPlaceCustodian(resource.data.placeId)) &&
             softDeleteOnly()
+          ) ||
+          (
+            resource.data.userId == request.auth.uid &&
+            restoreOnly()
           )
         );
       allow delete: if false;
@@ -96,15 +117,32 @@ service cloud.firestore {
     match /communities/{communityId} {
       allow read: if signedIn();
       allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid;
-      allow update: if isCommunityMember(communityId);
+      allow update: if isCommunityMember(communityId) || isCommunityMemberAfter(communityId);
       allow delete: if false;
 
       match /members/{userId} {
         allow read: if isCommunityMember(communityId) || isSelf(userId);
-        allow create: if isSelf(userId) || get(/databases/$(database)/documents/communities/$(communityId)).data.ownerId == request.auth.uid;
+        allow create: if isSelf(userId) ||
+          get(/databases/$(database)/documents/communities/$(communityId)).data.ownerId == request.auth.uid ||
+          getAfter(/databases/$(database)/documents/communities/$(communityId)).data.ownerId == request.auth.uid;
         allow update: if get(/databases/$(database)/documents/communities/$(communityId)).data.ownerId == request.auth.uid;
         allow delete: if isSelf(userId) || get(/databases/$(database)/documents/communities/$(communityId)).data.ownerId == request.auth.uid;
       }
+    }
+
+    match /institutions/{institutionId} {
+      allow read: if signedIn();
+      allow create: if signedIn() &&
+        request.auth.uid in request.resource.data.verifiedAdminUserIds;
+      allow update: if signedIn() &&
+        request.auth.uid in resource.data.verifiedAdminUserIds;
+      allow delete: if false;
+    }
+
+    match /places/{placeId}/auraHistory/{entryId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && isPlaceCustodian(placeId);
+      allow update, delete: if false;
     }
 
     match /transfers/{transferId} {
@@ -124,7 +162,10 @@ service cloud.firestore {
     match /notificationRequests/{requestId} {
       allow read: if false;
       allow create: if signedIn() &&
-        request.resource.data.data.fromUserId == request.auth.uid;
+        (
+          request.resource.data.data.fromUserId == request.auth.uid ||
+          request.resource.data.data.toUserId == request.auth.uid
+        );
       allow update, delete: if false;
     }
   }

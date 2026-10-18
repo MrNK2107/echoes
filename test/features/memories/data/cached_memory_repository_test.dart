@@ -90,6 +90,20 @@ class _FakeMemoryRepository implements MemoryRepository {
   }
 
   @override
+  Future<void> restore({
+    required String memoryId,
+    required DateTime restoredAt,
+  }) async {
+    final memory = saved[memoryId];
+    if (memory == null) return;
+    saved[memoryId] = memory.copyWith(
+      isDeleted: false,
+      deletedAt: null,
+      updatedAt: restoredAt,
+    );
+  }
+
+  @override
   Future<void> softDelete({
     required String memoryId,
     required DateTime deletedAt,
@@ -111,6 +125,14 @@ class _FakeMemoryRepository implements MemoryRepository {
     required String imageUrl,
     required DateTime updatedAt,
   }) async {}
+
+  @override
+  Stream<List<Memory>> watchCommunityMemories(
+    String communityId, {
+    int limit = 50,
+  }) {
+    return Stream.value([]);
+  }
 
   @override
   Future<void> updateTextAndPrivacy({

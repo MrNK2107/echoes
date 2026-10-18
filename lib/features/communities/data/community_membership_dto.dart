@@ -52,6 +52,7 @@ class CommunityMembershipDto {
 
   Map<String, Object?> toMap() {
     return {
+      'userId': userId,
       'role': role,
       'joinedAt': joinedAt.toUtc().toIso8601String(),
       'updatedAt': updatedAt.toUtc().toIso8601String(),

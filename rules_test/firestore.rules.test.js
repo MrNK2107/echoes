@@ -7,6 +7,13 @@ const {
   initializeTestEnvironment,
 } = require("@firebase/rules-unit-testing");
 const { doc, getDoc, setDoc, Timestamp } = require("firebase/firestore");
+const {
+  collection,
+  getDocs,
+  query,
+  where,
+  writeBatch,
+} = require("firebase/firestore");
 
 const projectId = "echoes-rules-test";
 const rules = fs.readFileSync(
@@ -51,6 +58,31 @@ test("memory privacy read rules allow and deny expected viewers", async () => {
   await assertFails(getDoc(doc(strangerDb, "memories/community-memory")));
 });
 
+test("list queries must constrain results to visible memories", async () => {
+  const strangerDb = testEnv.authenticatedContext("stranger").firestore();
+  const unauthenticatedDb = testEnv.unauthenticatedContext().firestore();
+  const placeMemories = query(
+    collection(strangerDb, "memories"),
+    where("placeId", "==", "place-1"),
+    where("isDeleted", "==", false),
+  );
+  const unauthenticatedPlaceMemories = query(
+    collection(unauthenticatedDb, "memories"),
+    where("placeId", "==", "place-1"),
+    where("isDeleted", "==", false),
+  );
+  const publicPlaceMemories = query(
+    collection(strangerDb, "memories"),
+    where("placeId", "==", "place-1"),
+    where("isDeleted", "==", false),
+    where("privacy", "==", "public"),
+  );
+
+  await assertFails(getDocs(placeMemories));
+  await assertSucceeds(getDocs(publicPlaceMemories));
+  await assertFails(getDocs(unauthenticatedPlaceMemories));
+});
+
 test("memory location updates are denied", async () => {
   const creatorDb = testEnv.authenticatedContext("creator").firestore();
 
@@ -64,6 +96,62 @@ test("memory location updates are denied", async () => {
       { merge: true },
     ),
   );
+});
+
+test("memory image url can be attached after upload", async () => {
+  const creatorDb = testEnv.authenticatedContext("creator").firestore();
+
+  await assertSucceeds(
+    setDoc(
+      doc(creatorDb, "memories/private-memory"),
+      {
+        imageUrl: "https://example.test/memory.jpg",
+        updatedAt: Timestamp.now(),
+      },
+      { merge: true },
+    ),
+  );
+});
+
+test("community create batch may include owner membership", async () => {
+  const creatorDb = testEnv.authenticatedContext("creator").firestore();
+  const batch = writeBatch(creatorDb);
+  batch.set(doc(creatorDb, "communities/new-community"), {
+    ownerId: "creator",
+    name: "New Community",
+    description: "A beta community",
+    type: "thematic",
+    memberCount: 1,
+    createdAt: "2026-05-18T00:00:00.000Z",
+    updatedAt: "2026-05-18T00:00:00.000Z",
+  });
+  batch.set(doc(creatorDb, "communities/new-community/members/creator"), {
+    role: "owner",
+    joinedAt: "2026-05-18T00:00:00.000Z",
+    updatedAt: "2026-05-18T00:00:00.000Z",
+  });
+
+  await assertSucceeds(batch.commit());
+});
+
+test("self join can update community member count in one transaction-like batch", async () => {
+  const strangerDb = testEnv.authenticatedContext("stranger").firestore();
+  const batch = writeBatch(strangerDb);
+  batch.set(doc(strangerDb, "communities/community-1/members/stranger"), {
+    role: "member",
+    joinedAt: "2026-05-18T00:00:00.000Z",
+    updatedAt: "2026-05-18T00:00:00.000Z",
+  });
+  batch.set(
+    doc(strangerDb, "communities/community-1"),
+    {
+      memberCount: 2,
+      updatedAt: "2026-05-18T00:00:00.000Z",
+    },
+    { merge: true },
+  );
+
+  await assertSucceeds(batch.commit());
 });
 
 test("place custodians can soft-delete attached memories", async () => {
@@ -158,6 +246,29 @@ test("notification request creation is restricted to the sender", async () => {
   );
   await assertFails(
     setDoc(doc(strangerDb, "notificationRequests/request-2"), request),
+  );
+});
+
+test("transfer recipient can create accepted notification request", async () => {
+  const recipientDb = testEnv.authenticatedContext("recipient").firestore();
+  const request = {
+    type: "transferAccepted",
+    recipientUserId: "creator",
+    title: "Custodianship accepted",
+    body: "recipient accepted your custodianship transfer.",
+    data: {
+      type: "transferAccepted",
+      fromUserId: "creator",
+      toUserId: "recipient",
+      transferId: "pending-transfer",
+      placeId: "place-1",
+    },
+    status: "pending",
+    createdAt: Timestamp.now(),
+  };
+
+  await assertSucceeds(
+    setDoc(doc(recipientDb, "notificationRequests/accepted-1"), request),
   );
 });
 

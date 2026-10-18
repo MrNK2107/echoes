@@ -34,6 +34,29 @@ class CachedMemoryRepository implements MemoryRepository, AppCacheClient {
   }
 
   @override
+  Stream<List<Memory>> watchCommunityMemories(
+    String communityId, {
+    int limit = 50,
+  }) async* {
+    final cached = _memoriesByPlace.values
+        .expand((m) => m)
+        .where((m) => m.communityId == communityId && !m.isDeleted)
+        .toList();
+    if (cached.isNotEmpty) {
+      yield cached;
+    }
+
+    await for (final memories
+        in _delegate.watchCommunityMemories(communityId, limit: limit)) {
+      final snapshot = List<Memory>.unmodifiable(memories);
+      for (final memory in snapshot) {
+        _rememberMemory(memory);
+      }
+      yield snapshot;
+    }
+  }
+
+  @override
   Future<Memory?> findById(String id) async {
     final cached = _memoriesById[id];
     if (cached != null) {
@@ -45,6 +68,38 @@ class CachedMemoryRepository implements MemoryRepository, AppCacheClient {
       _rememberMemory(memory);
     }
     return memory;
+  }
+
+  @override
+  @override
+  Future<void> restore({
+    required String memoryId,
+    required DateTime restoredAt,
+  }) async {
+    await _delegate.restore(memoryId: memoryId, restoredAt: restoredAt);
+    final memory = _memoriesById[memoryId];
+    if (memory != null) {
+      _memoriesById[memoryId] = Memory(
+        id: memory.id,
+        userId: memory.userId,
+        placeId: memory.placeId,
+        imageUrl: memory.imageUrl,
+        audioUrl: memory.audioUrl,
+        textContent: memory.textContent,
+        latitude: memory.latitude,
+        longitude: memory.longitude,
+        geohash: memory.geohash,
+        sentiment: memory.sentiment,
+        privacy: memory.privacy,
+        taggedUserIds: memory.taggedUserIds,
+        communityId: memory.communityId,
+        releaseDate: memory.releaseDate,
+        isDeleted: false,
+        deletedAt: null,
+        createdAt: memory.createdAt,
+        updatedAt: restoredAt,
+      );
+    }
   }
 
   @override

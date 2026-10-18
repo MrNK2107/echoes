@@ -11,4 +11,13 @@ class LocalMediaUploadService implements MediaUploadService {
   }) async {
     return imagePath;
   }
+
+  @override
+  Future<String?> uploadMemoryAudio({
+    required String userId,
+    required String audioPath,
+    required String memoryId,
+  }) async {
+    return audioPath;
+  }
 }

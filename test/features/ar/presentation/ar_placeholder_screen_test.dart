@@ -104,6 +104,12 @@ class _FakeMemoryRepository implements MemoryRepository {
   Future<Memory?> findById(String id) async => null;
 
   @override
+  Future<void> restore({
+    required String memoryId,
+    required DateTime restoredAt,
+  }) async {}
+
+  @override
   Future<void> softDelete({
     required String memoryId,
     required DateTime deletedAt,
@@ -115,6 +121,14 @@ class _FakeMemoryRepository implements MemoryRepository {
     required String imageUrl,
     required DateTime updatedAt,
   }) async {}
+
+  @override
+  Stream<List<Memory>> watchCommunityMemories(
+    String communityId, {
+    int limit = 50,
+  }) {
+    return Stream.value([]);
+  }
 
   @override
   Future<void> updateTextAndPrivacy({
@@ -190,6 +204,20 @@ class _FakePlaceRepository implements PlaceRepository {
 
   @override
   Future<void> save(Place place) async {}
+
+  @override
+  Future<void> addCustodian({
+    required String placeId,
+    required String userId,
+    required DateTime updatedAt,
+  }) async {}
+
+  @override
+  Future<void> removeCustodian({
+    required String placeId,
+    required String userId,
+    required DateTime updatedAt,
+  }) async {}
 
   @override
   Stream<List<Place>> watchNearbyPlaces({

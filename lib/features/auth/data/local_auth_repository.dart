@@ -44,6 +44,12 @@ class LocalAuthRepository implements AuthRepository {
     _controller.add(null);
   }
 
+  @override
+  Future<void> deleteAccount() async {
+    _session = null;
+    _controller.add(null);
+  }
+
   void dispose() {
     _controller.close();
   }

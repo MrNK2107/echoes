@@ -1,8 +1,11 @@
 import 'package:echoes/app/theme.dart';
 import 'package:echoes/features/memories/domain/memory.dart';
+import 'package:echoes/features/memories/domain/memory_repository.dart';
+import 'package:echoes/features/memories/presentation/memory_audio_player.dart';
 import 'package:echoes/features/memories/presentation/memory_image_preview.dart';
 import 'package:echoes/features/privacy/domain/privacy_type.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 class MemoryDetailSheet extends StatelessWidget {
   const MemoryDetailSheet({
@@ -93,6 +96,10 @@ class MemoryDetailSheet extends StatelessWidget {
             const SizedBox(height: 16),
             MemoryImagePreview(imageUrl: memory.imageUrl!, height: 220),
           ],
+          if (memory.audioUrl != null) ...[
+            const SizedBox(height: 16),
+            MemoryAudioPlayer(audioUrl: memory.audioUrl!),
+          ],
           const SizedBox(height: 16),
           Text(
             'Location: ${memory.latitude.toStringAsFixed(4)}, ${memory.longitude.toStringAsFixed(4)}',
@@ -126,13 +133,21 @@ class MemoryDetailSheet extends StatelessWidget {
                   ),
               ],
             ),
-            if (onDelete != null) ...[
+            if (memory.isDeleted) ...[
               const SizedBox(height: 12),
               OutlinedButton.icon(
-                key: const ValueKey('restoreMemoryPlaceholderButton'),
-                onPressed: null,
+                key: const ValueKey('restoreMemoryButton'),
+                onPressed: () async {
+                  await context.read<MemoryRepository>().restore(
+                    memoryId: memory.id,
+                    restoredAt: DateTime.now().toUtc(),
+                  );
+                  if (context.mounted) {
+                    Navigator.of(context).pop();
+                  }
+                },
                 icon: const Icon(Icons.restore_outlined),
-                label: const Text('30-day restore coming soon'),
+                label: const Text('Restore memory'),
               ),
             ],
           ],

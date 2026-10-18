@@ -1,4 +1,5 @@
 import 'package:echoes/app/theme.dart';
+import 'package:echoes/features/auth/domain/auth_repository.dart';
 import 'package:echoes/features/auth/presentation/auth_cubit.dart';
 import 'package:echoes/features/auth/presentation/auth_state.dart';
 import 'package:echoes/features/legacy/application/custodianship_transfer_service.dart';
@@ -59,6 +60,47 @@ class _ProfileContent extends StatelessWidget {
   const _ProfileContent({required this.userId});
 
   final String userId;
+
+  Future<void> _confirmDeleteAccount(BuildContext context) async {
+    final authRepository = context.read<AuthRepository>();
+    final appUserRepository = context.read<AppUserRepository>();
+    final cubit = context.read<AuthCubit>();
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete account'),
+        content: const Text(
+          'This permanently removes your account, profile, and all personal data. '
+          'Memories you created will remain visible to others but will no longer be '
+          'associated with your name. This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Delete permanently'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      final userId = cubit.state.session?.userId;
+      await authRepository.deleteAccount();
+      if (userId != null) {
+        await appUserRepository.delete(userId);
+      }
+    } on Object {
+      // Account deletion failures are unrecoverable for the user;
+      // the app state handles the sign-out via auth stream.
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -139,7 +181,7 @@ class _ProfileContent extends StatelessWidget {
                   Expanded(
                     child: OutlinedButton.icon(
                       key: const ValueKey('deleteAccountPlaceholderButton'),
-                      onPressed: null,
+                      onPressed: () => _confirmDeleteAccount(context),
                       icon: const Icon(Icons.delete_outline),
                       label: const Text('Delete account'),
                     ),

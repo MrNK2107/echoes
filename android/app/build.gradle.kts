@@ -6,6 +6,11 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+val releaseKeystorePath = System.getenv("ANDROID_KEYSTORE_PATH")
+val releaseKeystorePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+val releaseKeyAlias = System.getenv("ANDROID_KEY_ALIAS")
+val releaseKeyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+
 android {
     namespace = "com.phantom.echoes"
     compileSdk = flutter.compileSdkVersion
@@ -21,7 +26,6 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.phantom.echoes"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
@@ -29,14 +33,45 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        manifestPlaceholders["MAPS_API_KEY"] =
+            (project.findProperty("MAPS_API_KEY") as String?)
+                ?: System.getenv("GOOGLE_MAPS_ANDROID_API_KEY")
+                ?: ""
+    }
+
+    signingConfigs {
+        create("release") {
+            if (releaseKeystorePath != null) {
+                storeFile = file(releaseKeystorePath)
+                storePassword = releaseKeystorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
     }
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
         }
+    }
+}
+
+gradle.taskGraph.whenReady {
+    val isRelease = allTasks.any { it.name.contains("Release") }
+    if (isRelease &&
+        listOf(
+            releaseKeystorePath,
+            releaseKeystorePassword,
+            releaseKeyAlias,
+            releaseKeyPassword,
+        ).any { it.isNullOrBlank() }
+    ) {
+        throw GradleException(
+            "Release signing requires ANDROID_KEYSTORE_PATH, " +
+                "ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, and " +
+                "ANDROID_KEY_PASSWORD.",
+        )
     }
 }
 

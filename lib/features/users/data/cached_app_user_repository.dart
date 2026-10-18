@@ -59,6 +59,15 @@ class CachedAppUserRepository implements AppUserRepository, AppCacheClient {
   }
 
   @override
+  Future<void> delete(String id) async {
+    await _delegate.delete(id);
+    _usersById.remove(id);
+    if (_currentUserId == id) {
+      _currentUserId = null;
+    }
+  }
+
+  @override
   Future<void> updateDefaultPrivacy(PrivacyType privacy) async {
     await _delegate.updateDefaultPrivacy(privacy);
     final userId = _currentUserId;

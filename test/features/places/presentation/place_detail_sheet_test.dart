@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:echoes/features/aura/domain/aura_history_entry.dart';
+import 'package:echoes/features/aura/domain/aura_history_repository.dart';
 import 'package:echoes/features/aura/domain/aura_zone.dart';
 import 'package:echoes/features/aura/domain/sentiment_result.dart';
 import 'package:echoes/features/memories/domain/memory.dart';
@@ -73,6 +75,19 @@ void main() {
   });
 }
 
+class _FakeAuraHistoryRepository implements AuraHistoryRepository {
+  @override
+  Future<void> recordSnapshot(AuraHistoryEntry entry) async {}
+
+  @override
+  Stream<List<AuraHistoryEntry>> watchAuraHistory(
+    String placeId, {
+    int limit = 30,
+  }) {
+    return Stream.value([]);
+  }
+}
+
 class _TestApp extends StatelessWidget {
   const _TestApp({required this.memoryRepository, required this.child});
 
@@ -81,9 +96,18 @@ class _TestApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return RepositoryProvider<MemoryRepository>.value(
-      value: memoryRepository,
-      child: MaterialApp(home: Scaffold(body: child)),
+    return MultiRepositoryProvider(
+      providers: [
+        RepositoryProvider<MemoryRepository>.value(value: memoryRepository),
+        RepositoryProvider<AuraHistoryRepository>(
+          create: (_) => _FakeAuraHistoryRepository(),
+        ),
+      ],
+      child: MaterialApp(
+        home: Scaffold(
+          body: SafeArea(child: child),
+        ),
+      ),
     );
   }
 }
@@ -104,6 +128,12 @@ class _FakeMemoryRepository implements MemoryRepository {
   Future<Memory?> findById(String id) async => null;
 
   @override
+  Future<void> restore({
+    required String memoryId,
+    required DateTime restoredAt,
+  }) async {}
+
+  @override
   Future<void> softDelete({
     required String memoryId,
     required DateTime deletedAt,
@@ -115,6 +145,14 @@ class _FakeMemoryRepository implements MemoryRepository {
     required String imageUrl,
     required DateTime updatedAt,
   }) async {}
+
+  @override
+  Stream<List<Memory>> watchCommunityMemories(
+    String communityId, {
+    int limit = 50,
+  }) {
+    return Stream.value([]);
+  }
 
   @override
   Future<void> updateTextAndPrivacy({

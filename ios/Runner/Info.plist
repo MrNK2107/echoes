@@ -28,6 +28,10 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>ECHOES uses the camera to place aura zones near memory places.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>ECHOES uses the microphone only when you choose to record a voice note.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>ECHOES uses your location while the app is open to attach memories to nearby places.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

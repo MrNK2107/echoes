@@ -1,11 +1,17 @@
+import 'dart:async';
+
 import 'package:echoes/core/geo/geohash.dart';
 import 'package:echoes/core/location/location_permission_state.dart';
 import 'package:echoes/core/location/location_service.dart';
+import 'package:echoes/core/media/audio_recording_service.dart';
 import 'package:echoes/core/media/image_compression_service.dart';
+import 'package:echoes/core/media/local_audio_recording_service.dart';
 import 'package:echoes/core/media/media_picker_service.dart';
 import 'package:echoes/core/media/media_upload_service.dart';
 import 'package:echoes/core/media/selected_media.dart';
 import 'package:echoes/features/aura/domain/aura_calculator.dart';
+import 'package:echoes/features/aura/domain/aura_history_entry.dart';
+import 'package:echoes/features/aura/domain/aura_history_repository.dart';
 import 'package:echoes/features/aura/domain/aura_zone.dart';
 import 'package:echoes/features/aura/domain/sentiment_analyzer.dart';
 import 'package:echoes/features/communities/application/geographic_community_service.dart';
@@ -28,6 +34,7 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
     required LocationService locationService,
     required MediaPickerService mediaPickerService,
     required ImageCompressionService imageCompressionService,
+    AudioRecordingService? audioRecordingService,
     required MediaUploadService mediaUploadService,
     required SentimentAnalyzer sentimentAnalyzer,
     required PlaceRepository placeRepository,
@@ -36,12 +43,15 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
     GeographicCommunityService? geographicCommunityService,
     TimeBasedCommunityService? timeBasedCommunityService,
     PendingMemoryUploadQueue? pendingUploadQueue,
+    AuraHistoryRepository? auraHistoryRepository,
     PrivacyType initialPrivacy = PrivacyType.public,
     AuraCalculator? auraCalculator,
     Uuid? uuid,
   }) : _locationService = locationService,
        _mediaPickerService = mediaPickerService,
        _imageCompressionService = imageCompressionService,
+       _audioRecordingService =
+           audioRecordingService ?? LocalAudioRecordingService(),
        _mediaUploadService = mediaUploadService,
        _sentimentAnalyzer = sentimentAnalyzer,
        _auraCalculator = auraCalculator ?? AuraCalculator(),
@@ -51,6 +61,7 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
        _geographicCommunityService = geographicCommunityService,
        _timeBasedCommunityService = timeBasedCommunityService,
        _pendingUploadQueue = pendingUploadQueue,
+       _auraHistoryRepository = auraHistoryRepository,
        _uuid = uuid ?? const Uuid(),
        super(AddMemoryState.initial(privacy: initialPrivacy));
 
@@ -59,6 +70,7 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
   final LocationService _locationService;
   final MediaPickerService _mediaPickerService;
   final ImageCompressionService _imageCompressionService;
+  final AudioRecordingService _audioRecordingService;
   final MediaUploadService _mediaUploadService;
   final SentimentAnalyzer _sentimentAnalyzer;
   final AuraCalculator _auraCalculator;
@@ -68,7 +80,68 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
   final GeographicCommunityService? _geographicCommunityService;
   final TimeBasedCommunityService? _timeBasedCommunityService;
   final PendingMemoryUploadQueue? _pendingUploadQueue;
+  final AuraHistoryRepository? _auraHistoryRepository;
   final Uuid _uuid;
+  Timer? _recordingTimer;
+
+  Future<void> startAudioRecording() async {
+    try {
+      if (!await _audioRecordingService.hasPermission()) {
+        emit(
+          state.copyWith(
+            status: AddMemoryStatus.failure,
+            errorMessage: 'Microphone permission is required for voice notes.',
+          ),
+        );
+        return;
+      }
+      await _audioRecordingService.start();
+      emit(
+        state.copyWith(
+          isRecording: true,
+          recordingSeconds: 0,
+          clearAudioPath: true,
+        ),
+      );
+      _recordingTimer?.cancel();
+      _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        final seconds = state.recordingSeconds + 1;
+        emit(state.copyWith(recordingSeconds: seconds));
+        if (seconds >= 60) {
+          unawaited(stopAudioRecording());
+        }
+      });
+    } on Object catch (error) {
+      emit(
+        state.copyWith(
+          status: AddMemoryStatus.failure,
+          errorMessage: 'Could not start recording (${error.runtimeType}).',
+        ),
+      );
+    }
+  }
+
+  Future<void> stopAudioRecording() async {
+    _recordingTimer?.cancel();
+    _recordingTimer = null;
+    final path = await _audioRecordingService.stop();
+    emit(state.copyWith(audioPath: path, isRecording: false));
+  }
+
+  Future<void> removeAudioRecording() async {
+    _recordingTimer?.cancel();
+    _recordingTimer = null;
+    if (state.isRecording) {
+      await _audioRecordingService.cancel();
+    }
+    emit(
+      state.copyWith(
+        clearAudioPath: true,
+        isRecording: false,
+        recordingSeconds: 0,
+      ),
+    );
+  }
 
   void setPrivacy(PrivacyType privacy) {
     emit(state.copyWith(privacy: privacy));
@@ -124,14 +197,25 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
   }
 
   Future<void> pickFromCamera() async {
-    await _pickImage(_mediaPickerService.pickFromCamera);
+    await _pickImage(
+      _mediaPickerService.pickFromCamera,
+      failureMessage:
+          'Could not open the camera. Check camera permission and try again.',
+    );
   }
 
   Future<void> pickFromGallery() async {
-    await _pickImage(_mediaPickerService.pickFromGallery);
+    await _pickImage(
+      _mediaPickerService.pickFromGallery,
+      failureMessage:
+          'Could not open the gallery. Check photo permission and try again.',
+    );
   }
 
-  Future<void> _pickImage(Future<SelectedMedia?> Function() pick) async {
+  Future<void> _pickImage(
+    Future<SelectedMedia?> Function() pick, {
+    required String failureMessage,
+  }) async {
     try {
       final media = await pick();
       if (media != null) {
@@ -141,7 +225,7 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
       emit(
         state.copyWith(
           status: AddMemoryStatus.failure,
-          errorMessage: error.toString(),
+          errorMessage: '$failureMessage (${error.runtimeType})',
         ),
       );
     }
@@ -233,6 +317,14 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
           );
         }
       }
+      String? uploadedAudioUrl;
+      if (state.audioPath != null) {
+        uploadedAudioUrl = await _mediaUploadService.uploadMemoryAudio(
+          userId: userId,
+          audioPath: state.audioPath!,
+          memoryId: memoryId,
+        );
+      }
       var place = await _placeRepository.findNearestPlace(
         latitude: location.latitude,
         longitude: location.longitude,
@@ -265,6 +357,7 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
         userId: userId,
         placeId: place.id,
         imageUrl: uploadedImageUrl,
+        audioUrl: uploadedAudioUrl,
         textContent: textContent.trim(),
         latitude: location.latitude,
         longitude: location.longitude,
@@ -326,6 +419,15 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
         now: now,
       );
 
+      // Record aura history snapshot
+      final auraHistoryEntry = AuraHistoryEntry(
+        id: _uuid.v4(),
+        placeId: place.id,
+        aura: aura,
+        recordedAt: now,
+      );
+      await _auraHistoryRepository?.recordSnapshot(auraHistoryEntry);
+
       emit(state.copyWith(status: AddMemoryStatus.success));
     } on Object catch (error) {
       emit(
@@ -335,6 +437,13 @@ class AddMemoryCubit extends Cubit<AddMemoryState> {
         ),
       );
     }
+  }
+
+  @override
+  Future<void> close() async {
+    _recordingTimer?.cancel();
+    await _audioRecordingService.dispose();
+    return super.close();
   }
 
   String? _validatePrivacy() {

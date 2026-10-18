@@ -23,8 +23,7 @@ class AuthCubit extends Cubit<AuthState> {
 
   void start() {
     _sessionSubscription?.cancel();
-    _sessionSubscription = _repository.watchSession().listen((session) async {
-      await _userRepository.setCurrentUserId(session?.userId);
+    _sessionSubscription = _repository.watchSession().listen((session) {
       emit(
         AuthState(
           status: session == null
@@ -33,7 +32,16 @@ class AuthCubit extends Cubit<AuthState> {
           session: session,
         ),
       );
+      unawaited(_deferredUserInit(session));
     });
+  }
+
+  Future<void> _deferredUserInit(AuthSession? session) async {
+    try {
+      await _userRepository.setCurrentUserId(session?.userId);
+    } on Object {
+      // User profile setup is non-critical; auth state is already emitted.
+    }
   }
 
   Future<void> signIn({required String email, required String password}) async {
@@ -93,26 +101,30 @@ class AuthCubit extends Cubit<AuthState> {
     required String email,
     required String? displayName,
   }) async {
-    final existing = await _userRepository.findById(userId);
-    if (existing != null) {
-      await _userRepository.setCurrentUserId(userId);
-      return;
-    }
+    try {
+      final existing = await _userRepository.findById(userId);
+      if (existing != null) {
+        await _userRepository.setCurrentUserId(userId);
+        return;
+      }
 
-    final now = DateTime.now().toUtc();
-    await _userRepository.create(
-      AppUser(
-        id: userId,
-        displayName: displayName,
-        email: email,
-        defaultPrivacy: PrivacyType.public,
-        managedPlaceIds: const [],
-        communityIds: const [],
-        createdAt: now,
-        updatedAt: now,
-      ),
-    );
-    await _userRepository.setCurrentUserId(userId);
+      final now = DateTime.now().toUtc();
+      await _userRepository.create(
+        AppUser(
+          id: userId,
+          displayName: displayName,
+          email: email,
+          defaultPrivacy: PrivacyType.public,
+          managedPlaceIds: const [],
+          communityIds: const [],
+          createdAt: now,
+          updatedAt: now,
+        ),
+      );
+      await _userRepository.setCurrentUserId(userId);
+    } on Object {
+      // Profile creation failure should not prevent app usage.
+    }
   }
 
   @override

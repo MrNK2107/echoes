@@ -6,25 +6,34 @@ import 'package:echoes/core/analytics/firebase_analytics_service.dart';
 import 'package:echoes/core/analytics/local_analytics_service.dart';
 import 'package:echoes/core/cache/app_cache_registry.dart';
 import 'package:echoes/core/config/app_config.dart';
+import 'package:echoes/core/connectivity/connectivity_monitor.dart';
 import 'package:echoes/core/location/geolocator_location_service.dart';
 import 'package:echoes/core/location/location_service.dart';
+import 'package:echoes/core/media/audio_recording_service.dart';
 import 'package:echoes/core/media/dart_image_compression_service.dart';
+import 'package:echoes/core/media/device_audio_recording_service.dart';
 import 'package:echoes/core/media/firebase_storage_media_upload_service.dart';
 import 'package:echoes/core/media/image_compression_service.dart';
 import 'package:echoes/core/media/image_picker_media_service.dart';
+import 'package:echoes/core/media/local_audio_recording_service.dart';
 import 'package:echoes/core/media/local_image_cache.dart';
 import 'package:echoes/core/media/local_media_upload_service.dart';
 import 'package:echoes/core/media/media_picker_service.dart';
 import 'package:echoes/core/media/media_upload_service.dart';
+import 'package:echoes/core/media/retry_scheduler.dart';
 import 'package:echoes/features/ar/data/device_ar_availability_service.dart';
 import 'package:echoes/features/ar/data/device_ar_permission_service.dart';
+import 'package:echoes/features/ar/data/device_ar_session_service.dart';
 import 'package:echoes/features/ar/data/local_ar_availability_service.dart';
 import 'package:echoes/features/ar/data/local_ar_permission_service.dart';
 import 'package:echoes/features/ar/data/local_ar_session_service.dart';
 import 'package:echoes/features/ar/domain/ar_availability_service.dart';
 import 'package:echoes/features/ar/domain/ar_permission_service.dart';
 import 'package:echoes/features/ar/domain/ar_session_service.dart';
+import 'package:echoes/features/aura/data/firestore_aura_history_repository.dart';
 import 'package:echoes/features/aura/data/lexicon_sentiment_analyzer.dart';
+import 'package:echoes/features/aura/data/local_aura_history_repository.dart';
+import 'package:echoes/features/aura/domain/aura_history_repository.dart';
 import 'package:echoes/features/aura/domain/sentiment_analyzer.dart';
 import 'package:echoes/features/auth/data/firebase_auth_repository.dart';
 import 'package:echoes/features/auth/data/local_auth_repository.dart';
@@ -36,6 +45,9 @@ import 'package:echoes/features/communities/application/time_based_community_ser
 import 'package:echoes/features/communities/data/firestore_community_repository.dart';
 import 'package:echoes/features/communities/data/local_community_repository.dart';
 import 'package:echoes/features/communities/domain/community_repository.dart';
+import 'package:echoes/features/institutions/data/firestore_institution_repository.dart';
+import 'package:echoes/features/institutions/data/local_institution_repository.dart';
+import 'package:echoes/features/institutions/domain/institution_repository.dart';
 import 'package:echoes/features/legacy/application/custodianship_transfer_service.dart';
 import 'package:echoes/features/legacy/data/firestore_legacy_transfer_repository.dart';
 import 'package:echoes/features/legacy/data/local_legacy_transfer_repository.dart';
@@ -79,6 +91,22 @@ class EchoesApp extends StatelessWidget {
   final bool useFirebase;
   final SentimentAnalyzer? sentimentAnalyzer;
 
+  /// Tracks whether background services have been started.
+  /// Prevents duplicate initialization on hot reload or rebuild.
+  static var _servicesStarted = false;
+
+  void _startServices({
+    required RetryScheduler retryScheduler,
+    required AnalyticsService analyticsService,
+    required PushNotificationService pushNotificationService,
+  }) {
+    if (_servicesStarted) return;
+    _servicesStarted = true;
+    unawaited(Future.microtask(() => retryScheduler.start()));
+    unawaited(analyticsService.logAppOpened());
+    unawaited(pushNotificationService.initialize().catchError((_) {}));
+  }
+
   @override
   Widget build(BuildContext context) {
     final appConfig = config ?? AppConfig.fromEnvironment();
@@ -92,18 +120,28 @@ class EchoesApp extends StatelessWidget {
       useFirebase ? FirestoreAppUserRepository() : LocalAppUserRepository(),
       cacheRegistry: cacheRegistry,
     );
+    final connectivityMonitor = ConnectivityMonitor();
+    final pendingMemoryUploadQueue = LocalPendingMemoryUploadQueue();
     final mediaUploadService = useFirebase
         ? FirebaseStorageMediaUploadService()
         : const LocalMediaUploadService();
-    final placeRepository = CachedPlaceRepository(
-      useFirebase ? FirestorePlaceRepository() : LocalPlaceRepository(),
-      cacheRegistry: cacheRegistry,
-    );
     final memoryRepository = CachedMemoryRepository(
       useFirebase ? FirestoreMemoryRepository() : LocalMemoryRepository(),
       cacheRegistry: cacheRegistry,
     );
-    final pendingMemoryUploadQueue = LocalPendingMemoryUploadQueue();
+    final uploadSync = PendingMemoryUploadSync(
+      queue: pendingMemoryUploadQueue,
+      mediaUploadService: mediaUploadService,
+      memoryRepository: memoryRepository,
+    );
+    final retryScheduler = RetryScheduler(
+      connectivityMonitor: connectivityMonitor,
+      uploadSync: uploadSync,
+    );
+    final placeRepository = CachedPlaceRepository(
+      useFirebase ? FirestorePlaceRepository() : LocalPlaceRepository(),
+      cacheRegistry: cacheRegistry,
+    );
     final communityRepository = useFirebase
         ? FirestoreCommunityRepository()
         : LocalCommunityRepository();
@@ -117,12 +155,24 @@ class EchoesApp extends StatelessWidget {
     final legacyTransferRepository = useFirebase
         ? FirestoreLegacyTransferRepository()
         : LocalLegacyTransferRepository();
+    final auraHistoryRepository = useFirebase
+        ? FirestoreAuraHistoryRepository()
+        : LocalAuraHistoryRepository();
     final arAvailabilityService = useFirebase
         ? const DeviceArAvailabilityService()
         : const LocalArAvailabilityService();
     final arPermissionService = useFirebase
         ? const DeviceArPermissionService()
         : const LocalArPermissionService();
+    final arSessionService = useFirebase
+        ? DeviceArSessionService()
+        : LocalArSessionService();
+    final audioRecordingService = useFirebase
+        ? DeviceAudioRecordingService()
+        : LocalAudioRecordingService();
+    final institutionRepository = useFirebase
+        ? FirestoreInstitutionRepository()
+        : LocalInstitutionRepository();
     final notificationPermissionService = useFirebase
         ? const DeviceNotificationPermissionService()
         : const LocalNotificationPermissionService();
@@ -132,13 +182,17 @@ class EchoesApp extends StatelessWidget {
     final analyticsService = useFirebase
         ? FirebaseAnalyticsService()
         : LocalAnalyticsService();
-    unawaited(analyticsService.logAppOpened());
     final configuredSentimentAnalyzer =
         sentimentAnalyzer ?? LexiconSentimentAnalyzer();
     final pushNotificationService = useFirebase
         ? FirebasePushNotificationService()
         : LocalPushNotificationService();
-    unawaited(pushNotificationService.initialize());
+
+    _startServices(
+      retryScheduler: retryScheduler,
+      analyticsService: analyticsService,
+      pushNotificationService: pushNotificationService,
+    );
 
     return MaterialApp(
       title: appConfig.appTitle,
@@ -163,6 +217,9 @@ class EchoesApp extends StatelessWidget {
           RepositoryProvider<ImageCompressionService>(
             create: (_) => DartImageCompressionService(),
           ),
+          RepositoryProvider<AudioRecordingService>(
+            create: (_) => audioRecordingService,
+          ),
           RepositoryProvider<MediaUploadService>(
             create: (_) => mediaUploadService,
           ),
@@ -184,21 +241,13 @@ class EchoesApp extends StatelessWidget {
           RepositoryProvider<PushNotificationService>(
             create: (_) => pushNotificationService,
           ),
-          RepositoryProvider<ArSessionService>(
-            create: (_) => LocalArSessionService(),
-          ),
+          RepositoryProvider<ArSessionService>(create: (_) => arSessionService),
           RepositoryProvider<PlaceRepository>(create: (_) => placeRepository),
           RepositoryProvider<MemoryRepository>(create: (_) => memoryRepository),
           RepositoryProvider<PendingMemoryUploadQueue>(
             create: (_) => pendingMemoryUploadQueue,
           ),
-          RepositoryProvider<PendingMemoryUploadSync>(
-            create: (_) => PendingMemoryUploadSync(
-              queue: pendingMemoryUploadQueue,
-              mediaUploadService: mediaUploadService,
-              memoryRepository: memoryRepository,
-            ),
-          ),
+          RepositoryProvider<PendingMemoryUploadSync>.value(value: uploadSync),
           RepositoryProvider<CommunityRepository>(
             create: (_) => communityRepository,
           ),
@@ -217,6 +266,12 @@ class EchoesApp extends StatelessWidget {
               placeRepository: placeRepository,
               notificationDeliveryService: notificationDeliveryService,
             ),
+          ),
+          RepositoryProvider<AuraHistoryRepository>(
+            create: (_) => auraHistoryRepository,
+          ),
+          RepositoryProvider<InstitutionRepository>(
+            create: (_) => institutionRepository,
           ),
         ],
         child: BlocProvider(

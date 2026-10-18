@@ -1,6 +1,7 @@
 const admin = require("firebase-admin");
 const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 const { logger } = require("firebase-functions");
+const functionsV1 = require("firebase-functions/v1");
 
 admin.initializeApp();
 
@@ -62,6 +63,58 @@ exports.dispatchNotificationRequest = onDocumentCreated(
     });
   },
 );
+
+// Authentication deletion is the authoritative account-removal event. Keeping
+// cleanup server-side prevents a client from selectively leaving personal data
+// behind and also covers deletions initiated from the Firebase console.
+exports.cleanupDeletedUser = functionsV1.auth.user().onDelete(async (user) => {
+  const userId = user.uid;
+  const writer = db.bulkWriter();
+
+  const deleteQueries = [
+    db.collection("memories").where("userId", "==", userId),
+    db.collection("transfers").where("fromUserId", "==", userId),
+    db.collection("transfers").where("toUserId", "==", userId),
+    db.collection("notificationRequests").where("recipientUserId", "==", userId),
+    db.collection("notificationRequests").where("data.fromUserId", "==", userId),
+    db.collectionGroup("members").where("userId", "==", userId),
+  ];
+
+  for (const query of deleteQueries) {
+    const snapshot = await query.get();
+    snapshot.docs.forEach((doc) => writer.delete(doc.ref));
+  }
+
+  const places = await db
+    .collection("places")
+    .where("custodianIds", "array-contains", userId)
+    .get();
+  places.docs.forEach((doc) => {
+    writer.update(doc.ref, {
+      custodianIds: admin.firestore.FieldValue.arrayRemove(userId),
+      updatedAt: new Date().toISOString(),
+    });
+  });
+
+  const ownedCommunities = await db
+    .collection("communities")
+    .where("ownerId", "==", userId)
+    .get();
+  await Promise.all(
+    ownedCommunities.docs.map((doc) => db.recursiveDelete(doc.ref)),
+  );
+
+  await writer.close();
+  await db.recursiveDelete(db.collection("users").doc(userId));
+
+  const bucket = admin.storage().bucket();
+  await Promise.all([
+    bucket.deleteFiles({ prefix: `memory-images/${userId}/` }),
+    bucket.deleteFiles({ prefix: `memory-audio/${userId}/` }),
+  ]);
+
+  logger.info("Deleted account data", { userId });
+});
 
 function buildMulticastMessage(request, tokens) {
   return {

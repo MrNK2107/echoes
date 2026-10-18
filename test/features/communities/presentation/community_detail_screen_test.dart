@@ -4,6 +4,8 @@ import 'package:echoes/features/communities/domain/community_repository.dart';
 import 'package:echoes/features/communities/domain/community_role.dart';
 import 'package:echoes/features/communities/domain/community_type.dart';
 import 'package:echoes/features/communities/presentation/community_detail_screen.dart';
+import 'package:echoes/features/memories/data/local_memory_repository.dart';
+import 'package:echoes/features/memories/domain/memory_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -54,7 +56,10 @@ class _TestApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return RepositoryProvider<CommunityRepository>.value(
       value: repository,
-      child: MaterialApp(home: child),
+      child: RepositoryProvider<MemoryRepository>.value(
+        value: LocalMemoryRepository(),
+        child: MaterialApp(home: child),
+      ),
     );
   }
 }

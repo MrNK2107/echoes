@@ -31,6 +31,20 @@ class FirestoreMemoryRepository implements MemoryRepository {
   }
 
   @override
+  Stream<List<Memory>> watchCommunityMemories(
+    String communityId, {
+    int limit = 50,
+  }) {
+    return _collection
+        .where('communityId', isEqualTo: communityId)
+        .where('isDeleted', isEqualTo: false)
+        .orderBy('createdAt', descending: true)
+        .limit(limit)
+        .snapshots()
+        .map(_memoriesFromSnapshot);
+  }
+
+  @override
   Future<Memory?> findById(String id) async {
     final snapshot = await _collection.doc(id).get();
     final data = snapshot.data();
@@ -40,14 +54,27 @@ class FirestoreMemoryRepository implements MemoryRepository {
   }
 
   @override
+  @override
+  Future<void> restore({
+    required String memoryId,
+    required DateTime restoredAt,
+  }) async {
+    await _collection.doc(memoryId).update({
+      'isDeleted': false,
+      'deletedAt': null,
+      'updatedAt': Timestamp.fromDate(restoredAt.toUtc()),
+    });
+  }
+
+  @override
   Future<void> softDelete({
     required String memoryId,
     required DateTime deletedAt,
   }) async {
     await _collection.doc(memoryId).update({
       'isDeleted': true,
-      'deletedAt': deletedAt.toUtc().toIso8601String(),
-      'updatedAt': deletedAt.toUtc().toIso8601String(),
+      'deletedAt': Timestamp.fromDate(deletedAt.toUtc()),
+      'updatedAt': Timestamp.fromDate(deletedAt.toUtc()),
     });
   }
 
@@ -64,9 +91,11 @@ class FirestoreMemoryRepository implements MemoryRepository {
       'textContent': textContent,
       'privacy': privacy.name,
       'taggedUserIds': taggedUserIds,
-      'releaseDate': releaseDate?.toUtc().toIso8601String(),
+      'releaseDate': releaseDate == null
+          ? null
+          : Timestamp.fromDate(releaseDate.toUtc()),
       'communityId': communityId,
-      'updatedAt': DateTime.now().toUtc().toIso8601String(),
+      'updatedAt': FieldValue.serverTimestamp(),
     });
   }
 
@@ -78,15 +107,14 @@ class FirestoreMemoryRepository implements MemoryRepository {
   }) async {
     await _collection.doc(memoryId).update({
       'imageUrl': imageUrl,
-      'updatedAt': updatedAt.toUtc().toIso8601String(),
+      'updatedAt': Timestamp.fromDate(updatedAt.toUtc()),
     });
   }
 
   @override
   Stream<List<Memory>> watchMemoriesForPlace(String placeId) {
-    return _collection
-        .where('placeId', isEqualTo: placeId)
-        .where('isDeleted', isEqualTo: false)
+    return _visiblePlaceQuery(placeId)
+        .where('privacy', isEqualTo: PrivacyType.public.name)
         .orderBy('createdAt', descending: true)
         .limit(placeMemoryLimit)
         .snapshots()
@@ -162,7 +190,7 @@ class FirestoreMemoryRepository implements MemoryRepository {
         .where('privacy', isEqualTo: PrivacyType.timeRelease.name)
         .where(
           'releaseDate',
-          isLessThanOrEqualTo: now.toUtc().toIso8601String(),
+          isLessThanOrEqualTo: Timestamp.fromDate(now.toUtc()),
         )
         .limit(placeMemoryLimit)
         .snapshots()

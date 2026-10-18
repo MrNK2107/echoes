@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:echoes/app/theme.dart';
 import 'package:echoes/core/location/location_service.dart';
 import 'package:echoes/features/auth/presentation/auth_cubit.dart';
@@ -12,6 +14,7 @@ import 'package:echoes/shared/widgets/feature_placeholder.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class MapPlaceholderScreen extends StatelessWidget {
   const MapPlaceholderScreen({super.key});
@@ -46,11 +49,12 @@ class _MapView extends StatelessWidget {
           MapStatus.permissionDeniedForever => const _LocationPrompt(
             message:
                 'Location access is blocked. Enable it in system settings to use the map.',
+            openSettings: true,
           ),
           MapStatus.failure => _LocationPrompt(
             message: state.errorMessage ?? 'Location lookup failed.',
           ),
-          MapStatus.ready => _ReadyMapPlaceholder(state: state),
+          MapStatus.ready => _ReadyMap(state: state),
         };
       },
     );
@@ -58,9 +62,10 @@ class _MapView extends StatelessWidget {
 }
 
 class _LocationPrompt extends StatelessWidget {
-  const _LocationPrompt({this.message});
+  const _LocationPrompt({this.message, this.openSettings = false});
 
   final String? message;
+  final bool openSettings;
 
   @override
   Widget build(BuildContext context) {
@@ -69,111 +74,419 @@ class _LocationPrompt extends StatelessWidget {
       title: 'Places remember first.',
       description:
           message ??
-          'The map will use your current location to show nearby places with memories, aura colors, and quick access to details.',
-      nextStep:
-          'Next: enable location, then connect Google Maps and nearby place queries.',
+          'Use your current location to discover nearby memory places, aura colors, and quick access to details.',
+      nextStep: 'Enable location to load nearby ECHOES.',
       action: FilledButton.icon(
         key: const ValueKey('requestLocationButton'),
-        onPressed: () => context.read<MapCubit>().requestLocation(),
-        icon: const Icon(Icons.my_location),
-        label: const Text('Enable location'),
+        onPressed: openSettings
+            ? openAppSettings
+            : () => context.read<MapCubit>().requestLocation(),
+        icon: Icon(openSettings ? Icons.settings_outlined : Icons.my_location),
+        label: Text(openSettings ? 'Open settings' : 'Enable location'),
       ),
     );
   }
 }
 
-class _ReadyMapPlaceholder extends StatelessWidget {
-  const _ReadyMapPlaceholder({required this.state});
+/// The ready state: shows a full-screen Google Map with a collapsible bottom
+/// panel listing nearby places.
+class _ReadyMap extends StatefulWidget {
+  const _ReadyMap({required this.state});
 
   final MapState state;
 
   @override
-  Widget build(BuildContext context) {
-    final location = state.location!;
+  State<_ReadyMap> createState() => _ReadyMapState();
+}
 
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Nearby Echoes',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                color: EchoesColors.textPrimary,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Location ready: ${location.latitude.toStringAsFixed(4)}, ${location.longitude.toStringAsFixed(4)}',
-              style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: EchoesColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: GoogleMap(
-                  initialCameraPosition: CameraPosition(
-                    target: LatLng(location.latitude, location.longitude),
-                    zoom: 15,
-                  ),
-                  markers: _markersFor(context, state.places),
-                  myLocationEnabled: true,
-                  myLocationButtonEnabled: false,
-                  zoomControlsEnabled: false,
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              state.places.isEmpty
-                  ? 'No memory places nearby yet.'
-                  : '${state.places.length} memory places nearby',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: EchoesColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 16),
-            FilledButton.icon(
-              onPressed: () => context.read<MapCubit>().requestLocation(),
-              icon: const Icon(Icons.my_location),
-              label: const Text('Refresh location'),
-            ),
-          ],
-        ),
-      ),
-    );
+class _ReadyMapState extends State<_ReadyMap> {
+  bool _showPlacesList = true;
+  bool _mapFailed = false;
+  Timer? _mapInitTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _mapInitTimer = Timer(const Duration(seconds: 10), () {
+      if (mounted) {
+        setState(() => _mapFailed = true);
+      }
+    });
   }
 
-  Set<Marker> _markersFor(BuildContext context, List<Place> places) {
+  @override
+  void dispose() {
+    _mapInitTimer?.cancel();
+    super.dispose();
+  }
+
+  void _onMapCreated(GoogleMapController controller) {
+    _mapInitTimer?.cancel();
+    _mapInitTimer = null;
+    if (mounted) {
+      setState(() => _mapFailed = false);
+    }
+  }
+
+  Set<Marker> _buildMarkers(BuildContext context, List<Place> places) {
     return places.map((place) {
+      final hue = AuraMarkerHue.fromAura(place.aura);
       return Marker(
         markerId: MarkerId(place.id),
         position: LatLng(place.latitude, place.longitude),
+        icon: BitmapDescriptor.defaultMarkerWithHue(hue),
         infoWindow: InfoWindow(
           title: place.name,
-          snippet: '${place.memoryCount} memories',
+          snippet: '${place.memoryCount} memories - ${place.aura.dominantSentiment.name} aura',
           onTap: () => _showPlaceDetails(context, place),
-        ),
-        icon: BitmapDescriptor.defaultMarkerWithHue(
-          AuraMarkerHue.fromAura(place.aura),
         ),
         onTap: () => _showPlaceDetails(context, place),
       );
     }).toSet();
   }
 
+  CameraPosition _initialCamera() {
+    final location = widget.state.location!;
+    return CameraPosition(
+      target: LatLng(location.latitude, location.longitude),
+      zoom: 15,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final places = widget.state.places;
+
+    if (_mapFailed) {
+      return _MapFallbackView(
+        places: places,
+        onRetry: () => setState(() => _mapFailed = false),
+        onPlaceTap: (place) => _showPlaceDetails(context, place),
+      );
+    }
+
+    return Stack(
+      children: [
+        // Full-screen Google Map
+        GoogleMap(
+          key: const ValueKey('nearbyMap'),
+          initialCameraPosition: _initialCamera(),
+          markers: _buildMarkers(context, places),
+          myLocationEnabled: true,
+          myLocationButtonEnabled: true,
+          zoomControlsEnabled: false,
+          mapToolbarEnabled: false,
+          onMapCreated: _onMapCreated,
+          onTap: (_) {
+            if (_showPlacesList) {
+              setState(() => _showPlacesList = false);
+            }
+          },
+        ),
+
+        // Top header overlay
+        Positioned(
+          top: 12,
+          left: 12,
+          right: 12,
+          child: _MapHeader(
+            placeCount: places.length,
+            onRefresh: () => context.read<MapCubit>().requestLocation(),
+            onToggleList: () => setState(() => _showPlacesList = !_showPlacesList),
+            isListVisible: _showPlacesList,
+          ),
+        ),
+
+        // Collapsible nearby places panel at the bottom
+        if (_showPlacesList && places.isNotEmpty)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: _NearbyPlacesDrawer(
+              places: places,
+              onPlaceTap: (place) => _showPlaceDetails(context, place),
+              onClose: () => setState(() => _showPlacesList = false),
+            ),
+          ),
+      ],
+    );
+  }
+
   void _showPlaceDetails(BuildContext context, Place place) {
-    final currentUserId = context.read<AuthCubit>().state.session?.userId;
+    String? currentUserId;
+    try {
+      currentUserId = context.read<AuthCubit>().state.session?.userId;
+    } on Object {
+      currentUserId = null;
+    }
 
     showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
       builder: (_) =>
           PlaceDetailSheet(place: place, currentUserId: currentUserId),
+    );
+  }
+}
+
+/// Semi-transparent header bar with place count, refresh button, and toggle.
+class _MapHeader extends StatelessWidget {
+  const _MapHeader({
+    required this.placeCount,
+    required this.onRefresh,
+    required this.onToggleList,
+    required this.isListVisible,
+  });
+
+  final int placeCount;
+  final VoidCallback onRefresh;
+  final VoidCallback onToggleList;
+  final bool isListVisible;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: EchoesColors.deepSpace.withValues(alpha: 0.85),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: EchoesColors.elevatedSurface),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Row(
+          children: [
+            const Icon(Icons.travel_explore, size: 20, color: EchoesColors.celestialBlue),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                placeCount == 1
+                    ? '1 place nearby'
+                    : '$placeCount places nearby',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  color: EchoesColors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            IconButton(
+              icon: Icon(
+                isListVisible ? Icons.expand_circle_down_outlined : Icons.list_outlined,
+                size: 20,
+              ),
+              tooltip: isListVisible ? 'Collapse list' : 'Show list',
+              onPressed: onToggleList,
+            ),
+            IconButton(
+              icon: const Icon(Icons.my_location, size: 20),
+              tooltip: 'Re-center and refresh',
+              onPressed: onRefresh,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Draggable bottom drawer showing the list of nearby places.
+class _NearbyPlacesDrawer extends StatelessWidget {
+  const _NearbyPlacesDrawer({
+    required this.places,
+    required this.onPlaceTap,
+    required this.onClose,
+  });
+
+  final List<Place> places;
+  final ValueChanged<Place> onPlaceTap;
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: EchoesColors.deepSpace.withValues(alpha: 0.92),
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(12),
+          topRight: Radius.circular(12),
+        ),
+        border: Border(
+          top: BorderSide(color: EchoesColors.elevatedSurface),
+        ),
+      ),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxHeight: 240),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Drag handle + close row
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+              child: Row(
+                children: [
+                  const Spacer(),
+                  Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: EchoesColors.textSecondary.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const Spacer(),
+                  SizedBox(
+                    width: 32,
+                    height: 32,
+                    child: IconButton(
+                      icon: const Icon(Icons.close, size: 18),
+                      tooltip: 'Close places list',
+                      onPressed: onClose,
+                      padding: EdgeInsets.zero,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Scrollable place list
+            Expanded(
+              child: ListView.separated(
+                padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+                itemCount: places.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 6),
+                itemBuilder: (context, index) {
+                  final place = places[index];
+                  return _NearbyPlaceTile(
+                    place: place,
+                    rank: index + 1,
+                    onTap: () => onPlaceTap(place),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Fallback shown when Google Maps fails or hangs during initialization.
+class _MapFallbackView extends StatelessWidget {
+  const _MapFallbackView({
+    required this.places,
+    required this.onRetry,
+    required this.onPlaceTap,
+  });
+
+  final List<Place> places;
+  final VoidCallback onRetry;
+  final ValueChanged<Place> onPlaceTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Expanded(
+          child: FeaturePlaceholder(
+            icon: Icons.map_outlined,
+            title: 'Map unavailable',
+            description:
+                'The map could not be loaded. You can still browse nearby places from the list below.',
+            nextStep: 'Check your Google Maps API key and Google Play Services.',
+            action: FilledButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry map'),
+            ),
+          ),
+        ),
+        if (places.isNotEmpty)
+          SizedBox(
+            height: 240,
+            child: _NearbyPlacesDrawer(
+              places: places,
+              onPlaceTap: onPlaceTap,
+              onClose: () {},
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _NearbyPlaceTile extends StatelessWidget {
+  const _NearbyPlaceTile({
+    required this.place,
+    required this.rank,
+    required this.onTap,
+  });
+
+  final Place place;
+  final int rank;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final auraColor = place.aura.color;
+
+    return Card(
+      margin: EdgeInsets.zero,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: auraColor.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: auraColor.withValues(alpha: 0.7)),
+                ),
+                child: Text(
+                  '$rank',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: auraColor,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      place.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        color: EchoesColors.textPrimary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${place.memoryCount} memories - ${place.aura.dominantSentiment.name} aura',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: EchoesColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 6),
+              const Icon(Icons.chevron_right, size: 18),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

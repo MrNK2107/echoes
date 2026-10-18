@@ -13,10 +13,10 @@
 
 Last updated: 2026-05-18
 
-- Overall checklist completion: 331 / 387 items complete, about 86%.
+- Overall checklist completion: 340 / 390 items complete, about 87%.
 - Internal Alpha feature scope: implemented in code; device smoke testing remains.
-- Private Beta feature scope: mostly implemented in code; AR prototype, transfer initiation UI, tagged-user search, and rules tests are in place; deeper native AR interaction remains.
-- Public MVP feature scope: in progress; nearby-place, recent-memory, profile/settings warm caches, local image caching, cache management settings, notification delivery, accessibility basics, and production telemetry are implemented; device performance measurement remains.
+- Private Beta feature scope: implemented for local beta validation; AR prototype, transfer initiation UI, tagged-user search, beta-critical flow tests, CI validation, and rules tests are in place; deeper native AR interaction remains.
+- Public MVP feature scope: in progress; nearby-place, recent-memory, profile/settings warm caches, local image caching, cache management settings, notification delivery, accessibility basics, production telemetry, and local run documentation are implemented; device performance measurement remains.
 
 ## Current Repository State
 
@@ -62,10 +62,13 @@ The repository now contains the product specification, implementation plan, and 
 - Memory creation stores exact coordinates and geohash
 - Firebase emulator security rules tests for memory privacy modes
 - Firebase emulator security rules tests for transfers and custodian moderation
+- Beta-critical flow tests for memory create/edit/delete, community visibility, and custodianship transfer
+- GitHub Actions validation for Flutter, Cloud Functions, and Firestore rules
+- Local setup, verification, smoke-test, and release-build runbook in `README.md`
 - Profile cache management control for clearing local warm caches
 - Unit and widget tests for the current local MVP and AR lifecycle foundation
 
-Native Firebase config files are present locally but ignored by git for GitHub safety. Firebase Cloud Functions, notification delivery, crash reporting, analytics, rules tests, and offline cache basics are now implemented; full native AR rendering, device smoke testing, and performance measurement remain.
+Native Firebase config files are present locally but ignored by git for GitHub safety. Firebase Cloud Functions, notification delivery, crash reporting, analytics, beta-critical flow tests, CI rules tests, and offline cache basics are now implemented; full native AR rendering, device smoke testing, and performance measurement remain.
 
 ## Implementation Strategy
 
@@ -425,7 +428,7 @@ Tests:
 - [x] Unit test memory validation.
 - [x] Unit test place matching radius.
 - [x] Widget test add memory form.
-- [ ] Integration test create-memory happy path.
+- [x] Integration-style beta flow test create-memory happy path.
 
 Deliverable:
 
@@ -455,8 +458,8 @@ Tests:
 - [x] Unit test visibility helper.
 - [x] Unit test edit constraints.
 - [x] Widget test memory detail.
-- [ ] Integration test edit memory.
-- [ ] Integration test soft delete.
+- [x] Integration-style beta flow test edit memory.
+- [x] Integration-style beta flow test soft delete.
 
 Deliverable:
 
@@ -608,8 +611,8 @@ Tests:
 
 - [x] Unit test community role permissions.
 - [x] Widget test community creation.
-- [ ] Integration test joining community.
-- [ ] Integration test community memory visibility.
+- [x] Integration-style beta flow test joining community.
+- [x] Integration-style beta flow test community memory visibility.
 
 Deliverable:
 
@@ -645,7 +648,7 @@ Tests:
 - [x] Unit test revoke window.
 - [x] Security rules test transfer initiation.
 - [x] Security rules test transfer acceptance.
-- [ ] Integration test successful transfer.
+- [x] Integration-style beta flow test successful transfer.
 
 Deliverable:
 
@@ -878,6 +881,8 @@ Mitigation:
 - [x] Soft delete
 - [x] Initial community support
 - [x] Firebase security rules test coverage
+- [x] Beta-critical local flow coverage
+- [x] CI validates Flutter, Functions, and Firestore rules
 
 ### Public MVP
 
