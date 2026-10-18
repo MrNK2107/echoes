@@ -119,11 +119,11 @@ Memory backend: `update`/`softDelete`/`restore` recompute the place aggregate (d
 **Interfaces:** Firestore implementations of Task 3. Payloads: `update` → `updateDoc({ ...normalizePrivacyFields(patch), releaseDate: Timestamp|null, updatedAt: Timestamp })`; `attachMedia` → only the given url field(s) + `updatedAt`; `softDelete` → `{ isDeleted: true, deletedAt, updatedAt }`; `restore` → `{ isDeleted: false, deletedAt: null, updatedAt }`, map `permission-denied` to the expired message; `deleteAccount` → `reauthenticateWithCredential(user, EmailAuthProvider.credential(email, password))` then `deleteUser` (map `auth/invalid-credential`/`auth/wrong-password` → `Incorrect password.`); `uploadMemoryAudio` → `memory-audio/{uid}/{memoryId}.m4a`, `contentType: 'audio/mp4'`. Index for `userId ==, isDeleted ==, createdAt desc` and `userId ==, isDeleted ==, deletedAt desc`.
 `purgeDeletedMemories = onSchedule('every 24 hours', handler)`; `purgeExpired(db, bucket, now)` deletes memories with `isDeleted == true && deletedAt < now − 30 d` (batched, ≤ 500/batch, paginated) and their `memory-images/{uid}/{id}.jpg` / `memory-audio/{uid}/{id}.m4a` (ignore 404). Export `purgeExpired` via `__private__` for tests.
 
-- [ ] **Step 1: Failing tests** — emulator test runs the extended contracts for Firestore (aggregation via `onMemoryWritten`); functions unit test for `purgeExpired` with a fake db/bucket: purges 31-day-old deleted, keeps 29-day-old deleted and live memories, deletes both storage paths, tolerates missing files.
-- [ ] **Step 2: Run** emulator + functions tests → FAIL.
-- [ ] **Step 3: Implement.** Ensure `cleanupDeletedUser` still passes its tests.
-- [ ] **Step 4: Run** all Task 13 gates that apply → PASS.
-- [ ] **Step 5: Commit** `feat(data): Firestore memory lifecycle, account deletion, purge job`.
+- [x] **Step 1: Failing tests** — emulator test runs the extended contracts for Firestore (aggregation via `onMemoryWritten`); functions unit test for `purgeExpired` with a fake db/bucket: purges 31-day-old deleted, keeps 29-day-old deleted and live memories, deletes both storage paths, tolerates missing files.
+- [x] **Step 2: Run** emulator + functions tests → FAIL.
+- [x] **Step 3: Implement.** Ensure `cleanupDeletedUser` still passes its tests.
+- [x] **Step 4: Run** all Task 13 gates that apply → PASS.
+- [x] **Step 5: Commit** `feat(data): Firestore memory lifecycle, account deletion, purge job`.
 
 ---
 
