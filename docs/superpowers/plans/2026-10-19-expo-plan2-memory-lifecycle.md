@@ -200,9 +200,9 @@ function useOutbox(): { pending: number; retry(): void }
 
 **Behaviour:** `subscribeDeletedForUser(uid)`; rows show text (2 lines), `Restorable for {n} days` / `Restorable for 1 day` (`restoreDaysLeft`), `Restore` button (`testID="restore-{id}"`) → `restore(id, now)`; rows with `canRestore === false` are not shown; empty copy per spec; restore rejection → `This memory can no longer be restored.` in `role="alert"`.
 
-- [ ] **Step 1: Failing tests** — lists deleted memories with days left (29 d 1 h old → `Restorable for 1 day`); Restore moves it back (row disappears, memory visible again); **`shows expired copy when restore is rejected`** (repo restore rejects); empty state.
-- [ ] **Step 2–4:** FAIL → implement → PASS.
-- [ ] **Step 5: Commit** `feat(profile): recently deleted with 30-day restore`.
+- [x] **Step 1: Failing tests** — lists deleted memories with days left (29 d 1 h old → `Restorable for 1 day`); Restore moves it back (row disappears, memory visible again); **`shows expired copy when restore is rejected`** (repo restore rejects); empty state.
+- [x] **Step 2–4:** FAIL → implement → PASS.
+- [x] **Step 5: Commit** `feat(profile): recently deleted with 30-day restore`.
 
 ---
 
