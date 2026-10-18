@@ -248,8 +248,10 @@ export function memoryRepositoryContract(
       const m = mem();
       await seed(m);
       await ctx.signInAs('author');
-      await ctx.repos.memories.attachMedia(m.id, { audioUrl: 'file:///a.m4a' }, new Date());
-      expect((await ctx.repos.memories.findById(m.id))?.audioUrl).toBe('file:///a.m4a');
+      // The Firestore rules accept only Storage download URLs for the author's own folder.
+      const url = `https://firebasestorage.googleapis.com/v0/b/demo-echoes.appspot.com/o/memory-audio%2Fauthor%2F${m.id}.m4a?alt=media&token=t`;
+      await ctx.repos.memories.attachMedia(m.id, { audioUrl: url }, new Date());
+      expect((await ctx.repos.memories.findById(m.id))?.audioUrl).toBe(url);
     });
   });
 }

@@ -209,6 +209,19 @@ describe('firestore backend specifics', () => {
     expect(url).toContain('memory-audio%2Fauthor%2Fm1.m4a');
   });
 
+  it('the rules accept the download URLs the Storage emulator issues', async () => {
+    await ctx.signInAs('author');
+    await ctx.repos.memories.create(communityMemory('with-media', 'unused'));
+    const jpegBytes = String.fromCharCode(0xff, 0xd8, 0xff, 0xe0, 0, 0x10, 0x4a, 0x46, 0x49, 0x46, 0xff, 0xd9);
+    const imageUrl = await ctx.repos.media.uploadMemoryImage({
+      userId: 'author',
+      memoryId: 'with-media',
+      localUri: `data:image/jpeg;base64,${btoa(jpegBytes)}`,
+    });
+    await ctx.repos.memories.attachMedia('with-media', { imageUrl }, new Date());
+    expect((await ctx.repos.memories.findById('with-media'))?.imageUrl).toBe(imageUrl);
+  });
+
   it('update writes only mutable fields and clears privacy fields that no longer apply', async () => {
     await ctx.signInAs('author');
     const base = communityMemory('edit-me', 'unused');

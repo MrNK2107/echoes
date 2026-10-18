@@ -46,8 +46,51 @@ service cloud.firestore {
         request.resource.data.createdAt == resource.data.createdAt;
     }
 
+    function unitInterval(n) {
+      return n is number && n >= 0 && n <= 1;
+    }
+
+    // Sentiment feeds the place aura; out-of-range or non-numeric values would skew it for
+    // everyone (functions/onMemoryWritten.js clamps as well). NaN fails every comparison.
+    function validSentiment(sentiment) {
+      return sentiment is map &&
+        sentiment.compound is number &&
+        sentiment.compound >= -1 &&
+        sentiment.compound <= 1 &&
+        unitInterval(sentiment.positive) &&
+        unitInterval(sentiment.neutral) &&
+        unitInterval(sentiment.negative);
+    }
+
+    // Media URLs are rendered for every viewer, so they must be this backend's own Storage
+    // download URLs for the author's folder (memory-images/<uid>/ or memory-audio/<uid>/), never
+    // an arbitrary host that could track viewers. Accepted hosts:
+    //   - https://firebasestorage.googleapis.com (production getDownloadURL)
+    //   - http://<loopback | 10.0.2.2 | private LAN IPv4>:9199 (the Storage emulator, reached from
+    //     a simulator or a device on the dev machine's LAN; such hosts are not reachable trackers)
+    // The bucket segment is not pinned: Firestore rules cannot see the project id.
+    function storageUrlPrefix() {
+      return '^(https://firebasestorage[.]googleapis[.]com' +
+        '|http://(127[.]0[.]0[.]1|localhost|10[.]0[.]2[.]2|10([.][0-9]{1,3}){3}|192[.]168([.][0-9]{1,3}){2}|172[.](1[6-9]|2[0-9]|3[01])([.][0-9]{1,3}){2}):9199)' +
+        '/v0/b/[^/?#]+/o/';
+    }
+
+    function validMediaUrl(url, folder, userId) {
+      return url == null ||
+        (url is string &&
+          url.matches(storageUrlPrefix() + folder + '%2F' + userId + '%2F[^/?#]+([?].*)?$'));
+    }
+
+    function validMemoryMedia(data) {
+      return validMediaUrl(data.get('imageUrl', null), 'memory-images', data.userId) &&
+        validMediaUrl(data.get('audioUrl', null), 'memory-audio', data.userId);
+    }
+
     function mutableMemoryEditOnly() {
-      return request.resource.data.diff(resource.data).affectedKeys()
+      return resource.data.isDeleted == false &&
+        validSentiment(request.resource.data.sentiment) &&
+        validMemoryMedia(request.resource.data) &&
+        request.resource.data.diff(resource.data).affectedKeys()
         .hasOnly([
           'textContent',
           'privacy',
@@ -103,7 +146,9 @@ service cloud.firestore {
         (signedIn() && resource.data.userId == request.auth.uid);
       allow create: if signedIn() &&
         request.resource.data.userId == request.auth.uid &&
-        request.resource.data.isDeleted == false;
+        request.resource.data.isDeleted == false &&
+        validSentiment(request.resource.data.sentiment) &&
+        validMemoryMedia(request.resource.data);
       allow update: if signedIn() &&
         immutableMemoryFieldsUnchanged() &&
         (

@@ -114,7 +114,7 @@ test("memory image url can be attached after upload", async () => {
     setDoc(
       doc(creatorDb, "memories/private-memory"),
       {
-        imageUrl: "https://example.test/memory.jpg",
+        imageUrl: storageUrl("images", "creator", "private-memory.jpg"),
         updatedAt: Timestamp.now(),
       },
       { merge: true },
@@ -177,7 +177,7 @@ test("audioUrl is attachable by the author only; placeId stays immutable", async
   await assertSucceeds(
     setDoc(
       doc(creatorDb, "memories/private-memory"),
-      { audioUrl: "https://example.test/a.m4a", updatedAt: Timestamp.now() },
+      { audioUrl: storageUrl("audio", "creator", "private-memory.m4a"), updatedAt: Timestamp.now() },
       { merge: true },
     ),
   );
@@ -191,7 +191,7 @@ test("audioUrl is attachable by the author only; placeId stays immutable", async
   await assertFails(
     setDoc(
       doc(strangerDb, "memories/public-memory"),
-      { audioUrl: "https://example.test/a.m4a", updatedAt: Timestamp.now() },
+      { audioUrl: storageUrl("audio", "stranger", "public-memory.m4a"), updatedAt: Timestamp.now() },
       { merge: true },
     ),
   );
@@ -388,6 +388,105 @@ test("author can read their own deleted private memory; others cannot", async ()
 
   await assertSucceeds(getDoc(doc(creatorDb, "memories/deleted-private")));
   await assertFails(getDoc(doc(strangerDb, "memories/deleted-private")));
+});
+
+test("sentiment must be numbers in range on create and edit", async () => {
+  const creatorDb = testEnv.authenticatedContext("creator").firestore();
+  const withSentiment = (sentiment) => ({ ...memoryDoc(), sentiment });
+  const ok = { compound: 0.5, positive: 0.5, neutral: 0.5, negative: 0 };
+
+  await assertFails(
+    setDoc(doc(creatorDb, "memories/s-huge"), withSentiment({ ...ok, compound: 1e9 })),
+  );
+  await assertFails(
+    setDoc(doc(creatorDb, "memories/s-low"), withSentiment({ ...ok, compound: -1.5 })),
+  );
+  await assertFails(
+    setDoc(doc(creatorDb, "memories/s-nan"), withSentiment({ ...ok, compound: NaN })),
+  );
+  await assertFails(
+    setDoc(doc(creatorDb, "memories/s-str"), withSentiment({ ...ok, compound: "1" })),
+  );
+  await assertFails(
+    setDoc(doc(creatorDb, "memories/s-pos"), withSentiment({ ...ok, positive: 2 })),
+  );
+  await assertFails(
+    setDoc(doc(creatorDb, "memories/s-neu"), withSentiment({ ...ok, neutral: -0.1 })),
+  );
+  await assertFails(
+    setDoc(doc(creatorDb, "memories/s-neg"), withSentiment({ ...ok, negative: 1.1 })),
+  );
+  await assertFails(
+    setDoc(doc(creatorDb, "memories/s-missing"), withSentiment({ compound: 0.5 })),
+  );
+  await assertSucceeds(setDoc(doc(creatorDb, "memories/s-ok"), withSentiment(ok)));
+  await assertSucceeds(
+    setDoc(doc(creatorDb, "memories/s-edge"), withSentiment({ compound: -1, positive: 0, neutral: 1, negative: 1 })),
+  );
+
+  await assertFails(
+    updateDoc(doc(creatorDb, "memories/private-memory"), {
+      textContent: "edited",
+      sentiment: { ...ok, compound: 1e9 },
+      updatedAt: Timestamp.now(),
+    }),
+  );
+  await assertSucceeds(
+    updateDoc(doc(creatorDb, "memories/private-memory"), {
+      textContent: "edited",
+      sentiment: ok,
+      updatedAt: Timestamp.now(),
+    }),
+  );
+});
+
+test("media urls must be this project's storage urls under the author's path", async () => {
+  const creatorDb = testEnv.authenticatedContext("creator").firestore();
+  const create = (id, fields) => setDoc(doc(creatorDb, `memories/${id}`), { ...memoryDoc(), ...fields });
+  const edit = (fields) =>
+    updateDoc(doc(creatorDb, "memories/private-memory"), { ...fields, updatedAt: Timestamp.now() });
+
+  // external trackers
+  await assertFails(create("u1", { imageUrl: "https://tracker.example/pixel.jpg" }));
+  await assertFails(create("u2", { audioUrl: "https://tracker.example/a.m4a" }));
+  await assertFails(edit({ imageUrl: "https://tracker.example/pixel.jpg" }));
+  await assertFails(edit({ audioUrl: "http://tracker.example:9199/v0/b/x/o/memory-audio%2Fcreator%2Fa.m4a" }));
+  // look-alike hosts and paths
+  await assertFails(
+    create("u3", { imageUrl: "https://firebasestorage.googleapis.com.evil.example/v0/b/b/o/memory-images%2Fcreator%2Fa.jpg" }),
+  );
+  await assertFails(create("u4", { imageUrl: storageUrl("images", "someone-else", "a.jpg") }));
+  await assertFails(create("u5", { imageUrl: storageUrl("audio", "creator", "a.jpg") }));
+  await assertFails(create("u6", { audioUrl: storageUrl("images", "creator", "a.m4a") }));
+  await assertFails(create("u7", { imageUrl: 42 }));
+
+  // production and emulator download urls for the author's own files
+  await assertSucceeds(
+    create("ok1", {
+      imageUrl: storageUrl("images", "creator", "ok1.jpg"),
+      audioUrl: storageUrl("audio", "creator", "ok1.m4a"),
+    }),
+  );
+  await assertSucceeds(
+    create("ok2", {
+      imageUrl: "http://127.0.0.1:9199/v0/b/demo-echoes.appspot.com/o/memory-images%2Fcreator%2Fok2.jpg?alt=media&token=t",
+      audioUrl: "http://192.168.1.5:9199/v0/b/demo-echoes.appspot.com/o/memory-audio%2Fcreator%2Fok2.m4a?alt=media&token=t",
+    }),
+  );
+  await assertSucceeds(create("ok3", { imageUrl: null, audioUrl: null }));
+  await assertSucceeds(edit({ imageUrl: storageUrl("images", "creator", "private-memory.jpg") }));
+});
+
+test("deleted memories cannot be edited", async () => {
+  await seedDeletedMemory();
+  const creatorDb = testEnv.authenticatedContext("creator").firestore();
+
+  await assertFails(
+    updateDoc(doc(creatorDb, "memories/deleted-memory"), {
+      textContent: "edited while deleted",
+      updatedAt: Timestamp.now(),
+    }),
+  );
 });
 
 test("author write identical to stored doc (empty diff) is allowed", async () => {
@@ -594,6 +693,14 @@ async function seedBaseDocuments() {
       memoryDoc({ privacy: "community", communityId: "community-1" }),
     );
   });
+}
+
+/** A Firebase Storage download URL as getDownloadURL returns it in production. */
+function storageUrl(kind, userId, fileName) {
+  return (
+    "https://firebasestorage.googleapis.com/v0/b/echoes-rules-test.appspot.com/o/" +
+    `memory-${kind}%2F${userId}%2F${fileName}?alt=media&token=00000000-0000-0000-0000-000000000000`
+  );
 }
 
 function transferDoc({
