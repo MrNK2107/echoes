@@ -349,11 +349,11 @@ export function testServices(overrides?: Partial<Services>): Services; // memory
   - `firebase.ts`: `initFirebase(config): { db, auth, storage }` — `initializeApp`, `initializeAuth(app, { persistence: getReactNativePersistence(AsyncStorage) })`, `getFirestore`, `getStorage`; in `emulator` mode connect all three to `emulatorHost`. Only `createServices` calls it, never for `memory`.
   - `app/_layout.tsx` builds services once at module scope: `const services = createServices(readConfig(process.env))`.
 
-- [ ] **Step 1: Write failing tests:** `readConfig({})` → `backend:'memory'`, `firebase:null`; `readConfig({EXPO_PUBLIC_BACKEND:'emulator'})` uses project `demo-echoes` defaults and `emulatorHost:'127.0.0.1'`; `firebase` with a missing key throws the message; unknown backend throws; `createServices(readConfig({}))` returns repos whose `places.findNearest` finds a seeded place; `useServices` outside provider throws `'useServices must be used inside ServicesProvider'`.
-- [ ] **Step 2: Run** `npm --prefix mobile test -- config createServices` — Expected: FAIL.
-- [ ] **Step 3: Implement.** Expo location impl maps `Location.requestForegroundPermissionsAsync` status to `'granted'|'denied'` and uses `Accuracy.Balanced`. Image picker impl requests the matching permission, returns `null` on `canceled`.
-- [ ] **Step 4: Run** — Expected: PASS; `npx expo export --platform android` exits 0.
-- [ ] **Step 5: Commit** `feat(mobile): config, Firebase init, composition root, device services`.
+- [x] **Step 1: Write failing tests:** `readConfig({})` → `backend:'memory'`, `firebase:null`; `readConfig({EXPO_PUBLIC_BACKEND:'emulator'})` uses project `demo-echoes` defaults and `emulatorHost:'127.0.0.1'`; `firebase` with a missing key throws the message; unknown backend throws; `createServices(readConfig({}))` returns repos whose `places.findNearest` finds a seeded place; `useServices` outside provider throws `'useServices must be used inside ServicesProvider'`.
+- [x] **Step 2: Run** `npm --prefix mobile test -- config createServices` — Expected: FAIL.
+- [x] **Step 3: Implement.** Expo location impl maps `Location.requestForegroundPermissionsAsync` status to `'granted'|'denied'` and uses `Accuracy.Balanced`. Image picker impl requests the matching permission, returns `null` on `canceled`.
+- [x] **Step 4: Run** — Expected: PASS; `npx expo export --platform android` exits 0.
+- [x] **Step 5: Commit** `feat(mobile): config, Firebase init, composition root, device services`.
 
 ---
 
