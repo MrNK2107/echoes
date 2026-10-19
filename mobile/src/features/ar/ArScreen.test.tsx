@@ -135,6 +135,47 @@ describe('ArScreen', () => {
     expect(sceneSpy).not.toHaveBeenCalled();
   });
 
+  it('falls back to the radar with the compass copy when the compass never reports', async () => {
+    jest.useFakeTimers({ doNotFake: ['nextTick', 'setImmediate', 'queueMicrotask'] });
+    try {
+      await setup({
+        arRenderer: availableRenderer(),
+        heading: { subscribe: async () => () => {} },
+      });
+      await act(async () => {
+        await jest.advanceTimersByTimeAsync(4500);
+      });
+      expect(await screen.findByText(AR_HEADING_UNAVAILABLE)).toBeOnTheScreen();
+      expect(await screen.findByTestId('radar-place-place-4')).toBeOnTheScreen();
+      expect(screen.queryByText(AR_CAMERA_VIEW)).toBeNull();
+      expect(sceneSpy).not.toHaveBeenCalled();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('drops the camera scene for the radar when the compass fails after it was ready', async () => {
+    let emit: (d: number) => void = () => {};
+    let fail: (e: Error) => void = () => {};
+    await setup({
+      arRenderer: availableRenderer(),
+      heading: {
+        subscribe: (cb) => {
+          emit = cb;
+          return new Promise((_, reject) => {
+            fail = reject;
+          });
+        },
+      },
+    });
+    await act(async () => emit(10));
+    expect(await screen.findByText('camera scene')).toBeOnTheScreen();
+    await act(async () => fail(new Error('compass lost')));
+    expect(await screen.findByText(AR_HEADING_UNAVAILABLE)).toBeOnTheScreen();
+    expect(screen.queryByText('camera scene')).toBeNull();
+    expect(await screen.findByTestId('radar-place-place-4')).toBeOnTheScreen();
+  });
+
   it('falls back to the radar when the scene reports a tracking error', async () => {
     await setup({ arRenderer: availableRenderer() });
     await screen.findByText('camera scene');

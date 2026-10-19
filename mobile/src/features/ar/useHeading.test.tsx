@@ -27,6 +27,34 @@ function controllable() {
 }
 
 describe('useHeading', () => {
+  afterEach(() => jest.useRealTimers());
+
+  it('reports unavailable when the compass never sends a sample, and recovers on a late one', async () => {
+    jest.useFakeTimers();
+    const c = controllable();
+    const { result } = await renderHook(() => useHeading(), { wrapper: wrap(c.service) });
+    await act(async () => {});
+    expect(result.current.unavailable).toBe(false);
+    await act(async () => {
+      jest.advanceTimersByTime(4000);
+    });
+    expect(result.current).toMatchObject({ unavailable: true, ready: false });
+    await act(async () => c.emit(50));
+    expect(result.current).toMatchObject({ unavailable: false, ready: true });
+  });
+
+  it('does not time out once a sample has arrived', async () => {
+    jest.useFakeTimers();
+    const c = controllable();
+    const { result } = await renderHook(() => useHeading(), { wrapper: wrap(c.service) });
+    await act(async () => {});
+    await act(async () => c.emit(50));
+    await act(async () => {
+      jest.advanceTimersByTime(10000);
+    });
+    expect(result.current).toMatchObject({ unavailable: false, ready: true });
+  });
+
   it('is ready only once a real sample has arrived', async () => {
     const c = controllable();
     const { result } = await renderHook(() => useHeading(), { wrapper: wrap(c.service) });
