@@ -82,16 +82,21 @@ Do these before shipping the Expo client.
 - **Client item C8.** Set real `EXPO_PUBLIC_TERMS_URL`,
   `EXPO_PUBLIC_GUIDELINES_URL` and `EXPO_PUBLIC_SUPPORT_EMAIL` values before store
   submission. The defaults point at `echoes.app` and must not ship.
-- **Push delivery (optional hardening).** `onNotificationCreated` sends to the Expo
-  Push Service without credentials by default. For enhanced push security, enable
-  it in the Expo dashboard and set `EXPO_ACCESS_TOKEN` as a function secret or
-  environment variable; the function then sends `Authorization: Bearer <token>`.
-  Not required for push to work.
+- **Push delivery (required launch step).** Enable enhanced push security in the Expo
+  dashboard and set `EXPO_ACCESS_TOKEN` as a function secret or environment variable
+  before launch; the function then sends `Authorization: Bearer <token>`. Without it
+  anyone who learns a push token could send to it. Push works without it in development.
+- **EAS environment.** Preview and production builds set `EXPO_PUBLIC_BACKEND=firebase`
+  (in `mobile/eas.json`) and need these EAS environment variables: all
+  `EXPO_PUBLIC_FIREBASE_*` keys (API_KEY, AUTH_DOMAIN, PROJECT_ID, STORAGE_BUCKET,
+  APP_ID, MESSAGING_SENDER_ID), `EXPO_PUBLIC_EAS_PROJECT_ID`, `EXPO_PUBLIC_TERMS_URL`,
+  `EXPO_PUBLIC_GUIDELINES_URL` and `EXPO_PUBLIC_SUPPORT_EMAIL`. The development profile
+  needs `EXPO_PUBLIC_EMULATOR_HOST` set to the PC's LAN IP for physical phones.
 
 ## Expo Plan 4 push and AR runbook
 
 - **EAS credentials:** the owner runs `npx eas-cli init` in `mobile/` and sets `EXPO_PUBLIC_EAS_PROJECT_ID` (local `.env` and EAS environment variables). Configure Android FCM credentials (upload the Firebase service account key / `google-services.json` through `eas credentials`) and iOS APNs credentials (EAS manages the key with an Apple Developer account). Without them Expo Push cannot deliver to physical devices.
-- **Expo Push:** `functions/push.js` sends via the Expo push API. Optionally set `EXPO_ACCESS_TOKEN` on the functions environment (Expo account token) to authenticate requests when enhanced push security is on. Sends go to at most the 10 most recently seen tokens per user, in chunks of 100; `DeviceNotRegistered` tickets prune the token. Receipt polling is not implemented.
+- **Expo Push:** `functions/push.js` sends via the Expo push API. Set `EXPO_ACCESS_TOKEN` on the functions environment (Expo account token) to authenticate requests; it is required at launch (enhanced push security). Token docs must match `ExponentPushToken[...]`/`ExpoPushToken[...]` (enforced by rules) and a user keeps at most 10 tokens. Sends go to at most the 10 most recently seen tokens per user, in chunks of 100; `DeviceNotRegistered` tickets prune the token. Receipt polling is not implemented.
 - **Index deploy:** run `npx firebase deploy --only firestore:indexes --project <project-id>` before shipping. `firestore.indexes.json` includes the `pushTokens.token` collection-group field override that `onPushTokenCreated` uses to dedupe a token across users on shared phones.
 - **Deploy functions** (`onNotificationCreated`, `onPushTokenCreated`) together with the indexes.
 - **ARCore/ARKit device matrix:** test on at least one ARCore-supported Android device, one non-ARCore Android device, one ARKit iPhone (iOS 15+) and, if possible, a low-end device. Record radar behaviour (orbs, compass heading, 4 s north-up fallback) and, once camera AR is enabled, camera scene, FPS (30 or better) and the fallback to radar.

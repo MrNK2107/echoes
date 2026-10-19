@@ -219,9 +219,11 @@ Push notifications and camera AR need native code, so they require an EAS build;
 
 1. The owner runs `npx eas-cli init` in `mobile/` once, then sets `EXPO_PUBLIC_EAS_PROJECT_ID` to the printed project id (in `mobile/.env` locally and as an EAS environment variable for builds).
 2. Profiles in `mobile/eas.json`:
-   - `development`: dev client, internal distribution, `EXPO_PUBLIC_BACKEND=emulator`.
-   - `preview`: internal distribution, Android APK.
-   - `production`: store build with `autoIncrement`.
+   - `development`: dev client, internal distribution, `EXPO_PUBLIC_BACKEND=emulator`. For a physical phone also set `EXPO_PUBLIC_EMULATOR_HOST` to the PC's LAN IP.
+   - `preview`: internal distribution, Android APK, `EXPO_PUBLIC_BACKEND=firebase`.
+   - `production`: store build with `autoIncrement`, `EXPO_PUBLIC_BACKEND=firebase`.
+
+   Preview and production builds need these EAS environment variables (a missing Firebase key fails at startup): `EXPO_PUBLIC_FIREBASE_API_KEY`, `EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN`, `EXPO_PUBLIC_FIREBASE_PROJECT_ID`, `EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET`, `EXPO_PUBLIC_FIREBASE_APP_ID`, `EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`, `EXPO_PUBLIC_EAS_PROJECT_ID`, `EXPO_PUBLIC_TERMS_URL`, `EXPO_PUBLIC_GUIDELINES_URL`, `EXPO_PUBLIC_SUPPORT_EMAIL`.
 3. Build with `npx eas-cli build --profile development --platform android` (or `ios`).
 
 Expo Go still works for everything except remote push and camera AR (AR falls back to the 2D view). See ADR-0009.
@@ -245,7 +247,7 @@ Expo Go still works for everything except remote push and camera AR (AR falls ba
 - Open AR from the map. Today this is the 2D radar everywhere: `@reactvision/react-viro` does not install on Expo SDK 58 / RN 0.88, so camera AR is dormant and unverified. It turns on automatically once a compatible viro installs.
 - Radar shows the place target and aura/memory orbs; tapping opens the place or memory.
 - Turning the phone rotates the radar with the compass; if the compass never reports, it falls back to north-up after 4 s.
-- Location permission denied shows the denied copy; the camera permission request is only made in camera mode.
+- Location permission denied shows the denied copy; the camera permission is requested when the AR screen opens and camera AR is available (not only in camera mode).
 - When viro installs: verify the camera scene on an ARCore (Android) and ARKit (iOS) device and the radar fallback on a non-AR device.
 
 ## Release Build Commands

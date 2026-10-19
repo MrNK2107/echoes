@@ -28,3 +28,17 @@ Launch-readiness items deferred from Plan 3's final whole-branch review. Plan 5'
 - Debounce forced token refresh on institution screens.
 - Membership load error shows Join.
 - TransferSheet dedicated test for its remove label.
+
+## From Plan 4 final review
+- Poll Expo push receipts (tickets only today).
+- Generic lock-screen preview text for community-invite pushes.
+- Unregister the push token on auth-state null (sign-out/expiry).
+- Note token squatting (registering another device's token) in ADR-0009.
+- Throttle AppState-driven push re-registration.
+- Real-3s race test for the AR support check timeout.
+- Wrapper test for onPushTokenCreated (relay + trim).
+- Offline registration retry for push tokens.
+- Device/a11y pass: dense-area AR orb overlap, small-radar crowding, AR back-button safe area.
+- AR listener cost budget (per-place memory subscriptions).
+- When viro installs: verify plugin options, API shapes and tracking-grace behaviour.
+- Remove the device-to-feature import in arRenderer (ViroArScene).
