@@ -216,13 +216,13 @@
 - Pressing the aura calls `onPressPlace(placeId)`.
 - Tracking errors switch to radar with the unsupported copy.
 
-- [ ] **Step 1: Write failing tests** with a jest mock of `@reactvision/react-viro`:
+- [x] **Step 1: Write failing tests** with a jest mock of `@reactvision/react-viro`:
   - one sphere per place;
   - orb count capped;
   - press handlers;
   - a tracking-error callback leads to fallback.
-- [ ] **Step 2–4:** FAIL → implement → PASS (+ android export with the guarded require).
-- [ ] **Step 5: Commit** `feat(ar): ViroReact camera scene`.
+- [x] **Step 2–4:** FAIL → implement → PASS (+ android export with the guarded require).
+- [x] **Step 5: Commit** `feat(ar): ViroReact camera scene`.
 
 ---
 
