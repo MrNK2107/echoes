@@ -94,6 +94,6 @@ Severity: SEV1 (data exposure, rules wide open, app unusable for everyone), SEV2
 - [ ] Store listing, screenshots, privacy labels, age rating and reviewer account (`docs/store/`).
 - [ ] PITR, backup schedule, alerts, budgets and Auth email-enumeration protection (sections 2 and 3).
 - [ ] Maestro flows run on a device against the `e2e` build (ADR-0012; index selectors are unverified).
-- [ ] AR device matrix (`docs/release-readiness.md`); camera AR stays off until the Viro gate passes.
+- [ ] AR device matrix (`docs/release-readiness.md`), including the camera AR gate.
 - [ ] First run of the existing `.github/workflows/ci.yml` is green on GitHub (the workflow is committed; only a push can prove it).
 - [ ] Moderation staff named, the `staff` claim granted, and the 24 hour response rota agreed.

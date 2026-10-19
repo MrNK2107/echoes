@@ -31,3 +31,6 @@ mobile/node_modules/
 mobile/.expo/
 mobile/dist/
 mobile/dist-ios/
+
+# Personal setup guide (local only)
+SETUP_GUIDE.md

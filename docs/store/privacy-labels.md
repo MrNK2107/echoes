@@ -19,7 +19,7 @@ Derived from the code on branch `expo-rewrite`, not from intent. Owner gate: a h
 | User ID | Firebase Auth uid on every owned document | all of the above |
 | Device ID (Expo push token) | `users/{uid}/pushTokens/{tokenId}` (max 10 per user); sent to Expo Push to deliver notifications | `functions/push.js`; `firestore.rules.template` |
 | Crash logs, diagnostics, performance | Sentry, only in builds with `EXPO_PUBLIC_SENTRY_DSN`. `sendDefaultPii: false`, no `setUser`, no session replay, `tracesSampleRate: 0.1`. Query strings, push tokens, bearer tokens, email-shaped strings and uids in Storage and Firestore paths (`memory-images/<uid>/`, `users/<uid>`, `publicProfiles/<uid>`) are scrubbed in `beforeSend`, `beforeSendTransaction` (transactions, span descriptions, data and attributes) and `beforeBreadcrumb`, which is why the Apple "not linked" answer holds. Retention is the Sentry project setting (default 90 days; OWNER confirms). OWNER also enables "Prevent storing of IP addresses" and server-side data scrubbing in Sentry | `mobile/src/device/crashReporter.ts`; ADR-0011 |
-| Camera / microphone / photo library | Camera: only to attach a photo (the permission string says so; camera AR is not in v1 and its wording returns with it, ADR-0010). Microphone: only to record a voice note. Content leaves the device only as the photo or audio the user saves | `app.config.ts` permissions and plugin strings |
+| Camera / microphone / photo library | Camera: to attach a photo and to show the live AR view (ADR-0010 amendment). AR frames are shown on screen only; they are never recorded, stored or uploaded. Microphone: only to record a voice note. Content leaves the device only as the photo or audio the user saves | `app.config.ts` permissions and plugin strings |
 
 Not collected: contacts, advertising ID, browsing history, financial data, health data, background location (when-in-use only), analytics events. No ads SDK and no analytics SDK are in `mobile/package.json`. `NSPrivacyTracking` is `false` in `app.config.ts`.
 
@@ -72,7 +72,7 @@ The app also ships an Apple privacy manifest (`app.config.ts` `privacyManifests`
 
 `mobile/test/appConfig.introspect.test.ts` runs `expo config --type introspect` so the real config plugins execute, and asserts the shipped native config:
 
-- iOS: usage strings only for camera, photo library, microphone and location when in use. No `UIBackgroundModes`, no always-on location strings, no `NSMotionUsageDescription`.
+- iOS: usage strings only for camera (photos and AR), photo library, microphone and location when in use. No `UIBackgroundModes`, no always-on location strings, and no `NSMotionUsageDescription` (AR attitude from `expo-sensors` needs none; its plugin sets `motionPermission: false`).
 - Android: `CAMERA`, `POST_NOTIFICATIONS`, `ACCESS_COARSE_LOCATION`, `ACCESS_FINE_LOCATION`, `RECORD_AUDIO`, `MODIFY_AUDIO_SETTINGS`, storage read/write from the image picker, `INTERNET`. No `FOREGROUND_SERVICE*`, no `ACCESS_BACKGROUND_LOCATION`, no activity recognition. `SYSTEM_ALERT_WINDOW` and `FOREGROUND_SERVICE_MEDIA_PLAYBACK` are in `blockedPermissions`.
 - `expo-audio` runs with `enableBackgroundPlayback: false` and `enableBackgroundRecording: false`, so voice notes pause when the app leaves the foreground. The plugin default would have added the iOS `audio` background mode and a media-playback foreground service that the Play and App Store declarations do not cover.
 

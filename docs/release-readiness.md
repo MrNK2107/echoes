@@ -16,7 +16,7 @@ Mirrors `status.md` (Plan 5). Each stays unchecked until a person does it; detai
 - [ ] TTL, PITR, backups and alerts configured
 - [ ] `EXPO_ACCESS_TOKEN` set
 - [ ] Device performance measured against the budgets
-- [ ] Camera AR still off pending viro
+- [ ] Camera AR verified on physical Android and iOS devices
 - [ ] First green CI run on GitHub
 
 ## Repository automation (must be green first)
@@ -55,7 +55,7 @@ npx firebase emulators:exec --only firestore,storage "npm test --prefix rules_te
 - Create text, photo and 60-second voice-note memories in every privacy mode; offline retry when connectivity returns.
 - Maps markers and details, communities, institutions, aura history, custodianship transfer, 30-day restore, report and block.
 - **Maestro:** run `mobile/.maestro` on a device against the `e2e` EAS build (README, "End-to-end flows"). CI cannot do this and the index selectors are unverified.
-- **AR device matrix** (Plan 4 section below). Camera AR is not shipped; the radar is.
+- **AR device matrix** (Plan 4 section below). Camera AR (location-based, ADR-0010 amendment) and the radar fallback both ship.
 - Performance on a mid-range phone: cold start under 3 s, memory load under 2 s, location update under 1 s.
 - Store submission: privacy labels, age rating, listing, screenshots, support URL, privacy policy, reviewer account (`docs/store/`).
 - Legal text: `EXPO_PUBLIC_TERMS_URL`, `EXPO_PUBLIC_GUIDELINES_URL`, `EXPO_PUBLIC_PRIVACY_URL`, `EXPO_PUBLIC_SUPPORT_EMAIL` must be real. Firebase-mode builds fail at startup without them (and without `EXPO_PUBLIC_EAS_PROJECT_ID`), so the `echoes.app` development defaults cannot ship.
@@ -91,5 +91,7 @@ Cost: each task is a full collection scan (reads = documents scanned); `all` sca
 - **Expo Push:** `functions/push.js` sends via the Expo push API. Put `EXPO_ACCESS_TOKEN=...` in `functions/.env.<projectId>` (Expo account token) to authenticate requests; it is required at launch (enhanced push security). Token docs must match `ExponentPushToken[...]`/`ExpoPushToken[...]` (enforced by rules) and a user keeps at most 10 tokens. Sends go to at most the 10 most recently seen tokens per user, in chunks of 100; `DeviceNotRegistered` tickets prune the token. `checkPushReceipts` (every 30 minutes) polls receipts for ok tickets and prunes tokens reported `DeviceNotRegistered`.
 - **Index deploy:** run `npx firebase deploy --only firestore:indexes --project <project-id>` before shipping. `firestore.indexes.json` includes the `pushTokens.token` collection-group field override that `onPushTokenCreated` uses to dedupe a token across users on shared phones.
 - **Deploy functions** (`onNotificationCreated`, `onPushTokenCreated`) together with the indexes.
-- **ARCore/ARKit device matrix:** test on at least one ARCore-supported Android device, one non-ARCore Android device, one ARKit iPhone (iOS 16.4+) and, if possible, a low-end device. Record radar behaviour (orbs, compass heading, 4 s north-up fallback) and, once camera AR is enabled, camera scene, FPS (30 or better) and the fallback to radar.
-- **Viro compatibility gate:** `@reactvision/react-viro` currently fails to install on Expo SDK 58 / RN 0.88 (ERESOLVE), so the radar is the shipping AR experience. Before enabling camera AR in a release, install a compatible viro version, verify its API usage and config-plugin options (unverified today), and complete the camera AR device matrix above. Do not ship camera AR on the strength of mocks alone.
+- **AR device matrix:** test on at least one mid-range Android device, one iPhone (iOS 16.4+) and, if possible, a low-end Android device. ARCore is not required. Record:
+  - Radar behaviour: orbs, compass heading, the 4 s north-up fallback.
+  - Camera AR: a known place lines up within about 10° when you face it, edge chips point the right way, upright and tilted poses, FPS (30 or better), and the fallback to radar when the camera is denied or busy.
+- **Camera AR gate:** camera AR uses `expo-camera` and `expo-sensors` (ADR-0010 amendment). Viro was dropped because its latest release supports only Expo 57 / RN 0.86. Complete the camera AR device matrix above before release. Do not ship it on the strength of mocks alone.

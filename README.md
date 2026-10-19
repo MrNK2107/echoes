@@ -133,7 +133,7 @@ npx firebase-tools emulators:exec --project demo-echoes --only auth,firestore,st
 
 ## EAS builds
 
-Push notifications and camera AR need native code, so they require an EAS build; everything else keeps working in Expo Go.
+Push notifications need native code, so they require an EAS build; everything else, including camera AR, works in Expo Go.
 
 1. The owner runs `npx eas-cli init` in `mobile/` once, then sets `EXPO_PUBLIC_EAS_PROJECT_ID` to the printed project id (in `mobile/.env` locally and as an EAS environment variable for builds).
 2. Profiles in `mobile/eas.json`:
@@ -151,9 +151,9 @@ Push notifications and camera AR need native code, so they require an EAS build;
 
 Operations, store listing and privacy labels: `docs/ops/runbook.md`, `docs/store/`.
 
-The camera permission string covers photos only until camera AR ships; the AR wording returns with it (ADR-0010).
+The camera permission string covers photos and camera AR (ADR-0010 amendment).
 
-Expo Go still works for everything except remote push and camera AR (AR falls back to the 2D view). See ADR-0009.
+Expo Go works for everything except remote push. See ADR-0009.
 
 ### End-to-end flows (Maestro)
 
@@ -181,11 +181,11 @@ Use a normal-width screen so the map top-row buttons keep their labels. CI canno
 
 **AR device checklist:**
 
-- Open AR from the map. Today this is the 2D radar everywhere: `@reactvision/react-viro` does not install on Expo SDK 58 / RN 0.88, so camera AR is dormant and unverified. It turns on automatically once a compatible viro installs.
+- Open AR from the map. On a phone it opens the camera view: place auras and memory orbs float over the live camera in the direction of each place, and out-of-view places show as edge chips. `Radar view` switches to the 2D radar. The radar is also the fallback when the camera is denied, the device has no motion sensors, or the sensors stop (ADR-0010 amendment).
 - Radar shows the place target and aura/memory orbs; tapping opens the place or memory.
 - Turning the phone rotates the radar with the compass; if the compass never reports, it falls back to north-up after 4 s.
 - Location permission denied shows the denied copy; the camera permission is requested when the AR screen opens and camera AR is available (not only in camera mode).
-- When viro installs: verify the camera scene on an ARCore (Android) and ARKit (iOS) device and the radar fallback on a non-AR device.
+- Verify camera AR on a physical Android and iOS device: face a known place and check that its aura lines up, turn to see edge chips, tilt up and down, and deny camera access to see the radar fallback.
 
 ## Release
 

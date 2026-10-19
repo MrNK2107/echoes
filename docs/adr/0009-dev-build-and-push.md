@@ -26,7 +26,7 @@ bundle `com.mrnk2107.echoes`.
 - **Expo Go remains supported.** Anything native is optional at runtime:
   - Push registration is skipped when `Constants.appOwnership === 'expo'` or the
     device is a simulator.
-  - AR falls back to the 2D view (ADR-0010).
+  - Camera AR uses only modules bundled in Expo Go (ADR-0010 amendment).
 - **Push transport: Expo Push Service.**
   - **Client:** `expo-notifications` obtains an Expo push token after the user
     opts in (Profile → Notifications → `Turn on push notifications`). It stores

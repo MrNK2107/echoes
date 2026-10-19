@@ -63,5 +63,5 @@ Create a reviewer account on the production backend before submission. The `demo
 - Reviewer email and password (a verified-email account, so reporting and communities work).
 - Where to find report and block, and the in-app account deletion (Profile, delete account).
 - Location is needed to pin memories; while-using access is enough. Push notifications are optional.
-- Camera AR is not shipped in v1 (2D radar only; see the Viro gate in `docs/release-readiness.md`).
+- AR: open the map's AR button and point the camera around. Nearby memory places appear over the camera view, and places out of view show as chips on the screen edges. Without camera access it shows a 2D radar instead.
 - Moderation contact and the 24 hour response target.

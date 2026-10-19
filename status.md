@@ -5,7 +5,7 @@
 
 ## Expo rewrite - Plan 5
 
-Plan 5 (launch readiness) delivered: report and moderation pipeline, admin subcollection and institution admin migration, server-side rollups (time/era `memberCount` from a `count()` of `members`), push receipt polling (`checkPushReceipts`) with TTL policies declared in `firestore.indexes.json`, fail-closed block handling, accessibility and safe-area fixes, account repair and finish-setup flows, Android and iOS config for store builds, Sentry crash reporting (ADR-0011, off without a DSN), listener budgets, Maestro flows and the 30-day restore flow (ADR-0012), the data backfill tool and runbook, store and privacy material, and removal of the Flutter client. The export bundle budget was amended to 7 864 320 bytes (R5-4). Camera AR stays off pending a compatible viro.
+Plan 5 (launch readiness) delivered: report and moderation pipeline, admin subcollection and institution admin migration, server-side rollups (time/era `memberCount` from a `count()` of `members`), push receipt polling (`checkPushReceipts`) with TTL policies declared in `firestore.indexes.json`, fail-closed block handling, accessibility and safe-area fixes, account repair and finish-setup flows, Android and iOS config for store builds, Sentry crash reporting (ADR-0011, off without a DSN), listener budgets, Maestro flows and the 30-day restore flow (ADR-0012), the data backfill tool and runbook, store and privacy material, and removal of the Flutter client. The export bundle budget was amended to 7 864 320 bytes (R5-4). Camera AR now ships as location-based AR (expo-camera preview plus DeviceMotion attitude, ADR-0010 amendment). Viro was dropped because it does not support Expo 58 / RN 0.88.
 
 | Command | Result |
 | --- | --- |
@@ -33,7 +33,7 @@ Plan 5 (launch readiness) delivered: report and moderation pipeline, admin subco
 - [ ] TTL policies deployed with indexes, PITR, backups and alerts configured
 - [ ] `EXPO_ACCESS_TOKEN` set in `functions/.env.<projectId>` and enhanced push security enabled
 - [ ] Device performance measured against the budgets (cold start 3 s, memory load 2 s, location update 1 s)
-- [ ] Camera AR still off pending a compatible `@reactvision/react-viro` (do not ship on mocks)
+- [ ] Camera AR verified on a physical Android and iOS device (marker alignment, edge chips, radar fallback, 30 fps)
 - [ ] First green `.github/workflows/ci.yml` run on GitHub
 
 ### Known follow-ups
