@@ -16,7 +16,7 @@ The two candidates:
 - **Client: `@sentry/react-native`**, behind a `CrashReporter` interface in `mobile/src/device/crashReporter.ts`:
   - `noopCrashReporter` is used when `EXPO_PUBLIC_SENTRY_DSN` is empty, in Expo Go (`Constants.appOwnership === 'expo'`) and in tests. Sentry is loaded only through a guarded dynamic `require`.
   - The Sentry config plugin (`@sentry/react-native/expo`) is added in `app.config.ts` only when `SENTRY_ORG` and `SENTRY_PROJECT` are set. EAS builds also need `SENTRY_AUTH_TOKEN` as an EAS secret for source maps.
-  - Privacy: `sendDefaultPii: false`, no `setUser`, no session replay. `beforeSend` and `beforeBreadcrumb` drop URLs' query strings and any `ExponentPushToken[...]` or email-shaped strings. `tracesSampleRate: 0.1`. `environment` is the backend mode, `release` is the app version.
+  - Privacy: `sendDefaultPii: false`, no `setUser`, no session replay. `beforeSend` and `beforeBreadcrumb` drop URLs' query strings and any `ExponentPushToken[...]` or email-shaped strings. `tracesSampleRate: 0.1`. `environment` is the backend mode, `release` and `dist` are the Sentry SDK defaults (`<bundleId>@<version>+<build>`), which match the source maps uploaded by the config plugin; Metro uses `getSentryExpoConfig`.
   - The root error boundary reports and shows the generic error copy.
 - **Functions: Google Cloud Error Reporting**, which picks up `logger.error` with stack traces automatically. Cloud Monitoring alert policies (in the runbook) cover function error rate, push failures and Firestore usage. No extra dependency.
 

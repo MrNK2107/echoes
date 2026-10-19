@@ -27,8 +27,11 @@ Neither the Flutter app nor Plan 1/2 has any of this.
   - Reports are stored server-side in `reports/{id}`, one per reporter per
     memory.
   - The limit is 20 reports per user per day.
-- **Auto-hide.** When 3 distinct users have reported a memory, the server sets
-  `moderation: 'hidden'` on it.
+- **Auto-hide.** When 3 distinct *verified* users (email verified at report time,
+  stored as `reporterVerified: true`) have reported a memory, the server sets
+  `moderation: 'hidden'` on it. Unverified reports are stored but never count, and
+  legacy reports without `reporterVerified` never count. `reportContent` reports on
+  communities and profiles never auto-hide; staff act on them by hand.
   - `isVisibleMemory` in the rules then excludes it for everyone except its
     author, who sees a "Hidden after reports" badge.
   - Visibility queries add `where('moderation', '==', null)`.

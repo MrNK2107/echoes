@@ -221,10 +221,17 @@ Push notifications and camera AR need native code, so they require an EAS build;
 2. Profiles in `mobile/eas.json`:
    - `development`: dev client, internal distribution, `EXPO_PUBLIC_BACKEND=emulator`. For a physical phone also set `EXPO_PUBLIC_EMULATOR_HOST` to the PC's LAN IP.
    - `preview`: internal distribution, Android APK, `EXPO_PUBLIC_BACKEND=firebase`.
-   - `production`: store build with `autoIncrement`, `EXPO_PUBLIC_BACKEND=firebase`.
+   - `e2e`: internal distribution, Android APK and iOS simulator build, `EXPO_PUBLIC_BACKEND=memory` (demo data, used by the Maestro flows).
+   - `production`: store build with `autoIncrement`, Android `app-bundle`, iOS on the `m-medium` resource class, `EXPO_PUBLIC_BACKEND=firebase`.
 
-   Preview and production builds need these EAS environment variables (a missing Firebase key fails at startup): `EXPO_PUBLIC_FIREBASE_API_KEY`, `EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN`, `EXPO_PUBLIC_FIREBASE_PROJECT_ID`, `EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET`, `EXPO_PUBLIC_FIREBASE_APP_ID`, `EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`, `EXPO_PUBLIC_EAS_PROJECT_ID`, `EXPO_PUBLIC_TERMS_URL`, `EXPO_PUBLIC_GUIDELINES_URL`, `EXPO_PUBLIC_SUPPORT_EMAIL`, plus the build-time secret `GOOGLE_MAPS_ANDROID_API_KEY` (Android Google Maps key; set it as an EAS secret, e.g. `npx eas-cli env:create --name GOOGLE_MAPS_ANDROID_API_KEY --visibility secret`; when absent the maps config is omitted).
+   Preview and production builds need these EAS environment variables (a missing Firebase key fails at startup): `EXPO_PUBLIC_FIREBASE_API_KEY`, `EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN`, `EXPO_PUBLIC_FIREBASE_PROJECT_ID`, `EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET`, `EXPO_PUBLIC_FIREBASE_APP_ID`, `EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`, `EXPO_PUBLIC_EAS_PROJECT_ID`, `EXPO_PUBLIC_TERMS_URL`, `EXPO_PUBLIC_GUIDELINES_URL`, `EXPO_PUBLIC_SUPPORT_EMAIL`, plus the build-time secret `GOOGLE_MAPS_ANDROID_API_KEY` (Android Google Maps key; required for production Android, set it as an EAS secret, e.g. `npx eas-cli env:create --name GOOGLE_MAPS_ANDROID_API_KEY --visibility secret`; when absent the maps config is omitted).
 3. Build with `npx eas-cli build --profile development --platform android` (or `ios`).
+
+**Crash reporting (Sentry, ADR-0011).** Off unless `EXPO_PUBLIC_SENTRY_DSN` is set, and always off in Expo Go and tests. Build-time `SENTRY_ORG` and `SENTRY_PROJECT` add the Sentry config plugin; set `SENTRY_AUTH_TOKEN` as an EAS secret so source maps upload. Owner gate: a symbolicated test crash (see `docs/release-readiness.md`).
+
+**Bundle size.** After `npx expo export --platform android --output-dir dist` and `npx expo export --platform ios --output-dir dist-ios`, run `npm run check:bundle` in `mobile/`.
+
+Operations, store listing and privacy labels: `docs/ops/runbook.md`, `docs/store/`.
 
 Expo Go still works for everything except remote push and camera AR (AR falls back to the 2D view). See ADR-0009.
 
