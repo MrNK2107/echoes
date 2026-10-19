@@ -6,27 +6,44 @@ import type { CrashReporter } from './types';
 const PUSH_TOKEN = /Expo(?:nent)?PushToken\[[^\]]*\]/g;
 const EMAIL = /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+/g;
 // A query string is `?` followed by key=value pairs; it ends at whitespace, a quote or a fragment.
+// A query string is `?` followed by key=value pairs; it ends at whitespace, a quote or a fragment.
 const QUERY = /\?[^\s"'#]*=[^\s"'#]*/g;
+// OAuth-style fragments carry tokens (`#access_token=...`); plain anchors like `#top` stay.
+const FRAGMENT = /#[^\s"'#]*=[^\s"'#]*/g;
+const BEARER = /Bearer\s+\S+/gi;
 const MAX_DEPTH = 12;
 
 function scrubString(s: string): string {
-  return s.replace(PUSH_TOKEN, '[push-token]').replace(QUERY, '').replace(EMAIL, '[email]');
+  return s
+    .replace(PUSH_TOKEN, '[push-token]')
+    .replace(BEARER, '[bearer]')
+    .replace(QUERY, '')
+    .replace(FRAGMENT, '')
+    .replace(EMAIL, '[email]');
 }
 
-function walk(value: unknown, depth: number, seen: WeakSet<object>): unknown {
+/** `copies` maps each input object to its scrubbed copy, so a shared reference is scrubbed wherever it appears (and cycles terminate). */
+function walk(value: unknown, depth: number, copies: Map<object, unknown>): unknown {
   if (typeof value === 'string') return scrubString(value);
   if (value === null || typeof value !== 'object') return value;
-  if (depth > MAX_DEPTH || seen.has(value)) return value;
-  seen.add(value);
-  if (Array.isArray(value)) return value.map((v) => walk(v, depth + 1, seen));
+  const known = copies.get(value);
+  if (known !== undefined) return known;
+  if (depth > MAX_DEPTH) return '[depth]';
+  if (Array.isArray(value)) {
+    const arr: unknown[] = [];
+    copies.set(value, arr);
+    value.forEach((v) => arr.push(walk(v, depth + 1, copies)));
+    return arr;
+  }
   const out: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(value)) out[k] = walk(v, depth + 1, seen);
+  copies.set(value, out);
+  for (const [k, v] of Object.entries(value)) out[k] = walk(v, depth + 1, copies);
   return out;
 }
 
 /** Removes query strings, Expo push tokens and email-shaped substrings from any string in an event or breadcrumb. */
 export function scrub<T>(event: T): T {
-  return walk(event, 0, new WeakSet()) as T;
+  return walk(event, 0, new Map()) as T;
 }
 
 export const noopCrashReporter: CrashReporter = {
@@ -43,7 +60,6 @@ export interface CrashReporterOptions {
   dsn: string | null;
   appOwnership: string | null;
   environment: BackendMode;
-  release: string;
 }
 
 /** Noop without a DSN and in Expo Go; Sentry is required lazily so nothing loads in those cases or in tests. */
@@ -61,7 +77,6 @@ export function createCrashReporter(opts: CrashReporterOptions): CrashReporter {
           sendDefaultPii: false,
           tracesSampleRate: 0.1,
           environment: opts.environment,
-          release: opts.release,
           beforeSend: scrub,
           beforeBreadcrumb: scrub,
         });

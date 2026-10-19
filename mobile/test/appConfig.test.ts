@@ -129,6 +129,9 @@ describe('eas.json', () => {
     expect(eas.build.production.android).toEqual({ buildType: 'app-bundle' });
   });
 
+});
+
+describe('app.config sentry plugin', () => {
   it('adds the Sentry plugin only with both SENTRY_ORG and SENTRY_PROJECT', () => {
     const saved = [process.env.SENTRY_ORG, process.env.SENTRY_PROJECT];
     try {
@@ -146,5 +149,4 @@ describe('eas.json', () => {
       if (saved[0] === undefined) delete process.env.SENTRY_ORG;
       if (saved[1] === undefined) delete process.env.SENTRY_PROJECT;
     }
-  });
-});
+  });});

@@ -12,7 +12,7 @@ jest.mock('@sentry/react-native', () => {
 const mockIsExpoGo = jest.fn(() => false);
 jest.mock('./expoGo', () => ({ isExpoGo: () => mockIsExpoGo() }));
 
-const base = { dsn: 'https://k@o0.ingest.sentry.io/1', appOwnership: null, environment: 'firebase' as const, release: '1.0.0' };
+const base = { dsn: 'https://k@o0.ingest.sentry.io/1', appOwnership: null, environment: 'firebase' as const };
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -25,6 +25,7 @@ describe('createCrashReporter', () => {
     r.init();
     r.captureException(new Error('x'));
     expect(mockLoaded).not.toHaveBeenCalled();
+    expect(mockCapture).not.toHaveBeenCalled();
   });
 
   it('is a noop in Expo Go (appOwnership or the shared guard)', () => {
@@ -34,6 +35,7 @@ describe('createCrashReporter', () => {
     r.init();
     r.captureException(new Error('x'));
     expect(mockLoaded).not.toHaveBeenCalled();
+    expect(mockCapture).not.toHaveBeenCalled();
   });
 
   it('initialises Sentry without PII and with the environment and release', () => {
@@ -44,11 +46,13 @@ describe('createCrashReporter', () => {
         sendDefaultPii: false,
         tracesSampleRate: 0.1,
         environment: 'firebase',
-        release: '1.0.0',
         beforeSend: expect.any(Function),
         beforeBreadcrumb: expect.any(Function),
       }),
     );
+    // The SDK defaults release/dist to what the Sentry Expo plugin uploads (bundleId@version+build).
+    expect(mockInit.mock.calls[0][0]).not.toHaveProperty('release');
+    expect(mockInit.mock.calls[0][0]).not.toHaveProperty('dist');
   });
 
   it('scrubs breadcrumb URLs and events through the hooks', () => {
@@ -89,5 +93,22 @@ describe('scrub', () => {
     expect(json).not.toMatch(/abc-123|zzz|jane|example\.com|SECRET|token=|key=/);
     expect(out.request.url).toBe('https://h.io/p');
     expect(out.count).toBe(3);
+  });
+
+  it('scrubs a shared reference every time it appears, and bounds depth', () => {
+    const shared = { url: 'https://h.io/p?key=S', who: 'a@b.co' };
+    const out = scrub({ a: shared, b: shared, list: [shared] });
+    expect(JSON.stringify(out)).not.toMatch(/key=|a@b\.co/);
+    let deep: Record<string, unknown> = { leaf: 'x@y.zz' };
+    for (let i = 0; i < 30; i++) deep = { n: deep };
+    expect(JSON.stringify(scrub(deep))).toContain('[depth]');
+    expect(JSON.stringify(scrub(deep))).not.toContain('x@y.zz');
+  });
+
+  it('strips fragments containing = and bearer tokens', () => {
+    const out = scrub({ url: 'https://h.io/cb#access_token=abc&x=1', keep: 'https://h.io/page#top', h: 'Authorization: Bearer abc.def-123' });
+    expect(out.url).toBe('https://h.io/cb');
+    expect(out.keep).toBe('https://h.io/page#top');
+    expect(out.h).toBe('Authorization: [bearer]');
   });
 });

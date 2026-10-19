@@ -63,7 +63,6 @@ export function createServices(config: AppConfig, overrides: Partial<Services> =
       dsn: config.sentryDsn,
       appOwnership: Constants.appOwnership ?? null,
       environment: config.backend,
-      release: Constants.expoConfig?.version ?? '0.0.0',
     }),
     now,
     newId: () => randomUUID(),
