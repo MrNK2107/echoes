@@ -266,14 +266,14 @@
 - `scrub(event): event` removes query strings, `Expo(nent)?PushToken[…]` and email-shaped substrings.
 - `AppConfig.sentryDsn: string | null` comes from `EXPO_PUBLIC_SENTRY_DSN`.
 
-- [ ] **Step 1: Write failing tests:**
+- [x] **Step 1: Write failing tests:**
   - `noop reporter when DSN missing or in Expo Go` (the jest mock of `@sentry/react-native` is never required);
   - with a DSN, `init` passes `sendDefaultPii:false`, `tracesSampleRate:0.1`, environment and release;
   - scrub removes a token, an email and a `?key=`;
   - the error boundary reports and renders `Something went wrong. Please try again.`;
   - the Sentry plugin is present only with `SENTRY_ORG` and `SENTRY_PROJECT`.
-- [ ] **Step 2–4:** FAIL → implement → PASS (+ both exports without a DSN).
-- [ ] **Step 5: Commit** `feat(mobile): optional Sentry crash reporting without PII`.
+- [x] **Step 2–4:** FAIL → implement → PASS (+ both exports without a DSN).
+- [x] **Step 5: Commit** `feat(mobile): optional Sentry crash reporting without PII`.
 
 ---
 
