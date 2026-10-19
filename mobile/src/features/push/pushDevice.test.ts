@@ -161,6 +161,34 @@ describe('registration throttle and offline retry', () => {
     expect(register).toHaveBeenCalledTimes(1);
   });
 
+  it('a forced call that joins a throttled in-flight attempt still registers', async () => {
+    const { services, register } = setup();
+    await registerDevice(services, 'A');
+    const plain = registerDevice(services, 'A');
+    const forced = registerDevice(services, 'A', { force: true });
+    await Promise.all([plain, forced]);
+    expect(register).toHaveBeenCalledTimes(2);
+  });
+
+  it('signing out and back in as the same user during an attempt registers in the new session', async () => {
+    let release: (t: string | null) => void = () => {};
+    let calls = 0;
+    const push = fakePush({
+      permission: 'granted',
+      token: () => (++calls === 1 ? new Promise<string | null>((r) => (release = r)) : Promise.resolve(TOKEN)),
+    });
+    const base = testServices({ push });
+    const register = jest.fn(base.repos.pushTokens.register);
+    const services = { ...base, repos: { ...base.repos, pushTokens: { ...base.repos.pushTokens, register } } };
+    const first = registerDevice(services, 'A');
+    await signOutDevice(services, 'A');
+    await registerDevice(services, 'A');
+    release(TOKEN);
+    await first;
+    expect(register).toHaveBeenCalledTimes(1);
+    expect(await base.repos.pushTokens.get('A', TOKEN)).not.toBeNull();
+  });
+
   it('a failure while already waiting for the network does not subscribe twice', async () => {
     const { services, subscribe, register } = setup({ failFirst: true });
     await expect(registerDevice(services, 'A')).rejects.toThrow('offline');

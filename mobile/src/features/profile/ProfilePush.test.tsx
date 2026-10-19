@@ -176,27 +176,28 @@ describe('Profile push settings', () => {
 });
 
 describe('Profile push re-grant within the throttle window', () => {
+  /** Keeps every 'change' handler (PushBridge and ProfileScreen both listen), like the real AppState. */
   const hook = () => {
-    let onChange: ((s: AppStateStatus) => void) | undefined;
-    jest.spyOn(AppState, 'addEventListener').mockImplementation((_t, h) => {
-      onChange = h as (s: AppStateStatus) => void;
+    const handlers: ((s: AppStateStatus) => void)[] = [];
+    jest.spyOn(AppState, 'addEventListener').mockImplementation((type, h) => {
+      if (type === 'change') handlers.push(h as (s: AppStateStatus) => void);
       return { remove: jest.fn() };
     });
-    return (s: AppStateStatus) => act(async () => onChange?.(s));
+    return (s: AppStateStatus) => act(async () => handlers.forEach((h) => h(s)));
   };
 
   it('enabling after the permission was reset registers again', async () => {
     const emit = hook();
     const push = fakePush({ permission: 'granted', token: 'ExponentPushToken[abc]' });
     const services = await setup(push, {}, false);
-    const register = jest.spyOn(services.repos.pushTokens, 'register');
     await screen.findByText('Push notifications are on');
     await registerDevice(services, 'user-demo');
+    const register = jest.spyOn(services.repos.pushTokens, 'register');
     push.setPermission('undetermined');
     await emit('active');
     await fireEvent.press(await screen.findByText(ENABLE));
     await screen.findByText('Push notifications are on');
-    await waitFor(() => expect(register).toHaveBeenCalled());
+    await waitFor(() => expect(register).toHaveBeenCalledTimes(1));
   });
 
   it('a permission re-granted in settings registers again within the window', async () => {
@@ -204,6 +205,21 @@ describe('Profile push re-grant within the throttle window', () => {
     const push = fakePush({ permission: 'granted', token: 'ExponentPushToken[abc]' });
     const services = await setup(push, {}, false);
     await registerDevice(services, 'user-demo');
+    const register = jest.spyOn(services.repos.pushTokens, 'register');
+    push.setPermission('denied');
+    await emit('active');
+    await screen.findByText('Push notifications are blocked in system settings.');
+    push.setPermission('granted');
+    await emit('active');
+    await waitFor(() => expect(register).toHaveBeenCalledTimes(1));
+  });
+
+  it('with PushBridge and ProfileScreen both listening, the forced re-grant still registers', async () => {
+    const emit = hook();
+    const push = fakePush({ permission: 'granted', token: 'ExponentPushToken[abc]' });
+    const services = await setup(push, {}, true);
+    await waitFor(() => expect(services.repos.pushTokens.get('user-demo', 'ExponentPushToken[abc]')).resolves.not.toBeNull());
+    await screen.findByText('Push notifications are on');
     const register = jest.spyOn(services.repos.pushTokens, 'register');
     push.setPermission('denied');
     await emit('active');

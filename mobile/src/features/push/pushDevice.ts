@@ -21,7 +21,7 @@ interface DeviceState {
   /** Cancels the pending "retry when back online" subscription, if any. */
   cancelRetry?: () => void;
   /** The attempt in flight, shared by concurrent callers of the same user. */
-  inflight?: { uid: string; promise: Promise<void> };
+  inflight?: { uid: string; force: boolean; promise: Promise<void> };
 }
 const states = new WeakMap<PushService, DeviceState>();
 const stateOf = (push: PushService): DeviceState => {
@@ -103,11 +103,16 @@ export function registerDevice(
   { force = false }: { force?: boolean } = {},
 ): Promise<void> {
   const state = stateOf(services.push);
-  if (state.inflight?.uid === uid) return state.inflight.promise;
+  const inflight = state.inflight;
+  if (inflight?.uid === uid) {
+    if (!force || inflight.force) return inflight.promise;
+    // A forced call must not be swallowed by a throttled attempt: run it after that one settles.
+    return inflight.promise.catch(() => {}).then(() => registerDevice(services, uid, { force: true }));
+  }
   const promise = attempt(services, uid, true, force).finally(() => {
     if (state.inflight?.promise === promise) state.inflight = undefined;
   });
-  state.inflight = { uid, promise };
+  state.inflight = { uid, force, promise };
   return promise;
 }
 
@@ -118,6 +123,7 @@ export async function signOutDevice(services: Services, uid: string): Promise<vo
   state.epoch += 1;
   state.cancelRetry?.();
   state.last = undefined;
+  state.inflight = undefined;
   try {
     await withTimeout(
       (async () => {

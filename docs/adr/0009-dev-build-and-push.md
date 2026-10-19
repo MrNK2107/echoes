@@ -66,6 +66,7 @@ token's format. The effects:
 - **Bounded.** The victim's next registration (app start, foreground after 6 h, or enabling
   push) reclaims the token and removes it from the attacker. The attacker also needs the victim's
   token, which is not public.
-- **Enhanced push security.** Setting `EXPO_ACCESS_TOKEN` makes Expo require it for sends, so
+- **Enhanced push security.** Enabling enhanced push security in the Expo dashboard (and setting
+  `EXPO_ACCESS_TOKEN`) makes Expo require the token for sends, so
   third parties who learn a token cannot send to it. It stops outsiders only; it does not stop the
   registration above. It must be enabled for the project before launch.

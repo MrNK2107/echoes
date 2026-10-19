@@ -180,7 +180,7 @@ function createOnPushTokenCreated(getDb) {
 
 // Polls Expo for the delivery receipts of tickets older than 15 minutes (receipts are not ready
 // sooner), at most 1000 per run in chunks of 300. DeviceNotRegistered removes the token; a receipt
-// doc is deleted once its status is known. Receipts Expo does not know yet stay (they expire by TTL).
+// doc is deleted once its status is known. Receipts Expo does not know yet stay until they are 24 h old, then are given up.
 // A failed fetch keeps every doc for the next run. Never throws.
 async function receiptsHandler(
   db,
