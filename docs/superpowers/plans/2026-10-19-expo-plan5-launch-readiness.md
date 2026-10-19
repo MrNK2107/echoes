@@ -304,9 +304,9 @@
 - Flows sign in with `demo@echoes.app` / `echoes-demo`, `setLocation` at the first seeded place, and select only by copy.
 - `lintFlow(yamlText: string, sourceText: string): string[]` returns the problems found.
 
-- [ ] **Step 1: Write failing tests:** every flow parses, `appId` is `com.phantom.echoes`, and every selector text is found in `mobile/src` or `mobile/app`; a planted bogus selector is reported.
-- [ ] **Step 2–4:** FAIL → write the flows and `lintFlow` → PASS.
-- [ ] **Step 5: Commit** `test(e2e): Maestro flows linted against app copy`.
+- [x] **Step 1: Write failing tests:** every flow parses, `appId` is `com.phantom.echoes`, and every selector text is found in `mobile/src` or `mobile/app`; a planted bogus selector is reported.
+- [x] **Step 2–4:** FAIL → write the flows and `lintFlow` → PASS.
+- [x] **Step 5: Commit** `test(e2e): Maestro flows linted against app copy`.
 
 ---
 
