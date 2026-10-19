@@ -98,17 +98,19 @@ Do these before shipping the Expo client.
 
 ## Expo Plan 5 data backfill runbook
 
-Run in this order against the production project (always `--project <id>`; the tool refuses to run without one and is a dry run unless `--apply` is passed):
+Run in this order against the production project (always `--project <id>` or `FIREBASE_PROJECT`; the tool refuses to run without one, ignores `GOOGLE_CLOUD_PROJECT`, and is a dry run unless `--apply` is passed):
 
+0. **REQUIRED emulator rehearsal before any production `--apply`.** Start the emulator (`npx firebase-tools emulators:start --only firestore --project demo-echoes`), seed legacy docs (memories without `moderation`, string `releaseDate`, member docs without `userId`, an institution with `adminUserIds`), then with `FIRESTORE_EMULATOR_HOST` set: run each task as a dry run, then with `--apply`, then re-run with `--apply` and expect `changed=0` everywhere.
 1. Deploy indexes: `npx firebase deploy --only firestore:indexes --project <id>`; wait for them to build.
 2. Deploy functions.
-3. Dry run: `node functions/tools/backfill.js all --project <id>` and read the per-task summary (`invalid=` counts `releaseDate` strings that could not be parsed; they are left untouched for manual review).
+3. Dry run: `node functions/tools/backfill.js all --project <id>` and read the per-task summary (`invalid=` counts `releaseDate` strings that are not strict ISO 8601 with a zone, e.g. `2027-01-02T03:04:05Z`; they are left untouched for manual review).
 4. `node functions/tools/backfill.js all --apply --project <id>` (moderation, releaseDate, member `userId`). Until it runs, string `releaseDate` memories never notify.
-5. `node functions/tools/backfill.js migrateInstitutionAdmins --apply --project <id>` (copies `adminUserIds` into `admins/{uid}` and deletes the field). Dry run it first.
+5. `node functions/tools/backfill.js migrateInstitutionAdmins --apply --project <id>` (copies `adminUserIds` into `admins/{uid}` and deletes the field). Dry run it first. An institution changed concurrently is reported `failed=` (exit code 1); re-run to retry it.
 6. Optional cleanup: `node functions/tools/backfill.js deleteLegacyNotificationRequests --apply --project <id>`.
 7. Release the client.
+8. **Follow-up (C11):** once a `migrateInstitutionAdmins` dry run shows `changed=0`, ship a change that drops the legacy `adminUserIds` fallback in `functions/institutions.js` and the cleanup `arrayRemove`.
 
-Every task is idempotent and resumable (re-run, or `--resume-after <doc path>`). Set `FIRESTORE_EMULATOR_HOST` to rehearse against the emulator. No member-count backfill exists: `rollupMemberCounts` derives `memberCount` from a `count()` of `members`.
+Cost: each task is a full collection scan (reads = documents scanned); `all` scans `memories` twice and `members` once. Every updated memory fires `onMemoryWritten` once, so a large `--apply` produces that many function invocations and aggregate recomputes; run off-peak. `--resume-after <doc path>` (single task only, path must be in that task collection) continues an interrupted run; every task is idempotent, so a plain re-run also works. No member-count backfill exists: `rollupMemberCounts` derives `memberCount` from a `count()` of `members`.
 
 ## Expo Plan 4 push and AR runbook
 

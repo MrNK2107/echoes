@@ -15,6 +15,8 @@ function clone(v) {
   }
   return structuredClone(v);
 }
+// Marks a field removed by FieldValue.delete(); never stored.
+const DELETE = Symbol("delete");
 const name = (v) => v?.constructor?.name;
 
 // Timestamps (live or structuredClone'd to {_seconds,_nanoseconds}) and Dates compare by their
@@ -70,23 +72,31 @@ function setPath(obj, path, value) {
     o = o[k];
   }
   const last = keys[keys.length - 1];
-  if (value === undefined || name(value) === "DeleteTransform") delete o[last];
+  if (value === DELETE) delete o[last];
   else o[last] = value;
 }
 
 function createFakeFirestore(initial = {}) {
   const store = new Map(Object.entries(initial).map(([k, v]) => [k, clone(v)]));
   let autoId = 0;
+  // Per-doc write counter, exposed as snapshot.updateTime for lastUpdateTime preconditions.
+  const versions = new Map();
+  let tick = 0;
+  const bump = (path) => versions.set(path, ++tick);
   const now = () => new Date().toISOString();
 
   const resolve = (data, existing = {}) => {
     const out = {};
-    for (const [k, v] of Object.entries(data)) out[k] = resolveValue(existing[k], v);
+    for (const [k, v] of Object.entries(data)) {
+      out[k] = resolveValue(existing[k], v);
+      if (out[k] === DELETE) throw new Error(`FieldValue.delete() can only be used with update() or set({ merge: true }): ${k}`);
+    }
     return out;
   };
   const resolveValue = (current, v) => {
+    if (v === undefined) throw new Error('Cannot use "undefined" as a Firestore value');
     if (v && typeof v === "object" && name(v)?.endsWith("Transform")) {
-      return name(v) === "DeleteTransform" ? undefined : applyTransform(current, v, now);
+      return name(v) === "DeleteTransform" ? DELETE : applyTransform(current, v, now);
     }
     return clone(v);
   };
@@ -97,6 +107,7 @@ function createFakeFirestore(initial = {}) {
     return {
       id,
       exists: data !== undefined,
+      updateTime: data !== undefined ? Timestamp.fromMillis(versions.get(path) ?? 0) : undefined,
       ref: docRef(path),
       data: () => clone(data),
       get: (field) => getPath(data, field),
@@ -107,21 +118,32 @@ function createFakeFirestore(initial = {}) {
     set(path, data, options) {
       if (options?.merge) {
         const base = clone(store.get(path)) ?? {};
-        for (const [k, v] of Object.entries(data)) base[k] = resolveValue(base[k], v);
+        for (const [k, v] of Object.entries(data)) {
+          const r = resolveValue(base[k], v);
+          if (r === DELETE) delete base[k];
+          else base[k] = r;
+        }
         store.set(path, base);
       } else {
         store.set(path, resolve(data));
       }
+      bump(path);
     },
-    update(path, data) {
+    update(path, data, precondition) {
       const base = clone(store.get(path));
       if (base === undefined) {
         const e = new Error(`NOT_FOUND: ${path}`);
         e.code = 5;
         throw e;
       }
+      if (precondition?.lastUpdateTime && precondition.lastUpdateTime.toMillis() !== (versions.get(path) ?? 0)) {
+        const e = new Error(`FAILED_PRECONDITION: ${path} changed since it was read`);
+        e.code = 9;
+        throw e;
+      }
       for (const [k, v] of Object.entries(data)) setPath(base, k, resolveValue(getPath(base, k), v));
       store.set(path, base);
+      bump(path);
     },
     create(path, data) {
       if (store.has(path)) {
@@ -130,6 +152,7 @@ function createFakeFirestore(initial = {}) {
         throw e;
       }
       store.set(path, resolve(data));
+      bump(path);
     },
     delete(path, precondition) {
       if (precondition?.exists === true && !store.has(path)) {
@@ -138,6 +161,7 @@ function createFakeFirestore(initial = {}) {
         throw e;
       }
       store.delete(path);
+      versions.delete(path);
     },
   };
 
@@ -150,7 +174,7 @@ function createFakeFirestore(initial = {}) {
     },
     get: async () => snap(path),
     set: async (d, o) => write.set(path, d, o),
-    update: async (d) => write.update(path, d),
+    update: async (d, pre) => write.update(path, d, pre),
     create: async (d) => write.create(path, d),
     delete: async (pre) => write.delete(path, pre),
     collection: (sub) => collectionRef(`${path}/${sub}`),
@@ -246,11 +270,14 @@ function createFakeFirestore(initial = {}) {
   // missing one) rolls back the earlier writes of the same batch/transaction.
   const commitAll = (pending) => {
     const backup = new Map([...store].map(([k, v]) => [k, clone(v)]));
+    const versionBackup = new Map(versions);
     try {
       pending.forEach((f) => f());
     } catch (error) {
       store.clear();
       backup.forEach((v, k) => store.set(k, v));
+      versions.clear();
+      versionBackup.forEach((v, k) => versions.set(k, v));
       throw error;
     }
   };
@@ -271,7 +298,7 @@ function createFakeFirestore(initial = {}) {
         get: async (refOrQuery) => (refOrQuery.path && !refOrQuery.where ? snap(refOrQuery.path) : refOrQuery.get()),
       };
       tx.set = (r, d, o) => (pending.push(() => write.set(r.path, d, o)), tx);
-      tx.update = (r, d) => (pending.push(() => write.update(r.path, d)), tx);
+      tx.update = (r, d, pre) => (pending.push(() => write.update(r.path, d, pre)), tx);
       tx.create = (r, d) => (pending.push(() => write.create(r.path, d)), tx);
       tx.delete = (r, pre) => (pending.push(() => write.delete(r.path, pre)), tx);
       const result = await fn(tx);
@@ -282,7 +309,7 @@ function createFakeFirestore(initial = {}) {
       const pending = [];
       const b = {
         set: (r, d, o) => (pending.push(() => write.set(r.path, d, o)), b),
-        update: (r, d) => (pending.push(() => write.update(r.path, d)), b),
+        update: (r, d, pre) => (pending.push(() => write.update(r.path, d, pre)), b),
         create: (r, d) => (pending.push(() => write.create(r.path, d)), b),
         delete: (r, pre) => (pending.push(() => write.delete(r.path, pre)), b),
         commit: async () => commitAll(pending),

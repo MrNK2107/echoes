@@ -58,3 +58,30 @@ test("startAfter(snapshot) uses the snapshot's values with the path as tie-break
   await db.doc("c/a").update({ n: 99 });
   assert.deepEqual(ids(await q().startAfter(cursor).get()), ["c", "d", "a"]);
 });
+
+test("FieldValue.delete removes the field in update and merge-set; undefined values throw", async () => {
+  const { FieldValue } = require("firebase-admin/firestore");
+  const db = createFakeFirestore({ "c/a": { keep: 1, gone: 2, n: { x: 1, y: 2 } } });
+  await db.doc("c/a").update({ gone: FieldValue.delete(), "n.x": FieldValue.delete() });
+  assert.deepEqual(db._get("c/a"), { keep: 1, n: { y: 2 } });
+  await db.doc("c/a").set({ keep: FieldValue.delete() }, { merge: true });
+  assert.ok(!("keep" in db._get("c/a")));
+  await assert.rejects(db.doc("c/a").update({ keep: undefined }), /undefined/);
+  await assert.rejects(db.doc("c/b").set({ v: undefined }), /undefined/);
+  await assert.rejects(db.doc("c/b").set({ v: FieldValue.delete() }), /delete/i);
+});
+
+test("update honours a lastUpdateTime precondition from a snapshot's updateTime", async () => {
+  const db = createFakeFirestore({ "c/a": { v: 1 } });
+  const snap = await db.doc("c/a").get();
+  await db.doc("c/a").update({ v: 2 });
+  const b = db.batch();
+  b.update(db.doc("c/a"), { v: 3 }, { lastUpdateTime: snap.updateTime });
+  await assert.rejects(b.commit(), /precondition/i);
+  assert.equal(db._get("c/a").v, 2);
+  const fresh = await db.doc("c/a").get();
+  const b2 = db.batch();
+  b2.update(db.doc("c/a"), { v: 3 }, { lastUpdateTime: fresh.updateTime });
+  await b2.commit();
+  assert.equal(db._get("c/a").v, 3);
+});
