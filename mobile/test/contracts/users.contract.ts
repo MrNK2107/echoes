@@ -29,6 +29,14 @@ export function userRepositoryContract(
       });
     });
 
+    it('create refuses an existing doc and leaves it unchanged', async () => {
+      const s = await ctx.repos.auth.register('exists@example.com', 'secret12', 'Exists', new Date());
+      const before = await ctx.repos.users.get(s.userId);
+      expect(before).not.toBeNull();
+      await expect(ctx.repos.users.create({ ...before!, displayName: 'Overwritten', communityIds: [] })).rejects.toThrow();
+      expect(await ctx.repos.users.get(s.userId)).toEqual(before);
+    });
+
     it('updateNotificationPrefs persists', async () => {
       const s = await ctx.repos.auth.register('notif@example.com', 'secret12', 'Notif', new Date());
       const at = new Date();

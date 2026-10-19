@@ -10,7 +10,8 @@ export async function needsRepair(services: Services, session: AuthSession): Pro
 
 /**
  * Finishes a partial registration: creates users/{uid} with the terms time and the defaults
- * register uses, then the public profile. Rejects with Error(DISPLAY_NAME_ERROR) for a bad name.
+ * register uses, then the public profile. The write is create-only: rejects with Error(USER_EXISTS)
+ * if the doc already exists, and with Error(DISPLAY_NAME_ERROR) for a bad name.
  */
 export async function completeRegistration(
   services: Services,
@@ -31,8 +32,8 @@ export async function completeRegistration(
     communityIds: [],
     notificationPrefs: { ...DEFAULT_NOTIFICATION_PREFS },
     acceptedTermsAt: at,
-    createdAt: at,
-    updatedAt: at,
+    createdAt: services.now(),
+    updatedAt: services.now(),
   });
   await ensurePublicProfile(services, { ...session, displayName });
 }

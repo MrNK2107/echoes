@@ -1,5 +1,6 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
+import { USER_EXISTS } from '@/data/errors';
 import { testServices } from '@/device/fakes';
 import { DISPLAY_NAME_ERROR } from '@/domain/profiles';
 import type { AuthSession } from '@/domain/types';
@@ -66,5 +67,26 @@ describe('FinishSetupScreen', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
     expect(await screen.findByRole('alert')).toBeOnTheScreen();
     expect(mockReplace).not.toHaveBeenCalled();
+  });
+
+  it('an already-set-up account is sent home without overwriting', async () => {
+    const services = testServices();
+    jest.spyOn(services.repos.users, 'create').mockRejectedValue(new Error(USER_EXISTS));
+    const done = jest.fn();
+    await renderWithServices(services, <FinishSetupScreen session={SESSION} onDone={done} />);
+    await fireEvent.changeText(await screen.findByLabelText('Name'), 'Asha');
+    await fireEvent.press(screen.getByTestId('terms-checkbox'));
+    await fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/'));
+    expect(done).toHaveBeenCalled();
+  });
+
+  it('Sign out failures are logged, not thrown', async () => {
+    const services = testServices();
+    jest.spyOn(services.repos.auth, 'signOut').mockRejectedValue(new Error('offline'));
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    await renderWithServices(services, <FinishSetupScreen session={SESSION} />);
+    await fireEvent.press(await screen.findByRole('button', { name: 'Sign out' }));
+    await waitFor(() => expect(warn).toHaveBeenCalled());
   });
 });

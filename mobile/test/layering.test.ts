@@ -13,11 +13,16 @@ function restricted(code: string, filePath: string): number {
     const { ESLint } = require('eslint');
     const { code, filePath } = JSON.parse(process.argv[1]);
     new ESLint({ cwd: process.cwd() }).lintText(code, { filePath }).then(([r]) => {
-      process.stdout.write(String(r.messages.filter((m) => m.ruleId === 'no-restricted-imports').length));
+      const fatal = r.messages.filter((m) => m.fatal || (m.ruleId === null && m.severity === 2));
+      process.stdout.write(JSON.stringify({ fatal: fatal.length, count: r.messages.filter((m) => m.ruleId === 'no-restricted-imports').length }));
     });
   `;
-  const out = execFileSync(process.execPath, ['-e', script, JSON.stringify({ code, filePath })], { cwd, encoding: 'utf8' });
-  return Number(out);
+  const out = execFileSync(process.execPath, ['-e', script, JSON.stringify({ code, filePath })], { cwd, encoding: 'utf8', timeout: 30_000 });
+  // An empty stdout or a parse error must fail the test, never read as "no violations".
+  expect(out).not.toBe('');
+  const parsed = JSON.parse(out) as { fatal: number; count: number };
+  expect(parsed.fatal).toBe(0);
+  return parsed.count;
 }
 
 const importOf = (layer: string) => `import { x } from '@/${layer}/a';\nexport const y = x;\n`;

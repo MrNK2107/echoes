@@ -12,7 +12,7 @@ import {
   View,
 } from 'react-native';
 
-import { GENERIC_ERROR } from '@/data/errors';
+import { GENERIC_ERROR, USER_EXISTS } from '@/data/errors';
 import { DISPLAY_NAME_ERROR } from '@/domain/profiles';
 import type { AuthSession } from '@/domain/types';
 import { useServices } from '@/services/ServicesProvider';
@@ -52,7 +52,11 @@ export function FinishSetupScreen({ session, onDone }: { session: AuthSession; o
       (onDone ?? contextDone)();
       router.replace('/');
     } catch (e) {
-      if (e instanceof Error && e.message === DISPLAY_NAME_ERROR) setNameError(DISPLAY_NAME_ERROR);
+      if (e instanceof Error && e.message === USER_EXISTS) {
+        // Already set up (another device or a repeated tap): nothing to write, go on.
+        (onDone ?? contextDone)();
+        router.replace('/');
+      } else if (e instanceof Error && e.message === DISPLAY_NAME_ERROR) setNameError(DISPLAY_NAME_ERROR);
       else {
         console.warn('Could not finish setting up', e);
         setFormError(GENERIC_ERROR);
@@ -115,7 +119,7 @@ export function FinishSetupScreen({ session, onDone }: { session: AuthSession; o
         </Pressable>
         <Pressable
           accessibilityRole="button"
-          onPress={() => void services.repos.auth.signOut()}
+          onPress={() => services.repos.auth.signOut().catch((e: unknown) => console.warn('Could not sign out', e))}
           style={styles.signOut}
         >
           <Text style={styles.signOutText}>{SIGN_OUT_LABEL}</Text>

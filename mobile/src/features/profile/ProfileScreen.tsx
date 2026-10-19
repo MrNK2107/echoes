@@ -20,6 +20,7 @@ import {
   PUSH_ON,
   PUSH_OPEN_SETTINGS,
   PUSH_UNAVAILABLE,
+  SIGN_OUT_LABEL,
 } from '@/ui/copy';
 import type { PushPermission } from '@/device/types';
 import { Notice } from '@/ui/Notice';
@@ -418,7 +419,7 @@ export function ProfileScreen() {
         </Pressable>
       ))}
       <Pressable accessibilityRole="button" onPress={signOut} style={styles.row}>
-        <Text style={styles.rowText}>Sign out</Text>
+        <Text style={styles.rowText}>{SIGN_OUT_LABEL}</Text>
       </Pressable>
       <Pressable accessibilityRole="button" onPress={() => router.push('/delete-account')} style={styles.row}>
         <Text style={styles.dangerText}>Delete account</Text>

@@ -1,3 +1,4 @@
+import { USER_EXISTS } from '@/data/errors';
 import { DEMO_USER } from '@/data/seed';
 import { testServices } from '@/device/fakes';
 import { DISPLAY_NAME_ERROR } from '@/domain/profiles';
@@ -36,5 +37,21 @@ describe('repairRegistration', () => {
     const services = testServices();
     await expect(completeRegistration(services, SESSION, 'A', new Date())).rejects.toThrow(DISPLAY_NAME_ERROR);
     expect(await needsRepair(services, SESSION)).toBe(true);
+  });
+
+  it('never overwrites an existing users doc', async () => {
+    const services = testServices();
+    const session = { userId: 'user-demo', email: DEMO_USER.email, displayName: null };
+    const before = await services.repos.users.get('user-demo');
+    await expect(completeRegistration(services, session, 'Overwrite', new Date())).rejects.toThrow(USER_EXISTS);
+    expect(await services.repos.users.get('user-demo')).toEqual(before);
+  });
+
+  it('stamps createdAt and updatedAt from services.now()', async () => {
+    const services = testServices();
+    await completeRegistration(services, SESSION, 'Asha', new Date('2026-10-19T10:00:00Z'));
+    const user = await services.repos.users.get('user-new');
+    expect(user?.createdAt).toEqual(services.now());
+    expect(user?.updatedAt).toEqual(services.now());
   });
 });

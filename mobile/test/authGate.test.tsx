@@ -1,6 +1,6 @@
 import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { renderRouter } from 'expo-router/testing-library';
-import { Text } from 'react-native';
+import { AppState, Text, type AppStateStatus } from 'react-native';
 
 import { DEMO_USER } from '@/data/seed';
 import { testServices } from '@/device/fakes';
@@ -81,5 +81,63 @@ describe('auth gate', () => {
     await fireEvent.press(screen.getByTestId('terms-checkbox'));
     await fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
     expect(await screen.findByText('HOME')).toBeOnTheScreen();
+  });
+
+  async function renderGate(services: ReturnType<typeof testServices>, initialUrl = '/') {
+    await act(async () => {
+      await services.repos.auth.signIn(DEMO_USER.email, DEMO_USER.password);
+    });
+    await renderRouter(
+      {
+        '(app)/_layout': AppLayout,
+        '(app)/index': () => <Text>HOME</Text>,
+        '(app)/finish-setup': FinishSetup,
+        'sign-in': SignIn,
+      },
+      {
+        initialUrl,
+        wrapper: ({ children }) => <ServicesProvider services={services}>{children}</ServicesProvider>,
+      },
+    );
+  }
+
+  it('redirects an account that already has a users doc away from /finish-setup, unchanged', async () => {
+    const services = testServices();
+    const before = await services.repos.users.get('user-demo');
+    const create = jest.spyOn(services.repos.users, 'create');
+    await renderGate(services, '/finish-setup');
+    expect(await screen.findByText('HOME')).toBeOnTheScreen();
+    expect(screen.queryByText('Finish setting up')).toBeNull();
+    expect(create).not.toHaveBeenCalled();
+    expect(await services.repos.users.get('user-demo')).toEqual(before);
+  });
+
+  it('opens the app without waiting on the users read, then redirects once a missing doc is confirmed', async () => {
+    const services = testServices();
+    let resolveGet: (v: null) => void = () => {};
+    jest.spyOn(services.repos.users, 'get').mockImplementation(() => new Promise((r) => (resolveGet = r)));
+    await renderGate(services);
+    expect(await screen.findByText('HOME')).toBeOnTheScreen();
+    await act(async () => resolveGet(null));
+    expect(await screen.findByText('Finish setting up')).toBeOnTheScreen();
+  });
+
+  it('retries a failed repair check once when the app becomes active', async () => {
+    const handlers = new Set<(s: AppStateStatus) => void>();
+    jest.spyOn(AppState, 'addEventListener').mockImplementation((type, handler) => {
+      const h = handler as (s: AppStateStatus) => void;
+      if (type === 'change') handlers.add(h);
+      return { remove: () => handlers.delete(h) };
+    });
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const services = testServices();
+    const get = jest.spyOn(services.repos.users, 'get').mockRejectedValueOnce(new Error('offline'));
+    get.mockResolvedValue(null);
+    await renderGate(services);
+    expect(await screen.findByText('HOME')).toBeOnTheScreen();
+    await waitFor(() => expect(warn).toHaveBeenCalledWith('Could not check the account', expect.any(Error)));
+    await act(async () => [...handlers].forEach((h) => h('active')));
+    expect(await screen.findByText('Finish setting up')).toBeOnTheScreen();
+    expect(get.mock.calls.length).toBeGreaterThanOrEqual(2);
   });
 });
