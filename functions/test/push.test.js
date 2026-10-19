@@ -190,3 +190,24 @@ test("a DeviceNotRegistered ticket in the second chunk deletes the right token",
   assert.equal(db._get("users/u1/pushTokens/t48"), undefined);
   assert.equal(db._list("users/u1/pushTokens/").length, 149);
 });
+
+const { removeTokenFromOtherUsers } = require("../push");
+
+test("a token registered by a new user is removed from the previous user", async () => {
+  const db = createFakeFirestore();
+  const tokenDoc = (token) => ({ token, platform: "ios", createdAt: "x", lastSeenAt: "x" });
+  db._put("users/A/pushTokens/h1", tokenDoc("ExponentPushToken[T]"));
+  db._put("users/A/pushTokens/other", tokenDoc("ExponentPushToken[A-other]"));
+  db._put("users/B/pushTokens/h1", tokenDoc("ExponentPushToken[T]"));
+  await removeTokenFromOtherUsers(db, "B", "ExponentPushToken[T]");
+  assert.equal((await db.doc("users/A/pushTokens/h1").get()).exists, false);
+  assert.equal((await db.doc("users/A/pushTokens/other").get()).exists, true);
+  assert.equal((await db.doc("users/B/pushTokens/h1").get()).exists, true);
+});
+
+test("removeTokenFromOtherUsers never throws", async () => {
+  const logged = [];
+  const db = { collectionGroup: () => ({ where: () => ({ get: async () => { throw new Error("boom"); } }) }) };
+  await removeTokenFromOtherUsers(db, "B", "t", { logger: { error: (m) => logged.push(m) } });
+  assert.equal(logged.length, 1);
+});

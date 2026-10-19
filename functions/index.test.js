@@ -57,4 +57,5 @@ test("exports the institution and safety callables", () => {
 
 test("exports the push delivery trigger", () => {
   assert.ok(require("./index").onNotificationCreated, "onNotificationCreated is exported");
+  assert.ok(require("./index").onPushTokenCreated, "onPushTokenCreated is exported");
 });

@@ -90,4 +90,33 @@ function createOnNotificationCreated(getDb) {
   });
 }
 
-module.exports = { sendPushForNotification, createOnNotificationCreated };
+// A token belongs to one device, and a device to one signed-in user: when user B registers a token
+// that user A also holds (shared phone, sign-out not completed), A's copy is removed so A no longer
+// receives B's notifications. Never throws.
+async function removeTokenFromOtherUsers(db, uid, token, { logger = firebaseLogger } = {}) {
+  try {
+    const snapshot = await db.collectionGroup("pushTokens").where("token", "==", token).get();
+    await Promise.all(
+      snapshot.docs
+        .filter((d) => d.ref.path.split("/")[1] !== uid)
+        .map((d) => d.ref.delete()),
+    );
+  } catch (error) {
+    logger.error("Could not remove a push token from other users", { uid, error: String(error) });
+  }
+}
+
+function createOnPushTokenCreated(getDb) {
+  return onDocumentCreated("users/{uid}/pushTokens/{tokenId}", async (event) => {
+    const token = event.data?.data()?.token;
+    if (typeof token !== "string" || token.length === 0) return;
+    await removeTokenFromOtherUsers(getDb(), event.params.uid, token);
+  });
+}
+
+module.exports = {
+  sendPushForNotification,
+  createOnNotificationCreated,
+  removeTokenFromOtherUsers,
+  createOnPushTokenCreated,
+};

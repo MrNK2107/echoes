@@ -32,6 +32,16 @@ test("members.userId has a collection-group index (ruling R24)", () => {
   );
 });
 
+test("pushTokens.token has a collection-group index (R-P4-12)", () => {
+  const override = config.fieldOverrides.find(
+    (o) => o.collectionGroup === "pushTokens" && o.fieldPath === "token",
+  );
+  assert.ok(override, "fieldOverrides entry for pushTokens.token");
+  assert.ok(
+    override.indexes.some((i) => i.queryScope === "COLLECTION_GROUP" && i.order === "ASCENDING"),
+  );
+});
+
 test("indexes the Plan 3 queries need are present", () => {
   const has = (collectionGroup, fields) =>
     config.indexes.some(

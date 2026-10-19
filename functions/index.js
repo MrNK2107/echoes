@@ -13,7 +13,7 @@ const institutions = require("./institutions");
 const safety = require("./safety");
 const { cleanupUserSocialData } = require("./accountCleanup");
 const { onMemoryCreatedTags } = require("./tags");
-const { createOnNotificationCreated } = require("./push");
+const { createOnNotificationCreated, createOnPushTokenCreated } = require("./push");
 const {
   purgeDeletedMemories,
   __private__: { purgeExpired },
@@ -29,6 +29,7 @@ exports.onPublicProfileWritten = onPublicProfileWritten;
 exports.purgeDeletedMemories = purgeDeletedMemories;
 exports.onMemoryCreatedTags = onMemoryCreatedTags;
 exports.onNotificationCreated = createOnNotificationCreated(() => db);
+exports.onPushTokenCreated = createOnPushTokenCreated(() => db);
 exports.createCommunity = communities.createCommunity;
 exports.joinCommunity = communities.joinCommunity;
 exports.leaveCommunity = communities.leaveCommunity;
