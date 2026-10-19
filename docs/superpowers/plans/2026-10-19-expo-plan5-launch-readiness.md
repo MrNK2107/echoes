@@ -127,14 +127,14 @@
 - `rollupMemberCounts = onSchedule('every 10 minutes')`, built from `rollupHandler(db, now)`: it sums the shards of communities whose shards changed in the last 15 min and sets `memberCount`.
 - `index.js` calls `setGlobalOptions({ maxInstances: 50 })` before the exports.
 
-- [ ] **Step 1: Write failing tests:**
+- [x] **Step 1: Write failing tests:**
   - the year-community auto-join writes a shard, not the community doc;
   - join and leave on `time-2026` use shards, and on a thematic community they increment directly;
   - `rollup is idempotent` (two runs give the same `memberCount`);
   - rollup ignores shards older than 15 min;
   - the memory backend keeps `memberCount` exact (no lag in demo mode).
-- [ ] **Step 2–4:** FAIL → implement → PASS.
-- [ ] **Step 5: Commit** `feat(functions): sharded member counts for auto communities and instance caps`.
+- [x] **Step 2–4:** FAIL → implement → PASS.
+- [x] **Step 5: Commit** `feat(functions): sharded member counts for auto communities and instance caps`.
 
 ---
 
