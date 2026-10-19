@@ -120,7 +120,10 @@ export function MapScreen() {
       >
         <Text style={styles.buttonText}>{AR_BUTTON}</Text>
       </Pressable>
-      <Pressable accessibilityRole="button" onPress={() => router.push('/add-memory')} style={[styles.fab, { bottom: insets.bottom + 16 }]}
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => router.push('/add-memory')}
+        style={[styles.fab, { bottom: insets.bottom + 16 }]}
       >
         <Text style={styles.buttonText}>Add memory</Text>
       </Pressable>

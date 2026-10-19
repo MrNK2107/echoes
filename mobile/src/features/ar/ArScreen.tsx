@@ -78,6 +78,7 @@ export function ArScreen() {
   );
 
   let body;
+  let headingNotice: string | null = null;
   if (scene.status === 'locating' || capability === 'checking' || (awaitingHeading && scene.places.length > 0)) {
     body = <ActivityIndicator style={styles.spinner} color={colors.accent} accessibilityLabel={AR_LOADING} />;
   } else if (scene.status === 'denied' || scene.status === 'error') {
@@ -102,9 +103,9 @@ export function ArScreen() {
       />
     );
   } else {
+    headingNotice = scene.headingUnavailable ? AR_HEADING_UNAVAILABLE : null;
     body = (
       <>
-        <Notice message={scene.headingUnavailable ? AR_HEADING_UNAVAILABLE : null} style={styles.message} />
         <ArRadarView
           places={scene.places}
           heading={scene.headingUnavailable ? 0 : scene.heading}
@@ -128,7 +129,10 @@ export function ArScreen() {
           <Text style={styles.buttonText}>{mode === 'camera' ? AR_RADAR_VIEW : AR_CAMERA_VIEW}</Text>
         </Pressable>
       ) : null}
-      <View style={styles.body}>{body}</View>
+      <View style={styles.body}>
+        <Notice message={headingNotice} style={styles.message} />
+        {body}
+      </View>
     </View>
   );
 }

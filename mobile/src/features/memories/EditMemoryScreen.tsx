@@ -9,6 +9,8 @@ import { analyzeSentiment } from '@/domain/sentiment';
 import type { Memory, PrivacyType } from '@/domain/types';
 import { useSession } from '@/features/auth/useSession';
 import { useServices } from '@/services/ServicesProvider';
+import { Notice } from '@/ui/Notice';
+import { BackButton } from '@/ui/BackButton';
 import { colors } from '@/ui/theme';
 
 import { PrivacyPicker } from './PrivacyPicker';
@@ -109,15 +111,7 @@ function EditForm({ memory }: { memory: Memory }) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-      <Pressable
-        testID="back-button"
-        accessibilityRole="button"
-        accessibilityLabel="Back"
-        onPress={() => router.back()}
-        style={styles.back}
-      >
-        <Text style={styles.backText}>{'< Back'}</Text>
-      </Pressable>
+      <BackButton />
       <Text accessibilityRole="header" style={styles.title}>
         Edit memory
       </Text>
@@ -145,11 +139,7 @@ function EditForm({ memory }: { memory: Memory }) {
         now={now()}
       />
 
-      {error ? (
-        <Text role="alert" style={styles.error}>
-          {error}
-        </Text>
-      ) : null}
+      <Notice tone="error" message={error} style={styles.error} />
 
       <Pressable
         testID="save-button"
@@ -169,8 +159,6 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   center: { alignItems: 'center', justifyContent: 'center' },
   content: { padding: 16, paddingBottom: 48 },
-  back: { paddingTop: 32, paddingBottom: 8 },
-  backText: { color: colors.accent, fontSize: 16 },
   title: { color: colors.text, fontSize: 22, fontWeight: '600', marginBottom: 12 },
   input: {
     minHeight: 140,

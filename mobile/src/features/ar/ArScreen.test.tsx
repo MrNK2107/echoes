@@ -326,7 +326,7 @@ describe('ArScreen', () => {
     await setup();
     const notice = (await screen.findByText(AR_UNSUPPORTED)).parent!;
     expect(notice.props.accessibilityLiveRegion).toBe('polite');
-    expect(notice.props.accessibilityRole).toBe('alert');
+    expect(notice.props.accessibilityRole).toBeUndefined();
   });
 
   it('announces the mode notice for screen readers that ignore live regions', async () => {

@@ -34,6 +34,13 @@ beforeEach(() => {
 });
 
 describe('InboxScreen', () => {
+  it('uses the shared back button that clears the top inset and goes back', async () => {
+    await setup([]);
+    expect(await screen.findByTestId('back-wrapper')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByLabelText('Back'));
+    expect(mockBack).toHaveBeenCalled();
+  });
+
   it('lists notifications in the given (newest first) order with stored copy', async () => {
     await setup([
       note({ id: 'a', title: 'First title', body: 'First body' }),

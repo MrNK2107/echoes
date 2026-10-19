@@ -234,9 +234,9 @@ export function InstitutionScreen({ institutionId }: { institutionId: string }) 
             >
               <Text style={styles.primaryText}>Verify as admin</Text>
             </Pressable>
+            <Notice tone="error" message={verifyPrompt ? VERIFY_EMAIL_FIRST : null} style={styles.error} />
             {verifyPrompt ? (
               <View style={styles.prompt}>
-                <Notice tone="error" message={VERIFY_EMAIL_FIRST} style={styles.error} />
                 <Pressable
                   accessibilityRole="button"
                   accessibilityState={{ disabled: busy }}

@@ -31,10 +31,17 @@ describe('Notice', () => {
     expect(screen.queryByText(/./)).toBeNull();
   });
 
-  it('is a polite alert live region', async () => {
-    await render(<Notice message="Saved" />);
+  it('is a polite alert live region for errors', async () => {
+    await render(<Notice tone="error" message="Oops" />);
     const el = screen.getByRole('alert');
     expect(el.props.accessibilityLiveRegion).toBe('polite');
+    expect(screen.getByText('Oops')).toBeOnTheScreen();
+  });
+
+  it('keeps info notices polite with no alert role', async () => {
+    await render(<Notice message="Saved" />);
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.getByTestId('notice-region').props.accessibilityLiveRegion).toBe('polite');
     expect(screen.getByText('Saved')).toBeOnTheScreen();
   });
 
@@ -71,9 +78,12 @@ describe('Notice', () => {
 
   it('has no raw live-region, status or alert text outside Notice', () => {
     const root = join(__dirname, '..', '..');
-    const offenders = [...sources(join(root, 'src')), ...sources(join(root, 'app'))].filter(
-      (f) => !f.endsWith('Notice.tsx') && /accessibilityLiveRegion|role="status"|accessibilityRole="alert"/.test(readFileSync(f, 'utf8')),
-    );
+    const raw = /accessibilityLiveRegion|\brole="(status|alert)"|accessibilityRole="alert"/;
+    const offenders: string[] = [];
+    for (const f of [...sources(join(root, 'src')), ...sources(join(root, 'app'))]) {
+      if (f.endsWith('Notice.tsx')) continue;
+      if (raw.test(readFileSync(f, 'utf8'))) offenders.push(f);
+    }
     expect(offenders).toEqual([]);
   });
 });

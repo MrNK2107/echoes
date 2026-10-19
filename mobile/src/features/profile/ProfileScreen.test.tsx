@@ -49,6 +49,13 @@ beforeEach(() => {
 });
 
 describe('ProfileScreen', () => {
+  it('uses the shared back button that clears the top inset and goes back', async () => {
+    await setup();
+    expect(await screen.findByTestId('back-wrapper')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByLabelText('Back'));
+    expect(mockBack).toHaveBeenCalled();
+  });
+
   it('shows name, email, live memory count and only own memories', async () => {
     const services = await setup();
     expect(screen.getByText('Profile')).toBeOnTheScreen();

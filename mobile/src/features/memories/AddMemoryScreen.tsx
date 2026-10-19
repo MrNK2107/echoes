@@ -8,6 +8,7 @@ import { useOutboxContext } from '@/features/outbox/useOutbox';
 import { useServices } from '@/services/ServicesProvider';
 import { LOCATION_FAILED } from '@/ui/copy';
 import { Notice } from '@/ui/Notice';
+import { BackButton } from '@/ui/BackButton';
 import { colors } from '@/ui/theme';
 
 import { PrivacyPicker, type PrivacyChoice } from './PrivacyPicker';
@@ -137,15 +138,7 @@ export function AddMemoryScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-      <Pressable
-        testID="back-button"
-        accessibilityRole="button"
-        accessibilityLabel="Back"
-        onPress={() => router.back()}
-        style={styles.back}
-      >
-        <Text style={styles.backText}>{'< Back'}</Text>
-      </Pressable>
+      <BackButton />
       <TextInput
         testID="text-input"
         style={styles.input}
@@ -194,11 +187,7 @@ export function AddMemoryScreen() {
       <VoiceRecorder onChange={(r) => setAudioUri(r ? r.uri : null)} />
 
       <Notice message={queued ? QUEUED_COPY : null} style={styles.notice} />
-      {error ? (
-        <Text role="alert" style={styles.error}>
-          {error}
-        </Text>
-      ) : null}
+      <Notice tone="error" message={error} style={styles.error} />
 
       <Pressable
         testID="save-button"
@@ -217,8 +206,6 @@ export function AddMemoryScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: 16, paddingBottom: 48 },
-  back: { paddingTop: 32, paddingBottom: 8 },
-  backText: { color: colors.accent, fontSize: 16 },
   input: {
     minHeight: 140,
     backgroundColor: colors.surface,

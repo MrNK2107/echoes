@@ -23,3 +23,14 @@ describe('BackButton', () => {
     expect(mockBack).toHaveBeenCalled();
   });
 });
+
+describe('BackButton onPress and testID', () => {
+  it('uses the given onPress instead of going back and exposes back-button', async () => {
+    mockBack.mockClear();
+    const onPress = jest.fn();
+    await render(<BackButton onPress={onPress} />);
+    await fireEvent.press(screen.getByTestId('back-button'));
+    expect(onPress).toHaveBeenCalled();
+    expect(mockBack).not.toHaveBeenCalled();
+  });
+});

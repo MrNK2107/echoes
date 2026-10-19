@@ -23,6 +23,7 @@ import {
 } from '@/ui/copy';
 import type { PushPermission } from '@/device/types';
 import { Notice } from '@/ui/Notice';
+import { BackButton } from '@/ui/BackButton';
 import { colors } from '@/ui/theme';
 
 /** subscribeForUser returns at most this many memories. */
@@ -266,9 +267,7 @@ export function ProfileScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => router.back()} style={styles.back}>
-        <Text style={styles.backText}>{'< Back'}</Text>
-      </Pressable>
+      <BackButton />
       <Text accessibilityRole="header" style={styles.title}>
         Profile
       </Text>
@@ -431,8 +430,6 @@ export function ProfileScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: 16, paddingBottom: 48 },
-  back: { paddingTop: 32, paddingBottom: 8 },
-  backText: { color: colors.accent, fontSize: 16 },
   title: { color: colors.text, fontSize: 24, fontWeight: '700', marginBottom: 8 },
   name: { color: colors.text, fontSize: 20, fontWeight: '600' },
   meta: { color: colors.textSecondary },

@@ -8,6 +8,7 @@ import { useIncomingTransfers } from '@/features/transfers/useTransfers';
 import { useServices } from '@/services/ServicesProvider';
 import { INBOX_LOAD_ERROR } from '@/ui/copy';
 import { Notice } from '@/ui/Notice';
+import { BackButton } from '@/ui/BackButton';
 import { colors } from '@/ui/theme';
 
 import { inboxDestination } from './routeForNotification';
@@ -75,9 +76,7 @@ export function InboxScreen() {
 
   return (
     <View style={styles.container}>
-      <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => router.back()} style={styles.back}>
-        <Text style={styles.backText}>{'< Back'}</Text>
-      </Pressable>
+      <BackButton />
       <View style={styles.headerRow}>
         <Text accessibilityRole="header" style={styles.title}>
           Notifications
@@ -158,8 +157,6 @@ export function InboxScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background, padding: 16 },
-  back: { paddingTop: 32, paddingBottom: 8 },
-  backText: { color: colors.accent, fontSize: 16 },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
   title: { color: colors.text, fontSize: 24, fontWeight: '700' },
   link: { color: colors.accent, fontSize: 16 },

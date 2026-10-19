@@ -16,6 +16,7 @@ import { BAD_CREDENTIALS, EMAIL_IN_USE, GENERIC_ERROR, TIMEOUT_ERROR } from '@/d
 import { DEMO_USER } from '@/data/seed';
 import { DISPLAY_NAME_ERROR } from '@/domain/profiles';
 import { useServices } from '@/services/ServicesProvider';
+import { Notice } from '@/ui/Notice';
 import { colors } from '@/ui/theme';
 
 import { validateDisplayName, validateEmail, validatePassword } from './validators';
@@ -170,11 +171,7 @@ export function SignInScreen() {
           </View>
         )}
 
-        {formError ? (
-          <Text role="alert" style={styles.error}>
-            {formError}
-          </Text>
-        ) : null}
+        <Notice tone="error" message={formError} style={styles.error} />
 
         <Pressable
           testID="submit-button"

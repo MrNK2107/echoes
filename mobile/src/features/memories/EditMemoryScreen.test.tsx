@@ -48,6 +48,13 @@ async function setup(id = 'memory-2', prepare?: (s: Services) => Promise<void>) 
 }
 
 describe('EditMemoryScreen', () => {
+  it('uses the shared back button that clears the top inset and goes back', async () => {
+    await setup();
+    expect(await screen.findByTestId('back-wrapper')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByLabelText('Back'));
+    expect(mockBack).toHaveBeenCalled();
+  });
+
   beforeEach(() => jest.clearAllMocks());
 
   it('prefills text and privacy', async () => {

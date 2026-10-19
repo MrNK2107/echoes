@@ -25,7 +25,7 @@ export function Notice({
     <View
       testID="notice-region"
       accessibilityLiveRegion="polite"
-      accessibilityRole={message ? 'alert' : undefined}
+      accessibilityRole={message && tone === 'error' ? 'alert' : undefined}
       accessible={!!message}
     >
       {message ? <Text style={[styles.base, tone === 'error' ? styles.error : styles.info, style]}>{message}</Text> : null}

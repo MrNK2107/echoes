@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useServices } from '@/services/ServicesProvider';
+import { Notice } from '@/ui/Notice';
 import { colors } from '@/ui/theme';
 
 export const MAX_VOICE_SECONDS = 60;
@@ -136,11 +137,7 @@ export function VoiceRecorder({ onChange }: { onChange: (r: { uri: string; durat
           </Pressable>
         </View>
       ) : null}
-      {error ? (
-        <Text role="alert" style={styles.error}>
-          {error}
-        </Text>
-      ) : null}
+      <Notice tone="error" message={error} style={styles.error} />
     </View>
   );
 }
