@@ -2,6 +2,10 @@
 // fixtures/domain/communities.json.
 const GEO_THRESHOLD = 5;
 
+// Owner of auto-created (time/geo/institution) communities (R25): no user owns them, so no user
+// is blocked from leaving and account deletion never removes them.
+const SYSTEM_OWNER = "system";
+
 function normalizeName(s) {
   return s
     .trim()
@@ -51,6 +55,7 @@ module.exports = {
   PROFANITY_WORDS,
   containsProfanity,
   GEO_THRESHOLD,
+  SYSTEM_OWNER,
   normalizeName,
   searchRange,
   yearCommunity,

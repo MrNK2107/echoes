@@ -301,3 +301,13 @@ test("a membership deleted concurrently is not decremented twice", async () => {
   await cleanupUserCommunities(db, "alice");
   assert.equal(db._get(`communities/${theirs}`).memberCount, 1);
 });
+
+test("inviteToCommunity is idempotent: re-inviting never duplicates the notification", async () => {
+  const db = seed();
+  const id = await created(db);
+  await call(db, "inviteToCommunity", "alice", { communityId: id, userIds: ["bob"] });
+  await call(db, "inviteToCommunity", "alice", { communityId: id, userIds: ["bob"] });
+  const n = inbox(db, "bob");
+  assert.equal(n.length, 1);
+  assert.ok(db._get(`users/bob/notifications/communityInvite_${id}_bob`));
+});

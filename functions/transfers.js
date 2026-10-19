@@ -43,7 +43,6 @@ async function notifySafely(db, args) {
 // recipient), resource-exhausted (20/day).
 async function initiateTransfer({ uid, data: { placeId, toUserId }, db }) {
   if (toUserId === uid) throw new HttpsError("invalid-argument", "You can't transfer to yourself.");
-  await assertNotBlocked(db, uid, toUserId);
 
   const ref = db.collection("transfers").doc();
   const now = new Date();
@@ -63,6 +62,8 @@ async function initiateTransfer({ uid, data: { placeId, toUserId }, db }) {
     if (!place.exists) throw new HttpsError("not-found", "Place not found.");
     const custodians = custodiansOf(place);
     if (!custodians.includes(uid)) throw new HttpsError("permission-denied", "Only custodians can transfer.");
+    // After the place and custodian checks, so block status cannot be probed with arbitrary ids.
+    await assertNotBlocked(db, uid, toUserId);
     if (!profile.exists) throw new HttpsError("not-found", "User not found.");
     if (custodians.includes(toUserId)) {
       throw new HttpsError("failed-precondition", "This person is already a custodian.");

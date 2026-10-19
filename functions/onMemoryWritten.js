@@ -9,6 +9,7 @@ const {
   eraCommunity,
   geoCommunity,
   containsProfanity,
+  SYSTEM_OWNER,
 } = require("./lib/domain");
 
 // Memory dates are Firestore Timestamps; legacy docs may hold ISO strings. Returns null when the
@@ -32,7 +33,8 @@ function toDate(value) {
 const NOT_FOUND = 5;
 
 function buildPlaceAggregate(memories, now) {
-  const live = memories.filter((m) => !m.isDeleted);
+  // Hidden (staff-moderated) memories are excluded from every count and the aura.
+  const live = memories.filter((m) => !m.isDeleted && !m.hidden);
   const livePublic = live.filter((m) => m.privacy === "public");
   return {
     aura: calculateAura(livePublic, now),
@@ -52,6 +54,7 @@ function memoryFromData(data) {
   return {
     privacy: data.privacy,
     isDeleted: data.isDeleted === true,
+    hidden: data.moderation === "hidden",
     sentiment: { compound: clampCompound(data.sentiment?.compound) },
     createdAt: toDate(data.createdAt),
   };
@@ -79,11 +82,20 @@ async function recomputePlace(db, placeId, now) {
     if (error?.code === NOT_FOUND) return null;
     throw error;
   }
-  await placeRef.collection("auraHistory").add({
-    placeId,
-    aura: aggregate.aura,
-    recordedAt: now.toISOString(),
-  });
+  // History records the aura only, so append only when the aura score, dominant sentiment or its
+  // memory count changed, so no-op recomputes add no entries.
+  const prev = place.data();
+  const changed =
+    prev.aura?.compoundScore !== aggregate.aura.compoundScore ||
+    prev.aura?.dominantSentiment !== aggregate.aura.dominantSentiment ||
+    prev.aura?.memoryCount !== aggregate.aura.memoryCount;
+  if (changed) {
+    await placeRef.collection("auraHistory").add({
+      placeId,
+      aura: aggregate.aura,
+      recordedAt: now.toISOString(),
+    });
+  }
   return aggregate;
 }
 
@@ -114,9 +126,7 @@ async function createIfMissing(ref, data) {
   }
 }
 
-// Auto communities are owned by "system" (R25): no user owns them, so no user is blocked from
-// leaving and account deletion never removes them.
-const SYSTEM_OWNER = "system";
+const MIN_COMMUNITY_YEAR = 1900;
 
 // Spec "Plan 3 decisions": a created memory ensures `time-<y>` and `era-<d>s` and joins its
 // author to the year community as a member, unless they left it before (R26:
@@ -127,6 +137,10 @@ const SYSTEM_OWNER = "system";
 // fails if the member already exists, so each member is counted once.
 async function ensureTimeCommunities(db, authorId, createdAt, now) {
   if (typeof authorId !== "string" || !authorId) return;
+  // Ignore implausible years (client clocks, legacy data) rather than minting time-0001 style
+  // communities. The aggregate path is unaffected.
+  const y = createdAt.getUTCFullYear();
+  if (y < MIN_COMMUNITY_YEAR || y > now.getUTCFullYear()) return;
   const at = now.toISOString();
   const year = yearCommunity(createdAt);
   const era = eraCommunity(createdAt);
@@ -209,13 +223,31 @@ async function flagProfanity(db, memoryId, after) {
   }
 }
 
+// The exact memory fields buildPlaceAggregate / ensureGeoCommunity / ensureTimeCommunities read:
+// placeId (which place), privacy + isDeleted + moderation=="hidden" (which memories count),
+// clamped sentiment.compound and createdAt (aura weighting). Sentiment is computed client-side
+// (rules validate it), so textContent is NOT an input. flags, text edits, tags etc. are ignored.
+function aggregateKey(data) {
+  const m = memoryFromData(data);
+  return JSON.stringify([
+    data.placeId ?? null,
+    m.privacy ?? null,
+    m.isDeleted,
+    m.hidden,
+    m.sentiment.compound,
+    parseDate(data.createdAt)?.getTime() ?? null,
+  ]);
+}
+
 // Testable core of the trigger. `before`/`after` are memory data or null.
 async function handleMemoryWrite(db, { memoryId, before, after }, now) {
   if (after) await flagProfanity(db, memoryId, after);
+  // Updates that change no aggregate input (e.g. the profanity-flag echo) skip the recompute.
+  const aggregateUnchanged = before && after && aggregateKey(before) === aggregateKey(after);
   const placeIds = new Set(
-    [after?.placeId, before?.placeId].filter(
-      (id) => typeof id === "string" && id.length > 0,
-    ),
+    aggregateUnchanged
+      ? []
+      : [after?.placeId, before?.placeId].filter((id) => typeof id === "string" && id.length > 0),
   );
   for (const placeId of placeIds) {
     try {

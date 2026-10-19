@@ -15,7 +15,7 @@ function validate(schema, data) {
   }
   const bad = (field, why) => new HttpsError("invalid-argument", `Invalid ${field}: ${why}.`);
   for (const key of Object.keys(data)) {
-    if (!(key in schema)) throw bad(key, "unknown field");
+    if (!Object.hasOwn(schema, key)) throw bad(key, "unknown field");
   }
   const out = {};
   for (const [field, rule] of Object.entries(schema)) {

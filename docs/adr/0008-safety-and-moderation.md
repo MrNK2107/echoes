@@ -48,4 +48,6 @@ Neither the Flutter app nor Plan 1/2 has any of this.
 - Meets store UGC requirements once the owner publishes the Terms and
   Guidelines pages and a support inbox.
 - Three reports can hide legitimate content. That is acceptable for v1, because
-  staff can restore it by clearing the `moderation` field in the console.
+  staff can restore it by setting `moderation` to `null` in the console. Never
+  delete the field: visibility queries match `moderation == null`, and a memory
+  without the field is hidden from everyone but its author.

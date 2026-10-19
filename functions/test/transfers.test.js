@@ -500,3 +500,9 @@ test("a notification failure never fails a committed transfer", async () => {
   assert.equal(base._get(`transfers/${id}`).status, "accepted");
   assert.deepEqual(base._get("places/p1").custodianIds, ["alice", "bob"]);
 });
+
+test("block status cannot be probed with a place the caller does not custody", async () => {
+  const db = seed({ "users/bob/blocks/carol": { createdAt: "2026-01-01T00:00:00.000Z" } });
+  assert.equal(await codeOf(initiate(db, "carol", { placeId: "nope", toUserId: "bob" })), "not-found");
+  await assert.rejects(initiate(db, "carol", { placeId: "p1", toUserId: "bob" }), /Only custodians/);
+});

@@ -55,3 +55,30 @@ npx firebase emulators:exec --only firestore,storage "npm test --prefix rules_te
 - Verify ARKit lifecycle across background/foreground and repeated scene opens.
 - Complete App Store privacy labels, age rating (13+), support URL, privacy
   policy, and account-deletion disclosure.
+
+## Expo Plan 3 backend runbook
+
+Do these before shipping the Expo client.
+
+- **Indexes first.** Run `firebase deploy --only firestore:indexes` and wait for
+  the indexes to finish building before the client ships; the new queries fail
+  without them.
+- **`deploy:rules` rewrites rules files.** `npm run deploy:rules` regenerates
+  `firestore.rules` and `firestore.lan.rules` with the production bucket. Do not
+  commit those changes; the committed copies pin the emulator bucket.
+- **Legacy community members lack `userId`.** Member docs written by the Flutter
+  client have no `userId` field, which the new collection-group queries and
+  cleanup rely on. Backfill `userId` from the member doc id, or drop the legacy
+  communities.
+- **Restoring hidden memories.** Staff restore a hidden memory by setting
+  `moderation` to `null`. Never delete the field: a memory without it is hidden
+  from non-authors (ADR-0008).
+- **TTL policies** (Firestore console or `gcloud firestore fields ttls update`):
+  - collection group `rateLimits`, field `expireAt` (counters expire two days
+    after their UTC day starts);
+  - collection group `notifications`, field `expireAt` (notifications expire 90
+    days after `createdAt`).
+  TTL deletion is not instant; expired docs may linger for up to a day or so.
+- **Client item C8.** Set real `EXPO_PUBLIC_TERMS_URL`,
+  `EXPO_PUBLIC_GUIDELINES_URL` and `EXPO_PUBLIC_SUPPORT_EMAIL` values before store
+  submission. The defaults point at `echoes.app` and must not ship.

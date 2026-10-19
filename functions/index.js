@@ -99,7 +99,13 @@ exports.dispatchNotificationRequest = onDocumentCreated(
 // Authentication deletion is the authoritative account-removal event. Keeping
 // cleanup server-side prevents a client from selectively leaving personal data
 // behind and also covers deletions initiated from the Firebase console.
-exports.cleanupDeletedUser = functionsV1.auth.user().onDelete(async (user) => {
+// Retries on failure (failurePolicy) with the maximum 540s timeout. Safe to retry: every step is
+// a query-driven delete, an idempotent membership cleanup, or a recursiveDelete, so a re-run
+// after a partial failure just finishes the remainder.
+exports.cleanupDeletedUser = functionsV1
+  .runWith({ timeoutSeconds: 540, failurePolicy: true })
+  .auth.user()
+  .onDelete(async (user) => {
   const userId = user.uid;
   const writer = db.bulkWriter();
 

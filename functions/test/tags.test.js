@@ -78,3 +78,19 @@ test("a retried tag trigger does not duplicate notifications", async () => {
   await notifyTaggedUsers(db, "m1", memory(["bob"]));
   assert.deepEqual(db._list("users/bob/notifications/"), ["users/bob/notifications/memoryTagged_m1_bob"]);
 });
+
+test("tag notifications stop silently once the author's daily budget is spent", async () => {
+  const day = new Date().toISOString().slice(0, 10);
+  const db = seed({ [`rateLimits/alice_tagNotify_${day}`]: { count: 100 } });
+  await notifyTaggedUsers(db, "m1", memory(["bob", "carol"]));
+  assert.equal(inbox(db, "bob").length, 0);
+  assert.equal(inbox(db, "carol").length, 0);
+});
+
+test("each tag notification consumes one unit of the daily budget", async () => {
+  const day = new Date().toISOString().slice(0, 10);
+  const db = seed({ [`rateLimits/alice_tagNotify_${day}`]: { count: 99 } });
+  await notifyTaggedUsers(db, "m1", memory(["bob", "carol"]));
+  assert.equal(inbox(db, "bob").length + inbox(db, "carol").length, 1);
+  assert.equal(db._get(`rateLimits/alice_tagNotify_${day}`).count, 100);
+});

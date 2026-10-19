@@ -105,3 +105,12 @@ test("a deterministic id makes notify idempotent", async () => {
   assert.deepEqual(b, { sent: false, reason: "duplicate" });
   assert.deepEqual(db._list("users/bob/notifications/"), ["users/bob/notifications/memoryTagged_m1_bob"]);
 });
+
+test("notifications carry a Timestamp expireAt 90 days after createdAt", async () => {
+  const db = base();
+  await notify(db, { to: "bob", type: "memoryTagged", actorId: "alice" });
+  const [n] = inbox(db, "bob");
+  assert.equal(typeof n.expireAt, "object");
+  const created = Date.parse(n.createdAt);
+  assert.ok(Math.abs(n.expireAt._seconds * 1000 - (created + 90 * 86400000)) < 1000);
+});

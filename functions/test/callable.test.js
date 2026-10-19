@@ -134,3 +134,16 @@ test("buildHandler charges rateLimit.cost(data) units", async () => {
   assert.equal(await codeOf(h({ auth: { uid: "u" }, data: { ids: [1, 2, 3] } })), "resource-exhausted");
   assert.equal(await h({ auth: { uid: "u" }, data: { ids: [1, 2] } }), "ok");
 });
+
+test("validate treats inherited property names as unknown fields", () => {
+  assert.throws(() => validate({ a: { type: "string" } }, { a: "x", toString: "y" }), /toString/);
+  assert.throws(() => validate({ a: { type: "string" } }, JSON.parse('{"a":"x","constructor":"y"}')), /constructor/);
+});
+
+test("rate limit counters carry a Timestamp expireAt two days after the start of the day", async () => {
+  const db = createFakeFirestore();
+  await incrementRateLimit(db, "u1", "report", 5, new Date("2026-10-19T10:30:00Z"));
+  const { expireAt } = db._get("rateLimits/u1_report_2026-10-19");
+  assert.equal(typeof expireAt, "object");
+  assert.equal(expireAt._seconds, Date.parse("2026-10-21T00:00:00Z") / 1000);
+});

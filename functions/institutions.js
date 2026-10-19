@@ -12,8 +12,8 @@ const { HttpsError } = require("firebase-functions/v2/https");
 const { FieldValue } = require("firebase-admin/firestore");
 const { callable, idField } = require("./lib/callable");
 const { linkUser, newCommunity, member } = require("./communities");
+const { SYSTEM_OWNER } = require("./lib/domain");
 
-const SYSTEM_OWNER = "system";
 const MAX_DOMAINS = 10;
 const MAX_SUB_ZONES = 100;
 const DEFAULT_RADIUS_METERS = 60;

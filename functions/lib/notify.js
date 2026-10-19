@@ -1,4 +1,7 @@
+const { Timestamp } = require("firebase-admin/firestore");
 const { isBlocked } = require("./blocks");
+
+const NOTIFICATION_TTL_MS = 90 * 24 * 60 * 60 * 1000;
 
 // gRPC status Firestore uses when create() targets an existing document.
 const ALREADY_EXISTS = 6;
@@ -56,13 +59,16 @@ async function notify(db, { to, type, actorId, params = {}, data = {}, id }) {
   const name = await displayNameOf(db, actorId);
   const notifications = db.collection(`users/${to}/notifications`);
   const ref = id ? notifications.doc(id) : notifications.doc();
+  const createdAt = new Date();
   const doc = {
     type,
     title: template.title,
     body: template.body({ ...params, name }),
     data,
-    createdAt: new Date().toISOString(),
+    createdAt: createdAt.toISOString(),
     readAt: null,
+    // TTL-ready: enable a Firestore TTL policy on collection group `notifications`, field `expireAt`.
+    expireAt: Timestamp.fromDate(new Date(createdAt.getTime() + NOTIFICATION_TTL_MS)),
   };
   if (!id) {
     await ref.set(doc);

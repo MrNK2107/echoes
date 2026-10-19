@@ -110,6 +110,8 @@ async function inviteToCommunity({ uid, data: { communityId, userIds }, db }) {
       actorId: uid,
       params: { community: name },
       data: { communityId },
+      // Deterministic id: re-inviting the same person never stacks notifications.
+      id: `communityInvite_${communityId}_${to}`,
     });
   }
   return {};
