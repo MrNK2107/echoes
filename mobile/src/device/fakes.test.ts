@@ -76,3 +76,22 @@ describe('fakeAudioPlayer', () => {
     ]);
   });
 });
+
+describe('fakeHeading / fakeArRenderer', () => {
+  it('fakeHeading emits values and unsubscribes; unavailable rejects', async () => {
+    const { fakeHeading } = require('./fakes');
+    const seen: number[] = [];
+    const off = await fakeHeading([10, 20]).subscribe((d: number) => seen.push(d));
+    expect(seen).toEqual([10, 20]);
+    expect(typeof off).toBe('function');
+    await expect(fakeHeading('unavailable').subscribe(() => {})).rejects.toBeDefined();
+  });
+
+  it('fakeArRenderer reports the given status', async () => {
+    const { fakeArRenderer } = require('./fakes');
+    const r = fakeArRenderer('unsupported');
+    await expect(r.status()).resolves.toBe('unsupported');
+    await expect(r.requestCamera()).resolves.toBe('granted');
+    expect(r.Scene).toBeNull();
+  });
+});

@@ -4,6 +4,8 @@ import type { Repositories } from '@/data/types';
 import type { ConnectivityService } from '@/device/types';
 import { createMemoryBackend } from '@/data/memory';
 import { buildSeed, DEMO_CENTER } from '@/data/seed';
+import { expoArRenderer } from '@/device/arRenderer';
+import { expoHeading } from '@/device/expoHeading';
 import { expoAudioPlayer, expoAudioRecorder } from '@/device/expoAudio';
 import { expoConnectivity } from '@/device/expoNetwork';
 import { expoImagePicker } from '@/device/expoImagePicker';
@@ -53,6 +55,8 @@ export function createServices(config: AppConfig, overrides: Partial<Services> =
     audioPlayer: expoAudioPlayer,
     // Demo mode has no push backend; it shows the unavailable copy instead of touching native code.
     push: config.backend === 'memory' ? unavailablePush : expoPush,
+    heading: expoHeading,
+    arRenderer: expoArRenderer,
     now,
     newId: () => randomUUID(),
     ...overrides,

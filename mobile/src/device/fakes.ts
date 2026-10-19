@@ -7,9 +7,12 @@ import type { Services } from '@/services/services';
 import type {
   AudioPlaybackStatus,
   AudioPlayerService,
+  ArRenderer,
+  ArStatus,
   AudioRecorderService,
   ConnectivityService,
   FileStore,
+  HeadingService,
   ImagePickerService,
   KeyValueStore,
   LocationService,
@@ -165,6 +168,20 @@ export function fakePush(
   };
 }
 
+export function fakeHeading(values: number[] | 'unavailable'): HeadingService {
+  return {
+    async subscribe(cb) {
+      if (values === 'unavailable') throw new Error('no compass');
+      values.forEach(cb);
+      return () => {};
+    },
+  };
+}
+
+export function fakeArRenderer(status: ArStatus): ArRenderer {
+  return { status: async () => status, requestCamera: async () => 'granted', Scene: null };
+}
+
 export function testServices(overrides: Partial<Services> = {}): Services {
   let n = 0;
   const now = overrides.now ?? (() => new Date(TEST_NOW));
@@ -179,6 +196,8 @@ export function testServices(overrides: Partial<Services> = {}): Services {
     audioRecorder: fakeAudioRecorder(),
     audioPlayer: fakeAudioPlayer(),
     push: fakePush(),
+    heading: fakeHeading('unavailable'),
+    arRenderer: fakeArRenderer('missing'),
     now,
     newId: () => `id-${++n}`,
     ...overrides,

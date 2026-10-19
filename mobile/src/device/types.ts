@@ -1,3 +1,6 @@
+import type { ComponentType } from 'react';
+
+import type { ArScenePlace } from '@/domain/arScene';
 import type { LatLng } from '@/domain/types';
 
 export interface LocationService {
@@ -72,4 +75,26 @@ export interface PushService {
   /** Notification taps (cold start once, then warm); data is `{ type, notificationId, ...data }`. Returns unsubscribe. */
   onResponse(cb: (data: Record<string, string>) => void): () => void;
   openSettings(): Promise<void>;
+}
+
+export interface HeadingService {
+  /** Degrees clockwise from north. Rejects or resolves null when no compass is available. */
+  subscribe(cb: (degrees: number) => void): Promise<() => void>;
+}
+
+export interface ArSceneProps {
+  places: (ArScenePlace & { name: string; color: string; memoryIds: string[] })[];
+  heading: number;
+  onPressPlace(placeId: string): void;
+  onPressOrb(memoryId: string): void;
+  onTrackingError(): void;
+}
+
+export type ArStatus = 'available' | 'missing' | 'unsupported';
+
+export interface ArRenderer {
+  status(): Promise<ArStatus>;
+  requestCamera(): Promise<'granted' | 'denied'>;
+  /** The AR scene component; null until the native AR library is bundled. */
+  Scene: ComponentType<ArSceneProps> | null;
 }

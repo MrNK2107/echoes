@@ -1,9 +1,11 @@
 import type { Repositories } from '@/data/types';
 import type {
+  ArRenderer,
   AudioPlayerService,
   AudioRecorderService,
   ConnectivityService,
   FileStore,
+  HeadingService,
   ImagePickerService,
   KeyValueStore,
   LocationService,
@@ -24,6 +26,8 @@ export interface Services {
   audioRecorder: AudioRecorderService;
   audioPlayer: AudioPlayerService;
   push: PushService;
+  heading: HeadingService;
+  arRenderer: ArRenderer;
   now(): Date;
   newId(): string;
 }
