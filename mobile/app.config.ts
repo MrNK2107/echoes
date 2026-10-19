@@ -25,6 +25,7 @@ function viroPlugin(): [string, Record<string, unknown>][] {
 
 export default ({ config }: ConfigContext): ExpoConfig => {
   const projectId = process.env.EXPO_PUBLIC_EAS_PROJECT_ID;
+  const mapsKey = process.env.GOOGLE_MAPS_ANDROID_API_KEY;
   return {
     ...config,
     name: "ECHOES",
@@ -38,6 +39,20 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       supportsTablet: true,
       bundleIdentifier: "com.mrnk2107.echoes",
       infoPlist: { NSCameraUsageDescription: CAMERA_PERMISSION },
+      config: { usesNonExemptEncryption: false },
+      privacyManifests: {
+        NSPrivacyTracking: false,
+        NSPrivacyAccessedAPITypes: [
+          {
+            NSPrivacyAccessedAPIType: "NSPrivacyAccessedAPICategoryUserDefaults",
+            NSPrivacyAccessedAPITypeReasons: ["CA92.1"],
+          },
+          {
+            NSPrivacyAccessedAPIType: "NSPrivacyAccessedAPICategoryFileTimestamp",
+            NSPrivacyAccessedAPITypeReasons: ["C617.1"],
+          },
+        ],
+      },
     },
     android: {
       package: "com.phantom.echoes",
@@ -52,6 +67,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         monochromeImage: "./assets/android-icon-monochrome.png",
       },
       predictiveBackGestureEnabled: false,
+      ...(mapsKey ? { config: { googleMaps: { apiKey: mapsKey } } } : {}),
     },
     web: {
       favicon: "./assets/favicon.png",
@@ -74,6 +90,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         },
       ],
       ["expo-notifications", { color: "#58A6FF" }],
+      [
+        "expo-audio",
+        { microphonePermission: "ECHOES records voice notes for your memories." },
+      ],
       ...viroPlugin(),
     ],
     ...(projectId ? { extra: { eas: { projectId } } } : {}),

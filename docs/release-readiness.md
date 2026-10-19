@@ -91,7 +91,9 @@ Do these before shipping the Expo client.
   (in `mobile/eas.json`) and need these EAS environment variables: all
   `EXPO_PUBLIC_FIREBASE_*` keys (API_KEY, AUTH_DOMAIN, PROJECT_ID, STORAGE_BUCKET,
   APP_ID, MESSAGING_SENDER_ID), `EXPO_PUBLIC_EAS_PROJECT_ID`, `EXPO_PUBLIC_TERMS_URL`,
-  `EXPO_PUBLIC_GUIDELINES_URL` and `EXPO_PUBLIC_SUPPORT_EMAIL`. The development profile
+  `EXPO_PUBLIC_GUIDELINES_URL` and `EXPO_PUBLIC_SUPPORT_EMAIL`, plus the build-time secret
+  `GOOGLE_MAPS_ANDROID_API_KEY` (Android Google Maps key, set as an EAS secret; the maps
+  block is omitted when it is absent). The development profile
   needs `EXPO_PUBLIC_EMULATOR_HOST` set to the PC's LAN IP for physical phones.
 
 ## Expo Plan 4 push and AR runbook

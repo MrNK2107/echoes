@@ -68,4 +68,64 @@ describe('app.config', () => {
       expect.arrayContaining(['android.permission.CAMERA', 'android.permission.POST_NOTIFICATIONS']),
     );
   });
+
+  it('adds the expo-audio plugin with the microphone string', () => {
+    const p = plugin(build(), 'expo-audio') as [string, { microphonePermission: string }];
+    expect(p).toBeDefined();
+    expect(p[1].microphonePermission).toBe('ECHOES records voice notes for your memories.');
+  });
+
+  it('passes GOOGLE_MAPS_ANDROID_API_KEY to android.config.googleMaps.apiKey', () => {
+    expect(build({ GOOGLE_MAPS_ANDROID_API_KEY: 'maps-key' }).android?.config?.googleMaps).toEqual({
+      apiKey: 'maps-key',
+    });
+  });
+
+  it('omits the googleMaps block when the key is absent or empty', () => {
+    const saved = process.env.GOOGLE_MAPS_ANDROID_API_KEY;
+    delete process.env.GOOGLE_MAPS_ANDROID_API_KEY;
+    try {
+      expect(build().android?.config?.googleMaps).toBeUndefined();
+      expect(build({ GOOGLE_MAPS_ANDROID_API_KEY: '' }).android?.config?.googleMaps).toBeUndefined();
+    } finally {
+      if (saved !== undefined) process.env.GOOGLE_MAPS_ANDROID_API_KEY = saved;
+    }
+  });
+
+  it('declares no non-exempt encryption', () => {
+    expect(build().ios?.config?.usesNonExemptEncryption).toBe(false);
+  });
+
+  it('declares the privacy manifest', () => {
+    const m = build().ios?.privacyManifests as Record<string, unknown>;
+    expect(m.NSPrivacyTracking).toBe(false);
+    expect(m.NSPrivacyAccessedAPITypes).toEqual([
+      {
+        NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryUserDefaults',
+        NSPrivacyAccessedAPITypeReasons: ['CA92.1'],
+      },
+      {
+        NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryFileTimestamp',
+        NSPrivacyAccessedAPITypeReasons: ['C617.1'],
+      },
+    ]);
+  });
+});
+
+describe('eas.json', () => {
+  const eas = require('../eas.json');
+  it('has an e2e profile on the memory backend', () => {
+    expect(eas.build.e2e).toEqual({
+      distribution: 'internal',
+      android: { buildType: 'apk' },
+      ios: { simulator: true },
+      env: { EXPO_PUBLIC_BACKEND: 'memory' },
+    });
+  });
+  it('keeps firebase on preview and production, with production build types', () => {
+    expect(eas.build.preview.env.EXPO_PUBLIC_BACKEND).toBe('firebase');
+    expect(eas.build.production.env.EXPO_PUBLIC_BACKEND).toBe('firebase');
+    expect(eas.build.production.ios).toEqual({ resourceClass: 'm-medium' });
+    expect(eas.build.production.android).toEqual({ buildType: 'app-bundle' });
+  });
 });

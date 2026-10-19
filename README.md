@@ -223,7 +223,7 @@ Push notifications and camera AR need native code, so they require an EAS build;
    - `preview`: internal distribution, Android APK, `EXPO_PUBLIC_BACKEND=firebase`.
    - `production`: store build with `autoIncrement`, `EXPO_PUBLIC_BACKEND=firebase`.
 
-   Preview and production builds need these EAS environment variables (a missing Firebase key fails at startup): `EXPO_PUBLIC_FIREBASE_API_KEY`, `EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN`, `EXPO_PUBLIC_FIREBASE_PROJECT_ID`, `EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET`, `EXPO_PUBLIC_FIREBASE_APP_ID`, `EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`, `EXPO_PUBLIC_EAS_PROJECT_ID`, `EXPO_PUBLIC_TERMS_URL`, `EXPO_PUBLIC_GUIDELINES_URL`, `EXPO_PUBLIC_SUPPORT_EMAIL`.
+   Preview and production builds need these EAS environment variables (a missing Firebase key fails at startup): `EXPO_PUBLIC_FIREBASE_API_KEY`, `EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN`, `EXPO_PUBLIC_FIREBASE_PROJECT_ID`, `EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET`, `EXPO_PUBLIC_FIREBASE_APP_ID`, `EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`, `EXPO_PUBLIC_EAS_PROJECT_ID`, `EXPO_PUBLIC_TERMS_URL`, `EXPO_PUBLIC_GUIDELINES_URL`, `EXPO_PUBLIC_SUPPORT_EMAIL`, plus the build-time secret `GOOGLE_MAPS_ANDROID_API_KEY` (Android Google Maps key; set it as an EAS secret, e.g. `npx eas-cli env:create --name GOOGLE_MAPS_ANDROID_API_KEY --visibility secret`; when absent the maps config is omitted).
 3. Build with `npx eas-cli build --profile development --platform android` (or `ios`).
 
 Expo Go still works for everything except remote push and camera AR (AR falls back to the 2D view). See ADR-0009.
