@@ -31,12 +31,16 @@ async function sendPushForNotification(
     return;
   }
   try {
-    const snapshot = await db.collection("users").doc(uid).collection("pushTokens").get();
+    const snapshot = await db
+      .collection("users")
+      .doc(uid)
+      .collection("pushTokens")
+      .orderBy("lastSeenAt", "desc")
+      .limit(maxTokens)
+      .get();
     const tokens = snapshot.docs
       .map((d) => ({ ref: d.ref, ...d.data() }))
-      .filter((t) => typeof t.token === "string" && t.token.length > 0)
-      .sort((a, b) => String(b.lastSeenAt ?? "").localeCompare(String(a.lastSeenAt ?? "")))
-      .slice(0, maxTokens);
+      .filter((t) => typeof t.token === "string" && t.token.length > 0);
     if (tokens.length === 0) return;
 
     const headers = {
@@ -68,8 +72,11 @@ async function sendPushForNotification(
         const tickets = Array.isArray(body?.data) ? body.data : [];
         await Promise.all(
           tickets.map(async (ticket, index) => {
-            if (ticket?.details?.error === "DeviceNotRegistered" && group[index]) {
+            const code = ticket?.details?.error;
+            if (code === "DeviceNotRegistered" && group[index]) {
               await group[index].ref.delete();
+            } else if (ticket?.status === "error") {
+              logger.warn("Expo push ticket error", { uid, notificationId, error: code ?? "unknown" });
             }
           }),
         );
@@ -106,11 +113,29 @@ async function removeTokenFromOtherUsers(db, uid, token, { logger = firebaseLogg
   }
 }
 
+// Keeps a user's token set bounded: deletes everything beyond the newest `max` by lastSeenAt.
+// Reads at most 100 docs (steady state is max+1 since every create trims). Never throws.
+async function trimUserTokens(db, uid, { max = MAX_TOKENS_PER_USER, logger = firebaseLogger } = {}) {
+  try {
+    const snapshot = await db
+      .collection("users")
+      .doc(uid)
+      .collection("pushTokens")
+      .orderBy("lastSeenAt", "desc")
+      .limit(100)
+      .get();
+    await Promise.all(snapshot.docs.slice(max).map((d) => d.ref.delete()));
+  } catch (error) {
+    logger.error("Could not trim push tokens", { uid, error: String(error) });
+  }
+}
+
 function createOnPushTokenCreated(getDb) {
   return onDocumentCreated("users/{uid}/pushTokens/{tokenId}", async (event) => {
     const token = event.data?.data()?.token;
     if (typeof token !== "string" || token.length === 0) return;
     await removeTokenFromOtherUsers(getDb(), event.params.uid, token);
+    await trimUserTokens(getDb(), event.params.uid);
   });
 }
 
@@ -118,5 +143,6 @@ module.exports = {
   sendPushForNotification,
   createOnNotificationCreated,
   removeTokenFromOtherUsers,
+  trimUserTokens,
   createOnPushTokenCreated,
 };

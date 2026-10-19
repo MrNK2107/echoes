@@ -211,3 +211,77 @@ test("removeTokenFromOtherUsers never throws", async () => {
   await removeTokenFromOtherUsers(db, "B", "t", { logger: { error: (m) => logged.push(m) } });
   assert.equal(logged.length, 1);
 });
+
+const { trimUserTokens } = require("../push");
+
+test("reads tokens with a bounded orderBy+limit query, never an unbounded get", async () => {
+  const db = createFakeFirestore();
+  seedTokens(db, 12);
+  const real = db.collection.bind(db);
+  const guardRef = (ref) => new Proxy(ref, {
+    get: (t, p) => {
+      if (p === "get") return () => { throw new Error("unbounded read"); };
+      const v = t[p];
+      return typeof v === "function" ? v.bind(t) : v;
+    },
+  });
+  db.collection = (name) => {
+    const col = real(name);
+    return {
+      doc: (id) => {
+        const d = col.doc(id);
+        return { collection: (sub) => guardRef(d.collection(sub)) };
+      },
+    };
+  };
+  const calls = [];
+  await sendPushForNotification(db, "u1", "n1", doc, { fetch: okFetch(calls) });
+  assert.equal(calls[0].messages.length, 10);
+  assert.equal(calls[0].messages[0].to, "ExponentPushToken[11]");
+  assert.equal(calls[0].messages[9].to, "ExponentPushToken[2]");
+});
+
+test("trimUserTokens keeps only the 10 most recent tokens of that user", async () => {
+  const db = createFakeFirestore();
+  seedTokens(db, 12);
+  seedTokens(db, 12, "u2");
+  await trimUserTokens(db, "u1");
+  const left = db._list("users/u1/pushTokens").length;
+  assert.equal(left, 10);
+  assert.equal(db._get("users/u1/pushTokens/t0"), undefined);
+  assert.equal(db._get("users/u1/pushTokens/t1"), undefined);
+  assert.ok(db._get("users/u1/pushTokens/t11"));
+  assert.equal(db._list("users/u2/pushTokens").length, 12);
+});
+
+test("trimUserTokens never throws", async () => {
+  const logged = [];
+  const db = { collection: () => { throw new Error("boom"); } };
+  await trimUserTokens(db, "u1", { logger: { error: (m) => logged.push(m) } });
+  assert.equal(logged.length, 1);
+});
+
+test("ticket errors other than DeviceNotRegistered are logged without token values", async () => {
+  const db = createFakeFirestore();
+  seedTokens(db, 2);
+  const warns = [];
+  const logger = { error() {}, info() {}, warn: (...a) => warns.push(a) };
+  await sendPushForNotification(db, "u1", "n1", doc, {
+    logger,
+    fetch: async (url, init) => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        data: JSON.parse(init.body).map((m, i) =>
+          i === 0
+            ? { status: "error", message: `bad ${m.to}`, details: { error: "MessageRateExceeded" } }
+            : { status: "error", details: { error: "DeviceNotRegistered" } },
+        ),
+      }),
+    }),
+  });
+  assert.equal(warns.length, 1);
+  const text = JSON.stringify(warns);
+  assert.ok(text.includes("MessageRateExceeded"));
+  assert.ok(!text.includes("ExponentPushToken"));
+});

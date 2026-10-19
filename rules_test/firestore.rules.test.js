@@ -1181,6 +1181,10 @@ test("pushTokens are owner-only {token, platform, createdAt, lastSeenAt} docs; u
   await assertFails(setDoc(doc(creatorDb, path("c".repeat(32))), { ...good, extra: 1 }));
   await assertFails(setDoc(doc(creatorDb, path("d".repeat(32))), { ...good, token: "x".repeat(257) }));
   await assertFails(setDoc(doc(creatorDb, path("e".repeat(32))), { ...good, token: 5 }));
+  await assertFails(setDoc(doc(creatorDb, path("9".repeat(32))), { ...good, token: "not-an-expo-token" }));
+  await assertFails(setDoc(doc(creatorDb, path("8".repeat(32))), { ...good, token: "ExponentPushToken[]" }));
+  await assertFails(setDoc(doc(creatorDb, path("7".repeat(32))), { ...good, token: "ExponentPushToken[a b]" }));
+  await assertSucceeds(setDoc(doc(creatorDb, path("6".repeat(32))), { ...good, token: "ExpoPushToken[Ab_-9]" }));
   await assertFails(setDoc(doc(creatorDb, path("f".repeat(32))), { ...good, createdAt: 5 }));
   await assertFails(setDoc(doc(creatorDb, path("short")), good));
   await assertFails(setDoc(doc(creatorDb, path("A".repeat(32))), good));

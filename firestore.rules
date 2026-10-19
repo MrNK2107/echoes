@@ -231,6 +231,7 @@ service cloud.firestore {
           request.resource.data.keys().hasAll(['token', 'platform', 'createdAt', 'lastSeenAt']) &&
           request.resource.data.token is string &&
           request.resource.data.token.size() <= 256 &&
+          request.resource.data.token.matches('^Expo(nent)?PushToken\\[[A-Za-z0-9_-]+\\]$') &&
           request.resource.data.platform in ['ios', 'android'] &&
           request.resource.data.createdAt is string &&
           request.resource.data.lastSeenAt is string;
