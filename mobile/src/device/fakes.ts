@@ -119,6 +119,8 @@ export function fakeAudioPlayer(): AudioPlayerService & { calls: string[] } {
 
 export interface FakePush extends PushService {
   calls: string[];
+  /** Changes the permission as the system settings would. */
+  setPermission(p: PushPermission): void;
   /** Simulates the user tapping a notification. */
   emitResponse(data: Record<string, string>): void;
 }
@@ -129,7 +131,7 @@ export function fakePush(
     permission?: PushPermission;
     /** What the system prompt answers. */
     grant?: 'granted' | 'denied';
-    token?: string | null;
+    token?: string | null | (() => Promise<string | null>);
   } = {},
 ): FakePush {
   const calls: string[] = [];
@@ -145,7 +147,11 @@ export function fakePush(
       permission = result;
       return result;
     },
-    token: async () => (r.token === undefined ? 'ExponentPushToken[fake]' : r.token),
+    setPermission: (p) => {
+      permission = p;
+    },
+    token: async () =>
+      typeof r.token === 'function' ? r.token() : r.token === undefined ? 'ExponentPushToken[fake]' : r.token,
     onResponse(cb) {
       listeners.add(cb);
       return () => {

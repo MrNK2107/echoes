@@ -1,5 +1,7 @@
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
-import { Text } from 'react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { AppState, type AppStateStatus, Text } from 'react-native';
+
+import { GENERIC_ERROR } from '@/data/errors';
 
 import { DEMO_USER } from '@/data/seed';
 import { fakePush, testServices, type FakePush } from '@/device/fakes';
@@ -19,7 +21,7 @@ function SessionProbe() {
   return status === 'signedOut' ? <Text>signed-out-probe</Text> : null;
 }
 
-async function setup(push: FakePush, over: Partial<Services> = {}) {
+async function setup(push: FakePush, over: Partial<Services> = {}, bridge = true) {
   const services = testServices({ push, ...over });
   await act(async () => {
     await services.repos.auth.signIn(DEMO_USER.email, DEMO_USER.password);
@@ -27,7 +29,7 @@ async function setup(push: FakePush, over: Partial<Services> = {}) {
   await render(
     <ServicesProvider services={services}>
       <SessionProbe />
-      <PushBridge uid="user-demo" />
+      {bridge ? <PushBridge uid="user-demo" /> : null}
       <ProfileScreen />
     </ServicesProvider>,
   );
@@ -64,8 +66,9 @@ describe('Profile push settings', () => {
     const services = await setup(push);
     expect(await screen.findByText('Push notifications are on')).toBeOnTheScreen();
     expect(push.calls).not.toContain('request');
-    await act(async () => {});
-    expect(await services.repos.pushTokens.get('user-demo', 'ExponentPushToken[abc]')).not.toBeNull();
+    await waitFor(async () =>
+      expect(await services.repos.pushTokens.get('user-demo', 'ExponentPushToken[abc]')).not.toBeNull(),
+    );
   });
 
   it('denying shows the blocked copy and Open settings opens system settings', async () => {
@@ -86,8 +89,9 @@ describe('Profile push settings', () => {
     const push = fakePush({ permission: 'granted', token: 'ExponentPushToken[abc]' });
     const services = await setup(push);
     await screen.findByText('Push notifications are on');
-    await act(async () => {});
-    expect(await services.repos.pushTokens.get('user-demo', 'ExponentPushToken[abc]')).not.toBeNull();
+    await waitFor(async () =>
+      expect(await services.repos.pushTokens.get('user-demo', 'ExponentPushToken[abc]')).not.toBeNull(),
+    );
     await fireEvent.press(screen.getByText('Sign out'));
     expect(await screen.findByText('signed-out-probe')).toBeOnTheScreen();
     expect(await services.repos.pushTokens.get('user-demo', 'ExponentPushToken[abc]')).toBeNull();
@@ -102,8 +106,70 @@ describe('Profile push settings', () => {
     };
     await setup(push, { repos });
     await screen.findByText('Push notifications are on');
-    await act(async () => {});
     await fireEvent.press(screen.getByText('Sign out'));
     expect(await screen.findByText('signed-out-probe')).toBeOnTheScreen();
+    expect(repos.pushTokens.unregister).toHaveBeenCalled();
+  });
+
+  it('sign-out unregisters the device token after a relaunch', async () => {
+    // The token is already stored and nothing registered it in this process (no bridge, empty cache).
+    const push = fakePush({ permission: 'granted', token: 'ExponentPushToken[abc]' });
+    const base = testServices();
+    await base.repos.pushTokens.register('user-demo', 'ExponentPushToken[abc]', 'android', base.now());
+    const services = await setup(push, { repos: base.repos }, false);
+    await screen.findByText('Push notifications are on');
+    await fireEvent.press(screen.getByText('Sign out'));
+    expect(await screen.findByText('signed-out-probe')).toBeOnTheScreen();
+    expect(await services.repos.pushTokens.get('user-demo', 'ExponentPushToken[abc]')).toBeNull();
+  });
+
+  it('pressing Turn on push notifications twice asks once', async () => {
+    const push = fakePush({ permission: 'undetermined', grant: 'granted' });
+    let answer: (r: 'granted' | 'denied') => void = () => {};
+    let asked = 0;
+    push.request = () => {
+      asked += 1;
+      return new Promise((r) => (answer = r));
+    };
+    await setup(push);
+    const button = await screen.findByText(ENABLE);
+    await fireEvent.press(button);
+    await fireEvent.press(button);
+    expect(asked).toBe(1);
+    await act(async () => {
+      answer('granted');
+    });
+    expect(await screen.findByText('Push notifications are on')).toBeOnTheScreen();
+  });
+
+  it('shows the generic error when registering fails after granting', async () => {
+    const push = fakePush({ permission: 'undetermined', grant: 'granted' });
+    const base = testServices();
+    const repos = {
+      ...base.repos,
+      pushTokens: { ...base.repos.pushTokens, register: jest.fn().mockRejectedValue(new Error('nope')) },
+    };
+    await setup(push, { repos });
+    await fireEvent.press(await screen.findByText(ENABLE));
+    expect(await screen.findByText(GENERIC_ERROR)).toBeOnTheScreen();
+  });
+
+  it('re-checks permission when the app becomes active and registers once granted in settings', async () => {
+    let onChange: ((s: AppStateStatus) => void) | undefined;
+    jest.spyOn(AppState, 'addEventListener').mockImplementation((_type, handler) => {
+      onChange = handler as (s: AppStateStatus) => void;
+      return { remove: jest.fn() };
+    });
+    const push = fakePush({ permission: 'denied', token: 'ExponentPushToken[abc]' });
+    const services = await setup(push, {}, false);
+    expect(await screen.findByText('Push notifications are blocked in system settings.')).toBeOnTheScreen();
+    push.setPermission('granted');
+    await act(async () => {
+      onChange?.('active');
+    });
+    expect(await screen.findByText('Push notifications are on')).toBeOnTheScreen();
+    await waitFor(async () =>
+      expect(await services.repos.pushTokens.get('user-demo', 'ExponentPushToken[abc]')).not.toBeNull(),
+    );
   });
 });

@@ -1,4 +1,4 @@
-import { deleteDoc, doc, getDoc, setDoc, updateDoc, type Firestore } from 'firebase/firestore';
+import { deleteDoc, doc, getDoc, runTransaction, type Firestore } from 'firebase/firestore';
 import type { PushTokenRepository } from '../types';
 
 const REFRESH_AFTER_MS = 24 * 60 * 60 * 1000;
@@ -13,17 +13,20 @@ export function createPushTokenRepository(
   return {
     async register(uid, token, platform, at) {
       const r = await ref(uid, token);
-      const snap = await getDoc(r);
-      if (!snap.exists()) {
-        const iso = at.toISOString();
-        await setDoc(r, { token, platform, createdAt: iso, lastSeenAt: iso });
-        return;
-      }
-      const seen = Date.parse(String(snap.data().lastSeenAt));
-      // An unreadable stored value is refreshed; the rules allow lastSeenAt changes only.
-      if (Number.isNaN(seen) || at.getTime() - seen > REFRESH_AFTER_MS) {
-        await updateDoc(r, { lastSeenAt: at.toISOString() });
-      }
+      // A transaction, so two concurrent first registrations never turn into a rules-denied update.
+      await runTransaction(db, async (tx) => {
+        const snap = await tx.get(r);
+        if (!snap.exists()) {
+          const iso = at.toISOString();
+          tx.set(r, { token, platform, createdAt: iso, lastSeenAt: iso });
+          return;
+        }
+        const seen = Date.parse(String(snap.data().lastSeenAt));
+        // An unreadable stored value is refreshed; the rules allow lastSeenAt changes only.
+        if (Number.isNaN(seen) || at.getTime() - seen > REFRESH_AFTER_MS) {
+          tx.update(r, { lastSeenAt: at.toISOString() });
+        }
+      });
     },
     async unregister(uid, token) {
       await deleteDoc(await ref(uid, token));

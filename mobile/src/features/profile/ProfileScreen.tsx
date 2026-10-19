@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Linking, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { AppState, Linking, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 
 import { GENERIC_ERROR, TIMEOUT_ERROR } from '@/data/errors';
 import { CUSTODIAN_FALLBACK_NAME, DISPLAY_NAME_ERROR, validateDisplayName } from '@/domain/profiles';
@@ -77,6 +77,27 @@ export function ProfileScreen() {
       cancelled = true;
     };
   }, [push, pushAvailable]);
+
+  // Permission can be granted in system settings while the app is in the background.
+  useEffect(() => {
+    if (!pushAvailable || !uid) return;
+    let cancelled = false;
+    const sub = AppState.addEventListener('change', (next) => {
+      if (next !== 'active') return;
+      push
+        .permission()
+        .then(async (p) => {
+          if (cancelled) return;
+          setPushPermission(p);
+          if (p === 'granted') await registerDevice(services, uid);
+        })
+        .catch((e: unknown) => console.warn('Could not refresh push permission', e));
+    });
+    return () => {
+      cancelled = true;
+      sub.remove();
+    };
+  }, [push, pushAvailable, services, uid]);
 
   const enablePush = async () => {
     if (!uid || enablingPushRef.current) return;
@@ -226,7 +247,8 @@ export function ProfileScreen() {
 
   const signOut = async () => {
     try {
-      await signOutDevice(services);
+      if (uid) await signOutDevice(services, uid);
+      else await repos.auth.signOut();
     } catch {
       setError(GENERIC_ERROR);
     }

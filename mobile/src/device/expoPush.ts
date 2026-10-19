@@ -48,6 +48,8 @@ function asStrings(data: unknown): Record<string, string> {
   return out;
 }
 
+type ResponseLike = { notification: { request: { identifier: string; content: { data?: unknown } } } };
+
 async function ensureChannel(n: Notifications): Promise<void> {
   await n.setNotificationChannelAsync('default', {
     name: 'Default',
@@ -56,6 +58,8 @@ async function ensureChannel(n: Notifications): Promise<void> {
 }
 
 let coldStartHandled = false;
+/** Identifier of the last response delivered, so the cold-start lookup and the listener never double-route a tap. */
+let lastDeliveredId: string | null = null;
 
 export const expoPush: PushService = {
   availability,
@@ -81,16 +85,22 @@ export const expoPush: PushService = {
   onResponse(cb) {
     if (availability() !== 'available') return () => {};
     const n = notifications();
+    const deliver = (r: ResponseLike) => {
+      const id = r.notification.request.identifier;
+      if (id === lastDeliveredId) return;
+      lastDeliveredId = id;
+      cb(asStrings(r.notification.request.content.data));
+    };
     if (!coldStartHandled) {
       coldStartHandled = true;
       void n
         .getLastNotificationResponseAsync()
         .then((r) => {
-          if (r) cb(asStrings(r.notification.request.content.data));
+          if (r) deliver(r);
         })
         .catch(() => {});
     }
-    const sub = n.addNotificationResponseReceivedListener((r) => cb(asStrings(r.notification.request.content.data)));
+    const sub = n.addNotificationResponseReceivedListener(deliver);
     return () => sub.remove();
   },
   async openSettings() {
