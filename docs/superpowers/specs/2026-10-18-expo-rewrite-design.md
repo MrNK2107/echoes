@@ -128,6 +128,13 @@ Copy (exact):
 - Safety: memory action `Report`, sheet title `Why are you reporting this?`, reasons `Spam`, `Harassment or bullying`, `Hate speech`, `Sexual content`, `Violence or threats`, `Something else`, note placeholder `Add details (optional)`, submit `Send report`, thanks `Thanks — we'll review it.`, duplicate `You already reported this memory.`, rate `You've sent a lot of reports today. Try again tomorrow.`; author action `Block {name}` on memory detail (non-author), confirm `Block {name}?` / `You won't see their memories, and they can't tag, invite or transfer to you.` / `Cancel` / `Block`, profile `Blocked people` list with `Unblock`; hidden badge (author) `Hidden after reports`; profanity warning `This memory may contain offensive language. Save anyway?` buttons `Edit` / `Save anyway`; registration checkbox `I agree to the Terms of Service and Community Guidelines.` error `Please accept the Terms of Service and Community Guidelines.`; profile `Help & support`, `Terms of Service`, `Community Guidelines`.
 - Callable errors map to generic copy `Something went wrong. Please try again.` unless listed; offline → `Could not reach the server. Check your connection and try again.`
 
+## Plan 4 decisions (2026-10-19) — development build, push, AR
+See ADR-0009 (EAS development build + Expo push) and ADR-0010 (AR with ViroReact + radar fallback).
+- Identifiers: Android `com.phantom.echoes`, iOS `com.mrnk2107.echoes` (match the registered Firebase apps). EAS project id from `EXPO_PUBLIC_EAS_PROJECT_ID`.
+- `users/{uid}/pushTokens/{tokenId}`: `{ token, platform ('ios'|'android'), createdAt, lastSeenAt }` (ISO), owner-only; `tokenId` = hex SHA-256 of the token (first 32 chars). Removed on sign-out; deleted with the account.
+- Push copy (Profile → Notifications): button `Turn on push notifications`; on `Push notifications are on`; denied `Push notifications are blocked in system settings.` with `Open settings`; unavailable (Expo Go / simulator) `Push notifications need the ECHOES app build.`
+- AR: map button text `AR` (accessibilityLabel `Explore in AR`), route `/ar`, radius 1000 m, up to 5 places and 8 orbs per place; toggle `Radar view` / `Camera view`; empty `No memory places within 1 km.`; camera denied `Camera access is needed for AR. Showing radar instead.`; unsupported `AR isn't available on this device. Showing radar instead.`; heading unavailable `Compass unavailable — the radar won't rotate.`; orb tap → `/memory/{id}`; aura tap → `/place/{id}`.
+
 ## Roadmap
 | Plan | Scope | Runs in |
 |---|---|---|
