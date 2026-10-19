@@ -26,6 +26,10 @@ async function sendPushForNotification(
     maxTokens = MAX_TOKENS_PER_USER,
   } = {},
 ) {
+  if (typeof doc?.title !== "string" || typeof doc?.body !== "string") {
+    logger.warn("Skipping push for notification without string title/body", { uid, notificationId });
+    return;
+  }
   try {
     const snapshot = await db.collection("users").doc(uid).collection("pushTokens").get();
     const tokens = snapshot.docs
@@ -46,7 +50,7 @@ async function sendPushForNotification(
         to: t.token,
         title: doc.title,
         body: doc.body,
-        data: { type: doc.type, notificationId, ...(doc.data ?? {}) },
+        data: { ...(doc.data ?? {}), type: doc.type, notificationId },
         sound: "default",
         channelId: "default",
       }));

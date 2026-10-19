@@ -132,3 +132,61 @@ test("account deletion's recursiveDelete of users/{uid} removes pushTokens", asy
   assert.deepEqual(db._list("users/u1/pushTokens"), []);
   assert.equal(db._list("users/u2/pushTokens").length, 1);
 });
+
+test("doc.data cannot override type or notificationId", async () => {
+  const db = createFakeFirestore();
+  seedTokens(db, 1);
+  const calls = [];
+  await sendPushForNotification(
+    db, "u1", "n1",
+    { ...doc, data: { type: "evil", notificationId: "evil", memoryId: "m1" } },
+    { fetch: okFetch(calls) },
+  );
+  assert.deepEqual(calls[0].messages[0].data, { memoryId: "m1", type: "memoryTagged", notificationId: "n1" });
+});
+
+test("a notification with a missing or non-string title/body is skipped and logged", async () => {
+  const db = createFakeFirestore();
+  seedTokens(db, 1);
+  const calls = [];
+  const logs = [];
+  const logger = { error: (...a) => logs.push(a), warn: (...a) => logs.push(a), info() {} };
+  await sendPushForNotification(db, "u1", "n1", { ...doc, title: undefined }, { fetch: okFetch(calls), logger });
+  await sendPushForNotification(db, "u1", "n1", { ...doc, body: 5 }, { fetch: okFetch(calls), logger });
+  assert.equal(calls.length, 0);
+  assert.equal(logs.length, 2);
+});
+
+test("malformed JSON in the response is logged and does not throw", async () => {
+  const db = createFakeFirestore();
+  seedTokens(db, 1);
+  const logs = [];
+  const logger = { error: (...a) => logs.push(a), warn: (...a) => logs.push(a), info() {} };
+  await sendPushForNotification(db, "u1", "n1", doc, {
+    fetch: async () => ({ ok: true, status: 200, json: async () => { throw new SyntaxError("bad json"); } }),
+    logger,
+  });
+  assert.equal(logs.length, 1);
+  assert.ok(db._get("users/u1/pushTokens/t0"));
+});
+
+test("a DeviceNotRegistered ticket in the second chunk deletes the right token", async () => {
+  const db = createFakeFirestore();
+  seedTokens(db, 150);
+  // most recent first: index 149 is first; the 101st message (second chunk, index 0) is token 49.
+  const fetch = async (url, init) => {
+    const messages = JSON.parse(init.body);
+    return {
+      ok: true, status: 200,
+      json: async () => ({
+        data: messages.map((m) =>
+          m.to === "ExponentPushToken[48]"
+            ? { status: "error", details: { error: "DeviceNotRegistered" } }
+            : { status: "ok" }),
+      }),
+    };
+  };
+  await sendPushForNotification(db, "u1", "n1", doc, { fetch, maxTokens: 150 });
+  assert.equal(db._get("users/u1/pushTokens/t48"), undefined);
+  assert.equal(db._list("users/u1/pushTokens/").length, 149);
+});
