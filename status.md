@@ -3,6 +3,45 @@
 **Updated:** October 19, 2026  
 **Target:** Production-ready v1 for Android and iOS, age 13+
 
+## Expo rewrite — Plan 3
+
+Plan 3 (social and safety) adds public profiles and people search, tagged and community privacy, server-authoritative communities, transfers and institutions (callables), a notifications inbox with preferences, safety (report, auto-hide at 3, block, profanity warning, terms acceptance, help and terms links) and an aura history chart.
+
+| Command | Result |
+| --- | --- |
+| `npm --prefix mobile test` | Pass (55 suites, 755 tests; 3 consecutive runs plus 1 `--randomize` run, all identical and green) |
+| `npm --prefix mobile run typecheck` | Pass |
+| `npm --prefix mobile run lint` | Pass |
+| `npm test --prefix functions` | Pass (225 tests) |
+| `npx firebase emulators:exec --project demo-echoes --only auth,firestore,storage,functions "npm --prefix mobile run test:emulator"` | Pass (64 passed, 1 skipped) |
+| `npx firebase emulators:exec --only firestore,storage "npm test --prefix rules_test"` | Pass (44 tests in the final summary) |
+| `node scripts/build-rules.js && git diff --exit-code firestore.rules firestore.lan.rules` | Pass (generated rules in sync) |
+| `cd mobile && npx expo export --platform android --output-dir dist && npx expo export --platform ios --output-dir dist-ios` | Pass (both bundles exported) |
+
+### Manual Expo Go checklist
+
+- [ ] Rename yourself in Profile, then find yourself via people search
+- [ ] Tag another person in a memory; they see it under tagged
+- [ ] Set community-only privacy on a memory; only members see it
+- [ ] Create a community, join it, leave it, and invite someone
+- [ ] Open the inbox, read and clear items, and change notification preferences
+- [ ] Transfer: request, accept, decline and revoke
+- [ ] Institution: register (staff), verify via the email admin claim, and add a sub-zone
+- [ ] Report a memory from three accounts; it becomes hidden
+- [ ] Block and unblock a user; their content hides and returns
+- [ ] Type profane text; the warning appears
+- [ ] Terms checkbox is required at sign-up and the Terms/Guidelines/support links open
+- [ ] Aura history chart shows on the place screen
+
+### Known follow-ups
+
+- Push delivery is Plan 4 (inbox is in-app only).
+- No staff review UI for reports or institution verification yet.
+- Terms, Guidelines and support content is the owner's to write and host.
+- Production rules must be generated with the real storage bucket (`FIREBASE_STORAGE_BUCKET`) and deployed only after the legacy data backfill sets `moderation: null` on existing memories; see docs/release-readiness.md.
+
+---
+
 ## Expo rewrite — Plan 2
 
 Plan 2 (memory lifecycle) adds memory detail/edit/delete/restore (Recently deleted, 30-day window, daily purge function), 60 s voice notes, a persisted offline outbox with permanent-failure parking (ADR-0006), profile with default privacy, and account deletion with re-authentication. Rules changed: authors read their own deleted memories; `audioUrl` and `sentiment` are mutable; update guards use `affectedKeys()`.

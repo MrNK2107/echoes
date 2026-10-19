@@ -78,6 +78,24 @@ The app lives in `mobile/` (React Native + Expo SDK 58). Choose a backend with `
 
 Expo app features: map and places, add memories with photos and 60 s voice notes, memory detail with edit, delete and restore (Recently deleted keeps items 30 days), an offline outbox that retries saves, profile with default privacy, and account deletion with re-authentication.
 
+Plan 3 adds: public profiles and people search, tagging people in memories, community-only privacy, communities (create, join, leave, invite), institutions with sub-zones, memory transfer requests (request, accept, decline, revoke), an in-app notifications inbox with preferences, and safety (report a memory, auto-hide after 3 reports, block and unblock, profanity warning, terms acceptance) plus an aura history chart on the place screen. Communities, transfers and institutions are written only by callable Cloud Functions.
+
+Optional safety links (set in `mobile/.env`):
+
+- `EXPO_PUBLIC_TERMS_URL`: Terms of Service page
+- `EXPO_PUBLIC_GUIDELINES_URL`: Community Guidelines page
+- `EXPO_PUBLIC_SUPPORT_EMAIL`: support contact address
+
+### Granting the `staff` claim
+
+Institution verification and report review are limited to staff. Grant the custom claim with the Admin SDK (service account or emulator), then have the user sign out and back in (or refresh their ID token):
+
+```js
+const admin = require('firebase-admin');
+admin.initializeApp();
+await admin.auth().setCustomUserClaims(uid, { staff: true });
+```
+
 Expo Go steps:
 
 ```bash
