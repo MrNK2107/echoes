@@ -381,13 +381,13 @@ AuthRepository: sendEmailVerification(): Promise<void>; refreshUser(): Promise<{
 - Profanity: `containsProfanity` → `Alert` with `Edit` / `Save anyway`.
 - Profile gets `Help & support` (mailto), `Terms of Service` and `Community Guidelines` links.
 
-- [ ] **Step 1: Failing tests:**
+- [x] **Step 1: Failing tests:**
   - staff gating; the three claim outcomes; sub-zone add;
   - report flows incl. duplicate and rate copy; block hides content immediately; unblock restores;
   - hidden badge for the author; profanity confirm both branches;
   - support/terms links call `Linking.openURL` with configured values.
-- [ ] **Step 2–4:** FAIL → implement → PASS.
-- [ ] **Step 5: Commit** `feat(safety): institutions, report, block, hide, profanity check`.
+- [x] **Step 2–4:** FAIL → implement → PASS.
+- [x] **Step 5: Commit** `feat(safety): institutions, report, block, hide, profanity check`.
 
 ---
 
