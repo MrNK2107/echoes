@@ -1,6 +1,8 @@
-import { fakePush, testServices } from '@/device/fakes';
+import { waitFor } from '@testing-library/react-native';
 
-import { registerDevice, signOutDevice } from './pushDevice';
+import { fakeConnectivity, fakePush, testServices } from '@/device/fakes';
+
+import { REGISTER_MIN_INTERVAL_MS, registerDevice, signOutDevice } from './pushDevice';
 
 describe('pushDevice', () => {
   it('a registration in flight when sign-out happens leaves no token and no stale cache', async () => {
@@ -65,5 +67,92 @@ describe('pushDevice', () => {
     } finally {
       jest.useRealTimers();
     }
+  });
+});
+
+describe('registration throttle and offline retry', () => {
+  const TOKEN = 'ExponentPushToken[t]';
+
+  function setup(over: { failFirst?: boolean } = {}) {
+    let clock = new Date('2026-10-19T09:00:00Z').getTime();
+    const connectivity = fakeConnectivity(true);
+    const unsubscribe = jest.fn();
+    const listeners = new Set<(online: boolean) => void>();
+    const subscribe = jest.spyOn(connectivity, 'subscribe').mockImplementation((cb) => {
+      listeners.add(cb);
+      return () => {
+        unsubscribe();
+        listeners.delete(cb);
+      };
+    });
+    const push = fakePush({ permission: 'granted', token: TOKEN });
+    const base = testServices({ push, connectivity, now: () => new Date(clock) });
+    const register = jest.fn(base.repos.pushTokens.register);
+    if (over.failFirst) register.mockRejectedValueOnce(new Error('offline'));
+    const services = { ...base, repos: { ...base.repos, pushTokens: { ...base.repos.pushTokens, register } } };
+    return {
+      services,
+      push,
+      register,
+      subscribe,
+      unsubscribe,
+      emitOnline: (online: boolean) => [...listeners].forEach((cb) => cb(online)),
+      advance: (ms: number) => {
+        clock += ms;
+      },
+    };
+  }
+
+  it('three foreground registrations within 6 h register once', async () => {
+    const { services, register, advance } = setup();
+    await registerDevice(services, 'A');
+    advance(60_000);
+    await registerDevice(services, 'A');
+    advance(60 * 60 * 1000);
+    await registerDevice(services, 'A');
+    expect(register).toHaveBeenCalledTimes(1);
+    advance(REGISTER_MIN_INTERVAL_MS);
+    await registerDevice(services, 'A');
+    expect(register).toHaveBeenCalledTimes(2);
+  });
+
+  it('registers again when the permission changed or the user is different', async () => {
+    const { services, register, push } = setup();
+    await registerDevice(services, 'A');
+    await registerDevice(services, 'B');
+    expect(register).toHaveBeenCalledTimes(2);
+    push.setPermission('denied');
+    await registerDevice(services, 'B');
+    expect(register).toHaveBeenCalledTimes(3);
+  });
+
+  it('an offline failure retries once when the network comes back, then unsubscribes', async () => {
+    const { services, register, subscribe, unsubscribe, emitOnline } = setup({ failFirst: true });
+    await expect(registerDevice(services, 'A')).rejects.toThrow('offline');
+    expect(subscribe).toHaveBeenCalledTimes(1);
+    emitOnline(false);
+    expect(register).toHaveBeenCalledTimes(1);
+    emitOnline(true);
+    await waitFor(() => expect(register).toHaveBeenCalledTimes(2));
+    expect(unsubscribe).toHaveBeenCalledTimes(1);
+    emitOnline(true);
+    expect(register).toHaveBeenCalledTimes(2);
+  });
+
+  it('sign-out cancels a pending retry', async () => {
+    const { services, register, unsubscribe, emitOnline } = setup({ failFirst: true });
+    await expect(registerDevice(services, 'A')).rejects.toThrow('offline');
+    await signOutDevice(services, 'A');
+    expect(unsubscribe).toHaveBeenCalledTimes(1);
+    emitOnline(true);
+    expect(register).toHaveBeenCalledTimes(1);
+  });
+
+  it('a failure while already waiting for the network does not subscribe twice', async () => {
+    const { services, subscribe, register } = setup({ failFirst: true });
+    await expect(registerDevice(services, 'A')).rejects.toThrow('offline');
+    register.mockRejectedValueOnce(new Error('offline'));
+    await expect(registerDevice(services, 'A')).rejects.toThrow('offline');
+    expect(subscribe).toHaveBeenCalledTimes(1);
   });
 });

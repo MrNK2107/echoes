@@ -1,12 +1,12 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { createFakeFirestore } = require("./fakes/firestore");
-const { sendPushForNotification } = require("../push");
+const { sendPushForNotification, PUSH_BODIES, receiptsHandler, checkPushReceipts, createOnPushTokenCreated } = require("../push");
 
 const doc = {
   type: "memoryTagged",
   title: "Tagged",
-  body: "Someone tagged you",
+  body: "Someone tagged you in a memory.",
   data: { memoryId: "m1" },
   createdAt: "2026-10-19T00:00:00.000Z",
   readAt: null,
@@ -48,7 +48,7 @@ test("builds the message without expireAt/readAt", async () => {
     {
       to: "ExponentPushToken[0]",
       title: "Tagged",
-      body: "Someone tagged you",
+      body: "Someone tagged you in a memory.",
       data: { type: "memoryTagged", notificationId: "n1", memoryId: "m1" },
       sound: "default",
       channelId: "default",
@@ -145,16 +145,62 @@ test("doc.data cannot override type or notificationId", async () => {
   assert.deepEqual(calls[0].messages[0].data, { memoryId: "m1", type: "memoryTagged", notificationId: "n1" });
 });
 
-test("a notification with a missing or non-string title/body is skipped and logged", async () => {
+test("a notification with a missing title or an unknown type is skipped and logged", async () => {
   const db = createFakeFirestore();
   seedTokens(db, 1);
   const calls = [];
   const logs = [];
   const logger = { error: (...a) => logs.push(a), warn: (...a) => logs.push(a), info() {} };
   await sendPushForNotification(db, "u1", "n1", { ...doc, title: undefined }, { fetch: okFetch(calls), logger });
-  await sendPushForNotification(db, "u1", "n1", { ...doc, body: 5 }, { fetch: okFetch(calls), logger });
+  await sendPushForNotification(db, "u1", "n1", { ...doc, type: "somethingNew" }, { fetch: okFetch(calls), logger });
   assert.equal(calls.length, 0);
   assert.equal(logs.length, 2);
+});
+
+test("push bodies are the generic spec copy per type", () => {
+  assert.deepEqual(PUSH_BODIES, {
+    memoryTagged: "Someone tagged you in a memory.",
+    transferRequest: "You have a new custodianship request.",
+    transferAccepted: "Your custodianship request was accepted.",
+    transferRejected: "Your custodianship request was declined.",
+    communityInvite: "You have a new community invitation.",
+  });
+});
+
+test("the push body for communityInvite is generic and contains no community name", async () => {
+  const db = createFakeFirestore();
+  seedTokens(db, 1);
+  const calls = [];
+  await sendPushForNotification(
+    db, "u1", "n1",
+    { ...doc, type: "communityInvite", title: "Community invitation", body: "Ana invited you to Secret Club", data: { communityId: "c1" } },
+    { fetch: okFetch(calls) },
+  );
+  assert.equal(calls[0].messages[0].body, "You have a new community invitation.");
+  assert.equal(calls[0].messages[0].title, "Community invitation");
+  assert.ok(!JSON.stringify(calls[0].messages).includes("Secret Club"));
+});
+
+const asMs = (v) => (v?.toDate ? v.toDate() : new Date(v)).getTime();
+
+test("ok tickets write pushReceipts with uid, tokenId, createdAt and expireAt (+1 day)", async () => {
+  const db = createFakeFirestore();
+  seedTokens(db, 2);
+  const now = new Date("2026-10-19T12:00:00.000Z");
+  const fetch = async (url, init) => ({
+    ok: true, status: 200,
+    json: async () => ({
+      data: JSON.parse(init.body).map((m, i) =>
+        i === 0 ? { status: "ok", id: "tk-a" } : { status: "error", details: { error: "MessageRateExceeded" } }),
+    }),
+  });
+  await sendPushForNotification(db, "u1", "n1", doc, { fetch, now: () => now });
+  const receipt = db._get("pushReceipts/tk-a");
+  assert.equal(receipt.uid, "u1");
+  assert.equal(receipt.tokenId, "t1");
+  assert.equal(asMs(receipt.createdAt), now.getTime());
+  assert.equal(asMs(receipt.expireAt), now.getTime() + 86_400_000);
+  assert.equal(db._list("pushReceipts").length, 1);
 });
 
 test("malformed JSON in the response is logged and does not throw", async () => {
@@ -207,7 +253,7 @@ test("a token registered by a new user is removed from the previous user", async
 
 test("removeTokenFromOtherUsers never throws", async () => {
   const logged = [];
-  const db = { collectionGroup: () => ({ where: () => ({ get: async () => { throw new Error("boom"); } }) }) };
+  const db = { collectionGroup: () => ({ where: () => ({ limit: () => ({ get: async () => { throw new Error("boom"); } }) }) }) };
   await removeTokenFromOtherUsers(db, "B", "t", { logger: { error: (m) => logged.push(m) } });
   assert.equal(logged.length, 1);
 });
@@ -284,4 +330,102 @@ test("ticket errors other than DeviceNotRegistered are logged without token valu
   const text = JSON.stringify(warns);
   assert.ok(text.includes("MessageRateExceeded"));
   assert.ok(!text.includes("ExponentPushToken"));
+});
+
+test("removeTokenFromOtherUsers reads at most 20 docs", async () => {
+  const db = createFakeFirestore();
+  for (let i = 0; i < 30; i++) {
+    db._put(`users/other${i}/pushTokens/h`, { token: "ExponentPushToken[T]", platform: "ios", createdAt: "x", lastSeenAt: "x" });
+  }
+  await removeTokenFromOtherUsers(db, "B", "ExponentPushToken[T]");
+  const left = Array.from({ length: 30 }, (_, i) => db._get(`users/other${i}/pushTokens/h`)).filter(Boolean).length;
+  assert.equal(left, 10);
+});
+
+test("onPushTokenCreated relays (uid, token) to the dedupe and then trims the user's tokens", async () => {
+  const db = createFakeFirestore();
+  const tokenDoc = (token, i) => ({ token, platform: "ios", createdAt: "x", lastSeenAt: new Date(Date.UTC(2026, 9, 1, 0, 0, i)).toISOString() });
+  db._put("users/A/pushTokens/h1", tokenDoc("ExponentPushToken[T]", 0));
+  for (let i = 0; i < 11; i++) {
+    db._put(`users/B/pushTokens/b${i}`, tokenDoc(i === 10 ? "ExponentPushToken[T]" : `ExponentPushToken[b${i}]`, i + 1));
+  }
+  const fn = createOnPushTokenCreated(() => db);
+  await fn.run({ params: { uid: "B", tokenId: "b10" }, data: { data: () => ({ token: "ExponentPushToken[T]" }) } });
+  assert.equal(db._get("users/A/pushTokens/h1"), undefined);
+  assert.equal(db._list("users/B/pushTokens").length, 10);
+  assert.equal(db._get("users/B/pushTokens/b0"), undefined);
+  await fn.run({ params: { uid: "B", tokenId: "x" }, data: { data: () => ({}) } });
+  assert.equal(db._list("users/B/pushTokens").length, 10);
+});
+
+// ---- receipts ----
+const NOW = new Date("2026-10-19T12:00:00.000Z");
+const minutesAgo = (m) => new Date(NOW.getTime() - m * 60_000);
+const putReceipt = (db, id, ageMin, extra = {}) =>
+  db._put(`pushReceipts/${id}`, { uid: "u1", tokenId: "t0", createdAt: minutesAgo(ageMin), expireAt: new Date(NOW.getTime() + 86_400_000), ...extra });
+const receiptFetch = (calls, statusFor = () => ({ status: "ok" })) => async (url, init) => {
+  const { ids } = JSON.parse(init.body);
+  calls.push({ url, init, ids });
+  return { ok: true, status: 200, json: async () => ({ data: Object.fromEntries(ids.map((id) => [id, statusFor(id)])) }) };
+};
+
+test("receipts: DeviceNotRegistered deletes the token and the receipt doc; ok deletes the receipt", async () => {
+  const db = createFakeFirestore();
+  seedTokens(db, 2);
+  putReceipt(db, "r-bad", 20, { tokenId: "t1" });
+  putReceipt(db, "r-ok", 20, { tokenId: "t0" });
+  const calls = [];
+  await receiptsHandler(
+    db,
+    receiptFetch(calls, (id) => (id === "r-bad" ? { status: "error", details: { error: "DeviceNotRegistered" } } : { status: "ok" })),
+    () => NOW,
+    { env: { EXPO_ACCESS_TOKEN: "s" } },
+  );
+  assert.equal(calls[0].url, "https://exp.host/--/api/v2/push/getReceipts");
+  assert.equal(calls[0].init.headers.Authorization, "Bearer s");
+  assert.equal(db._get("users/u1/pushTokens/t1"), undefined);
+  assert.ok(db._get("users/u1/pushTokens/t0"));
+  assert.equal(db._get("pushReceipts/r-bad"), undefined);
+  assert.equal(db._get("pushReceipts/r-ok"), undefined);
+});
+
+test("receipts: a receipt younger than 15 minutes is left alone", async () => {
+  const db = createFakeFirestore();
+  putReceipt(db, "old", 16);
+  putReceipt(db, "fresh", 5);
+  const calls = [];
+  await receiptsHandler(db, receiptFetch(calls), () => NOW);
+  assert.deepEqual(calls.flatMap((c) => c.ids), ["old"]);
+  assert.ok(db._get("pushReceipts/fresh"));
+  assert.equal(db._get("pushReceipts/old"), undefined);
+});
+
+test("receipts: processes at most 1000 receipts per run, in chunks of 300", async () => {
+  const db = createFakeFirestore();
+  for (let i = 0; i < 1100; i++) putReceipt(db, `r${String(i).padStart(4, "0")}`, 60 + (1100 - i) / 100);
+  const calls = [];
+  await receiptsHandler(db, receiptFetch(calls), () => NOW);
+  assert.deepEqual(calls.map((c) => c.ids.length), [300, 300, 300, 100]);
+  assert.equal(db._list("pushReceipts").length, 100);
+});
+
+test("receipts: a fetch failure keeps the receipt docs", async () => {
+  const db = createFakeFirestore();
+  putReceipt(db, "r1", 30);
+  putReceipt(db, "r2", 30);
+  const logger = { error() {}, warn() {}, info() {} };
+  await receiptsHandler(db, async () => { throw new Error("down"); }, () => NOW, { logger });
+  await receiptsHandler(db, async () => ({ ok: false, status: 500, json: async () => ({}) }), () => NOW, { logger });
+  assert.equal(db._list("pushReceipts").length, 2);
+});
+
+test("receipts: ids Expo does not know yet are kept", async () => {
+  const db = createFakeFirestore();
+  putReceipt(db, "r1", 30);
+  await receiptsHandler(db, async () => ({ ok: true, status: 200, json: async () => ({ data: {} }) }), () => NOW);
+  assert.ok(db._get("pushReceipts/r1"));
+});
+
+test("checkPushReceipts runs every 30 minutes", () => {
+  assert.equal(checkPushReceipts.__endpoint.scheduleTrigger.schedule, "every 30 minutes");
 });

@@ -58,6 +58,7 @@ test("exports the institution and safety callables", () => {
 test("exports the push delivery trigger", () => {
   assert.ok(require("./index").onNotificationCreated, "onNotificationCreated is exported");
   assert.ok(require("./index").onPushTokenCreated, "onPushTokenCreated is exported");
+  assert.equal(require("./index").checkPushReceipts.__endpoint.scheduleTrigger.schedule, "every 30 minutes");
 });
 
 test("global options cap every function at 50 instances and the rollup is exported", () => {

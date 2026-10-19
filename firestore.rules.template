@@ -388,5 +388,10 @@ service cloud.firestore {
     match /notificationRequests/{requestId} {
       allow read, write: if false;
     }
+
+    // Expo push receipts (Plan 5): written and polled by functions/push.js only.
+    match /pushReceipts/{ticketId} {
+      allow read, write: if false;
+    }
   }
 }

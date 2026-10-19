@@ -15,7 +15,7 @@ const institutions = require("./institutions");
 const safety = require("./safety");
 const { cleanupUserSocialData, deleteNotificationsFrom } = require("./accountCleanup");
 const { onMemoryCreatedTags, notifyReleasedTags } = require("./tags");
-const { createOnNotificationCreated, createOnPushTokenCreated } = require("./push");
+const { createOnNotificationCreated, createOnPushTokenCreated, checkPushReceipts } = require("./push");
 const {
   purgeDeletedMemories,
   __private__: { purgeExpired },
@@ -34,6 +34,7 @@ exports.onMemoryCreatedTags = onMemoryCreatedTags;
 exports.notifyReleasedTags = notifyReleasedTags;
 exports.onNotificationCreated = createOnNotificationCreated(() => db);
 exports.onPushTokenCreated = createOnPushTokenCreated(() => db);
+exports.checkPushReceipts = checkPushReceipts;
 exports.createCommunity = communities.createCommunity;
 exports.joinCommunity = communities.joinCommunity;
 exports.leaveCommunity = communities.leaveCommunity;

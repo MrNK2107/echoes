@@ -1,12 +1,16 @@
 import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
+import { AppState } from 'react-native';
 
 import { routeForNotification } from '@/features/inbox/routeForNotification';
 import { useServices } from '@/services/ServicesProvider';
 
 import { registerDevice } from './pushDevice';
 
-/** Signed-in only: registers this device when permission is already granted, and routes notification taps. */
+/**
+ * Signed-in only: registers this device when permission is already granted (on mount and on every
+ * foreground, throttled to once per 6 h inside registerDevice), and routes notification taps.
+ */
 export function PushBridge({ uid }: { uid: string }) {
   const services = useServices();
   const router = useRouter();
@@ -15,12 +19,18 @@ export function PushBridge({ uid }: { uid: string }) {
   useEffect(() => {
     if (push.availability() !== 'available') return;
     let cancelled = false;
-    push
-      .permission()
-      .then((p) => (p === 'granted' && !cancelled ? registerDevice(services, uid) : undefined))
-      .catch((e: unknown) => console.warn('Could not register for push', e));
+    const registerIfGranted = () =>
+      push
+        .permission()
+        .then((p) => (p === 'granted' && !cancelled ? registerDevice(services, uid) : undefined))
+        .catch((e: unknown) => console.warn('Could not register for push', e));
+    void registerIfGranted();
+    const subscription = AppState.addEventListener('change', (next) => {
+      if (next === 'active') void registerIfGranted();
+    });
     return () => {
       cancelled = true;
+      subscription.remove();
     };
   }, [push, services, uid]);
 

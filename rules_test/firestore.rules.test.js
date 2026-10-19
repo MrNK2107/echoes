@@ -881,6 +881,17 @@ test("reports, rateLimits and notificationRequests are closed to clients", async
   await assertFails(getDoc(doc(creatorDb, "rateLimits/creator")));
 });
 
+test("pushReceipts are server-only", async () => {
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await setDoc(doc(context.firestore(), "pushReceipts/tk1"), { uid: "creator", tokenId: "t", createdAt: Timestamp.now() });
+  });
+  const creatorDb = testEnv.authenticatedContext("creator").firestore();
+  await assertFails(getDoc(doc(creatorDb, "pushReceipts/tk1")));
+  await assertFails(getDocs(collection(creatorDb, "pushReceipts")));
+  await assertFails(setDoc(doc(creatorDb, "pushReceipts/tk2"), { uid: "creator", tokenId: "t", createdAt: Timestamp.now() }));
+  await assertFails(deleteDoc(doc(creatorDb, "pushReceipts/tk1")));
+});
+
 async function seedHiddenMemory() {
   await testEnv.withSecurityRulesDisabled(async (context) => {
     await setDoc(doc(context.firestore(), "memories/hidden-memory"), {

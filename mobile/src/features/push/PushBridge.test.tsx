@@ -1,4 +1,5 @@
-import { render } from '@testing-library/react-native';
+import { act, render, waitFor } from '@testing-library/react-native';
+import { AppState, type AppStateStatus } from 'react-native';
 
 import { fakePush, testServices } from '@/device/fakes';
 import { inboxServices } from '@/features/inbox/testInbox';
@@ -10,6 +11,7 @@ const mockPush = jest.fn();
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush }) }));
 
 beforeEach(() => mockPush.mockClear());
+afterEach(() => jest.restoreAllMocks());
 
 async function setup() {
   const push = fakePush({ permission: 'granted' });
@@ -74,5 +76,54 @@ describe('PushBridge tap routing', () => {
     expect(notifications.markRead).toHaveBeenCalledTimes(1);
     expect(mockPush).toHaveBeenCalledWith('/memory/m2');
     warn.mockRestore();
+  });
+});
+
+describe('PushBridge foreground registration', () => {
+  it('registers on mount, then at most once per 6 h across foreground events', async () => {
+    let onAppState: ((s: AppStateStatus) => void) | undefined;
+    const remove = jest.fn();
+    jest.spyOn(AppState, 'addEventListener').mockImplementation((type, handler) => {
+      if (type === 'change') onAppState = handler as (s: AppStateStatus) => void;
+      return { remove };
+    });
+    const push = fakePush({ permission: 'granted', token: 'ExponentPushToken[fg]' });
+    const base = testServices({ push });
+    const register = jest.spyOn(base.repos.pushTokens, 'register');
+    const view = await render(
+      <ServicesProvider services={base}>
+        <PushBridge uid="user-demo" />
+      </ServicesProvider>,
+    );
+    await waitFor(() => expect(register).toHaveBeenCalledTimes(1));
+    expect(onAppState).toBeDefined();
+    for (let i = 0; i < 3; i++) {
+      await act(async () => onAppState?.('background'));
+      await act(async () => onAppState?.('active'));
+    }
+    expect(register).toHaveBeenCalledTimes(1);
+    await view.unmount();
+    expect(remove).toHaveBeenCalled();
+  });
+
+  it('a foreground event registers when the first attempt never happened (permission granted later)', async () => {
+    let onAppState: ((s: AppStateStatus) => void) | undefined;
+    jest.spyOn(AppState, 'addEventListener').mockImplementation((type, handler) => {
+      if (type === 'change') onAppState = handler as (s: AppStateStatus) => void;
+      return { remove: jest.fn() };
+    });
+    const push = fakePush({ permission: 'undetermined', token: 'ExponentPushToken[late]' });
+    const base = testServices({ push });
+    const register = jest.spyOn(base.repos.pushTokens, 'register');
+    await render(
+      <ServicesProvider services={base}>
+        <PushBridge uid="user-demo" />
+      </ServicesProvider>,
+    );
+    await act(async () => onAppState?.('active'));
+    expect(register).not.toHaveBeenCalled();
+    push.setPermission('granted');
+    await act(async () => onAppState?.('active'));
+    await waitFor(() => expect(register).toHaveBeenCalledTimes(1));
   });
 });

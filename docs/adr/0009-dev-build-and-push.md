@@ -52,3 +52,12 @@ bundle `com.mrnk2107.echoes`.
 - **Harder:** releases require EAS accounts and credentials, which are owner
   tasks. Push cannot be tested in Expo Go, so it is unit-tested with fakes and
   smoke-tested on a development build.
+
+## Token squatting
+A client can register another device's token under its own uid (the rules only check the token's
+format, and a push token is not a secret to the device that holds it). The impact is limited: the
+squatter receives that device's pushes for the squatter's own inbox, and the real owner's
+notifications are unaffected because tokens are per user. The mitigation is the dedupe in
+`onPushTokenCreated`, which removes the token from every other user when it is registered again,
+plus Expo's enhanced push security (an access token is required to send, so nobody else can push
+to a token they merely know).
