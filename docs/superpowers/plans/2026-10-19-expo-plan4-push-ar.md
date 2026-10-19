@@ -192,15 +192,15 @@
   - empty copy when there are no places.
 - Taps go to `/place/{id}` and `/memory/{id}`.
 
-- [ ] **Step 1: Write failing tests:**
+- [x] **Step 1: Write failing tests:**
   - **`falls back to radar when AR module is missing`** (unsupported copy);
   - camera denied shows the camera copy and the radar;
   - empty state;
   - heading rotates marker positions;
   - blocked authors' orbs are hidden until the blocks are ready;
   - taps navigate.
-- [ ] **Step 2–4:** FAIL → implement → PASS (+ android export).
-- [ ] **Step 5: Commit** `feat(ar): radar view and AR screen with fallback`.
+- [x] **Step 2–4:** FAIL → implement → PASS (+ android export).
+- [x] **Step 5: Commit** `feat(ar): radar view and AR screen with fallback`.
 
 ---
 
