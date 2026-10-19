@@ -19,6 +19,8 @@ npx firebase emulators:exec --only firestore,storage "npm test --prefix rules_te
 
 `npm run check:bundle` fails when either exported Hermes bundle exceeds 7 864 320 bytes (needs both `dist` and `dist-ios`).
 
+**Owner gate:** the first `.github/workflows/ci.yml` run on GitHub is green (the workflow cannot be proven locally; `mobile/test/ciWorkflow.test.ts` only checks its shape).
+
 ## Required external configuration
 
 - Firebase production project: Auth, Firestore, Storage, Functions and the `EXPO_PUBLIC_FIREBASE_*` keys.

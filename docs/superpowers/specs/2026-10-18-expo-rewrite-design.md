@@ -55,7 +55,7 @@ Dependency rule: `domain` ← `data`/`device` ← `services` ← `features` ← 
 Readers must also accept ISO strings for memory dates (older docs) — backward
 compatibility the Dart DTO already provides.
 
-## Domain rules (oracle = Dart code + `fixtures/domain/*.json`)
+## Domain rules (oracle = `fixtures/domain/*.json`, Dart exporters in git history)
 - **Visibility** (`Memory.isVisibleTo`): deleted → hidden; author → visible; else
   public → yes, private → no, tagged → viewer in taggedUserIds, timeRelease →
   releaseDate set and `now >= releaseDate`, community → viewer is member.

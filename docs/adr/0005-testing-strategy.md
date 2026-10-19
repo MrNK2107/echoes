@@ -17,4 +17,6 @@ Golden fixtures make the Dart code the oracle during the port: the TypeScript
 sentiment analyzer, geohash, nearby query, aura calculator and privacy check must
 reproduce the Dart outputs exactly (numbers compared with `toBeCloseTo(x, 10)`).
 
+**Update (Flutter client removed):** `fixtures/domain/*.json` are now the oracle. The Dart exporters that produced them lived in `test/tool/` and remain in git history before the commit that removed the Flutter client.
+
 All work is test-first (red → green → commit).

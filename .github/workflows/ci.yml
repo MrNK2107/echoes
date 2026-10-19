@@ -1,0 +1,83 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Install Node dependencies
+        run: |
+          npm ci --prefix functions
+          npm ci --prefix rules_test
+          npm ci --prefix mobile
+
+      - name: Rules are in sync with the template
+        run: |
+          node scripts/build-rules.js
+          git diff --exit-code firestore.rules firestore.lan.rules
+
+      - name: Functions tests
+        working-directory: functions
+        run: npm test
+
+      - name: Firestore and Storage rules tests
+        run: npx firebase-tools emulators:exec --project demo-echoes --only firestore,storage "npm test --prefix rules_test"
+
+      - name: Backend emulator contract tests
+        run: npx firebase-tools emulators:exec --project demo-echoes --only auth,firestore,storage,functions "npm --prefix mobile run test:emulator"
+
+  mobile:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Export Android bundle
+        run: npx expo export --platform android --output-dir dist
+
+      - name: Export iOS bundle
+        run: npx expo export --platform ios --output-dir dist-ios
+
+      - name: Bundle size check
+        run: npm run check:bundle
