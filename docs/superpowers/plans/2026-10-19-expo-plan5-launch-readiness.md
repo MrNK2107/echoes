@@ -319,12 +319,12 @@
 - Each has the signature `(db, { apply = false, pageSize = 400 }) → Promise<{ scanned: number; changed: number }>`.
 - The CLI is `node functions/tools/backfill.js <task> [--apply]` (`--help` lists the tasks) and uses Application Default Credentials.
 
-- [ ] **Step 1: Write failing tests:**
+- [x] **Step 1: Write failing tests:**
   - `backfill is idempotent and dry-run writes nothing` for each task;
   - an existing `moderation: 'hidden'` is never overwritten;
   - unparsable `releaseDate` strings are counted and left alone.
-- [ ] **Step 2–4:** FAIL → implement → PASS.
-- [ ] **Step 5: Commit** `feat(functions): legacy data backfill tool`.
+- [x] **Step 2–4:** FAIL → implement → PASS.
+- [x] **Step 5: Commit** `feat(functions): legacy data backfill tool`.
 
 ---
 
