@@ -120,3 +120,14 @@ test("TTL policies are declared as code (pushReceipts, notifications, rateLimits
     assert.deepEqual(override.indexes, []);
   }
 });
+
+test("reportMemory's verified-report count has a reports (memoryId, reporterVerified) composite index", () => {
+  const found = config.indexes.some(
+    (i) =>
+      i.collectionGroup === "reports" &&
+      i.queryScope === "COLLECTION" &&
+      JSON.stringify(i.fields.map((f) => [f.fieldPath, f.order])) ===
+        JSON.stringify([["memoryId", "ASCENDING"], ["reporterVerified", "ASCENDING"]]),
+  );
+  assert.ok(found);
+});

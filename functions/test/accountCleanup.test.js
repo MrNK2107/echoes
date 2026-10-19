@@ -36,7 +36,7 @@ test("cleanup deletes the public profile, admin roles and the user's own reports
   assert.deepEqual(db._list("reports/"), ["reports/byBob"]);
 });
 
-test("a failing admins collection-group query is logged and the rest of the cleanup still runs", async () => {
+test("a failing admins collection-group query is logged, the rest of the cleanup still runs, then it is rethrown", async () => {
   const db = seed();
   const real = db.collectionGroup.bind(db);
   db.collectionGroup = (id) => {
@@ -47,7 +47,7 @@ test("a failing admins collection-group query is logged and the rest of the clea
   const orig = console.error;
   console.error = (...args) => logged.push(args.join(" "));
   try {
-    await cleanupUserSocialData(db, "alice", { batchSize: 2 });
+    await assert.rejects(cleanupUserSocialData(db, "alice", { batchSize: 2 }), /index not ready/);
   } finally {
     console.error = orig;
   }
@@ -90,4 +90,23 @@ test("deleteNotificationsFrom pages through more than one batch", async () => {
   const db = createFakeFirestore(docs);
   await deleteNotificationsFrom(db, "alice", { batchSize: 3 });
   assert.deepEqual(db._list("users/"), ["users/u0/notifications/keep"]);
+});
+
+test("a failing admins query is rethrown after the legacy and report cleanup so the trigger retries", async () => {
+  const db = seed();
+  const real = db.collectionGroup.bind(db);
+  db.collectionGroup = (id) => {
+    if (id === "admins") throw new Error("FAILED_PRECONDITION: index not ready");
+    return real(id);
+  };
+  const orig = console.error;
+  console.error = () => {};
+  try {
+    await assert.rejects(cleanupUserSocialData(db, "alice", { batchSize: 2 }), /index not ready/);
+  } finally {
+    console.error = orig;
+  }
+  assert.equal(db._get("publicProfiles/alice"), undefined);
+  assert.deepEqual(db._get("institutions/i1").adminUserIds, ["bob"]);
+  assert.deepEqual(db._list("reports/"), ["reports/byBob"]);
 });

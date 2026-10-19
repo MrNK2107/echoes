@@ -26,7 +26,9 @@ async function cleanupUserSocialData(db, uid, { batchSize = BATCH_SIZE } = {}) {
 
   // Private admin docs (institutions/{id}/admins/{uid}), found through the collection group. A
   // failure (e.g. FAILED_PRECONDITION while the admins.userId index is still building) is logged
-  // and must not stop the legacy and report cleanup below; the auth trigger retry re-runs it.
+  // and must not stop the legacy and report cleanup below, but it is rethrown at the end so the
+  // auth trigger's failurePolicy retries the whole (idempotent) cleanup.
+  let adminsError = null;
   try {
     for (;;) {
       const admins = await db.collectionGroup("admins").where("userId", "==", uid).limit(batchSize).get();
@@ -38,6 +40,7 @@ async function cleanupUserSocialData(db, uid, { batchSize = BATCH_SIZE } = {}) {
     }
   } catch (e) {
     console.error(`cleanupUserSocialData: could not delete institution admin docs for ${uid} (admins)`, e);
+    adminsError = e;
   }
 
   // Legacy adminUserIds[] on institutions not yet migrated (migrateInstitutionAdmins).
@@ -59,6 +62,8 @@ async function cleanupUserSocialData(db, uid, { batchSize = BATCH_SIZE } = {}) {
     await batch.commit();
     if (reports.docs.length < batchSize) break;
   }
+
+  if (adminsError) throw adminsError;
 }
 
 module.exports = { cleanupUserSocialData, deleteNotificationsFrom };

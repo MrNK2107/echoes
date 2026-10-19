@@ -328,3 +328,15 @@ test("a same-day re-invite collapses, the next UTC day notifies again", async ()
   ]);
   assert.equal(inbox(db, "bob")[0].actorId, "alice");
 });
+
+test("heir selection reads at most two members however large the community is", async () => {
+  const db = seed();
+  const mine = await created(db, "alice");
+  for (let i = 0; i < 6; i++) {
+    db._put(`communities/${mine}/members/u${i}`, { userId: `u${i}`, role: "member", joinedAt: `2026-02-0${i + 1}T00:00:00.000Z` });
+  }
+  db._put(`communities/${mine}/members/alice`, { userId: "alice", role: "owner", joinedAt: "2026-01-01T00:00:00.000Z" });
+  await cleanupUserCommunities(db, "alice");
+  assert.equal(db._get(`communities/${mine}`).ownerId, "u0");
+  assert.ok(Math.max(...db._stats.queryReads) <= 2, `read ${Math.max(...db._stats.queryReads)} docs in one query`);
+});

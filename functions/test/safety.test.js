@@ -286,3 +286,40 @@ test("reportContent shares the 20/day reportMemory budget", async () => {
   );
   assert.equal(reportsOf(db).length, 20);
 });
+
+test("the hide count reads at most HIDE_AT verified reports", async () => {
+  const db = seed();
+  for (let i = 0; i < 10; i++) {
+    db._put(`reports/m1_old${i}`, { memoryId: "m1", reporterId: `old${i}`, reporterVerified: true, reason: "spam", note: null, createdAt: "x" });
+  }
+  db._put("reports/m1_unv", { memoryId: "m1", reporterId: "unv", reporterVerified: false, reason: "spam", note: null, createdAt: "x" });
+  await call(db, "v1", { memoryId: "m1", reason: "spam" });
+  assert.ok(db._stats.queryReads.length > 0);
+  assert.ok(Math.max(...db._stats.queryReads) <= 3, `read ${Math.max(...db._stats.queryReads)} reports`);
+  assert.equal(db._get("memories/m1").moderation, null);
+});
+
+test("a memory already hidden skips counting reports altogether", async () => {
+  const db = seed();
+  // Hidden memories are not viewable by others, so the hide lands between the visibility check
+  // and the transaction's read of the report doc.
+  const original = db.runTransaction.bind(db);
+  db.runTransaction = (fn) =>
+    original((tx) => {
+      const get = tx.get;
+      tx.get = (ref) => {
+        if (ref.path === "reports/m1_v1") db._put("memories/m1", memory({ moderation: "hidden" }));
+        return get(ref);
+      };
+      return fn(tx);
+    });
+  await call(db, "v1", { memoryId: "m1", reason: "spam" });
+  assert.deepEqual(db._stats.queryReads, []);
+  assert.equal(db._get("reports/m1_v1").reporterVerified, true);
+});
+
+test("an unverified report never counts reports either", async () => {
+  const db = seed();
+  await call(db, "u1", { memoryId: "m1", reason: "spam" }, false);
+  assert.deepEqual(db._stats.queryReads, []);
+});

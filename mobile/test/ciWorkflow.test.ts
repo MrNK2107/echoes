@@ -31,6 +31,13 @@ describe('ci.yml', () => {
     expect(r).toContain('test:emulator');
   });
 
+  it('backend pins every firebase-tools invocation to an exact version', () => {
+    const r = runs('backend');
+    const uses = r.match(/firebase-tools(@\S*)?/g) ?? [];
+    expect(uses.length).toBeGreaterThan(0);
+    for (const u of uses) expect(u).toMatch(/^firebase-tools@\d+\.\d+\.\d+$/);
+  });
+
   it('mobile exports both platforms before the bundle check', () => {
     const r = runs('mobile');
     const android = r.indexOf('--platform android --output-dir dist');

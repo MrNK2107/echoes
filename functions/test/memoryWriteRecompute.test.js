@@ -90,3 +90,41 @@ test("out-of-range createdAt years create no time communities but still aggregat
     assert.equal(db._get("places/p1").memoryCount, 1);
   }
 });
+
+test("the place recompute loads only the aggregate fields (select), never whole memories", async () => {
+  const db = seed({ "memories/m1": memory({ textContent: "x".repeat(1000), mediaUrls: ["a"] }) });
+  let selected = null;
+  let readBeforeSelect = false;
+  const realCollection = db.collection.bind(db);
+  db.collection = (name) => {
+    const c = realCollection(name);
+    if (name !== "memories") return c;
+    return {
+      ...c,
+      where: (...args) => {
+        const q = c.where(...args);
+        return {
+          ...q,
+          select: (...fields) => {
+            selected = fields;
+            return q.select(...fields);
+          },
+          get: () => {
+            readBeforeSelect = true;
+            return q.get();
+          },
+        };
+      },
+    };
+  };
+  await write(db, null, memory());
+  assert.equal(readBeforeSelect, false);
+  assert.deepEqual([...selected].sort(), ["createdAt", "isDeleted", "moderation", "privacy", "sentiment"]);
+  assert.equal(db._get("places/p1").memoryCount, 1);
+});
+
+test("onMemoryWritten is deployed with 1GiB memory", () => {
+  const { onMemoryWritten } = require("../onMemoryWritten");
+  const opts = onMemoryWritten.__endpoint?.availableMemoryMb;
+  assert.equal(opts, 1024);
+});

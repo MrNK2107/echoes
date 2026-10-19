@@ -69,6 +69,8 @@ async function recomputePlace(db, placeId, now) {
   const snapshot = await db
     .collection("memories")
     .where("placeId", "==", placeId)
+    // Only the fields memoryFromData reads: a busy place must not load every memory's text.
+    .select("privacy", "isDeleted", "moderation", "sentiment", "createdAt")
     .get();
   const aggregate = buildPlaceAggregate(
     snapshot.docs.map((d) => memoryFromData(d.data())),
@@ -289,7 +291,8 @@ async function handleMemoryWrite(db, { memoryId, before, after }, now) {
   }
 }
 
-const onMemoryWritten = onDocumentWritten("memories/{memoryId}", async (event) => {
+// 1GiB: the place recompute still holds one slim doc per memory of the place.
+const onMemoryWritten = onDocumentWritten({ document: "memories/{memoryId}", memory: "1GiB" }, async (event) => {
   const before = event.data?.before?.exists ? event.data.before.data() : null;
   const after = event.data?.after?.exists ? event.data.after.data() : null;
   await handleMemoryWrite(admin.firestore(), { memoryId: event.params?.memoryId, before, after }, new Date());

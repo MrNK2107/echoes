@@ -54,7 +54,7 @@ exports.reportContent = safety.reportContent;
 // a query-driven delete, an idempotent membership cleanup, or a recursiveDelete, so a re-run
 // after a partial failure just finishes the remainder.
 exports.cleanupDeletedUser = functionsV1
-  .runWith({ timeoutSeconds: 540, failurePolicy: true })
+  .runWith({ timeoutSeconds: 540, failurePolicy: true, maxInstances: 50 })
   .auth.user()
   .onDelete(async (user) => {
   const userId = user.uid;

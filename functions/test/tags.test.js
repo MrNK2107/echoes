@@ -230,3 +230,19 @@ test("notifyReleasedTags runs hourly with a 540 s timeout", () => {
   assert.equal(endpoint.scheduleTrigger.schedule, "every 60 minutes");
   assert.equal(endpoint.timeoutSeconds, 540);
 });
+
+test("an exhausted author's remaining memories cost no reads and a later legit author still notifies", async () => {
+  const day = NOW.toISOString().slice(0, 10);
+  const docs = { [`rateLimits/alice_tagNotify_${day}`]: { count: 100 }, "users/dave": {}, "users/erin": {} };
+  for (let i = 0; i < 50; i++) {
+    docs[`memories/a${String(i).padStart(2, "0")}`] = released(-HOUR + i * 1000, { taggedUserIds: [`t${i}`] });
+    docs[`users/t${i}`] = {};
+  }
+  docs["memories/zlegit"] = released(-1000, { userId: "dave", taggedUserIds: ["erin"] });
+  const db = seed(docs);
+  await releasedTagsHandler(db, NOW);
+  const userReads = db._stats.docReads.filter((p) => /^users\/t\d+(\/|$)/.test(p));
+  assert.ok(userReads.length <= 6, `exhausted author caused ${userReads.length} recipient reads`);
+  for (let i = 0; i < 50; i++) assert.equal(inbox(db, `t${i}`).length, 0);
+  assert.equal(inbox(db, "erin").length, 1);
+});

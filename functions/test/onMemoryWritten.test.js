@@ -61,7 +61,7 @@ function vanishingPlaceDb() {
     writes,
     collection(name) {
       if (name === "places") return { doc: () => placeRef };
-      return { where: () => ({ get: async () => ({ docs: [] }) }) };
+      return { where: () => ({ select: () => ({ get: async () => ({ docs: [] }) }) }) };
     },
   };
 }

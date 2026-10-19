@@ -45,10 +45,10 @@ jobs:
         run: npm test
 
       - name: Firestore and Storage rules tests
-        run: npx firebase-tools emulators:exec --project demo-echoes --only firestore,storage "npm test --prefix rules_test"
+        run: npx firebase-tools@15.13.0 emulators:exec --project demo-echoes --only firestore,storage "npm test --prefix rules_test"
 
       - name: Backend emulator contract tests
-        run: npx firebase-tools emulators:exec --project demo-echoes --only auth,firestore,storage,functions "npm --prefix mobile run test:emulator"
+        run: npx firebase-tools@15.13.0 emulators:exec --project demo-echoes --only auth,firestore,storage,functions "npm --prefix mobile run test:emulator"
 
   mobile:
     runs-on: ubuntu-latest

@@ -34,11 +34,7 @@ async function reportMemory({ uid, data: { memoryId, reason, note }, db, request
   }
 
   await db.runTransaction(async (tx) => {
-    const [existing, current, reports] = await Promise.all([
-      tx.get(reportRef),
-      tx.get(memoryRef),
-      tx.get(db.collection("reports").where("memoryId", "==", memoryId)),
-    ]);
+    const [existing, current] = await Promise.all([tx.get(reportRef), tx.get(memoryRef)]);
     if (existing.exists) throw new HttpsError("already-exists", "You already reported this memory.");
     if (!current.exists) throw new HttpsError("failed-precondition", "This memory isn't available.");
     tx.create(reportRef, {
@@ -49,13 +45,18 @@ async function reportMemory({ uid, data: { memoryId, reason, note }, db, request
       note: note ? note : null,
       createdAt: now.toISOString(),
     });
-    // One doc per reporter, so the count of reports is the count of distinct reporters. Only
-    // verified reporters count (legacy docs without the field never do).
-    const distinct = new Set(reports.docs.filter((d) => d.data().reporterVerified === true).map((d) => d.data().reporterId));
-    if (reporterVerified) distinct.add(uid);
-    if (reporterVerified && distinct.size === HIDE_AT && current.data().moderation !== "hidden") {
-      tx.update(memoryRef, { moderation: "hidden" });
-    }
+    // Only a verified report on a not-yet-hidden memory can hide it, so only then count. One doc
+    // per reporter, so the count of verified reports is the count of distinct reporters (legacy
+    // docs without the field never count). HIDE_AT - 1 earlier ones are all that matter: more
+    // can only mean the memory was restored, and a larger count never equals HIDE_AT again.
+    // Needs the (memoryId, reporterVerified) composite index.
+    if (!reporterVerified || current.data().moderation === "hidden") return;
+    const earlier = await tx.get(
+      db.collection("reports").where("memoryId", "==", memoryId).where("reporterVerified", "==", true).limit(HIDE_AT),
+    );
+    const distinct = new Set(earlier.docs.map((d) => d.data().reporterId));
+    distinct.add(uid);
+    if (distinct.size === HIDE_AT) tx.update(memoryRef, { moderation: "hidden" });
   });
   return {};
 }

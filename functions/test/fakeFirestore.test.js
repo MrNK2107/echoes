@@ -85,3 +85,14 @@ test("update honours a lastUpdateTime precondition from a snapshot's updateTime"
   await b2.commit();
   assert.equal(db._get("c/a").v, 3);
 });
+
+test("select() projects snapshots to the named fields and instrumentation records reads", async () => {
+  const db = createFakeFirestore({ "c/a": { x: 1, y: 2, n: { p: 1, q: 2 } }, "c/b": { x: 3, y: 4 } });
+  const snap = await db.collection("c").select("x", "n.p").get();
+  assert.deepEqual(snap.docs.map((d) => d.data()), [{ x: 1, n: { p: 1 } }, { x: 3 }]);
+  assert.equal(snap.docs[0].id, "a");
+  assert.deepEqual(db._get("c/a"), { x: 1, y: 2, n: { p: 1, q: 2 } });
+  await db.doc("c/a").get();
+  assert.deepEqual(db._stats.docReads, ["c/a"]);
+  assert.deepEqual(db._stats.queryReads, [2]);
+});

@@ -45,8 +45,17 @@ function taggedUsersCanRead(memory, now = new Date()) {
 // Deterministic notification ids (memoryTagged_<memoryId>_<uid>) make a retried trigger a no-op.
 // `skipExisting` (the scheduled path) skips users whose notification already exists before the
 // author's budget is spent, so overlapping windows do not charge it twice.
-async function notifyTaggedUsers(db, memoryId, memory, now = new Date(), { skipExisting = false } = {}) {
+// `exhaustedAuthors` (the scheduled run's per-run Set) remembers authors whose budget is spent, so
+// their later memories cost no further reads.
+async function notifyTaggedUsers(
+  db,
+  memoryId,
+  memory,
+  now = new Date(),
+  { skipExisting = false, exhaustedAuthors = new Set() } = {},
+) {
   if (!memory || !taggedUsersCanRead(memory, now)) return;
+  if (typeof memory.userId === "string" && exhaustedAuthors.has(memory.userId)) return;
   const tagged = Array.isArray(memory?.taggedUserIds) ? memory.taggedUserIds : [];
   const unique = [...new Set(tagged.filter((id) => typeof id === "string" && id && !id.includes("/")))];
   const author = memory.userId;
@@ -64,6 +73,7 @@ async function notifyTaggedUsers(db, memoryId, memory, now = new Date(), { skipE
     if (typeof author === "string" && author) {
       if (!(await tryConsumeRateLimit(db, author, "tagNotify", TAG_NOTIFY_PER_DAY, now))) {
         logger.warn("Tag notification budget exhausted", { author, memoryId });
+        exhaustedAuthors.add(author);
         return;
       }
     }
@@ -98,6 +108,7 @@ async function releasedTagsHandler(
   const startedAt = clock();
   let processed = 0;
   let last = null;
+  const exhaustedAuthors = new Set();
   for (let page = 0; ; page += 1) {
     if (page > 0 && clock() - startedAt >= budgetMs) {
       log("Released tags time budget spent; the next run's window covers the rest", { processed });
@@ -116,7 +127,7 @@ async function releasedTagsHandler(
         log("Released tags time budget spent; the next run's window covers the rest", { processed });
         return processed;
       }
-      await notifyTaggedUsers(db, doc.id, doc.data(), now, { skipExisting: true });
+      await notifyTaggedUsers(db, doc.id, doc.data(), now, { skipExisting: true, exhaustedAuthors });
       processed += 1;
     }
     if (snapshot.docs.length < pageSize) break;

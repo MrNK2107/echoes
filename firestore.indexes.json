@@ -1,6 +1,14 @@
 {
   "indexes": [
     {
+      "collectionGroup": "reports",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "memoryId", "order": "ASCENDING" },
+        { "fieldPath": "reporterVerified", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "memories",
       "queryScope": "COLLECTION",
       "fields": [

@@ -165,7 +165,9 @@ async function cleanupUserCommunities(db, uid) {
   }
 
   for (const c of owned.docs) {
-    const members = await c.ref.collection("members").orderBy("joinedAt", "asc").get();
+    // Two is enough: at most one of the first two is the leaving owner, so a non-owner heir
+    // (if any exists) is among them.
+    const members = await c.ref.collection("members").orderBy("joinedAt", "asc").limit(2).get();
     const heir = members.docs.find((m) => m.id !== uid && m.data().userId !== uid);
     if (!heir) {
       await db.recursiveDelete(c.ref);

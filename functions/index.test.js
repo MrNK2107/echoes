@@ -47,3 +47,8 @@ test("global options cap every function at 50 instances and the rollup is export
   const src = require("node:fs").readFileSync(require.resolve("./index"), "utf8");
   assert.match(src.split("\n")[0], /require\("\.\/globalOptions"\)/);
 });
+
+test("cleanupDeletedUser (v1) is capped at 50 instances", () => {
+  process.env.GCLOUD_PROJECT ??= "demo-echoes";
+  assert.equal(require("./index").cleanupDeletedUser.__endpoint.maxInstances, 50);
+});

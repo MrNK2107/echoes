@@ -101,6 +101,9 @@ function createFakeFirestore(initial = {}) {
     return clone(v);
   };
 
+  // Test instrumentation: paths of docs read through ref.get() and sizes of query results.
+  const stats = { docReads: [], queryReads: [] };
+
   const snap = (path) => {
     const data = store.get(path);
     const id = path.split("/").pop();
@@ -172,7 +175,7 @@ function createFakeFirestore(initial = {}) {
     get parent() {
       return collectionRef(parentPath(path));
     },
-    get: async () => snap(path),
+    get: async () => (stats.docReads.push(path), snap(path)),
     set: async (d, o) => write.set(path, d, o),
     update: async (d, pre) => write.update(path, d, pre),
     create: async (d) => write.create(path, d),
@@ -206,15 +209,17 @@ function createFakeFirestore(initial = {}) {
   };
 
   // `after`: startAfter cursor, a doc snapshot or the order-by values.
-  const query = (inScope, filters = [], orders = [], max, after) => ({
-    where: (field, op, value) => query(inScope, [...filters, { field, op, value }], orders, max, after),
-    orderBy: (field, dir = "asc") => query(inScope, filters, [...orders, { field, dir }], max, after),
-    limit: (n) => query(inScope, filters, orders, n, after),
-    startAfter: (...cursor) => query(inScope, filters, orders, max, cursor),
+  // `fields`: select() projection; snapshots then expose only those fields.
+  const query = (inScope, filters = [], orders = [], max, after, fields) => ({
+    where: (field, op, value) => query(inScope, [...filters, { field, op, value }], orders, max, after, fields),
+    orderBy: (field, dir = "asc") => query(inScope, filters, [...orders, { field, dir }], max, after, fields),
+    limit: (n) => query(inScope, filters, orders, n, after, fields),
+    startAfter: (...cursor) => query(inScope, filters, orders, max, cursor, fields),
+    select: (...names) => query(inScope, filters, orders, max, after, names),
     // Aggregate count like the Admin SDK: `.count().get()` -> snapshot.data().count.
     count: () => ({
       async get() {
-        const { size } = await query(inScope, filters, orders, max, after).get();
+        const { size } = await query(inScope, filters, orders, max, after, fields).get();
         return { data: () => ({ count: size }) };
       },
     }),
@@ -246,7 +251,17 @@ function createFakeFirestore(initial = {}) {
         });
       }
       if (max !== undefined) rows = rows.slice(0, max);
-      const docs = rows.map(([p]) => snap(p));
+      const docs = rows.map(([p]) => {
+        const full = snap(p);
+        if (!fields) return full;
+        const picked = {};
+        for (const f of fields) {
+          const v = getPath(store.get(p), f);
+          if (v !== undefined) setPath(picked, f, clone(v));
+        }
+        return { ...full, data: () => clone(picked), get: (f) => getPath(picked, f) };
+      });
+      stats.queryReads.push(docs.length);
       return { docs, empty: docs.length === 0, size: docs.length, forEach: (f) => docs.forEach(f) };
     },
   });
@@ -318,6 +333,7 @@ function createFakeFirestore(initial = {}) {
     },
     // Test helpers.
     _store: store,
+    _stats: stats,
     _get: (path) => clone(store.get(path)),
     _put: (path, data) => store.set(path, clone(data)),
     _list: (prefix) => [...store.keys()].filter((p) => p.startsWith(prefix)),
