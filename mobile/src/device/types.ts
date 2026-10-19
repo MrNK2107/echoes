@@ -87,8 +87,14 @@ export interface CrashReporter {
   captureException(e: unknown, context?: Record<string, string>): void;
 }
 
+export interface ArSceneOrb {
+  id: string;
+  text: string;
+  media: 'photo' | 'voice note' | null;
+}
+
 export interface ArSceneProps {
-  places: (ArScenePlace & { name: string; color: string; memoryIds: string[] })[];
+  places: (ArScenePlace & { name: string; color: string; memoryIds: string[]; orbs: ArSceneOrb[] })[];
   heading: number;
   onPressPlace(placeId: string): void;
   onPressOrb(memoryId: string): void;
@@ -100,6 +106,6 @@ export type ArStatus = 'available' | 'missing' | 'unsupported';
 export interface ArRenderer {
   status(): Promise<ArStatus>;
   requestCamera(): Promise<'granted' | 'denied'>;
-  /** The AR scene component; null until the native AR library is bundled. */
+  /** The camera AR scene component; null where no camera preview can be shown. */
   Scene: ComponentType<ArSceneProps> | null;
 }

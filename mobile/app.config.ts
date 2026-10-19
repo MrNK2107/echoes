@@ -1,27 +1,10 @@
 import type { ConfigContext, ExpoConfig } from "expo/config";
 
 // Single source of truth for Expo config (app.json was removed).
-// Camera AR is not in v1, so the string covers photos only; the AR wording returns with camera AR (ADR-0010).
-const CAMERA_PERMISSION = "ECHOES uses the camera to attach photos to your memories.";
-
-// Viro is a native module; include its plugin only once the package is installed
-// so `expo export` and Expo Go keep working without it.
-function viroPlugin(): [string, Record<string, unknown>][] {
-  try {
-    require.resolve("@reactvision/react-viro/package.json");
-  } catch {
-    return [];
-  }
-  return [
-    [
-      "@reactvision/react-viro",
-      {
-        android: { xRMode: ["AR"] },
-        ios: { cameraUsagePermission: CAMERA_PERMISSION },
-      },
-    ],
-  ];
-}
+// One camera string for photos and camera AR (ADR-0010).
+const CAMERA_PERMISSION =
+  "ECHOES uses the camera to attach photos to your memories and to show memories around you in AR.";
+const MICROPHONE_PERMISSION = "ECHOES records voice notes for your memories.";
 
 // Sentry's plugin only wires native build phases and source-map upload; add it only when the
 // owner has configured an org and project so `expo export` and Expo Go need no account (ADR-0011).
@@ -114,13 +97,24 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       [
         "expo-audio",
         {
-          microphonePermission: "ECHOES records voice notes for your memories.",
+          microphonePermission: MICROPHONE_PERMISSION,
           // Voice notes play and record in the foreground only (no UIBackgroundModes, no foreground service).
           enableBackgroundPlayback: false,
           enableBackgroundRecording: false,
         },
       ],
-      ...viroPlugin(),
+      [
+        "expo-camera",
+        {
+          cameraPermission: CAMERA_PERMISSION,
+          // Camera AR never records video, so expo-camera must not add RECORD_AUDIO or its own mic string.
+          microphonePermission: MICROPHONE_PERMISSION,
+          recordAudioAndroid: false,
+          barcodeScannerEnabled: false,
+        },
+      ],
+      // Attitude (DeviceMotion) needs no permission; disabling the pedometer keeps NSMotionUsageDescription out.
+      ["expo-sensors", { motionPermission: false }],
       ...sentryPlugin(),
     ],
     ...(projectId ? { extra: { eas: { projectId } } } : {}),

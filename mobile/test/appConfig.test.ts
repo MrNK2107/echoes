@@ -2,7 +2,7 @@ import type { ConfigContext, ExpoConfig } from 'expo/config';
 import appConfig from '../app.config';
 
 const CAMERA =
-  'ECHOES uses the camera to attach photos to your memories.';
+  'ECHOES uses the camera to attach photos to your memories and to show memories around you in AR.';
 
 function build(env: Record<string, string | undefined> = {}): ExpoConfig {
   const saved = process.env.EXPO_PUBLIC_EAS_PROJECT_ID;
@@ -50,16 +50,22 @@ describe('app.config', () => {
     expect(cfg.ios?.infoPlist?.NSCameraUsageDescription).toBe(CAMERA);
     const picker = plugin(cfg, 'expo-image-picker') as [string, { cameraPermission: string }];
     expect(picker[1].cameraPermission).toBe(CAMERA);
+    const camera = plugin(cfg, 'expo-camera') as [string, { cameraPermission: string }];
+    expect(camera[1].cameraPermission).toBe(CAMERA);
   });
 
-  it('includes the viro plugin only when the package resolves', () => {
-    let installed = true;
-    try {
-      require.resolve('@reactvision/react-viro/package.json');
-    } catch {
-      installed = false;
-    }
-    expect(plugin(build(), '@reactvision/react-viro') !== undefined).toBe(installed);
+  it('configures expo-camera for AR preview only (no audio, no barcode scanner)', () => {
+    const p = plugin(build(), 'expo-camera') as [string, Record<string, unknown>];
+    expect(p[1]).toEqual({
+      cameraPermission: CAMERA,
+      microphonePermission: 'ECHOES records voice notes for your memories.',
+      recordAudioAndroid: false,
+      barcodeScannerEnabled: false,
+    });
+  });
+
+  it('configures expo-sensors without the motion (pedometer) permission', () => {
+    expect(plugin(build(), 'expo-sensors')).toEqual(['expo-sensors', { motionPermission: false }]);
   });
 
   it('declares camera and notification permissions on Android', () => {

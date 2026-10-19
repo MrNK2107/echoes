@@ -1,64 +1,64 @@
 import type { ComponentType } from 'react';
-import * as ImagePicker from 'expo-image-picker';
+import { Platform } from 'react-native';
+import { Camera, CameraView } from 'expo-camera';
+import * as Location from 'expo-location';
+import { DeviceMotion } from 'expo-sensors';
 
-import { createViroArScene, type ViroApi } from './ar/ViroArScene';
-import { isExpoGo } from './expoGo';
+import { createCameraArScene } from './ar/CameraArScene';
 import type { ArRenderer, ArSceneProps, ArStatus } from './types';
 
-interface ViroModule extends Partial<ViroApi> {
-  ViroUtils?: { isARSupportedOnDevice?: (notSupported: (reason?: string) => void, supported: () => void) => unknown };
-}
+/** ~30 Hz attitude updates: smooth enough for the overlay, light on the battery. */
+const MOTION_INTERVAL_MS = 33;
 
-/** Optional native dependency: absent in Expo Go and until the dev build adds it. */
-function loadViro(): ViroModule | null {
-  // Expo Go never ships the native module; do not even attempt the require there.
-  if (isExpoGo()) return null;
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports -- optional native dep, must be lazy
-    return require('@reactvision/react-viro') as ViroModule;
-  } catch {
-    return null;
-  }
+async function declination(): Promise<number> {
+  // The rotation sensor references magnetic north; places use true bearings.
+  const h = await Location.getHeadingAsync();
+  return h.trueHeading >= 0 && h.magHeading >= 0 ? h.trueHeading - h.magHeading : 0;
 }
 
 let sceneMemo: ComponentType<ArSceneProps> | null | undefined;
 
+/**
+ * Location-based camera AR (ADR-0010, amended): the live camera preview with place auras and
+ * memory orbs projected from GPS bearing, distance and the fused attitude sensor. It uses only
+ * modules that ship in Expo Go and every build, so it needs no ARCore or ARKit.
+ */
 export const expoArRenderer: ArRenderer = {
   async status(): Promise<ArStatus> {
-    const viro = loadViro();
-    if (!viro) return 'missing';
-    const check = viro.ViroUtils?.isARSupportedOnDevice;
-    if (typeof check !== 'function') return 'available';
-    return new Promise<ArStatus>((resolve) => {
-      const timer = setTimeout(() => resolve('unsupported'), 3000);
-      const done = (status: ArStatus) => {
-        clearTimeout(timer);
-        resolve(status);
-      };
-      const fromValue = (v: unknown) => done(v ? 'available' : 'unsupported');
-      try {
-        // ViroReact: isARSupportedOnDevice(notSupportedCallback, supportedCallback).
-        const ret: unknown = check(
-          () => done('unsupported'),
-          () => done('available'),
-        );
-        if (typeof ret === 'boolean') fromValue(ret);
-        else if (ret && typeof (ret as Promise<unknown>).then === 'function') {
-          (ret as Promise<unknown>).then(fromValue, () => done('unsupported'));
-        }
-      } catch {
-        done('unsupported');
-      }
-    });
+    if (Platform.OS !== 'ios' && Platform.OS !== 'android') return 'unsupported';
+    try {
+      if (!(await DeviceMotion.isAvailableAsync())) return 'unsupported';
+    } catch {
+      return 'unsupported';
+    }
+    try {
+      if (!(await CameraView.isAvailableAsync())) return 'unsupported';
+    } catch {
+      // Not implemented on every native platform; the preview reports mount errors itself.
+    }
+    return 'available';
   },
   async requestCamera() {
-    const { granted } = await ImagePicker.requestCameraPermissionsAsync();
+    const { granted } = await Camera.requestCameraPermissionsAsync();
     return granted ? 'granted' : 'denied';
   },
   get Scene(): ComponentType<ArSceneProps> | null {
     if (sceneMemo === undefined) {
-      const viro = loadViro();
-      sceneMemo = viro ? createViroArScene(viro as ViroApi) : null;
+      sceneMemo =
+        Platform.OS === 'ios' || Platform.OS === 'android'
+          ? createCameraArScene({
+              CameraView,
+              platform: Platform.OS,
+              declination,
+              subscribeMotion(cb) {
+                DeviceMotion.setUpdateInterval(MOTION_INTERVAL_MS);
+                const sub = DeviceMotion.addListener((m) => {
+                  if (m.rotation) cb(m.rotation);
+                });
+                return () => sub.remove();
+              },
+            })
+          : null;
     }
     return sceneMemo;
   },

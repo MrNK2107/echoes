@@ -2,7 +2,6 @@ export const PLACE_HIT = 44;
 /** Orb hit boxes are smaller than 44pt so neighbours and the place target never overlap. */
 export const ORB_HIT = 24;
 export const ORB_DOT = 16;
-const NAME_MAX = 15;
 
 /**
  * Orbs sit on a ring around the place. The ring is wide enough that no two square hit boxes
@@ -23,15 +22,8 @@ export function orbLayout(
   return { ring, hit, orbs };
 }
 
-export function orbLabel(orb: { text: string; media: 'photo' | 'voice note' | null }): string {
-  const text = orb.text.trim();
-  if (text) return `Memory: ${text.slice(0, 40)}`;
-  return orb.media ? `Memory: ${orb.media}` : 'Memory';
-}
-
-export function truncateName(name: string): string {
-  return name.length > NAME_MAX ? `${name.slice(0, NAME_MAX).trimEnd()}…` : name;
-}
+// Shared with the camera AR scene in src/device, which cannot import features.
+export { orbLabel, truncateName } from '@/ui/arLabels';
 
 const MAX_AURA_PX = 20;
 export const RADAR_MAX_METERS = 1000;

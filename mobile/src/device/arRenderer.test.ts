@@ -1,129 +1,75 @@
 /* eslint-disable @typescript-eslint/no-require-imports -- jest.doMock needs lazy require */
-type Check = (notSupported: (reason?: string) => void, supported: () => void) => unknown;
 
-function mockViro(check: Check | undefined) {
-  jest.resetModules();
-  jest.doMock('@reactvision/react-viro', () => ({ ViroUtils: { isARSupportedOnDevice: check } }), {
-    virtual: true,
-  });
-  return require('./arRenderer').expoArRenderer;
+interface Mocks {
+  motionAvailable?: boolean | Error;
+  cameraAvailable?: boolean | Error;
+  granted?: boolean;
+  os?: string;
 }
 
-describe('expoArRenderer', () => {
+function load({ motionAvailable = true, cameraAvailable = true, granted = true, os = 'android' }: Mocks = {}) {
+  jest.resetModules();
+  require('react-native').Platform.OS = os;
+  const listeners: ((m: unknown) => void)[] = [];
+  const remove = jest.fn();
+  const setUpdateInterval = jest.fn();
+  const settle = (v: boolean | Error) => (v instanceof Error ? Promise.reject(v) : Promise.resolve(v));
+  jest.doMock('expo-sensors', () => ({
+    DeviceMotion: {
+      isAvailableAsync: () => settle(motionAvailable),
+      setUpdateInterval,
+      addListener: (cb: (m: unknown) => void) => {
+        listeners.push(cb);
+        return { remove };
+      },
+    },
+  }));
+  jest.doMock('expo-camera', () => ({
+    CameraView: Object.assign(() => null, { isAvailableAsync: () => settle(cameraAvailable) }),
+    Camera: { requestCameraPermissionsAsync: async () => ({ granted }) },
+  }));
+  jest.doMock('expo-location', () => ({
+    getHeadingAsync: async () => ({ trueHeading: 12, magHeading: 10 }),
+  }));
+  const { expoArRenderer } = require('./arRenderer');
+  return { renderer: expoArRenderer, listeners, remove, setUpdateInterval };
+}
+
+describe('expoArRenderer (camera AR)', () => {
   afterEach(() => {
-    jest.useRealTimers();
     jest.resetModules();
   });
 
-  it("reports 'missing' when the viro require throws", async () => {
-    jest.doMock(
-      '@reactvision/react-viro',
-      () => {
-        throw new Error('Cannot find module');
-      },
-      { virtual: true },
-    );
-    const { expoArRenderer } = require('./arRenderer');
-    await expect(expoArRenderer.status()).resolves.toBe('missing');
-    expect(expoArRenderer.Scene).toBeNull();
+  it("is 'available' with motion sensors and a camera", async () => {
+    await expect(load().renderer.status()).resolves.toBe('available');
   });
 
-  it('does not even require viro inside Expo Go', async () => {
-    jest.resetModules();
-    const viroFactory = jest.fn(() => ({ ViroUtils: { isARSupportedOnDevice: (_n: unknown, yes: () => void) => yes() } }));
-    jest.doMock('@reactvision/react-viro', viroFactory, { virtual: true });
-    jest.doMock('expo-constants', () => ({
-      __esModule: true,
-      default: { appOwnership: 'expo', executionEnvironment: 'storeClient' },
-      ExecutionEnvironment: { StoreClient: 'storeClient', Standalone: 'standalone', Bare: 'bare' },
-    }));
-    const { expoArRenderer } = require('./arRenderer');
-    await expect(expoArRenderer.status()).resolves.toBe('missing');
-    expect(expoArRenderer.Scene).toBeNull();
-    expect(viroFactory).not.toHaveBeenCalled();
-    jest.dontMock('expo-constants');
+  it("is 'unsupported' without device motion or when the check throws", async () => {
+    await expect(load({ motionAvailable: false }).renderer.status()).resolves.toBe('unsupported');
+    await expect(load({ motionAvailable: new Error('x') }).renderer.status()).resolves.toBe('unsupported');
   });
 
-  it("is 'available' when the supported callback fires", async () => {
-    const r = mockViro((_no, yes) => yes());
-    await expect(r.status()).resolves.toBe('available');
+  it("is 'unsupported' when the camera reports unavailable, but tolerates a missing check", async () => {
+    await expect(load({ cameraAvailable: false }).renderer.status()).resolves.toBe('unsupported');
+    await expect(load({ cameraAvailable: new Error('not implemented') }).renderer.status()).resolves.toBe('available');
   });
 
-  it("is 'unsupported' when the not-supported callback fires", async () => {
-    const r = mockViro((no) => no('reason'));
-    await expect(r.status()).resolves.toBe('unsupported');
+  it("is 'unsupported' and has no scene on web", async () => {
+    const { renderer } = load({ os: 'web' });
+    await expect(renderer.status()).resolves.toBe('unsupported');
+    expect(renderer.Scene).toBeNull();
   });
 
-  it('handles a returned boolean or promise', async () => {
-    await expect(mockViro(() => true).status()).resolves.toBe('available');
-    await expect(mockViro(() => Promise.resolve(false)).status()).resolves.toBe('unsupported');
+  it('maps the camera permission', async () => {
+    await expect(load().renderer.requestCamera()).resolves.toBe('granted');
+    await expect(load({ granted: false }).renderer.requestCamera()).resolves.toBe('denied');
   });
 
-  it("is 'available' when viro has no support check", async () => {
-    await expect(mockViro(undefined).status()).resolves.toBe('available');
-  });
-
-  it("is 'unsupported' after 3 s when no callback fires", async () => {
-    jest.useFakeTimers();
-    const r = mockViro(() => undefined);
-    const p = r.status();
-    await jest.advanceTimersByTimeAsync(3000);
-    await expect(p).resolves.toBe('unsupported');
-  });
-
-  it("resolves 'unsupported' at exactly 3000 ms", async () => {
-    jest.useFakeTimers();
-    const r = mockViro(() => undefined);
-    let result: string | undefined;
-    void r.status().then((v: string) => (result = v));
-    await jest.advanceTimersByTimeAsync(2999);
-    expect(result).toBeUndefined();
-    await jest.advanceTimersByTimeAsync(1);
-    expect(result).toBe('unsupported');
-  });
-
-  it("is 'available' when support answers at 2999 ms", async () => {
-    jest.useFakeTimers();
-    const r = mockViro((_no, yes) => {
-      setTimeout(yes, 2999);
-    });
-    let result: string | undefined;
-    void r.status().then((v: string) => (result = v));
-    await jest.advanceTimersByTimeAsync(2999);
-    expect(result).toBe('available');
-    await jest.advanceTimersByTimeAsync(5);
-    expect(result).toBe('available');
-  });
-
-  it("is 'unsupported' when the check throws", async () => {
-    const r = mockViro(() => {
-      throw new Error('boom');
-    });
-    await expect(r.status()).resolves.toBe('unsupported');
-  });
-});
-
-describe('expoArRenderer Scene', () => {
-  afterEach(() => jest.resetModules());
-
-  it('wires a memoised Scene when viro loads', () => {
-    jest.resetModules();
-    jest.doMock('@reactvision/react-viro', () => ({ ViroARScene: () => null }), { virtual: true });
-    const { expoArRenderer } = require('./arRenderer');
-    const Scene = expoArRenderer.Scene;
-    expect(typeof Scene).toBe('function');
-    expect(expoArRenderer.Scene).toBe(Scene);
-  });
-
-  it('keeps Scene null when viro is missing', () => {
-    jest.resetModules();
-    jest.doMock(
-      '@reactvision/react-viro',
-      () => {
-        throw new Error('Cannot find module');
-      },
-      { virtual: true },
-    );
-    expect(require('./arRenderer').expoArRenderer.Scene).toBeNull();
+  it('provides one memoised scene on native platforms', () => {
+    for (const os of ['android', 'ios']) {
+      const { renderer } = load({ os });
+      expect(renderer.Scene).not.toBeNull();
+      expect(renderer.Scene).toBe(renderer.Scene);
+    }
   });
 });
