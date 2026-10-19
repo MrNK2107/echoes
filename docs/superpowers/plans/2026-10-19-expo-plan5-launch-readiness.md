@@ -226,13 +226,13 @@
 - `TOKEN_REFRESH_MIN_INTERVAL_MS = 60_000`.
 - ESLint `no-restricted-imports`: `src/domain/**` may not import `@/data`, `@/device`, `@/services` or `@/features`; `src/data/**` and `src/device/**` may not import `@/features`.
 
-- [ ] **Step 1: Write failing tests:**
+- [x] **Step 1: Write failing tests:**
   - a session without a users doc is routed to `/finish-setup`, Continue without the terms box shows the terms error, and Continue with the box and a name creates the doc and lands on the map;
   - foregrounding the institution screen twice within 60 s forces one token refresh;
   - the AR support check resolves `unsupported` exactly at 3000 ms and `available` when support answers at 2999 ms (fake timers advancing both sides of the race);
   - `npx eslint .` fails on a deliberate `@/features` import from `src/device` (fixture in a temp file, removed after).
-- [ ] **Step 2–4:** FAIL → implement → PASS (+ android export).
-- [ ] **Step 5: Commit** `fix(mobile): repair partial registrations, debounce token refresh, enforce layer imports`.
+- [x] **Step 2–4:** FAIL → implement → PASS (+ android export).
+- [x] **Step 5: Commit** `fix(mobile): repair partial registrations, debounce token refresh, enforce layer imports`.
 
 ---
 
