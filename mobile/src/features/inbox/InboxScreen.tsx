@@ -27,7 +27,7 @@ export function InboxScreen() {
     // Opening never waits on, or fails because of, the read receipt.
     if (n.readAt === null) void markRead(n.id);
     const to = destination(n);
-    if (to) router.push(to as never);
+    if (to) router.push(to);
   };
 
   return (

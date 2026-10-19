@@ -237,6 +237,9 @@ export function ProfileScreen() {
         </View>
       ) : null}
 
+      <Pressable accessibilityRole="button" onPress={() => router.push('/communities')} style={styles.row}>
+        <Text style={styles.rowText}>Communities</Text>
+      </Pressable>
       <Pressable accessibilityRole="button" onPress={() => router.push('/recently-deleted')} style={styles.row}>
         <Text style={styles.rowText}>Recently deleted</Text>
       </Pressable>

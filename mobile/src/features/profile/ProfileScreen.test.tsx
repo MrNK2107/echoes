@@ -138,6 +138,12 @@ describe('ProfileScreen', () => {
     expect(mockPush).toHaveBeenCalledWith('/delete-account');
   });
 
+  it('opens communities', async () => {
+    await setup();
+    await fireEvent.press(screen.getByRole('button', { name: 'Communities' }));
+    expect(mockPush).toHaveBeenCalledWith('/communities');
+  });
+
   it('Back goes back', async () => {
     await setup();
     await fireEvent.press(screen.getByLabelText('Back'));

@@ -71,6 +71,14 @@ export function MapScreen() {
       >
         <Text style={styles.buttonText}>Profile</Text>
       </Pressable>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Communities"
+        onPress={() => router.push('/communities')}
+        style={styles.communities}
+      >
+        <Text style={styles.buttonText}>Communities</Text>
+      </Pressable>
       <View style={styles.bell}>
         <InboxBell />
       </View>
@@ -107,6 +115,15 @@ const styles = StyleSheet.create({
   map: { flex: 1 },
   banner: { position: 'absolute', top: 96, left: 16, right: 16 },
   bell: { position: 'absolute', top: 48, right: 112 },
+  communities: {
+    position: 'absolute',
+    top: 48,
+    left: 16,
+    backgroundColor: colors.accent,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
   profile: {
     position: 'absolute',
     top: 48,

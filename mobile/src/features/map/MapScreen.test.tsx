@@ -116,6 +116,12 @@ describe('MapScreen', () => {
     expect(mockPush).toHaveBeenCalledWith('/profile');
   });
 
+  it('Communities header button navigates', async () => {
+    await setup();
+    await fireEvent.press(await screen.findByRole('button', { name: 'Communities' }));
+    expect(mockPush).toHaveBeenCalledWith('/communities');
+  });
+
   it('shows the notifications bell with the unread count and opens the inbox', async () => {
     const services = testServices();
     await services.repos.auth.signIn(DEMO_USER.email, DEMO_USER.password);
