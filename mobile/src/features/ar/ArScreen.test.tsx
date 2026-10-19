@@ -1,7 +1,8 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { StyleSheet, Text } from 'react-native';
 
-import { DEMO_USER } from '@/data/seed';
+import { DEMO_CENTER as SEED_CENTER, DEMO_USER } from '@/data/seed';
+import { mapArScene } from '@/domain/arScene';
 import { fakeHeading, testServices } from '@/device/fakes';
 import type { ArRenderer, ArSceneProps } from '@/device/types';
 import { ServicesProvider } from '@/services/ServicesProvider';
@@ -45,7 +46,16 @@ async function setup(overrides: Partial<Services> = {}) {
   return services;
 }
 
-const left = (id: string) => StyleSheet.flatten(screen.getByTestId(`radar-place-${id}`).props.style).left as number;
+async function setupWith(services: Services) {
+  await act(async () => {
+    await services.repos.auth.signIn(DEMO_USER.email, DEMO_USER.password);
+  });
+  await render(
+    <ServicesProvider services={services}>
+      <ArScreen />
+    </ServicesProvider>,
+  );
+}
 
 describe('ArScreen', () => {
   beforeEach(() => {
@@ -80,6 +90,8 @@ describe('ArScreen', () => {
   it('renders the camera scene with a toggle when AR is available and granted', async () => {
     await setup({ arRenderer: availableRenderer() });
     expect(await screen.findByText('camera scene')).toBeOnTheScreen();
+    // Seed dependency: from the demo centre, 5 seeded places lie within 1 km (Vidhana Soudha is the
+    // 5th at about 989 m; MG Road Metro and Freedom Park are beyond 1 km), and 5 is also the cap.
     await waitFor(() => expect(sceneSpy.mock.lastCall?.[0].places.length).toBe(5));
     expect(lastScene().places[0]).toMatchObject({ placeId: 'place-4', name: 'UB City' });
     await act(async () => {
@@ -124,7 +136,10 @@ describe('ArScreen', () => {
     expect(screen.getByText('1 km')).toBeOnTheScreen();
   });
 
-  it('rotates marker positions with the heading', async () => {
+  it('puts the place at the top of the radar when the heading equals its bearing', async () => {
+    const services = testServices();
+    const place = (await services.repos.places.findById('place-4'))!;
+    const bearing = mapArScene(SEED_CENTER, [place])[0]!.bearingDegrees;
     let emit: (d: number) => void = () => {};
     await setup({
       heading: {
@@ -136,34 +151,87 @@ describe('ArScreen', () => {
       },
     });
     await screen.findByTestId('radar-place-place-4');
-    const atZero = left('place-4');
+    const centre = () => {
+      const st = StyleSheet.flatten(screen.getByTestId('radar-place-place-4').props.style);
+      const size = StyleSheet.flatten(screen.getByTestId('radar').props.style).width as number;
+      return { x: (st.left as number) + 22, y: (st.top as number) + 22, c: size / 2 };
+    };
+    const before = centre();
+    expect(before.x).toBeGreaterThan(before.c + 20);
     await act(async () => {
-      for (let i = 0; i < 40; i++) emit(90);
+      for (let i = 0; i < 80; i++) emit(bearing);
     });
-    await waitFor(() => expect(Math.abs(left('place-4') - atZero)).toBeGreaterThan(20));
+    await waitFor(() => expect(Math.abs(centre().x - before.c)).toBeLessThan(2));
+    expect(centre().y).toBeLessThan(before.c);
   });
 
-  it('hides blocked authors orbs until the block list is ready', async () => {
+  it('hides orbs until the block list is ready (memories already loaded), then shows them', async () => {
     const services = testServices({ heading: fakeHeading([0]) });
     let emit!: (ids: string[]) => void;
     jest.spyOn(services.repos.safety, 'subscribeBlocks').mockImplementation((_uid, cb) => {
       emit = cb;
       return () => {};
     });
-    await act(async () => {
-      await services.repos.auth.signIn(DEMO_USER.email, DEMO_USER.password);
-    });
-    await render(
-      <ServicesProvider services={services}>
-        <ArScreen />
-      </ServicesProvider>,
+    let delivered = 0;
+    const original = services.repos.memories.subscribeVisibleForPlace.bind(services.repos.memories);
+    jest.spyOn(services.repos.memories, 'subscribeVisibleForPlace').mockImplementation((q, cb, err) =>
+      original(
+        q,
+        (m) => {
+          delivered++;
+          cb(m);
+        },
+        err,
+      ),
     );
-    await screen.findByTestId('radar-place-place-1');
+    await setupWith(services);
+    // Memories for all 5 places have arrived, so only the block gate is hiding the orbs.
+    await waitFor(() => expect(delivered).toBeGreaterThanOrEqual(5));
     expect(screen.queryByTestId(/^radar-orb-/)).toBeNull();
-    await act(async () => emit(['user-asha']));
+    // Positive control: with an empty block list the same data shows the orbs.
+    await act(async () => emit([]));
+    expect(await screen.findByTestId('radar-orb-memory-1')).toBeOnTheScreen();
+    expect(screen.getByTestId('radar-orb-memory-2')).toBeOnTheScreen();
+  });
+
+  it('hides blocked authors orbs once the block list is ready', async () => {
+    const services = testServices({ heading: fakeHeading([0]) });
+    await services.repos.safety.block('user-demo', 'user-asha', services.now());
+    await setupWith(services);
     expect(await screen.findByTestId('radar-orb-memory-2')).toBeOnTheScreen();
     expect(screen.getByTestId('radar-orb-memory-3')).toBeOnTheScreen();
     expect(screen.queryByTestId('radar-orb-memory-1')).toBeNull();
+  });
+
+  it('renders place targets after all orbs so an aura tap is never swallowed by an orb', async () => {
+    await setup();
+    await screen.findByTestId('radar-orb-memory-11');
+    const order = screen.getAllByTestId(/^radar-(place|orb)-/).map((n) => n.props.testID as string);
+    const lastOrb = Math.max(...order.map((id, i) => (id.startsWith('radar-orb-') ? i : -1)));
+    const firstPlace = order.findIndex((id) => id.startsWith('radar-place-'));
+    expect(firstPlace).toBeGreaterThan(lastOrb);
+  });
+
+  it('shows the camera-denied copy when requesting the camera throws', async () => {
+    const renderer = { ...availableRenderer(), requestCamera: jest.fn(async () => Promise.reject(new Error('boom'))) };
+    await setup({ arRenderer: renderer });
+    expect(await screen.findByText(AR_CAMERA_DENIED)).toBeOnTheScreen();
+    expect(screen.queryByText(AR_UNSUPPORTED)).toBeNull();
+  });
+
+  it('announces the mode notice politely', async () => {
+    await setup();
+    const notice = await screen.findByText(AR_UNSUPPORTED);
+    expect(notice.props.accessibilityLiveRegion).toBe('polite');
+    expect(notice.props.accessibilityRole).toBe('alert');
+  });
+
+  it('draws place names as decorative labels that screen readers skip', async () => {
+    await setup();
+    const label = await screen.findByText('UB City');
+    expect(label.props.accessible).toBe(false);
+    expect(label.props.importantForAccessibility).toBe('no');
+    expect(screen.getByText('Sree Kanteerava…')).toBeOnTheScreen();
   });
 
   it('navigates to the place and memory on tap', async () => {

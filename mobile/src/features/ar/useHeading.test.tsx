@@ -33,9 +33,9 @@ describe('useHeading', () => {
     await act(async () => {});
     await act(async () => c.emit(358));
     expect(result.current.heading).toBeCloseTo(358);
-    await act(async () => c.emit(2));
-    // shortest arc: 358 -> 358.8, not swinging back through 180
-    expect(result.current.heading).toBeCloseTo(358.8);
+    await act(async () => c.emit(10));
+    // shortest arc: 358 -> 0.4 (through north), not swinging back through 180
+    expect(result.current.heading).toBeCloseTo(0.4);
     expect(result.current.unavailable).toBe(false);
   });
 
@@ -67,6 +67,28 @@ describe('useHeading', () => {
     await second.unmount();
     await act(async () => {});
     expect(late.off).toHaveBeenCalledTimes(1);
+  });
+
+  it('skips updates that move less than 1 degree, measured on the shortest arc', async () => {
+    const c = controllable();
+    let renders = 0;
+    const { result } = await renderHook(
+      () => {
+        renders++;
+        return useHeading();
+      },
+      { wrapper: wrap(c.service) },
+    );
+    await act(async () => {});
+    await act(async () => c.emit(359.5));
+    const after = renders;
+    // smoothed 359.5 -> 359.6, then 359.7: across north the raw jump is 359 but the arc is under 1 degree
+    await act(async () => c.emit(0));
+    await act(async () => c.emit(0));
+    expect(renders).toBe(after);
+    expect(result.current.heading).toBeCloseTo(359.5);
+    await act(async () => c.emit(30));
+    expect(renders).toBeGreaterThan(after);
   });
 
   it('treats a null subscription as unavailable', async () => {

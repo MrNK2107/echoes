@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useServices } from '@/services/ServicesProvider';
@@ -38,7 +38,12 @@ export function ArScreen() {
           if (active) setCapability('unsupported');
           return;
         }
-        const camera = await arRenderer.requestCamera();
+        let camera: 'granted' | 'denied';
+        try {
+          camera = await arRenderer.requestCamera();
+        } catch {
+          camera = 'denied';
+        }
         if (active) setCapability(camera === 'granted' ? 'ready' : 'denied');
       } catch {
         if (active) setCapability('unsupported');
@@ -49,8 +54,8 @@ export function ArScreen() {
     };
   }, [arRenderer, Scene]);
 
-  const openPlace = (id: string) => router.push(`/place/${id}`);
-  const openMemory = (id: string) => router.push(`/memory/${id}`);
+  const openPlace = useCallback((id: string) => router.push(`/place/${id}`), [router]);
+  const openMemory = useCallback((id: string) => router.push(`/memory/${id}`), [router]);
   const canCamera = capability === 'ready' && !!Scene;
   const showCamera = canCamera && mode === 'camera' && !trackingLost;
 
@@ -96,7 +101,11 @@ export function ArScreen() {
   } else {
     body = (
       <>
-        {scene.headingUnavailable ? <Text style={styles.message}>{AR_HEADING_UNAVAILABLE}</Text> : null}
+        {scene.headingUnavailable ? (
+          <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={styles.message}>
+            {AR_HEADING_UNAVAILABLE}
+          </Text>
+        ) : null}
         <ArRadarView
           places={scene.places}
           heading={scene.headingUnavailable ? 0 : scene.heading}
@@ -110,7 +119,11 @@ export function ArScreen() {
   return (
     <View style={styles.container}>
       {back}
-      {notice && scene.places.length > 0 ? <Text style={styles.message}>{notice}</Text> : null}
+      {notice && scene.places.length > 0 ? (
+        <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={styles.message}>
+          {notice}
+        </Text>
+      ) : null}
       {canCamera && scene.places.length > 0 && !trackingLost ? (
         <Pressable
           accessibilityRole="button"

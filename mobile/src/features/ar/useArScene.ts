@@ -17,6 +17,7 @@ export const AR_MAX_ORBS = 8;
 export interface ArOrb {
   id: string;
   text: string;
+  media: 'photo' | 'voice note' | null;
 }
 
 export type ArPlace = ArScenePlace & { name: string; color: string; memoryIds: string[]; orbs: ArOrb[] };
@@ -104,7 +105,11 @@ export function useArScene(): ArSceneState {
     () =>
       scene.map(({ scene: s, place }) => {
         const visible = blocks.ready ? withoutBlocked(memoriesByPlace[s.placeId] ?? [], blocks.blocked) : [];
-        const orbs = visible.slice(0, AR_MAX_ORBS).map((m) => ({ id: m.id, text: m.textContent }));
+        const orbs = visible.slice(0, AR_MAX_ORBS).map((m) => ({
+          id: m.id,
+          text: m.textContent,
+          media: m.imageUrl ? ('photo' as const) : m.audioUrl ? ('voice note' as const) : null,
+        }));
         return { ...s, name: place.name, color: place.aura.colorHex, memoryIds: orbs.map((o) => o.id), orbs };
       }),
     [scene, memoriesByPlace, blocks.ready, blocks.blocked],
