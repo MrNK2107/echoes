@@ -1,0 +1,566 @@
+[
+  {
+    "name": "origin",
+    "origin": {
+      "latitude": 12.9716,
+      "longitude": 77.5946
+    },
+    "places": [
+      {
+        "id": "a",
+        "latitude": 12.9716,
+        "longitude": 77.5946,
+        "intensity": 0.5,
+        "publicMemoryCount": 3
+      }
+    ],
+    "expected": [
+      {
+        "placeId": "a",
+        "eastMeters": 0.0,
+        "northMeters": 0.0,
+        "distanceMeters": 0.0,
+        "bearingDegrees": 0.0,
+        "sceneX": 0.0,
+        "sceneZ": -0.0,
+        "auraRadius": 3.4000000000000004,
+        "auraOpacity": 0.33999999999999997,
+        "visibleOrbCount": 3
+      }
+    ]
+  },
+  {
+    "name": "far 5km clamped",
+    "origin": {
+      "latitude": 12.9716,
+      "longitude": 77.5946
+    },
+    "places": [
+      {
+        "id": "a",
+        "latitude": 13.0166,
+        "longitude": 77.5946,
+        "intensity": 0.5,
+        "publicMemoryCount": 3
+      }
+    ],
+    "expected": [
+      {
+        "placeId": "a",
+        "eastMeters": 0.0,
+        "northMeters": 5003.771699005186,
+        "distanceMeters": 5003.771699005186,
+        "bearingDegrees": 0.0,
+        "sceneX": 0.0,
+        "sceneZ": -24.0,
+        "auraRadius": 3.4000000000000004,
+        "auraOpacity": 0.33999999999999997,
+        "visibleOrbCount": 3
+      }
+    ]
+  },
+  {
+    "name": "north",
+    "origin": {
+      "latitude": 12.9716,
+      "longitude": 77.5946
+    },
+    "places": [
+      {
+        "id": "a",
+        "latitude": 12.972100000000001,
+        "longitude": 77.5946,
+        "intensity": 0.5,
+        "publicMemoryCount": 3
+      }
+    ],
+    "expected": [
+      {
+        "placeId": "a",
+        "eastMeters": 0.0,
+        "northMeters": 55.59746332231128,
+        "distanceMeters": 55.59746332231128,
+        "bearingDegrees": 0.0,
+        "sceneX": 0.0,
+        "sceneZ": -4.63312194352594,
+        "auraRadius": 3.4000000000000004,
+        "auraOpacity": 0.33999999999999997,
+        "visibleOrbCount": 3
+      }
+    ]
+  },
+  {
+    "name": "south",
+    "origin": {
+      "latitude": 12.9716,
+      "longitude": 77.5946
+    },
+    "places": [
+      {
+        "id": "a",
+        "latitude": 12.9711,
+        "longitude": 77.5946,
+        "intensity": 0.5,
+        "publicMemoryCount": 3
+      }
+    ],
+    "expected": [
+      {
+        "placeId": "a",
+        "eastMeters": 0.0,
+        "northMeters": -55.59746332231128,
+        "distanceMeters": 55.59746332231128,
+        "bearingDegrees": 180.0,
+        "sceneX": 0.0,
+        "sceneZ": 4.63312194352594,
+        "auraRadius": 3.4000000000000004,
+        "auraOpacity": 0.33999999999999997,
+        "visibleOrbCount": 3
+      }
+    ]
+  },
+  {
+    "name": "east",
+    "origin": {
+      "latitude": 12.9716,
+      "longitude": 77.5946
+    },
+    "places": [
+      {
+        "id": "a",
+        "latitude": 12.9716,
+        "longitude": 77.5951,
+        "intensity": 0.5,
+        "publicMemoryCount": 3
+      }
+    ],
+    "expected": [
+      {
+        "placeId": "a",
+        "eastMeters": 54.17869652816663,
+        "northMeters": 0.0,
+        "distanceMeters": 54.17869652816663,
+        "bearingDegrees": 90.0,
+        "sceneX": 4.51489137734722,
+        "sceneZ": -0.0,
+        "auraRadius": 3.4000000000000004,
+        "auraOpacity": 0.33999999999999997,
+        "visibleOrbCount": 3
+      }
+    ]
+  },
+  {
+    "name": "west",
+    "origin": {
+      "latitude": 12.9716,
+      "longitude": 77.5946
+    },
+    "places": [
+      {
+        "id": "a",
+        "latitude": 12.9716,
+        "longitude": 77.5941,
+        "intensity": 0.5,
+        "publicMemoryCount": 3
+      }
+    ],
+    "expected": [
+      {
+        "placeId": "a",
+        "eastMeters": -54.17869652816663,
+        "northMeters": 0.0,
+        "distanceMeters": 54.17869652816663,
+        "bearingDegrees": 270.0,
+        "sceneX": -4.51489137734722,
+        "sceneZ": -0.0,
+        "auraRadius": 3.4000000000000004,
+        "auraOpacity": 0.33999999999999997,
+        "visibleOrbCount": 3
+      }
+    ]
+  },
+  {
+    "name": "north-east",
+    "origin": {
+      "latitude": 12.9716,
+      "longitude": 77.5946
+    },
+    "places": [
+      {
+        "id": "a",
+        "latitude": 12.972000000000001,
+        "longitude": 77.595,
+        "intensity": 0.5,
+        "publicMemoryCount": 3
+      }
+    ],
+    "expected": [
+      {
+        "placeId": "a",
+        "eastMeters": 43.34292237163284,
+        "northMeters": 44.477970657919755,
+        "distanceMeters": 62.103935411213364,
+        "bearingDegrees": 44.25951725951296,
+        "sceneX": 3.6119101976360697,
+        "sceneZ": -3.706497554826646,
+        "auraRadius": 3.4000000000000004,
+        "auraOpacity": 0.33999999999999997,
+        "visibleOrbCount": 3
+      }
+    ]
+  },
+  {
+    "name": "south-west far",
+    "origin": {
+      "latitude": 12.9716,
+      "longitude": 77.5946
+    },
+    "places": [
+      {
+        "id": "a",
+        "latitude": 12.941600000000001,
+        "longitude": 77.5646,
+        "intensity": 0.5,
+        "publicMemoryCount": 3
+      }
+    ],
+    "expected": [
+      {
+        "placeId": "a",
+        "eastMeters": -3250.9177133692574,
+        "northMeters": -3335.8477993367314,
+        "distanceMeters": 4657.933717802102,
+        "bearingDegrees": 224.2612662737841,
+        "sceneX": -16.750351088653474,
+        "sceneZ": 17.187953293130782,
+        "auraRadius": 3.4000000000000004,
+        "auraOpacity": 0.33999999999999997,
+        "visibleOrbCount": 3
+      }
+    ]
+  },
+  {
+    "name": "intensity 0",
+    "origin": {
+      "latitude": 12.9716,
+      "longitude": 77.5946
+    },
+    "places": [
+      {
+        "id": "a",
+        "latitude": 12.9726,
+        "longitude": 77.5946,
+        "intensity": 0.0,
+        "publicMemoryCount": 3
+      }
+    ],
+    "expected": [
+      {
+        "placeId": "a",
+        "eastMeters": 0.0,
+        "northMeters": 111.19492664462256,
+        "distanceMeters": 111.19492664462256,
+        "bearingDegrees": 0.0,
+        "sceneX": 0.0,
+        "sceneZ": -9.26624388705188,
+        "auraRadius": 1.8,
+        "auraOpacity": 0.18,
+        "visibleOrbCount": 3
+      }
+    ]
+  },
+  {
+    "name": "intensity 1",
+    "origin": {
+      "latitude": 12.9716,
+      "longitude": 77.5946
+    },
+    "places": [
+      {
+        "id": "a",
+        "latitude": 12.9726,
+        "longitude": 77.5946,
+        "intensity": 1.0,
+        "publicMemoryCount": 3
+      }
+    ],
+    "expected": [
+      {
+        "placeId": "a",
+        "eastMeters": 0.0,
+        "northMeters": 111.19492664462256,
+        "distanceMeters": 111.19492664462256,
+        "bearingDegrees": 0.0,
+        "sceneX": 0.0,
+        "sceneZ": -9.26624388705188,
+        "auraRadius": 5.0,
+        "auraOpacity": 0.5,
+        "visibleOrbCount": 3
+      }
+    ]
+  },
+  {
+    "name": "publicMemoryCount 20 capped at 8",
+    "origin": {
+      "latitude": 12.9716,
+      "longitude": 77.5946
+    },
+    "places": [
+      {
+        "id": "a",
+        "latitude": 12.9726,
+        "longitude": 77.5946,
+        "intensity": 0.5,
+        "publicMemoryCount": 20
+      }
+    ],
+    "expected": [
+      {
+        "placeId": "a",
+        "eastMeters": 0.0,
+        "northMeters": 111.19492664462256,
+        "distanceMeters": 111.19492664462256,
+        "bearingDegrees": 0.0,
+        "sceneX": 0.0,
+        "sceneZ": -9.26624388705188,
+        "auraRadius": 3.4000000000000004,
+        "auraOpacity": 0.33999999999999997,
+        "visibleOrbCount": 8
+      }
+    ]
+  },
+  {
+    "name": "publicMemoryCount 0",
+    "origin": {
+      "latitude": 12.9716,
+      "longitude": 77.5946
+    },
+    "places": [
+      {
+        "id": "a",
+        "latitude": 12.9726,
+        "longitude": 77.5946,
+        "intensity": 0.5,
+        "publicMemoryCount": 0
+      }
+    ],
+    "expected": [
+      {
+        "placeId": "a",
+        "eastMeters": 0.0,
+        "northMeters": 111.19492664462256,
+        "distanceMeters": 111.19492664462256,
+        "bearingDegrees": 0.0,
+        "sceneX": 0.0,
+        "sceneZ": -9.26624388705188,
+        "auraRadius": 3.4000000000000004,
+        "auraOpacity": 0.33999999999999997,
+        "visibleOrbCount": 0
+      }
+    ]
+  },
+  {
+    "name": "8 places trimmed to 5 nearest, sorted",
+    "origin": {
+      "latitude": 12.9716,
+      "longitude": 77.5946
+    },
+    "places": [
+      {
+        "id": "p0",
+        "latitude": 12.9772,
+        "longitude": 77.5949,
+        "intensity": 0.5,
+        "publicMemoryCount": 3
+      },
+      {
+        "id": "p1",
+        "latitude": 12.9765,
+        "longitude": 77.5943,
+        "intensity": 0.5,
+        "publicMemoryCount": 3
+      },
+      {
+        "id": "p2",
+        "latitude": 12.975800000000001,
+        "longitude": 77.5949,
+        "intensity": 0.5,
+        "publicMemoryCount": 3
+      },
+      {
+        "id": "p3",
+        "latitude": 12.975100000000001,
+        "longitude": 77.5943,
+        "intensity": 0.5,
+        "publicMemoryCount": 3
+      },
+      {
+        "id": "p4",
+        "latitude": 12.974400000000001,
+        "longitude": 77.5949,
+        "intensity": 0.5,
+        "publicMemoryCount": 3
+      },
+      {
+        "id": "p5",
+        "latitude": 12.973700000000001,
+        "longitude": 77.5943,
+        "intensity": 0.5,
+        "publicMemoryCount": 3
+      },
+      {
+        "id": "p6",
+        "latitude": 12.973,
+        "longitude": 77.5949,
+        "intensity": 0.5,
+        "publicMemoryCount": 3
+      },
+      {
+        "id": "p7",
+        "latitude": 12.9723,
+        "longitude": 77.5943,
+        "intensity": 0.5,
+        "publicMemoryCount": 3
+      }
+    ],
+    "expected": [
+      {
+        "placeId": "p7",
+        "eastMeters": -32.50717217462146,
+        "northMeters": 77.83644865144798,
+        "distanceMeters": 84.3518167051545,
+        "bearingDegrees": 337.3329104615536,
+        "sceneX": -2.7089310145517884,
+        "sceneZ": -6.486370720953999,
+        "auraRadius": 3.4000000000000004,
+        "auraOpacity": 0.33999999999999997,
+        "visibleOrbCount": 3
+      },
+      {
+        "placeId": "p6",
+        "eastMeters": 32.50712643174587,
+        "northMeters": 155.6728973025423,
+        "distanceMeters": 159.03070214086773,
+        "bearingDegrees": 11.794838282736066,
+        "sceneX": 2.708927202645489,
+        "sceneZ": -12.972741441878526,
+        "auraRadius": 3.4000000000000004,
+        "auraOpacity": 0.33999999999999997,
+        "visibleOrbCount": 3
+      },
+      {
+        "placeId": "p5",
+        "eastMeters": -32.50708068765726,
+        "northMeters": 233.50934595363663,
+        "distanceMeters": 235.7611608016236,
+        "bearingDegrees": 352.0747290799536,
+        "sceneX": -2.708923390638105,
+        "sceneZ": -19.459112162803052,
+        "auraRadius": 3.4000000000000004,
+        "auraOpacity": 0.33999999999999997,
+        "visibleOrbCount": 3
+      },
+      {
+        "placeId": "p4",
+        "eastMeters": 32.50703494235561,
+        "northMeters": 311.34579460473094,
+        "distanceMeters": 313.0381943769719,
+        "bearingDegrees": 5.960549536541464,
+        "sceneX": 2.492248079085925,
+        "sceneZ": -23.87024716068714,
+        "auraRadius": 3.4000000000000004,
+        "auraOpacity": 0.33999999999999997,
+        "visibleOrbCount": 3
+      },
+      {
+        "placeId": "p3",
+        "eastMeters": -32.50698919584096,
+        "northMeters": 389.18224325617894,
+        "distanceMeters": 390.5374793953714,
+        "bearingDegrees": 355.2253732382591,
+        "sceneX": -1.9976770012139058,
+        "sceneZ": -23.916715631516404,
+        "auraRadius": 3.4000000000000004,
+        "auraOpacity": 0.33999999999999997,
+        "visibleOrbCount": 3
+      }
+    ]
+  },
+  {
+    "name": "no places",
+    "origin": {
+      "latitude": 12.9716,
+      "longitude": 77.5946
+    },
+    "places": [],
+    "expected": []
+  },
+  {
+    "name": "equal distances stable-ish",
+    "origin": {
+      "latitude": 12.9716,
+      "longitude": 77.5946
+    },
+    "places": [
+      {
+        "id": "a",
+        "latitude": 12.9726,
+        "longitude": 77.5946,
+        "intensity": 0.5,
+        "publicMemoryCount": 3
+      },
+      {
+        "id": "b",
+        "latitude": 12.973600000000001,
+        "longitude": 77.5946,
+        "intensity": 0.5,
+        "publicMemoryCount": 3
+      },
+      {
+        "id": "c",
+        "latitude": 12.9731,
+        "longitude": 77.5946,
+        "intensity": 0.5,
+        "publicMemoryCount": 3
+      }
+    ],
+    "expected": [
+      {
+        "placeId": "a",
+        "eastMeters": 0.0,
+        "northMeters": 111.19492664462256,
+        "distanceMeters": 111.19492664462256,
+        "bearingDegrees": 0.0,
+        "sceneX": 0.0,
+        "sceneZ": -9.26624388705188,
+        "auraRadius": 3.4000000000000004,
+        "auraOpacity": 0.33999999999999997,
+        "visibleOrbCount": 3
+      },
+      {
+        "placeId": "c",
+        "eastMeters": 0.0,
+        "northMeters": 166.79238996693383,
+        "distanceMeters": 166.79238996693383,
+        "bearingDegrees": 0.0,
+        "sceneX": 0.0,
+        "sceneZ": -13.89936583057782,
+        "auraRadius": 3.4000000000000004,
+        "auraOpacity": 0.33999999999999997,
+        "visibleOrbCount": 3
+      },
+      {
+        "placeId": "b",
+        "eastMeters": 0.0,
+        "northMeters": 222.3898532892451,
+        "distanceMeters": 222.3898532892451,
+        "bearingDegrees": 0.0,
+        "sceneX": 0.0,
+        "sceneZ": -18.53248777410376,
+        "auraRadius": 3.4000000000000004,
+        "auraOpacity": 0.33999999999999997,
+        "visibleOrbCount": 3
+      }
+    ]
+  }
+]
