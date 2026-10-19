@@ -103,13 +103,13 @@
 - Rules for `institutions/{id}/admins/{uid}`: read if `isSelf(uid)`; write false.
 - `build-rules.js --prod` writes only `firestore.rules`. It requires `FIREBASE_STORAGE_BUCKET` and emits no `127.0.0.1` or `localhost` hosts.
 
-- [ ] **Step 1: Write failing tests:**
+- [x] **Step 1: Write failing tests:**
   - rules: a list without a limit is denied, `limit(31)` is denied, `limit(30)` is allowed, and get is allowed; admins doc self-read is allowed and others are denied;
   - build-rules: `--prod` output has no loopback and fails without a bucket;
   - functions: a claim writes `admins/{uid}` `{ userId, since }` and not `adminUserIds`, sub-zone admin check reads the admins doc, and cleanup deletes admins docs (collection group `admins` where `userId == uid`; add the field override and its index test);
   - client: `getMany` queries pass `limit(chunk.length)`, and the InstitutionScreen admin UI follows `subscribeIsAdmin` in both backends (contract).
-- [ ] **Step 2–4:** FAIL → implement → PASS.
-- [ ] **Step 5: Commit** `feat(rules): bounded profile listing, private institution admins, production rules flag`.
+- [x] **Step 2–4:** FAIL → implement → PASS.
+- [x] **Step 5: Commit** `feat(rules): bounded profile listing, private institution admins, production rules flag`.
 
 ---
 
