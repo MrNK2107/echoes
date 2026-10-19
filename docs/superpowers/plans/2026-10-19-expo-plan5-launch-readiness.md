@@ -371,9 +371,9 @@
   - mobile job: test, typecheck, lint, `expo export` android and ios, `check:bundle`.
 - Modify `.gitignore` (drop the Flutter sections, keep the secret patterns), `README.md` (Expo-only: setup, run, EAS, release; the Flutter sections removed) and `docs/adr/0005-testing-strategy.md` (a note that fixtures are now the oracle and the exporters live in git history before this commit).
 
-- [ ] **Step 1: Prove nothing depends on Flutter.** `git grep -nE "pubspec|\.dart\b|integration_test|(^|[^/])lib/features" -- mobile functions rules_test scripts firebase.json package.json` must return only comments that name the historical oracle. `firebase.json` has no hosting entry (verified while planning). Record the grep output in the commit body.
-- [ ] **Step 2: Delete** the files and run every gate in Task 16 Step 1. All must exit 0.
-- [ ] **Step 3: Commit** `chore: remove the Flutter client and legacy push dispatcher`.
+- [x] **Step 1: Prove nothing depends on Flutter.** `git grep -nE "pubspec|\.dart\b|integration_test|(^|[^/])lib/features" -- mobile functions rules_test scripts firebase.json package.json` must return only comments that name the historical oracle. `firebase.json` has no hosting entry (verified while planning). Record the grep output in the commit body.
+- [x] **Step 2: Delete** the files and run every gate in Task 16 Step 1. All must exit 0.
+- [x] **Step 3: Commit** `chore: remove the Flutter client and legacy push dispatcher`.
 
 ---
 
