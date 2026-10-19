@@ -177,15 +177,15 @@
 - `ReportSheet` props become `{ visible; target: { type: 'memory' | 'community' | 'profile'; id: string }; onClose; onReported }`.
 - `BlocksProvider({ children })`; `useBlocksState()` reads its context and throws outside the provider.
 
-- [ ] **Step 1: Write failing tests:**
+- [x] **Step 1: Write failing tests:**
   - `Report community` opens the sheet and calls `reportContent`;
   - `Report {name}` on a non-author memory reports the profile, and a duplicate shows `You already reported this.`;
   - the inbox hides a blocked actor's items and keeps items with a null `actorId`;
   - a membership load error shows `Couldn't check your membership.` and `Retry` and never `Join`;
   - screens share one blocks subscription (repo spy called once with two screens mounted);
   - the TransferSheet remove label.
-- [ ] **Step 2–4:** FAIL → implement → PASS (+ android export).
-- [ ] **Step 5: Commit** `feat(safety): report communities and profiles, shared blocks provider, inbox block filter`.
+- [x] **Step 2–4:** FAIL → implement → PASS (+ android export).
+- [x] **Step 5: Commit** `feat(safety): report communities and profiles, shared blocks provider, inbox block filter`.
 
 ---
 
