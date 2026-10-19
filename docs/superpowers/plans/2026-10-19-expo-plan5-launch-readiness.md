@@ -247,9 +247,9 @@
 - `ios.privacyManifests` uses the API categories and reasons from the spec, with `NSPrivacyTracking: false`.
 - `eas.json` profile `e2e`: `distribution: internal`, android `buildType: apk`, ios `simulator: true`, env `EXPO_PUBLIC_BACKEND=memory`. Production gets `"ios": { "resourceClass": "m-medium" }` and an Android `app-bundle` build type.
 
-- [ ] **Step 1: Write failing tests:** the microphone string, maps key passthrough and omission, the encryption flag, the privacy-manifest reasons, and the `e2e` profile on memory.
-- [ ] **Step 2–4:** FAIL → implement → PASS (+ both exports).
-- [ ] **Step 5: Commit** `build(mobile): production config (maps key, microphone, privacy manifest, e2e profile)`.
+- [x] **Step 1: Write failing tests:** the microphone string, maps key passthrough and omission, the encryption flag, the privacy-manifest reasons, and the `e2e` profile on memory.
+- [x] **Step 2–4:** FAIL → implement → PASS (+ both exports).
+- [x] **Step 5: Commit** `build(mobile): production config (maps key, microphone, privacy manifest, e2e profile)`.
 
 ---
 
