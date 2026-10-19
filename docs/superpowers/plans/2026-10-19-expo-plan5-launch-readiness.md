@@ -52,14 +52,14 @@
 - `SafetyRepository.reportContent(input: { targetType: 'community' | 'profile'; targetId: string; reason: ReportReason; note: string | null }): Promise<void>`. It rejects with `REPORT_DUPLICATE`, `REPORT_RATE` or `TIMEOUT_ERROR`.
 - `canReadMemory(memory, { viewerId, viewerIsCommunityMember, now }): boolean` in `functions/lib/visibility.js`.
 
-- [ ] **Step 1: Write failing tests:**
+- [x] **Step 1: Write failing tests:**
   - `unverified reporters never hide`: 3 reports with `request.auth.token.email_verified=false` leave `moderation` null, and each report doc has `reporterVerified:false`.
   - 2 unverified reports plus 3 verified reports hide on the 3rd verified one, exactly once.
   - `reportContent` community and profile write the doc shape from the spec, reject duplicates and self-profile, and share the 20/day budget with `reportMemory`.
   - `canReadMemory` is true for the author on a hidden or deleted memory and otherwise equals `isVisibleMemory`.
   - The memory backend mirrors this (`store.emailVerified`).
-- [ ] **Step 2–4:** FAIL → implement (read `request.auth.token.email_verified` in the handler) → PASS (functions and mobile Jest).
-- [ ] **Step 5: Commit** `feat(functions): verified-reporter auto-hide and reporting communities and profiles`.
+- [x] **Step 2–4:** FAIL → implement (read `request.auth.token.email_verified` in the handler) → PASS (functions and mobile Jest).
+- [x] **Step 5: Commit** `feat(functions): verified-reporter auto-hide and reporting communities and profiles`.
 
 ---
 
