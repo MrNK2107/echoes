@@ -59,3 +59,17 @@ test("exports the push delivery trigger", () => {
   assert.ok(require("./index").onNotificationCreated, "onNotificationCreated is exported");
   assert.ok(require("./index").onPushTokenCreated, "onPushTokenCreated is exported");
 });
+
+test("global options cap every function at 50 instances and the rollup is exported", () => {
+  const index = require("./index");
+  assert.equal(index.joinCommunity.__endpoint.maxInstances, 50);
+  assert.equal(index.purgeDeletedMemories.__endpoint.maxInstances, 50);
+  assert.ok(index.rollupMemberCounts, "rollupMemberCounts is exported");
+  assert.equal(index.rollupMemberCounts.__endpoint.maxInstances, 50);
+  assert.equal(
+    index.rollupMemberCounts.__endpoint.scheduleTrigger.schedule,
+    "every 10 minutes",
+  );
+  const src = require("node:fs").readFileSync(require.resolve("./index"), "utf8");
+  assert.match(src.split("\n")[0], /require\("\.\/globalOptions"\)/);
+});

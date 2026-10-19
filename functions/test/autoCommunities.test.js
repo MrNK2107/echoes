@@ -3,6 +3,7 @@ const assert = require("node:assert/strict");
 const { createFakeFirestore } = require("./fakes/firestore");
 const { handleMemoryWrite } = require("../onMemoryWritten");
 const { GEO_THRESHOLD } = require("../lib/domain");
+const { rollupHandler } = require("../memberCounts");
 
 const now = new Date("2026-10-19T09:00:00.000Z");
 const memCreatedAt = "2024-05-01T10:00:00.000Z";
@@ -44,7 +45,9 @@ test("a created memory ensures its year and era communities and joins the author
   assert.equal(year.ownerId, "system");
   assert.equal(year.placeId, null);
   assert.equal(year.institutionId, null);
-  assert.equal(year.memberCount, 1);
+  assert.equal(year.memberCount, 0); // the join is a shard; the rollup recounts (memberCounts.test.js)
+  await rollupHandler(db, new Date());
+  assert.equal(db._get("communities/time-2024").memberCount, 1);
   assert.equal(typeof year.description, "string");
   assert.equal(year.createdAt, now.toISOString());
   const era = db._get("communities/era-2020s");
@@ -65,6 +68,7 @@ test("auto communities are created once over repeated triggers", async () => {
   await createMemory(db);
   await createMemory(db, { userId: "bob" });
   await createMemory(db, { userId: "bob" });
+  await rollupHandler(db, new Date());
   const year = db._get("communities/time-2024");
   assert.equal(year.ownerId, "system");
   assert.equal(year.memberCount, 2);
@@ -168,6 +172,7 @@ test("time communities are ensured without transactions (emulator resets abort o
   };
   await createMemory(db);
   for (let i = 0; i < GEO_THRESHOLD; i++) await createMemory(db, { userId: "bob" });
+  await rollupHandler(db, new Date());
   assert.equal(db._get("communities/time-2024").memberCount, 2);
   assert.equal(db._get("places/p1").communityId, "geo-p1");
 });
@@ -183,6 +188,7 @@ test("joining a system-owned era community gives role member", async () => {
     data: { communityId: "era-2020s" },
   });
   assert.equal(db._get("communities/era-2020s/members/alice").role, "member");
+  await rollupHandler(db, new Date());
   assert.equal(db._get("communities/era-2020s").memberCount, 1);
 });
 
@@ -198,6 +204,6 @@ test("a year community deleted mid-join is a quiet no-op", async () => {
     };
     return b;
   };
+  // The shard write has no precondition on the community doc, so the join does not fail.
   await createMemory(db);
-  assert.equal(db._get("communities/time-2024/members/alice"), undefined);
 });

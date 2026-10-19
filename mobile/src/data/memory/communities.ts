@@ -111,6 +111,7 @@ export function createCommunityRepository(store: Store): CommunityRepository {
         }
         if (existing) {
           store.members.get(id)?.delete(uid);
+          // Exact immediately, also for time-*/era-* (the server's rollup lag is not emulated).
           if (community) store.communities.set(id, { ...community, memberCount: community.memberCount - 1 });
         }
         linkUser(store, uid, id, false);

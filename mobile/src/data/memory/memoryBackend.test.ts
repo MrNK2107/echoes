@@ -358,6 +358,18 @@ describe('memory backend communities, transfers and institutions emulation', () 
     expect(mine('author')).toEqual(['time-2026']);
   });
 
+  it('keeps memberCount exact on time communities (no rollup lag in demo mode)', async () => {
+    await signInAs('author');
+    await repos.memories.create(mem());
+    expect((await repos.communities.findById('time-2026'))?.memberCount).toBe(1);
+    await repos.communities.leave('time-2026');
+    expect((await repos.communities.findById('time-2026'))?.memberCount).toBe(0);
+    await repos.communities.join('time-2026');
+    expect((await repos.communities.findById('time-2026'))?.memberCount).toBe(1);
+    await repos.communities.join('era-2020s');
+    expect((await repos.communities.findById('era-2020s'))?.memberCount).toBe(1);
+  });
+
   it('time communities skip deleted memories; users without a users doc join without a link', async () => {
     await signInAs('stranger');
     await repos.memories.create(mem({ userId: 'stranger', isDeleted: true, deletedAt: T }));

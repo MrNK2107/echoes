@@ -1,3 +1,4 @@
+require("./globalOptions"); // first: global options apply to every function defined below
 const admin = require("firebase-admin");
 // The modular import works under the functions emulator, whose proxied `admin.firestore`
 // lacks the FieldValue namespace.
@@ -6,6 +7,7 @@ const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 const { logger } = require("firebase-functions");
 const functionsV1 = require("firebase-functions/v1");
 const { onMemoryWritten } = require("./onMemoryWritten");
+const { rollupMemberCounts } = require("./memberCounts");
 const { onPublicProfileWritten } = require("./onPublicProfileWritten");
 const communities = require("./communities");
 const transfers = require("./transfers");
@@ -26,6 +28,7 @@ const messaging = admin.messaging();
 
 exports.onMemoryWritten = onMemoryWritten;
 exports.onPublicProfileWritten = onPublicProfileWritten;
+exports.rollupMemberCounts = rollupMemberCounts;
 exports.purgeDeletedMemories = purgeDeletedMemories;
 exports.onMemoryCreatedTags = onMemoryCreatedTags;
 exports.notifyReleasedTags = notifyReleasedTags;

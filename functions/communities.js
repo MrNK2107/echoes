@@ -1,11 +1,13 @@
 // ADR-0007: community membership changes only through these callables (Admin SDK); clients
 // have read-only rules on communities and members. Member docs are { userId, role, joinedAt }
 // (userId backs the collection-group query used on account deletion). Invariant:
-// communities/{id}.memberCount == number of members/* docs.
+// communities/{id}.memberCount == number of members/* docs (time-*/era-* communities: eventually,
+// via the scheduled rollup in memberCounts.js).
 const { HttpsError } = require("firebase-functions/v2/https");
 const { FieldValue } = require("firebase-admin/firestore");
 const { callable, ID_PATTERN, idField } = require("./lib/callable");
 const { notify } = require("./lib/notify");
+const { incrementMemberCount, isShardedCommunity } = require("./memberCounts");
 
 const MAX_INVITES = 20;
 
@@ -56,7 +58,7 @@ async function joinCommunity({ uid, data: { communityId }, db }) {
     if (!existing.exists) {
       const role = community.data().ownerId === uid ? "owner" : "member";
       tx.set(memberRef(db, communityId, uid), member(uid, role, new Date().toISOString()));
-      tx.update(community.ref, { memberCount: FieldValue.increment(1) });
+      incrementMemberCount(tx, community.ref, 1);
     }
     linkUser(tx, user, communityId, true);
   });
@@ -76,7 +78,7 @@ async function leaveCommunity({ uid, data: { communityId }, db }) {
     if (isOwner) throw new HttpsError("failed-precondition", "Owners can't leave their community.");
     if (existing.exists) {
       tx.delete(existing.ref);
-      if (community.exists) tx.update(community.ref, { memberCount: FieldValue.increment(-1) });
+      if (community.exists) incrementMemberCount(tx, community.ref, -1);
     }
     linkUser(tx, user, communityId, false);
   });
@@ -183,7 +185,14 @@ async function cleanupUserCommunities(db, uid) {
 async function removeMembership(db, member, community, { extra, ...fields }) {
   const batch = db.batch();
   batch.delete(member, { exists: true });
-  batch.update(community, { ...fields, memberCount: FieldValue.increment(-1) });
+  // Sharded communities record the decrement in a shard (the rollup recounts the members);
+  // others decrement in the same update as the other fields.
+  if (isShardedCommunity(community.id)) {
+    incrementMemberCount(batch, community, -1);
+    if (Object.keys(fields).length) batch.update(community, fields);
+  } else {
+    batch.update(community, { ...fields, memberCount: FieldValue.increment(-1) });
+  }
   if (extra) extra(batch);
   try {
     await batch.commit();

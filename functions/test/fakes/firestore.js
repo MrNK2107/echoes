@@ -187,10 +187,20 @@ function createFakeFirestore(initial = {}) {
     orderBy: (field, dir = "asc") => query(inScope, filters, [...orders, { field, dir }], max, after),
     limit: (n) => query(inScope, filters, orders, n, after),
     startAfter: (...cursor) => query(inScope, filters, orders, max, cursor),
+    // Aggregate count like the Admin SDK: `.count().get()` -> snapshot.data().count.
+    count: () => ({
+      async get() {
+        const { size } = await query(inScope, filters, orders, max, after).get();
+        return { data: () => ({ count: size }) };
+      },
+    }),
     async get() {
       let rows = [...store.entries()].filter(
         ([p, d]) => inScope(p) && filters.every((f) => matches(d, f)),
       );
+      // Firestore's implicit final order is the document path (__name__); the sorts below are
+      // stable, so sorting by path first makes it the tie-break.
+      rows.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
       for (const { field, dir } of [...orders].reverse()) {
         rows.sort(([, a], [, b]) => {
           return compare(getPath(a, field), getPath(b, field)) * (dir === "desc" ? -1 : 1);

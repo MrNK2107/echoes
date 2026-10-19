@@ -134,8 +134,10 @@ export function communityRepositoryContract(name: string, make: ContractFactory)
       await ctx.repos.memories.create(mem({ createdAt: new Date('2025-03-04T00:00:00Z') }));
       await mine('author', (cs) => expect(ids(cs)).toContain('time-2025'));
       expect(await ctx.repos.communities.findById('time-2025')).toMatchObject({
-        name: '2025 Memories', type: 'timeBased', ownerId: 'system', memberCount: 1,
+        name: '2025 Memories', type: 'timeBased', ownerId: 'system',
       });
+      // memberCount of time-*/era-* is not asserted: the server rolls it up every 10 minutes
+      // (sharded counters), the memory backend keeps it exact (memoryBackend.test.ts).
       expect(await ctx.repos.communities.findById('era-2020s')).toMatchObject({
         name: '2020s Era', type: 'timeBased', ownerId: 'system',
       });

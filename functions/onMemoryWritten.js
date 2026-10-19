@@ -3,6 +3,7 @@ const { FieldValue } = require("firebase-admin/firestore");
 const { onDocumentWritten } = require("firebase-functions/v2/firestore");
 const { logger } = require("firebase-functions");
 const { calculateAura } = require("./aura");
+const { incrementMemberCount } = require("./memberCounts");
 const {
   GEO_THRESHOLD,
   yearCommunity,
@@ -169,7 +170,7 @@ async function ensureTimeCommunities(db, authorId, createdAt, now) {
   if (Array.isArray(left) && left.includes(year.id)) return;
   const batch = db.batch();
   batch.create(memberRef, { userId: authorId, role: "member", joinedAt: at });
-  batch.update(yearRef, { memberCount: FieldValue.increment(1) });
+  incrementMemberCount(batch, yearRef, 1); // a shard: the rollup recounts the members
   // Lets the author pick the year community for community privacy; never recreates a
   // deleted users doc.
   if (userSnap.exists) batch.update(userRef, { communityIds: FieldValue.arrayUnion(year.id) });

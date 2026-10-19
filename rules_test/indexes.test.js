@@ -98,3 +98,14 @@ test("admins.userId has a collection-group index (account-deletion cleanup, Plan
     override.indexes.some((i) => i.queryScope === "COLLECTION_GROUP" && i.order === "ASCENDING"),
   );
 });
+
+test("counterShards.updatedAt has a collection-group index (member-count rollup, Plan 5)", () => {
+  const override = config.fieldOverrides.find(
+    (o) => o.collectionGroup === "counterShards" && o.fieldPath === "updatedAt",
+  );
+  assert.ok(override, "fieldOverrides entry for counterShards.updatedAt");
+  assert.ok(
+    override.indexes.some((i) => i.queryScope === "COLLECTION_GROUP" && i.order === "ASCENDING"),
+    "collection-group ascending index",
+  );
+});

@@ -28,7 +28,11 @@ export function linkUser(store: Store, uid: string, communityId: string, joined:
   store.leftCommunityIds.set(uid, left);
 }
 
-/** Adds a membership and counts it; returns false when the user was already a member. */
+/**
+ * Adds a membership and counts it; returns false when the user was already a member. The server
+ * counts time-* / era-* members through sharded counters and a 10 minute rollup (spec Plan 5);
+ * demo mode deliberately keeps memberCount exact, with no lag.
+ */
 export function addMember(store: Store, communityId: string, uid: string, role: CommunityRole): boolean {
   const community = store.communities.get(communityId);
   const members = store.membersOf(communityId);

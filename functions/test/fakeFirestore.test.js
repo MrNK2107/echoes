@@ -27,6 +27,19 @@ test("!= and == compare Timestamps by instant", async () => {
   assert.deepEqual(ids(await db.collection("c").where("v", "==", new Date(5000)).get()), ["a"]);
 });
 
+test("count() aggregates the matching docs of a collection or query", async () => {
+  const db = createFakeFirestore({
+    "c/a": { n: 1 },
+    "c/b": { n: 2 },
+    "c/b/sub/x": { n: 1 },
+    "c/c": { n: 2 },
+  });
+  assert.equal((await db.collection("c").count().get()).data().count, 3);
+  assert.equal((await db.collection("c").where("n", "==", 2).count().get()).data().count, 2);
+  assert.equal((await db.collection("c/b/sub").count().get()).data().count, 1);
+  assert.equal((await db.collection("nothing").count().get()).data().count, 0);
+});
+
 test("startAfter(snapshot) uses the snapshot's values with the path as tie-break", async () => {
   const db = createFakeFirestore({
     "c/a": { n: 1 },
