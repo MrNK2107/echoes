@@ -157,6 +157,16 @@ export interface SafetyRepository {
    * GENERIC_ERROR copy (see ./callableErrors).
    */
   reportMemory(input: { memoryId: string; reason: ReportReason; note: string | null }): Promise<void>;
+  /**
+   * The reportContent callable (a community or a profile; staff review, never auto-hides). Same
+   * rejections as reportMemory; reporting your own profile or a missing target is generic copy.
+   */
+  reportContent(input: {
+    targetType: 'community' | 'profile';
+    targetId: string;
+    reason: ReportReason;
+    note: string | null;
+  }): Promise<void>;
 }
 
 /** The feed viewer; `viewerCommunityIds` is users/{uid}.communityIds. */

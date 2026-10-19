@@ -4,10 +4,19 @@ const { createFakeFirestore } = require("./fakes/firestore");
 const { buildHandler } = require("../lib/callable");
 const { definitions } = require("../safety");
 
-const call = (db, uid, data) => {
+// Reporters are verified by default (their ID token's email_verified); pass false for unverified.
+const call = (db, uid, data, verified = true) => {
   const def = definitions.reportMemory;
   return buildHandler({ name: "reportMemory", ...def }, def.handler, () => db)({
-    auth: uid ? { uid, token: {} } : undefined,
+    auth: uid ? { uid, token: { email_verified: verified } } : undefined,
+    data,
+  });
+};
+
+const callContent = (db, uid, data, verified = true) => {
+  const def = definitions.reportContent;
+  return buildHandler({ name: "reportContent", ...def }, def.handler, () => db)({
+    auth: uid ? { uid, token: { email_verified: verified } } : undefined,
     data,
   });
 };
@@ -143,5 +152,137 @@ test("reportMemory is rate limited to 20 per day", async () => {
   const db = seed(memories);
   for (let i = 0; i < 20; i++) await call(db, "r1", { memoryId: `m${i}`, reason: "spam" });
   assert.equal(await codeOf(call(db, "r1", { memoryId: "m20", reason: "spam" })), "resource-exhausted");
+  assert.equal(reportsOf(db).length, 20);
+});
+
+test("unverified reporters never hide", async () => {
+  const db = seed();
+  for (const r of ["u1", "u2", "u3"]) await call(db, r, { memoryId: "m1", reason: "spam" }, false);
+  assert.equal(db._get("memories/m1").moderation, null);
+  for (const r of ["u1", "u2", "u3"]) assert.equal(db._get(`reports/m1_${r}`).reporterVerified, false);
+});
+
+test("a missing email_verified claim counts as unverified", async () => {
+  const db = seed();
+  const def = definitions.reportMemory;
+  const h = buildHandler({ name: "reportMemory", ...def }, def.handler, () => db);
+  await h({ auth: { uid: "x1", token: {} }, data: { memoryId: "m1", reason: "spam" } });
+  assert.equal(db._get("reports/m1_x1").reporterVerified, false);
+});
+
+test("2 unverified plus 3 verified reports hide on the third verified one, once", async () => {
+  const db = seed();
+  await call(db, "u1", { memoryId: "m1", reason: "spam" }, false);
+  await call(db, "u2", { memoryId: "m1", reason: "spam" }, false);
+  await call(db, "v1", { memoryId: "m1", reason: "spam" });
+  await call(db, "v2", { memoryId: "m1", reason: "spam" });
+  assert.equal(db._get("memories/m1").moderation, null);
+  await call(db, "v3", { memoryId: "m1", reason: "spam" });
+  assert.equal(db._get("memories/m1").moderation, "hidden");
+  assert.equal(db._get("reports/m1_v3").reporterVerified, true);
+  db._put("memories/m1", { ...db._get("memories/m1"), moderation: null });
+  await call(db, "v4", { memoryId: "m1", reason: "spam" });
+  assert.equal(db._get("memories/m1").moderation, null);
+});
+
+test("legacy report docs without reporterVerified never count", async () => {
+  const db = seed();
+  db._put("reports/m1_old1", { memoryId: "m1", reporterId: "old1", reason: "spam", note: null, createdAt: "x" });
+  db._put("reports/m1_old2", { memoryId: "m1", reporterId: "old2", reason: "spam", note: null, createdAt: "x" });
+  await call(db, "v1", { memoryId: "m1", reason: "spam" });
+  assert.equal(db._get("memories/m1").moderation, null);
+  await call(db, "v2", { memoryId: "m1", reason: "spam" });
+  await call(db, "v3", { memoryId: "m1", reason: "spam" });
+  assert.equal(db._get("memories/m1").moderation, "hidden");
+});
+
+const seedContent = () =>
+  createFakeFirestore({
+    "communities/c1": { name: "Town" },
+    "publicProfiles/p1": { displayName: "Asha" },
+    "publicProfiles/r1": { displayName: "Reporter" },
+  });
+
+test("reportContent writes the community and profile report shapes", async () => {
+  const db = seedContent();
+  assert.deepEqual(
+    await callContent(db, "r1", { targetType: "community", targetId: "c1", reason: "spam", note: " bad " }),
+    {},
+  );
+  const c = db._get("reports/community_c1_r1");
+  assert.deepEqual(
+    Object.keys(c).sort(),
+    ["createdAt", "note", "reason", "reporterId", "reporterVerified", "targetId", "targetType"],
+  );
+  assert.equal(c.targetType, "community");
+  assert.equal(c.targetId, "c1");
+  assert.equal(c.reporterId, "r1");
+  assert.equal(c.reporterVerified, true);
+  assert.equal(c.reason, "spam");
+  assert.equal(c.note, "bad");
+  assert.equal(typeof c.createdAt, "string");
+  await callContent(db, "r2", { targetType: "profile", targetId: "p1", reason: "hate" }, false);
+  const p = db._get("reports/profile_p1_r2");
+  assert.equal(p.targetType, "profile");
+  assert.equal(p.note, null);
+  assert.equal(p.reporterVerified, false);
+});
+
+test("reportContent never auto-hides and has no memoryId", async () => {
+  const db = seedContent();
+  for (const r of ["a", "b", "c", "d"]) {
+    await callContent(db, r, { targetType: "community", targetId: "c1", reason: "spam" });
+  }
+  assert.equal(db._get("communities/c1").moderation, undefined);
+  assert.equal(db._get("reports/community_c1_a").memoryId, undefined);
+});
+
+test("reportContent rejects duplicates, own profile, missing targets and bad input", async () => {
+  const db = seedContent();
+  await callContent(db, "r1", { targetType: "community", targetId: "c1", reason: "spam" });
+  assert.equal(
+    await codeOf(callContent(db, "r1", { targetType: "community", targetId: "c1", reason: "hate" })),
+    "already-exists",
+  );
+  assert.equal(
+    await codeOf(callContent(db, "r1", { targetType: "profile", targetId: "r1", reason: "spam" })),
+    "failed-precondition",
+  );
+  assert.equal(
+    await codeOf(callContent(db, "r1", { targetType: "community", targetId: "nope", reason: "spam" })),
+    "failed-precondition",
+  );
+  assert.equal(
+    await codeOf(callContent(db, "r1", { targetType: "profile", targetId: "nope", reason: "spam" })),
+    "failed-precondition",
+  );
+  for (const data of [
+    { targetType: "memory", targetId: "c1", reason: "spam" },
+    { targetType: "community", targetId: "a/b", reason: "spam" },
+    { targetType: "community", targetId: "c1", reason: "rude" },
+    { targetType: "community", targetId: "c1", reason: "spam", note: "x".repeat(281) },
+  ]) {
+    assert.equal(await codeOf(callContent(db, "r2", data)), "invalid-argument", JSON.stringify(data));
+  }
+  assert.equal(
+    await codeOf(callContent(db, null, { targetType: "community", targetId: "c1", reason: "spam" })),
+    "unauthenticated",
+  );
+  assert.equal(reportsOf(db).length, 1);
+});
+
+test("reportContent shares the 20/day reportMemory budget", async () => {
+  const profiles = Object.fromEntries(
+    Array.from({ length: 20 }, (_, i) => [`publicProfiles/t${i}`, { displayName: "x" }]),
+  );
+  const db = createFakeFirestore({ ...profiles, "communities/c1": { name: "Town" }, "memories/m1": memory() });
+  for (let i = 0; i < 19; i++) {
+    await callContent(db, "r1", { targetType: "profile", targetId: `t${i}`, reason: "spam" });
+  }
+  await call(db, "r1", { memoryId: "m1", reason: "spam" });
+  assert.equal(
+    await codeOf(callContent(db, "r1", { targetType: "community", targetId: "c1", reason: "spam" })),
+    "resource-exhausted",
+  );
   assert.equal(reportsOf(db).length, 20);
 });

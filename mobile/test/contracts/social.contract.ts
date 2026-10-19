@@ -206,8 +206,16 @@ export function safetyRepositoryContract(name: string, make: ContractFactory): v
       }
     }
 
-    async function report(uid: string, memoryId: string) {
+    // Only verified reporters count toward the auto-hide. The account must exist before it can be
+    // updated, and the cached ID token only carries email_verified once refreshed.
+    async function verifyAndSignIn(uid: string, verified = true) {
       await ctx.signInAs(uid);
+      await ctx.setAccount(uid, { emailVerified: verified });
+      await ctx.repos.auth.refreshUser();
+    }
+
+    async function report(uid: string, memoryId: string, verified = true) {
+      await verifyAndSignIn(uid, verified);
       await ctx.repos.safety.reportMemory({ memoryId, reason: 'spam', note: null });
     }
 
@@ -218,7 +226,7 @@ export function safetyRepositoryContract(name: string, make: ContractFactory): v
       await ctx.repos.memories.create(m);
       await ctx.repos.memories.create(other);
       await report('viewer', m.id);
-      await ctx.signInAs('stranger');
+      await verifyAndSignIn('stranger');
       await ctx.repos.safety.reportMemory({ memoryId: m.id, reason: 'harassment', note: 'mean words' });
       expect(await visibleIds('observer')).toContain(m.id);
       await report('friend', m.id);
@@ -226,6 +234,14 @@ export function safetyRepositoryContract(name: string, make: ContractFactory): v
       expect(await ctx.repos.memories.findById(m.id)).toBeNull();
       expect(await visibleIds('author')).toEqual([other.id, m.id]);
       expect((await ctx.repos.memories.findById(m.id))?.moderation).toBe('hidden');
+    });
+
+    it('unverified reporters never hide a memory', async () => {
+      const m = mem();
+      await ctx.signInAs('author');
+      await ctx.repos.memories.create(m);
+      for (const r of ['viewer', 'friend', 'stranger']) await report(r, m.id, false);
+      expect(await visibleIds('observer')).toContain(m.id);
     });
 
     it('a duplicate report rejects with the duplicate copy; own memory with generic copy', async () => {
@@ -238,7 +254,44 @@ export function safetyRepositoryContract(name: string, make: ContractFactory): v
       await report('viewer', m.id);
       await expect(
         ctx.repos.safety.reportMemory({ memoryId: m.id, reason: 'other', note: null }),
-      ).rejects.toThrow('You already reported this memory.');
+      ).rejects.toThrow('You already reported this.');
+    });
+
+    describe('reportContent', () => {
+      let communityId = '';
+      beforeEach(async () => {
+        await ctx.signInAs('author');
+        await ctx.repos.users.create(appUser('author'));
+        await ctx.repos.profiles.setDisplayName('author', 'Ana', new Date());
+        communityId = await ctx.repos.communities.create({ name: 'Book Club', description: 'We read.' });
+        await ctx.signInAs('friend');
+        await ctx.repos.profiles.setDisplayName('friend', 'Fay', new Date());
+      });
+
+      it('reports a community and a profile, once each', async () => {
+        await ctx.signInAs('viewer');
+        await ctx.repos.safety.reportContent({ targetType: 'community', targetId: communityId, reason: 'spam', note: null });
+        await ctx.repos.safety.reportContent({ targetType: 'profile', targetId: 'friend', reason: 'other', note: ' rude ' });
+        await expect(
+          ctx.repos.safety.reportContent({ targetType: 'community', targetId: communityId, reason: 'hate', note: null }),
+        ).rejects.toThrow('You already reported this.');
+        await expect(
+          ctx.repos.safety.reportContent({ targetType: 'profile', targetId: 'friend', reason: 'hate', note: null }),
+        ).rejects.toThrow('You already reported this.');
+      });
+
+      it('rejects your own profile and missing targets with generic copy', async () => {
+        await ctx.signInAs('friend');
+        await expect(
+          ctx.repos.safety.reportContent({ targetType: 'profile', targetId: 'friend', reason: 'spam', note: null }),
+        ).rejects.toThrow('Something went wrong. Please try again.');
+        await expect(
+          ctx.repos.safety.reportContent({ targetType: 'community', targetId: 'nope', reason: 'spam', note: null }),
+        ).rejects.toThrow('Something went wrong. Please try again.');
+        await expect(
+          ctx.repos.safety.reportContent({ targetType: 'profile', targetId: 'nobody', reason: 'spam', note: null }),
+        ).rejects.toThrow('Something went wrong. Please try again.');
+      });
     });
 
     it('reporting a memory the reporter cannot see rejects with generic copy', async () => {

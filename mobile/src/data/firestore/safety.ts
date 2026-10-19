@@ -43,5 +43,14 @@ export function createSafetyRepository(db: Firestore, callables: CallableClient)
         REPORT_ERRORS,
       );
     },
+    async reportContent({ targetType, targetId, reason, note }) {
+      const trimmed = note?.trim();
+      await callCallable(
+        callables,
+        'reportContent',
+        trimmed ? { targetType, targetId, reason, note: trimmed } : { targetType, targetId, reason },
+        REPORT_ERRORS,
+      );
+    },
   };
 }

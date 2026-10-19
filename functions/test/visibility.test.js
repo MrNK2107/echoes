@@ -2,7 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const path = require("node:path");
 const cases = require(path.resolve(__dirname, "../../fixtures/domain/visibility.json"));
-const { isVisibleMemory, canViewMemory } = require("../lib/visibility");
+const { isVisibleMemory, canViewMemory, canReadMemory } = require("../lib/visibility");
 const { createFakeFirestore } = require("./fakes/firestore");
 
 // Same cases the client's isMemoryVisibleTo is tested against.
@@ -55,3 +55,23 @@ test("canViewMemory looks up community membership only for community memories", 
   assert.equal(await canViewMemory(db, { ...m, communityId: null }, "member", now), false);
   assert.equal(await canViewMemory(db, { ...m, privacy: "public" }, "stranger", now), true);
 });
+
+test("canReadMemory: the author reads hidden and deleted memories, others follow isVisibleMemory", () => {
+  const hidden = { ...base, moderation: "hidden" };
+  const deleted = { ...base, isDeleted: true };
+  assert.equal(canReadMemory(hidden, viewer("author")), true);
+  assert.equal(canReadMemory(deleted, viewer("author")), true);
+  assert.equal(canReadMemory(hidden, viewer("stranger")), false);
+  assert.equal(canReadMemory(deleted, viewer("stranger")), false);
+  assert.equal(canReadMemory(null, viewer("author")), false);
+  assert.equal(canReadMemory({ ...base, privacy: "private" }, viewer("stranger")), false);
+});
+
+// Parity with the shared fixtures: equals isVisibleMemory, plus the author's own read.
+for (const c of cases) {
+  test(`canReadMemory fixture: ${c.name}`, () => {
+    const v = { viewerId: c.viewerId, viewerIsCommunityMember: c.viewerIsCommunityMember, now: new Date(c.now) };
+    const expected = c.memory.userId === c.viewerId ? true : c.visible;
+    assert.equal(canReadMemory(c.memory, v), expected);
+  });
+}

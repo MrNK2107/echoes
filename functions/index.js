@@ -42,6 +42,7 @@ exports.createInstitution = institutions.createInstitution;
 exports.claimInstitutionAdmin = institutions.claimInstitutionAdmin;
 exports.addInstitutionSubZone = institutions.addInstitutionSubZone;
 exports.reportMemory = safety.reportMemory;
+exports.reportContent = safety.reportContent;
 
 exports.dispatchNotificationRequest = onDocumentCreated(
   "notificationRequests/{requestId}",

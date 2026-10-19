@@ -44,4 +44,11 @@ async function canViewMemory(db, memory, viewerId, now = new Date()) {
   return isVisibleMemory(memory, { viewerId, viewerIsCommunityMember, now });
 }
 
-module.exports = { isVisibleMemory, canViewMemory };
+// What the rules' read lets the viewer see: the author always (even hidden or deleted), otherwise
+// isVisibleMemory. Pinned to fixtures/domain/visibility.json by test/visibility.test.js.
+function canReadMemory(memory, viewer) {
+  if (memory && typeof viewer.viewerId === "string" && memory.userId === viewer.viewerId) return true;
+  return isVisibleMemory(memory, viewer);
+}
+
+module.exports = { isVisibleMemory, canViewMemory, canReadMemory };

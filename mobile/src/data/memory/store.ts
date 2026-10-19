@@ -46,10 +46,17 @@ export interface MemoryBackendOptions {
 /** publicProfiles/{uid} as stored (displayNameLower is the search key). */
 export interface StoredProfile { displayName: string; displayNameLower: string; updatedAt: Date }
 
-/** reports/{memoryId}_{reporterId} (functions/safety.js). */
+/**
+ * reports/{memoryId}_{reporterId} (reportMemory) or reports/{targetType}_{targetId}_{reporterId}
+ * (reportContent) in functions/safety.js.
+ */
 export interface StoredReport {
-  memoryId: string;
+  memoryId?: string;
+  targetType?: 'community' | 'profile';
+  targetId?: string;
   reporterId: string;
+  /** The reporter's ID token email_verified at report time; only verified reports hide. */
+  reporterVerified: boolean;
   reason: ReportReason;
   note: string | null;
   createdAt: Date;

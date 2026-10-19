@@ -143,8 +143,10 @@ describe('memory backend server emulation', () => {
     repos = createMemoryBackend(
       {
         places: [], memories: [], users: [user('friend'), user('author')],
-        credentials: ['author', 'friend', 'r1', 'r2', 'r3'].map((uid) => ({
+        credentials: ['author', 'friend', 'r1', 'r2', 'r3', 'u1', 'u2', 'u3'].map((uid) => ({
           userId: uid, email: `${uid}@x.test`, password: 'pw-test', displayName: uid,
+          // Only verified reporters count toward the auto-hide; the u* reporters are unverified.
+          emailVerified: !uid.startsWith('u'),
         })),
       },
       { now: () => T },
@@ -217,6 +219,20 @@ describe('memory backend server emulation', () => {
     expect(await repos.memories.findById(m.id)).toBeNull();
     await signInAs('author');
     expect((await repos.memories.findById(m.id))?.moderation).toBe('hidden');
+  });
+
+  it('unverified reporters never hide, even with verified ones short of three', async () => {
+    await signInAs('author');
+    const m = mem({ privacy: 'public', taggedUserIds: [] });
+    await repos.memories.create(m);
+    for (const r of ['u1', 'u2', 'u3', 'r1', 'r2']) {
+      await signInAs(r);
+      await repos.safety.reportMemory({ memoryId: m.id, reason: 'spam', note: null });
+    }
+    expect(await repos.memories.findById(m.id)).not.toBeNull();
+    await signInAs('r3');
+    await repos.safety.reportMemory({ memoryId: m.id, reason: 'spam', note: null });
+    expect(await repos.memories.findById(m.id)).toBeNull();
   });
 
   it('rejects an invalid reason or a note over 280 characters with generic copy', async () => {
@@ -439,6 +455,7 @@ describe('memory backend communities, transfers and institutions emulation', () 
     const shared = mem({ privacy: 'community', communityId: id });
     await repos.memories.create(shared);
     for (const r of ['friend', 'viewer', 'stranger']) {
+      admin.updateAccount(r, { emailVerified: true });
       await signInAs(r);
       await repos.communities.join(id);
       await repos.safety.reportMemory({ memoryId: shared.id, reason: 'spam', note: null });

@@ -267,7 +267,7 @@ describe('MemoryDetailScreen safety', () => {
     await fireEvent.press(await screen.findByRole('button', { name: 'Report' }));
     await fireEvent.press(screen.getByRole('radio', { name: 'Spam' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Send report' }));
-    expect(await screen.findByText('You already reported this memory.')).toBeOnTheScreen();
+    expect(await screen.findByText('You already reported this.')).toBeOnTheScreen();
   });
 
   it('ignores another Block while one is in flight and disables the button', async () => {
