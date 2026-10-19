@@ -37,6 +37,21 @@ async function reportMemory({ uid, data: { memoryId, reason, note }, db, request
     const [existing, current] = await Promise.all([tx.get(reportRef), tx.get(memoryRef)]);
     if (existing.exists) throw new HttpsError("already-exists", "You already reported this memory.");
     if (!current.exists) throw new HttpsError("failed-precondition", "This memory isn't available.");
+    // Only a verified report on a not-yet-hidden memory can hide it, so only then count. One doc
+    // per reporter, so the count of verified reports is the count of distinct reporters (legacy
+    // docs without the field never count). HIDE_AT - 1 earlier ones are all that matter: more
+    // can only mean the memory was restored, and a larger count never equals HIDE_AT again.
+    // Needs the (memoryId, reporterVerified) composite index.
+    // All reads come before any write (a Firestore transaction rule).
+    let hide = false;
+    if (reporterVerified && current.data().moderation !== "hidden") {
+      const earlier = await tx.get(
+        db.collection("reports").where("memoryId", "==", memoryId).where("reporterVerified", "==", true).limit(HIDE_AT),
+      );
+      const distinct = new Set(earlier.docs.map((d) => d.data().reporterId));
+      distinct.add(uid);
+      hide = distinct.size === HIDE_AT;
+    }
     tx.create(reportRef, {
       memoryId,
       reporterId: uid,
@@ -45,18 +60,7 @@ async function reportMemory({ uid, data: { memoryId, reason, note }, db, request
       note: note ? note : null,
       createdAt: now.toISOString(),
     });
-    // Only a verified report on a not-yet-hidden memory can hide it, so only then count. One doc
-    // per reporter, so the count of verified reports is the count of distinct reporters (legacy
-    // docs without the field never count). HIDE_AT - 1 earlier ones are all that matter: more
-    // can only mean the memory was restored, and a larger count never equals HIDE_AT again.
-    // Needs the (memoryId, reporterVerified) composite index.
-    if (!reporterVerified || current.data().moderation === "hidden") return;
-    const earlier = await tx.get(
-      db.collection("reports").where("memoryId", "==", memoryId).where("reporterVerified", "==", true).limit(HIDE_AT),
-    );
-    const distinct = new Set(earlier.docs.map((d) => d.data().reporterId));
-    distinct.add(uid);
-    if (distinct.size === HIDE_AT) tx.update(memoryRef, { moderation: "hidden" });
+    if (hide) tx.update(memoryRef, { moderation: "hidden" });
   });
   return {};
 }

@@ -96,3 +96,21 @@ test("select() projects snapshots to the named fields and instrumentation record
   assert.deepEqual(db._stats.docReads, ["c/a"]);
   assert.deepEqual(db._stats.queryReads, [2]);
 });
+
+test("a transaction read after a write throws like real Firestore", async () => {
+  const db = createFakeFirestore({ "c/a": { v: 1 } });
+  await assert.rejects(
+    db.runTransaction(async (tx) => {
+      tx.set(db.doc("c/b"), { v: 2 });
+      await tx.get(db.doc("c/a"));
+    }),
+    /all reads to be executed before all writes/,
+  );
+  assert.equal(db._get("c/b"), undefined);
+  await db.runTransaction(async (tx) => {
+    await tx.get(db.doc("c/a"));
+    await tx.get(db.collection("c"));
+    tx.set(db.doc("c/b"), { v: 2 });
+  });
+  assert.deepEqual(db._get("c/b"), { v: 2 });
+});

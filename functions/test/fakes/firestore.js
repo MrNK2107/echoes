@@ -310,7 +310,11 @@ function createFakeFirestore(initial = {}) {
     async runTransaction(fn) {
       const pending = [];
       const tx = {
-        get: async (refOrQuery) => (refOrQuery.path && !refOrQuery.where ? snap(refOrQuery.path) : refOrQuery.get()),
+        // Real Firestore rejects a read once the transaction has queued a write.
+        get: async (refOrQuery) => {
+          if (pending.length > 0) throw new Error("Firestore transactions require all reads to be executed before all writes.");
+          return refOrQuery.path && !refOrQuery.where ? snap(refOrQuery.path) : refOrQuery.get();
+        },
       };
       tx.set = (r, d, o) => (pending.push(() => write.set(r.path, d, o)), tx);
       tx.update = (r, d, pre) => (pending.push(() => write.update(r.path, d, pre)), tx);
