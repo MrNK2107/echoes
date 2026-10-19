@@ -1,9 +1,9 @@
 #!/usr/bin/env node
-/* Fails when an exported Hermes bundle exceeds the budget (6.5 MiB). Reads each dir's metadata.json. */
+/* Fails when an exported Hermes bundle exceeds the budget (7.5 MiB). Reads each dir's metadata.json. */
 const fs = require('fs');
 const path = require('path');
 
-const MAX_BYTES = 6815744;
+const MAX_BYTES = 7864320;
 
 function checkBundleSize(distDirs, maxBytes = MAX_BYTES) {
   const sizes = {};

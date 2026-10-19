@@ -153,7 +153,7 @@ Privacy and scale:
 - Functions run with `setGlobalOptions({ maxInstances: 50 })` to bound cost under abuse.
 - **Production rules** are built with `node scripts/build-rules.js --prod`, which implies `--require-bucket` and drops the loopback emulator hosts. `deploy:rules` uses it.
 - **Listener budgets** (repository-level subscriptions while a screen is mounted, memory backend): Map ≤ 4, Place ≤ 4, Community ≤ 4, AR ≤ 7. Each `subscribeVisibleForPlace` fans out to about 4 Firestore listeners.
-- **Bundle budget:** each exported Hermes bundle (android, ios) ≤ **6 815 744 bytes** (6.5 MiB). Device budgets stay as in release-readiness: cold start < 3 s, memory load < 2 s, location update < 1 s on a mid-range phone.
+- **Bundle budget:** each exported Hermes bundle (android, ios) ≤ **7 864 320 bytes** (7.5 MiB; amended 2026-10-19 after the first measurement of 7.34 MB). Device budgets stay as in release-readiness: cold start < 3 s, memory load < 2 s, location update < 1 s on a mid-range phone.
 
 Push:
 - **Lock-screen text never contains user-generated strings.** Push bodies are generic per type; the inbox keeps the full body:

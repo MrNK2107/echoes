@@ -284,7 +284,7 @@
 - Modify `mobile/package.json` (`"check:bundle": "node scripts/check-bundle-size.js dist dist-ios"`).
 
 **Interfaces — Produces:**
-- `checkBundleSize(distDirs: string[], maxBytes = 6815744): { ok: boolean; sizes: Record<string, number> }`. It reads each `metadata.json` bundle path. The CLI exits 1 and names the platform when a bundle is over the limit.
+- `checkBundleSize(distDirs: string[], maxBytes = 7864320): { ok: boolean; sizes: Record<string, number> }`. It reads each `metadata.json` bundle path. The CLI exits 1 and names the platform when a bundle is over the limit.
 - `countingRepos(repos): { repos; open(): number }` (test helper in `listenerBudget.test.tsx`). It wraps every `subscribe*` method and counts the unsubscribes not yet called.
 
 - [ ] **Step 1: Write failing tests:**

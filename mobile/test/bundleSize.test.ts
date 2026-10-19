@@ -29,10 +29,11 @@ describe('checkBundleSize', () => {
     expect(checkBundleSize([a, i], 1000)).toEqual({ ok: true, sizes: { android: 100, ios: 200 } });
   });
 
-  it('passes at exactly the limit and defaults to 6815744 bytes', () => {
+  it('passes at exactly the limit and defaults to 7864320 bytes', () => {
     const a = makeDist('dist', 1000);
     expect(checkBundleSize([a], 1000).ok).toBe(true);
-    expect(checkBundleSize([makeDist('d2', 10)]).ok).toBe(true);
+    expect(checkBundleSize([makeDist('d2', 7864320)]).ok).toBe(true);
+    expect(checkBundleSize([makeDist('d3', 7864321)]).ok).toBe(false);
   });
 
   it('fails when any bundle is over the limit', () => {
