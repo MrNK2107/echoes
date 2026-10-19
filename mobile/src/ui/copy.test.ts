@@ -21,6 +21,16 @@ describe('shared UI copy', () => {
       PUSH_BLOCKED: 'Push notifications are blocked in system settings.',
       PUSH_OPEN_SETTINGS: 'Open settings',
       PUSH_UNAVAILABLE: 'Push notifications need the ECHOES app build.',
+      AR_EMPTY: 'No memory places within 1 km.',
+      AR_CAMERA_DENIED: 'Camera access is needed for AR. Showing radar instead.',
+      AR_UNSUPPORTED: "AR isn't available on this device. Showing radar instead.",
+      AR_HEADING_UNAVAILABLE: "Compass unavailable — the radar won't rotate.",
+      AR_RADAR_VIEW: 'Radar view',
+      AR_CAMERA_VIEW: 'Camera view',
+      AR_BUTTON: 'AR',
+      AR_BUTTON_LABEL: 'Explore in AR',
+      AR_LOADING: 'Finding memories around you...',
+      AR_TRACKING_ERROR: 'AR tracking was lost. Showing radar instead.',
     });
   });
 });

@@ -132,4 +132,12 @@ describe('MapScreen', () => {
     });
     expect(mockPush).toHaveBeenCalledWith('/notifications');
   });
+
+  it('has an AR button that opens the AR screen', async () => {
+    await setup();
+    await act(async () => {
+      fireEvent.press(await screen.findByLabelText('Explore in AR'));
+    });
+    expect(mockPush).toHaveBeenCalledWith('/ar');
+  });
 });

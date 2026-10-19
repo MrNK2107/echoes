@@ -45,3 +45,12 @@ includes many mid-range phones without ARCore.
 - **Risk:** ViroReact compatibility with React Native 0.88 and the New
   Architecture. If its plugin fails to build, the fallback still ships, and AR
   is re-evaluated in Plan 5.
+
+## Implementation notes (Plan 4, Task 6)
+- `ArScreen` renders the renderer's `Scene` only when it is non-null, `status()` is
+  `available` and the camera is granted. The camera permission is requested only
+  when AR is otherwise usable. Until the native library is bundled, `Scene` is
+  null and every device shows the radar with the unsupported copy.
+- `useArScene` keeps at most 5 memory subscriptions (one per place, nearest 5
+  within 1 km), re-created only when the set of place ids changes. Heading never
+  triggers data loading. Orbs stay hidden until the block list is ready.

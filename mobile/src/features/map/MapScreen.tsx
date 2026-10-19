@@ -6,14 +6,11 @@ import { distanceMeters } from '@/domain/geo';
 import type { Place } from '@/domain/types';
 import { InboxBell } from '@/features/inbox/InboxBell';
 import { OutboxBanner } from '@/features/outbox/OutboxBanner';
-import { formatCount } from '@/ui/format';
+import { formatCount, formatDistance } from '@/ui/format';
+import { AR_BUTTON, AR_BUTTON_LABEL } from '@/ui/copy';
 import { colors } from '@/ui/theme';
 
 import { useNearbyPlaces } from './useNearbyPlaces';
-
-function formatDistance(m: number): string {
-  return m < 1000 ? `${Math.round(m)} m` : `${(m / 1000).toFixed(1)} km`;
-}
 
 export function MapScreen() {
   const router = useRouter();
@@ -102,6 +99,14 @@ export function MapScreen() {
           </Pressable>
         )}
       />
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={AR_BUTTON_LABEL}
+        onPress={() => router.push('/ar')}
+        style={styles.ar}
+      >
+        <Text style={styles.buttonText}>{AR_BUTTON}</Text>
+      </Pressable>
       <Pressable accessibilityRole="button" onPress={() => router.push('/add-memory')} style={styles.fab}>
         <Text style={styles.buttonText}>Add memory</Text>
       </Pressable>
@@ -141,6 +146,18 @@ const styles = StyleSheet.create({
   message: { color: colors.textSecondary, textAlign: 'center', padding: 16 },
   button: { backgroundColor: colors.accent, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 24, marginTop: 12 },
   buttonText: { color: colors.background, fontWeight: '600' },
+  ar: {
+    position: 'absolute',
+    left: 16,
+    bottom: 24,
+    minWidth: 56,
+    minHeight: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.accent,
+    paddingHorizontal: 20,
+    borderRadius: 28,
+  },
   fab: {
     position: 'absolute',
     right: 16,
