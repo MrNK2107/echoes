@@ -70,7 +70,7 @@ function setPath(obj, path, value) {
     o = o[k];
   }
   const last = keys[keys.length - 1];
-  if (name(value) === "DeleteTransform") delete o[last];
+  if (value === undefined || name(value) === "DeleteTransform") delete o[last];
   else o[last] = value;
 }
 

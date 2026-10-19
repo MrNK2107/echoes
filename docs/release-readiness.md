@@ -96,6 +96,20 @@ Do these before shipping the Expo client.
   block is omitted when it is absent). The development profile
   needs `EXPO_PUBLIC_EMULATOR_HOST` set to the PC's LAN IP for physical phones.
 
+## Expo Plan 5 data backfill runbook
+
+Run in this order against the production project (always `--project <id>`; the tool refuses to run without one and is a dry run unless `--apply` is passed):
+
+1. Deploy indexes: `npx firebase deploy --only firestore:indexes --project <id>`; wait for them to build.
+2. Deploy functions.
+3. Dry run: `node functions/tools/backfill.js all --project <id>` and read the per-task summary (`invalid=` counts `releaseDate` strings that could not be parsed; they are left untouched for manual review).
+4. `node functions/tools/backfill.js all --apply --project <id>` (moderation, releaseDate, member `userId`). Until it runs, string `releaseDate` memories never notify.
+5. `node functions/tools/backfill.js migrateInstitutionAdmins --apply --project <id>` (copies `adminUserIds` into `admins/{uid}` and deletes the field). Dry run it first.
+6. Optional cleanup: `node functions/tools/backfill.js deleteLegacyNotificationRequests --apply --project <id>`.
+7. Release the client.
+
+Every task is idempotent and resumable (re-run, or `--resume-after <doc path>`). Set `FIRESTORE_EMULATOR_HOST` to rehearse against the emulator. No member-count backfill exists: `rollupMemberCounts` derives `memberCount` from a `count()` of `members`.
+
 ## Expo Plan 4 push and AR runbook
 
 - **EAS credentials:** the owner runs `npx eas-cli init` in `mobile/` and sets `EXPO_PUBLIC_EAS_PROJECT_ID` (local `.env` and EAS environment variables). Configure Android FCM credentials (upload the Firebase service account key / `google-services.json` through `eas credentials`) and iOS APNs credentials (EAS manages the key with an Apple Developer account). Without them Expo Push cannot deliver to physical devices.
