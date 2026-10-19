@@ -159,13 +159,13 @@
 - `ArRenderer { status(): Promise<'available' | 'missing' | 'unsupported'>; requestCamera(): Promise<'granted'|'denied'>; Scene: React.ComponentType<ArSceneProps> | null }`. The dynamic `require('@reactvision/react-viro')` sits inside try/catch, and `ViroUtils.isARSupportedOnDevice` is used when present.
 - Fakes: `fakeHeading(values | 'unavailable')` and `fakeArRenderer(status)`.
 
-- [ ] **Step 1: Write failing tests:**
+- [x] **Step 1: Write failing tests:**
   - fakes;
   - the renderer reports `missing` when the require throws (jest mock);
   - **`heading wraps without jumping`** (through `smoothHeading` in a small `useHeading` hook);
   - **`no compass keeps north up`** (hook returns 0 plus `unavailable: true`).
-- [ ] **Step 2–4:** FAIL → implement → PASS.
-- [ ] **Step 5: Commit** `feat(device): heading and AR capability services`.
+- [x] **Step 2–4:** FAIL → implement → PASS.
+- [x] **Step 5: Commit** `feat(device): heading and AR capability services`.
 
 ---
 
