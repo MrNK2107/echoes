@@ -150,7 +150,7 @@
 - `checkPushReceipts = onSchedule('every 30 minutes')`, built from `receiptsHandler(db, fetchImpl, now)`. Receipt URL `https://exp.host/--/api/v2/push/getReceipts`, chunks of 300, ≤ 1000 per run, same `EXPO_ACCESS_TOKEN` header.
 - Client: `REGISTER_MIN_INTERVAL_MS = 6 * 60 * 60 * 1000`. `registerDevice` skips when the last success for this uid is newer than that and permission is unchanged. A failed registration subscribes once to `services.device.network` and retries on the first online event.
 
-- [ ] **Step 1: Write failing tests:**
+- [x] **Step 1: Write failing tests:**
   - functions:
     - the push body for `communityInvite` is generic and contains no community name;
     - ok tickets write `pushReceipts` with `expireAt`;
@@ -159,9 +159,9 @@
     - a fetch failure keeps the receipt docs;
     - `onPushTokenCreated` wrapper relays to the handler with the trimmed token (the backlog's wrapper test).
   - client: three foreground events within 6 h register once; an offline failure retries when the network comes back; sign-out cancels a pending retry.
-- [ ] **Step 2–4:** FAIL → implement → PASS (+ rules gate).
-- [ ] **Step 5: Add an ADR-0009 "Token squatting" note.** A client can register another device's token under its own uid. The impact is limited to receiving that device's pushes for the squatter's own inbox. The fix is the dedupe in `onPushTokenCreated` plus enhanced push security.
-- [ ] **Step 6: Commit** `feat(push): generic lock-screen text, receipt polling, throttled and offline-retried registration`.
+- [x] **Step 2–4:** FAIL → implement → PASS (+ rules gate).
+- [x] **Step 5: Add an ADR-0009 "Token squatting" note.** A client can register another device's token under its own uid. The impact is limited to receiving that device's pushes for the squatter's own inbox. The fix is the dedupe in `onPushTokenCreated` plus enhanced push security.
+- [x] **Step 6: Commit** `feat(push): generic lock-screen text, receipt polling, throttled and offline-retried registration`.
 
 ---
 
