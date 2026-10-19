@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, expo-rewrite]
   pull_request:
     branches: [main]
 
@@ -23,6 +23,11 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            functions/package-lock.json
+            rules_test/package-lock.json
+            mobile/package-lock.json
 
       - name: Install Node dependencies
         run: |

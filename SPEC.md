@@ -1,3 +1,5 @@
+> **Superseded.** This is the original Flutter-era specification, kept for history. The current design is `docs/superpowers/specs/2026-10-18-expo-rewrite-design.md` and the ADRs in `docs/adr/`.
+
 # ECHOES - Specification Document
 
 ## Table of Contents
