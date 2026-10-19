@@ -43,10 +43,13 @@ export function useNearbyPlaces(options: { once?: boolean } = {}): {
           { center: position, radiusMeters: NEARBY_RADIUS_METERS },
           (next) => {
             if (!active || (once && received)) return;
-            received = true;
             setPlaces(next);
             setStatus('ready');
-            if (once) queueMicrotask(() => unsubscribe?.());
+            // An empty first snapshot may only be the cache: show it, but stay subscribed until places arrive.
+            if (once && next.length > 0) {
+              received = true;
+              queueMicrotask(() => unsubscribe?.());
+            }
           },
           () => {
             if (active) setStatus('error');

@@ -84,7 +84,7 @@ describe('countingRepos', () => {
 });
 
 describe('listener budgets (memory backend)', () => {
-  it('Map <= 4 and 0 open after unmount', async () => {
+  it('Map = 4 and 0 open after unmount', async () => {
     const { services, counter } = await seeded();
     const view = await renderWithServices(
       services,
@@ -93,38 +93,34 @@ describe('listener budgets (memory backend)', () => {
       </OutboxProvider>,
     );
     await settle();
-    expect(counter.open()).toBeGreaterThan(0);
-    expect(counter.open()).toBeLessThanOrEqual(4);
+    expect(counter.open()).toBe(4);
     await view.unmount();
     expect(counter.open()).toBe(0);
   });
 
-  it('Place <= 4 and 0 open after unmount', async () => {
+  it('Place = 4 and 0 open after unmount', async () => {
     const { services, counter } = await seeded();
     const view = await renderWithServices(services, <PlaceScreen placeId={firstPlaceId(services)} />);
     await settle();
-    expect(counter.open()).toBeGreaterThan(0);
-    expect(counter.open()).toBeLessThanOrEqual(4);
+    expect(counter.open()).toBe(4);
     await view.unmount();
     expect(counter.open()).toBe(0);
   });
 
-  it('Community <= 4 and 0 open after unmount', async () => {
+  it('Community = 4 and 0 open after unmount', async () => {
     const { services, counter } = await seeded();
     const view = await renderWithServices(services, <CommunityScreen communityId={WALKERS} />);
     expect(await screen.findByRole('header', { name: 'Cubbon Park Walkers' })).toBeOnTheScreen();
-    expect(counter.open()).toBeGreaterThan(0);
-    expect(counter.open()).toBeLessThanOrEqual(4);
+    expect(counter.open()).toBe(4);
     await view.unmount();
     expect(counter.open()).toBe(0);
   });
 
-  it('AR <= 7 and 0 open after unmount', async () => {
+  it('AR = 7 and 0 open after unmount', async () => {
     const { services, counter } = await seeded();
     const view = await renderWithServices(services, <ArScreen />);
     await settle();
-    expect(counter.open()).toBeGreaterThan(0);
-    expect(counter.open()).toBeLessThanOrEqual(7);
+    expect(counter.open()).toBe(7);
     await view.unmount();
     expect(counter.open()).toBe(0);
   });

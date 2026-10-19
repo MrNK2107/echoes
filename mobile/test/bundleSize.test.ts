@@ -26,7 +26,7 @@ describe('checkBundleSize', () => {
   it('passes when every bundle is under the limit and reports sizes per platform', () => {
     const a = makeDist('dist', 100);
     const i = makeDist('dist-ios', 200, 'ios');
-    expect(checkBundleSize([a, i], 1000)).toEqual({ ok: true, sizes: { android: 100, ios: 200 } });
+    expect(checkBundleSize([a, i], 1000)).toEqual({ ok: true, sizes: { [`${a}:android`]: 100, [`${i}:ios`]: 200 } });
   });
 
   it('passes at exactly the limit and defaults to 7864320 bytes', () => {
@@ -41,7 +41,7 @@ describe('checkBundleSize', () => {
     const i = makeDist('dist-ios', 2000, 'ios');
     const r = checkBundleSize([a, i], 1000);
     expect(r.ok).toBe(false);
-    expect(r.sizes).toEqual({ android: 100, ios: 2000 });
+    expect(r.sizes).toEqual({ [`${a}:android`]: 100, [`${i}:ios`]: 2000 });
   });
 
   it('fails on a missing metadata file', () => {

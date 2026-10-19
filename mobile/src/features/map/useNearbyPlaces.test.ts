@@ -65,3 +65,52 @@ describe('useNearbyPlaces', () => {
     await waitFor(() => expect(result.current.status).toBe('error'));
   });
 });
+
+describe('useNearbyPlaces once', () => {
+  type Cb = (places: unknown[]) => void;
+  function spied() {
+    const services = testServices();
+    const real = services.repos.places.subscribeNearby;
+    const state: { cb: Cb | null; open: number } = { cb: null, open: 0 };
+    jest.spyOn(services.repos.places, 'subscribeNearby').mockImplementation((q, cb, e) => {
+      state.open += 1;
+      state.cb = cb as Cb;
+      const off = real(q, () => {}, e);
+      let done = false;
+      return () => {
+        if (!done) {
+          done = true;
+          state.open -= 1;
+        }
+        off();
+      };
+    });
+    return { services, state };
+  }
+  const place = (id: string) => ({ id, name: id, latitude: 12.97, longitude: 77.59, memoryCount: 1, aura: { colorHex: '#fff' } });
+
+  it('takes one snapshot, unsubscribes and ignores later emissions', async () => {
+    const { services, state } = spied();
+    const { result } = await renderHook(() => useNearbyPlaces({ once: true }), { wrapper: wrap(services) });
+    await waitFor(() => expect(state.cb).not.toBeNull());
+    await act(async () => state.cb!([place('a')]));
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    await waitFor(() => expect(state.open).toBe(0));
+    await act(async () => state.cb!([place('a'), place('b')]));
+    expect(result.current.places.map((p) => p.id)).toEqual(['a']);
+  });
+
+  it('ignores an empty first snapshot and stays subscribed until a non-empty one arrives', async () => {
+    const { services, state } = spied();
+    const { result } = await renderHook(() => useNearbyPlaces({ once: true }), { wrapper: wrap(services) });
+    await waitFor(() => expect(state.cb).not.toBeNull());
+    await act(async () => state.cb!([]));
+    // Deviation from "status unchanged": AR's empty state needs 'ready' with no places.
+    expect(result.current.status).toBe('ready');
+    expect(result.current.places).toEqual([]);
+    expect(state.open).toBe(1);
+    await act(async () => state.cb!([place('a')]));
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    await waitFor(() => expect(state.open).toBe(0));
+  });
+});

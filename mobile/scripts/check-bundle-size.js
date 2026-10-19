@@ -15,7 +15,7 @@ function checkBundleSize(distDirs, maxBytes = MAX_BYTES) {
       if (platforms.length === 0) throw new Error('no platforms in metadata.json');
       for (const [platform, info] of platforms) {
         const size = fs.statSync(path.join(dir, info.bundle)).size;
-        sizes[platform] = size;
+        sizes[`${dir}:${platform}`] = size;
         if (size > maxBytes) ok = false;
       }
     } catch (e) {
@@ -27,17 +27,17 @@ function checkBundleSize(distDirs, maxBytes = MAX_BYTES) {
 }
 
 module.exports = { checkBundleSize, MAX_BYTES };
-
 if (require.main === module) {
   const dirs = process.argv.slice(2);
-  const { ok, sizes } = checkBundleSize(dirs.length ? dirs : ['dist', 'dist-ios']);
-  for (const [platform, size] of Object.entries(sizes)) {
-    const over = size > MAX_BYTES ? ` OVER the ${MAX_BYTES} byte limit` : '';
-    console.log(`${platform}: ${size} bytes${over}`);
+  const limit = MAX_BYTES;
+  const { ok, sizes } = checkBundleSize(dirs.length ? dirs : ['dist', 'dist-ios'], limit);
+  for (const [key, size] of Object.entries(sizes)) {
+    const over = size > limit ? ` OVER the ${limit} byte limit` : '';
+    console.log(`${key}: ${size} bytes${over}`);
   }
   if (!ok) {
-    for (const [platform, size] of Object.entries(sizes)) {
-      if (size > MAX_BYTES) console.error(`check:bundle: ${platform} bundle is over ${MAX_BYTES} bytes`);
+    for (const [key, size] of Object.entries(sizes)) {
+      if (size > limit) console.error(`check:bundle: ${key} bundle is over ${limit} bytes`);
     }
     process.exit(1);
   }
