@@ -3,9 +3,14 @@ name: Report and block
 ---
 - launchApp:
     clearState: true
-- tapOn: "Email"
+# The field label (Text) and the input share this string; index 1 is the input.
+- tapOn:
+    text: "Email"
+    index: 1
 - inputText: "demo@echoes.app"
-- tapOn: "Password"
+- tapOn:
+    text: "Password"
+    index: 1
 - inputText: "echoes-demo"
 - tapOn: "Sign in"
 - extendedWaitUntil:
@@ -14,14 +19,16 @@ name: Report and block
 - tapOn: "Cubbon Park"
 - tapOn: "I love this park.*"
 - tapOn: "Report memory"
-- assertVisible: "Why are you reporting this?"
+- assertVisible: "Why are you reporting this.*"
 - tapOn: "Spam"
 - tapOn: "Send report"
 - assertVisible: "Thanks.*review it."
+- assertNotVisible: "Send report"
 - tapOn: "Report Asha Rao"
 - tapOn: "Harassment or bullying"
 - tapOn: "Send report"
 - assertVisible: "Thanks.*review it."
+- assertNotVisible: "Send report"
 - tapOn: "Block Asha Rao"
 - assertVisible: "You won't see their memories.*"
 - tapOn: "Block"

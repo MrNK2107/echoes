@@ -3,33 +3,49 @@ import { parseAllDocuments } from 'yaml';
 const APP_IDS = ['${APP_ID}', 'com.phantom.echoes'];
 /** Commands whose selectors must come from app copy. */
 const SELECTOR_COMMANDS = new Set(['tapOn', 'assertVisible', 'assertNotVisible', 'scrollUntilVisible', 'extendedWaitUntil']);
+/** Regex metacharacters a selector may not use: only `.*` is supported (a lone `.` is just a character). */
+const FORBIDDEN = /[\\^$+?()[\]{}|*]/;
 
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const normalise = (s: string) => s.replace(/\s+/g, ' ').trim();
 
-/** Copy templates in source (`Report ${name}` or `Report {name}`) become wildcard patterns. */
-function templatePatterns(source: string): RegExp[] {
-  const out: RegExp[] = [];
-  const add = (raw: string) => {
-    if (!/\{[^}]*\}/.test(raw)) return;
-    const parts = raw.split(/\$?\{[^}]*\}/);
-    // A template that is all placeholder (or nearly) would match any selector.
-    if (parts.join('').trim().length < 3) return;
-    out.push(new RegExp(parts.map(escapeRe).join('.+')));
-  };
-  for (const m of source.matchAll(/`([^`\n]*)`/g)) add(m[1]);
-  for (const m of source.matchAll(/'([^'\n]*\{[^}'\n]*\}[^'\n]*)'/g)) add(m[1]);
-  for (const m of source.matchAll(/"([^"\n]*\{[^}"\n]*\}[^"\n]*)"/g)) add(m[1]);
-  return out;
+interface Copy {
+  /** Plain strings: quoted literals and JSX text. */
+  literals: string[];
+  /** Copy templates, `Report ${name}` or `Report {name}`, as anchored patterns (placeholder -> `.+`). */
+  templates: RegExp[];
 }
 
-/** A Maestro text selector is a regex; `.*` splits it into literal chunks that must each exist. */
-function selectorFound(selector: string, source: string, templates: RegExp[]): boolean {
-  const chunks = selector
-    .split('.*')
-    .map((c) => c.replace(/\\(.)/g, '$1'))
-    .filter((c) => c.length > 0);
-  if (chunks.length === 0) return false;
-  return chunks.every((c) => source.includes(c) || templates.some((t) => t.test(c)));
+function extractCopy(source: string): Copy {
+  const literals: string[] = [];
+  const templates: RegExp[] = [];
+  const add = (raw: string) => {
+    if (/\{[^}]*\}/.test(raw)) {
+      const parts = raw.split(/\$?\{[^}]*\}/);
+      // A template that is all placeholder (or nearly) would match any selector.
+      if (/[A-Za-z]{3}/.test(parts.join(''))) templates.push(new RegExp(`^${parts.map(escapeRe).join('.+')}$`));
+    } else if (raw.trim().length > 0) {
+      literals.push(normalise(raw));
+    }
+  };
+  // One left-to-right scan, so an apostrophe inside "double quotes" never opens a literal.
+  for (const m of source.matchAll(/'((?:[^'\\\n]|\\.)*)'|"((?:[^"\\\n]|\\.)*)"|`((?:[^`\\\n]|\\.)*)`/g)) {
+    add((m[1] ?? m[2] ?? m[3]).replace(/\\(.)/g, '$1'));
+  }
+  for (const m of source.matchAll(/>([^<>{}]+)</g)) add(m[1]);
+  return { literals, templates };
+}
+
+/**
+ * A Maestro text selector is a regex that must match the whole element text. Only `.*` is
+ * supported; it must full-match at least one literal in the app, or one copy template.
+ */
+function checkSelector(selector: string, copy: Copy): string | null {
+  const bad = selector.split('.*').join('').match(FORBIDDEN);
+  if (bad) return `"${selector}": only ".*" is supported as a pattern, found "${bad[0]}"`;
+  const full = new RegExp(`^${selector.split('.*').map(escapeRe).join('.*')}$`);
+  if (copy.literals.some((l) => full.test(l)) || copy.templates.some((t) => t.test(selector))) return null;
+  return `"${selector}" does not full-match any copy in the app`;
 }
 
 function textsOf(value: unknown, problems: string[], command: string): string[] {
@@ -56,14 +72,15 @@ export function lintFlow(yamlText: string, sourceText: string): string[] {
     problems.push(`appId must be one of ${APP_IDS.join(', ')}`);
   }
 
-  const templates = templatePatterns(sourceText);
+  const copy = extractCopy(sourceText);
   const walk = (node: unknown) => {
     if (Array.isArray(node)) return node.forEach(walk);
     if (!node || typeof node !== 'object') return;
     for (const [command, value] of Object.entries(node as Record<string, unknown>)) {
       if (SELECTOR_COMMANDS.has(command)) {
         for (const text of textsOf(value, problems, command)) {
-          if (!selectorFound(text, sourceText, templates)) problems.push(`${command}: "${text}" matches no copy in the app`);
+          const problem = checkSelector(text, copy);
+          if (problem) problems.push(`${command}: ${problem}`);
         }
       }
       if (command === 'runFlow' || command === 'repeat' || command === 'retry') {

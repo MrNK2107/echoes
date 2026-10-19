@@ -3,9 +3,14 @@ name: Add a memory
 ---
 - launchApp:
     clearState: true
-- tapOn: "Email"
+# The field label (Text) and the input share this string; index 1 is the input.
+- tapOn:
+    text: "Email"
+    index: 1
 - inputText: "demo@echoes.app"
-- tapOn: "Password"
+- tapOn:
+    text: "Password"
+    index: 1
 - inputText: "echoes-demo"
 - tapOn: "Sign in"
 - extendedWaitUntil:
@@ -19,3 +24,8 @@ name: Add a memory
 - assertVisible: "Location captured"
 - tapOn: "Save memory"
 - assertNotVisible: "Save memory"
+# Saving opens the place screen; go back to the map.
+- tapOn: "Back"
+- extendedWaitUntil:
+    visible: "Add memory"
+    timeout: 10000

@@ -3,22 +3,35 @@ name: Communities
 ---
 - launchApp:
     clearState: true
-- tapOn: "Email"
+# The field label (Text) and the input share this string; index 1 is the input.
+- tapOn:
+    text: "Email"
+    index: 1
 - inputText: "demo@echoes.app"
-- tapOn: "Password"
+- tapOn:
+    text: "Password"
+    index: 1
 - inputText: "echoes-demo"
 - tapOn: "Sign in"
 - extendedWaitUntil:
     visible: "Cubbon Park"
     timeout: 20000
 - tapOn: "Communities"
-- assertVisible: "Cubbon Park Walkers"
+# The row's accessibility label is "<name>, <type>, <members>".
+- assertVisible: "Cubbon Park Walkers.*"
 - tapOn: "Discover"
+- assertVisible: "Cubbon Park Walkers.*"
 - tapOn: "Mine"
+- assertVisible: "Cubbon Park Walkers.*"
 - tapOn: "Create community"
-- tapOn: "Name"
+# In the sheet, the label (Text) comes first and the input second.
+- tapOn:
+    text: "Name"
+    index: 1
 - inputText: "Evening Walkers"
-- tapOn: "Description"
+- tapOn:
+    text: "Description"
+    index: 1
 - inputText: "A short walk after work."
 - hideKeyboard
 - tapOn: "Create"

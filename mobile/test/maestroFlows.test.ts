@@ -68,6 +68,30 @@ describe('Maestro flows (ADR-0012)', () => {
       expect(lintFlow(yaml, SOURCE)).toEqual([]);
     });
 
+    it('requires a full match, not just a substring of some copy', () => {
+      const problems = lintFlow(flow('- tapOn: "Sig"\n- tapOn: "Sign in"\n'), SOURCE);
+      expect(problems).toHaveLength(1);
+      expect(problems[0]).toContain('"Sig"');
+    });
+
+    it('checks text selectors that carry an index', () => {
+      expect(lintFlow(flow('- tapOn:\n    text: "Delete"\n    index: 1\n'), SOURCE)).toEqual([]);
+      expect(lintFlow(flow('- tapOn:\n    text: "Bogus"\n    index: 1\n'), SOURCE)).toHaveLength(1);
+    });
+
+    it('matches templated copy as a whole', () => {
+      expect(lintFlow(flow('- tapOn: "Restore memory: .*"\n'), SOURCE)).toEqual([]);
+      expect(lintFlow(flow('- tapOn: "Cubbon Park Walkers.*"\n'), SOURCE)).toEqual([]);
+    });
+
+    it('rejects regex metacharacters other than .*', () => {
+      for (const sel of ['Sign (in)', 'Sign|Create', 'Delete this memory?', 'Sign in$', '[Sign] in']) {
+        const problems = lintFlow(flow(`- tapOn: "${sel}"\n`), SOURCE);
+        expect(problems).toHaveLength(1);
+        expect(problems[0]).toContain('only ".*" is supported');
+      }
+    });
+
     it('rejects an id selector, a wrong appId and invalid YAML', () => {
       expect(lintFlow(flow('- tapOn:\n    id: "x"\n'), SOURCE)).toHaveLength(1);
       expect(lintFlow(flow('- tapOn: "Sign in"\n', 'com.other.app'), SOURCE)).toHaveLength(1);

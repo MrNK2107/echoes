@@ -3,9 +3,14 @@ name: Edit, delete and restore a memory
 ---
 - launchApp:
     clearState: true
-- tapOn: "Email"
+# The field label (Text) and the input share this string; index 1 is the input.
+- tapOn:
+    text: "Email"
+    index: 1
 - inputText: "demo@echoes.app"
-- tapOn: "Password"
+- tapOn:
+    text: "Password"
+    index: 1
 - inputText: "echoes-demo"
 - tapOn: "Sign in"
 - extendedWaitUntil:
@@ -17,8 +22,15 @@ name: Edit, delete and restore a memory
 - assertVisible: "Save changes"
 - tapOn: "Back"
 - tapOn: "Delete"
-- assertVisible: "Delete this memory?"
-- tapOn: "Delete"
+- assertVisible: "Delete this memory.*"
+# Two "Delete" matches now: the screen action (index 0) and the alert button (index 1).
+- tapOn:
+    text: "Delete"
+    index: 1
+# Deleting returns to the place screen, where the memory is gone.
+- assertVisible: "Cubbon Park"
+- assertNotVisible: "What a wonderful.*"
+# Place -> map (needed to reach the Profile button).
 - tapOn: "Back"
 - tapOn: "Profile"
 - scrollUntilVisible:
@@ -26,5 +38,5 @@ name: Edit, delete and restore a memory
       text: "Recently deleted"
 - tapOn: "Recently deleted"
 - assertVisible: "Restorable for.*"
-- tapOn: "Restore"
+- tapOn: "Restore memory: .*"
 - assertVisible: "Nothing here.*"
