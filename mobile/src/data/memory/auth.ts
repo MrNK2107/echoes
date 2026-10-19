@@ -1,6 +1,7 @@
+import { isValidEmail } from '@/domain/email';
 import { DEFAULT_NOTIFICATION_PREFS, validateDisplayName } from '@/domain/profiles';
 import type { AuthSession } from '@/domain/types';
-import { BAD_CREDENTIALS, EMAIL_IN_USE, INCORRECT_PASSWORD, NOT_SIGNED_IN } from '../errors';
+import { BAD_CREDENTIALS, EMAIL_IN_USE, INCORRECT_PASSWORD, INVALID_EMAIL, NOT_SIGNED_IN } from '../errors';
 import type { AuthRepository } from '../types';
 import { cleanupUserCommunities } from './autoCommunities';
 import { recomputePlace } from './recompute';
@@ -46,6 +47,10 @@ export function createAuthRepository(store: Store): AuthRepository {
     },
     async signOut() {
       setSession(null);
+    },
+    async sendPasswordReset(email) {
+      if (!isValidEmail(email)) throw new Error(INVALID_EMAIL);
+      // Demo mode sends nothing and, like the real backend, never says whether the account exists.
     },
     async deleteAccount(password) {
       const session = store.session;

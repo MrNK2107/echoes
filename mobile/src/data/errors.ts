@@ -8,6 +8,7 @@ export const RESTORE_EXPIRED = 'This memory can no longer be restored.';
 export const INCORRECT_PASSWORD = 'Incorrect password.';
 export const BAD_CREDENTIALS = 'Incorrect email or password.';
 export const EMAIL_IN_USE = 'An account already exists for that email.';
+export const INVALID_EMAIL = 'Enter a valid email';
 export const NOT_SIGNED_IN = 'Not signed in.';
 export const USER_EXISTS = 'This account is already set up.';
 export const PHOTO_TOO_LARGE = 'Photo is too large to upload.';

@@ -5,6 +5,7 @@ import {
   onAuthStateChanged,
   reauthenticateWithCredential,
   reload,
+  sendPasswordResetEmail,
   sendEmailVerification,
   signInWithEmailAndPassword,
   signOut,
@@ -12,9 +13,10 @@ import {
   type Auth,
   type User,
 } from 'firebase/auth';
+import { isValidEmail } from '@/domain/email';
 import { DEFAULT_NOTIFICATION_PREFS, validateDisplayName } from '@/domain/profiles';
 import type { AuthSession } from '@/domain/types';
-import { BAD_CREDENTIALS, EMAIL_IN_USE, INCORRECT_PASSWORD, NOT_SIGNED_IN } from '../errors';
+import { BAD_CREDENTIALS, EMAIL_IN_USE, INCORRECT_PASSWORD, INVALID_EMAIL, NOT_SIGNED_IN } from '../errors';
 import type { AuthRepository, ProfileRepository, UserRepository } from '../types';
 
 const WRONG_PASSWORD_CODES = new Set([
@@ -124,6 +126,18 @@ export function createAuthRepository(
     },
     async signOut() {
       await signOut(auth);
+    },
+    async sendPasswordReset(email) {
+      if (!isValidEmail(email)) throw new Error(INVALID_EMAIL);
+      try {
+        await sendPasswordResetEmail(auth, email.trim());
+      } catch (e) {
+        const code = errorCode(e);
+        if (code === 'auth/invalid-email') throw new Error(INVALID_EMAIL);
+        // Never reveal whether an account exists (older projects without enumeration protection).
+        if (code === 'auth/user-not-found') return;
+        throw e;
+      }
     },
     async deleteAccount(password) {
       const user = auth.currentUser;

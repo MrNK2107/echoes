@@ -18,7 +18,8 @@ import {
   PUSH_BLOCKED,
   PUSH_ENABLE_LABEL,
   PUSH_ON,
-  PUSH_OPEN_SETTINGS,
+  OPEN_SETTINGS_LABEL,
+  PRIVACY_POLICY_LABEL,
   PUSH_UNAVAILABLE,
   SIGN_OUT_LABEL,
 } from '@/ui/copy';
@@ -239,11 +240,12 @@ export function ProfileScreen() {
     }
   };
 
-  // ADR-0008: support, terms and guidelines come from config (EXPO_PUBLIC_*).
+  // ADR-0008: support, terms, guidelines and privacy policy come from config (EXPO_PUBLIC_*).
   const LINKS: { label: string; url: string }[] = [
     { label: 'Help & support', url: `mailto:${config.supportEmail}` },
     { label: 'Terms of Service', url: config.termsUrl },
     { label: 'Community Guidelines', url: config.guidelinesUrl },
+    { label: PRIVACY_POLICY_LABEL, url: config.privacyUrl },
   ];
   const openLink = async (url: string) => {
     setError(null);
@@ -346,7 +348,7 @@ export function ProfileScreen() {
         <>
           <Text style={styles.meta}>{PUSH_BLOCKED}</Text>
           <Pressable accessibilityRole="button" onPress={() => void openPushSettings()} style={styles.row}>
-            <Text style={styles.rowText}>{PUSH_OPEN_SETTINGS}</Text>
+            <Text style={styles.rowText}>{OPEN_SETTINGS_LABEL}</Text>
           </Pressable>
         </>
       ) : pushPermission === 'undetermined' ? (
@@ -381,6 +383,16 @@ export function ProfileScreen() {
       {custodianOf.error ? <Text style={styles.meta}>{"Couldn't load your places."}</Text> : null}
 
       <TransferHistory />
+
+      <Text accessibilityRole="header" style={styles.section}>
+        Account
+      </Text>
+      <Pressable accessibilityRole="button" onPress={signOut} style={styles.row}>
+        <Text style={styles.rowText}>{SIGN_OUT_LABEL}</Text>
+      </Pressable>
+      <Pressable accessibilityRole="button" onPress={() => router.push('/delete-account')} style={styles.row}>
+        <Text style={styles.dangerText}>Delete account</Text>
+      </Pressable>
 
       <Text accessibilityRole="header" style={styles.section}>
         Your memories
@@ -418,12 +430,6 @@ export function ProfileScreen() {
           <Text style={styles.rowText}>{l.label}</Text>
         </Pressable>
       ))}
-      <Pressable accessibilityRole="button" onPress={signOut} style={styles.row}>
-        <Text style={styles.rowText}>{SIGN_OUT_LABEL}</Text>
-      </Pressable>
-      <Pressable accessibilityRole="button" onPress={() => router.push('/delete-account')} style={styles.row}>
-        <Text style={styles.dangerText}>Delete account</Text>
-      </Pressable>
     </ScrollView>
   );
 }

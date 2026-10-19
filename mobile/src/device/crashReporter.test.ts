@@ -48,6 +48,7 @@ describe('createCrashReporter', () => {
         environment: 'firebase',
         beforeSend: expect.any(Function),
         beforeBreadcrumb: expect.any(Function),
+        beforeSendTransaction: expect.any(Function),
       }),
     );
     // The SDK defaults release/dist to what the Sentry Expo plugin uploads (bundleId@version+build).
@@ -60,6 +61,26 @@ describe('createCrashReporter', () => {
     const opts = mockInit.mock.calls[0][0];
     expect(opts.beforeBreadcrumb({ data: { url: 'https://api.x/y?token=abc&a=1' } }).data.url).toBe('https://api.x/y');
     expect(opts.beforeSend({ message: 'mail a@b.co' }).message).toBe('mail [email]');
+  });
+
+  it('scrubs performance transactions and their spans before they are sent', () => {
+    createCrashReporter(base).init();
+    const opts = mockInit.mock.calls[0][0];
+    const out = opts.beforeSendTransaction({
+      type: 'transaction',
+      transaction: 'GET https://h.io/users/uidABC123/blocks?token=T',
+      contexts: { trace: { data: { 'http.url': 'https://h.io/a?key=S', 'url.full': 'https://h.io/b?x=1#access_token=z' } } },
+      spans: [
+        {
+          description: 'GET https://h.io/memory-images/uidABC123/p.jpg?alt=media&token=SECRET',
+          data: { 'http.url': 'https://h.io/c?token=T', 'http.query': 'token=T', url: 'mail me a@b.co' },
+          attributes: { 'url.full': 'https://h.io/d?k=v', 'url.query': 'k=v' },
+        },
+      ],
+    });
+    expect(JSON.stringify(out)).not.toMatch(/uidABC123|token=|key=|k=v|x=1|access_token|SECRET|a@b\.co/);
+    expect(out.spans[0].data['http.url']).toBe('https://h.io/c');
+    expect(out.transaction).toBe('GET https://h.io/users/[uid]/blocks');
   });
 
   it('captures through Sentry once initialised, with context as tags', () => {
@@ -119,6 +140,11 @@ describe('scrub', () => {
     for (let i = 0; i < 30; i++) deep = { n: deep };
     expect(JSON.stringify(scrub(deep))).toContain('[depth]');
     expect(JSON.stringify(scrub(deep))).not.toContain('x@y.zz');
+  });
+
+  it('blanks bare query-string attributes that have no leading question mark', () => {
+    const out = scrub({ data: { 'http.query': 'token=abc', 'url.query': 'a=1', 'http.fragment': 'access_token=z', method: 'GET' } });
+    expect(out.data).toEqual({ 'http.query': '', 'url.query': '', 'http.fragment': '', method: 'GET' });
   });
 
   it('strips fragments containing = and bearer tokens', () => {

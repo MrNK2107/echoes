@@ -173,6 +173,7 @@ describe('ProfileScreen', () => {
       EXPO_PUBLIC_SUPPORT_EMAIL: 'help@example.org',
       EXPO_PUBLIC_TERMS_URL: 'https://example.org/t',
       EXPO_PUBLIC_GUIDELINES_URL: 'https://example.org/g',
+      EXPO_PUBLIC_PRIVACY_URL: 'https://example.org/p',
     });
     await setup(testServices({ config }));
     await fireEvent.press(screen.getByRole('link', { name: 'Help & support' }));
@@ -181,6 +182,18 @@ describe('ProfileScreen', () => {
     expect(open).toHaveBeenLastCalledWith('https://example.org/t');
     await fireEvent.press(screen.getByRole('link', { name: 'Community Guidelines' }));
     expect(open).toHaveBeenLastCalledWith('https://example.org/g');
+    await fireEvent.press(screen.getByRole('link', { name: 'Privacy Policy' }));
+    expect(open).toHaveBeenLastCalledWith('https://example.org/p');
+  });
+
+  it('puts the Account actions (sign out, delete account) above the memories list', async () => {
+    await setup();
+    const tree = JSON.stringify(screen.toJSON());
+    const at = (s: string) => tree.indexOf(s);
+    expect(at('Delete account')).toBeGreaterThan(-1);
+    expect(at('Sign out')).toBeLessThan(at('Your memories'));
+    expect(at('Delete account')).toBeLessThan(at('Your memories'));
+    expect(screen.getByRole('header', { name: 'Account' })).toBeOnTheScreen();
   });
 
   it('uses the default support address', async () => {

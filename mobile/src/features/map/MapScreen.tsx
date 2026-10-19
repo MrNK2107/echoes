@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { FlatList, Linking, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Marker } from 'react-native-maps';
 
@@ -9,7 +9,7 @@ import type { Place } from '@/domain/types';
 import { InboxBell } from '@/features/inbox/InboxBell';
 import { OutboxBanner } from '@/features/outbox/OutboxBanner';
 import { formatCount, formatDistance } from '@/ui/format';
-import { AR_BUTTON, AR_BUTTON_LABEL } from '@/ui/copy';
+import { AR_BUTTON, AR_BUTTON_LABEL, LOCATION_DENIED, LOCATION_ERROR, OPEN_SETTINGS_LABEL } from '@/ui/copy';
 import { CommunitiesIcon, ProfileIcon } from '@/ui/icons';
 import { colors } from '@/ui/theme';
 
@@ -23,7 +23,37 @@ export function MapScreen() {
   const compact = width / fontScale < 360;
   const [rowHeight, setRowHeight] = useState(44);
   const { status, center, places, retry } = useNearbyPlaces();
+  const openSettings = () => {
+    Linking.openSettings().catch((e: unknown) => console.warn('Could not open settings', e));
+  };
   const openPlace = (id: string) => router.push(`/place/${id}`);
+
+  const topRow = (
+      <View
+        testID="map-top-row"
+        onLayout={(e) => setRowHeight(e.nativeEvent.layout.height)}
+        style={[styles.topRow, { top: insets.top + 8 }]}
+      >
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Communities"
+          onPress={() => router.push('/communities')}
+          style={[styles.pill, compact && styles.pillCompact]}
+        >
+          {compact ? <CommunitiesIcon /> : <Text style={styles.buttonText}>Communities</Text>}
+        </Pressable>
+        <View style={styles.spacer} />
+        <InboxBell compact={compact} />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Profile"
+          onPress={() => router.push('/profile')}
+          style={[styles.pill, compact && styles.pillCompact]}
+        >
+          {compact ? <ProfileIcon /> : <Text style={styles.buttonText}>Profile</Text>}
+        </Pressable>
+      </View>
+  );
 
   if (status === 'locating') {
     return (
@@ -33,16 +63,21 @@ export function MapScreen() {
     );
   }
   if (status === 'denied' || status === 'error') {
+    // The top row stays: Communities, notifications and Profile do not need location.
     return (
-      <View style={styles.center}>
-        <Text style={styles.message}>
-          {status === 'denied'
-            ? 'Location permission is needed to find memories near you.'
-            : "Couldn't get your location."}
-        </Text>
-        <Pressable accessibilityRole="button" onPress={retry} style={styles.button}>
-          <Text style={styles.buttonText}>Try again</Text>
-        </Pressable>
+      <View style={styles.container}>
+        <View style={styles.center}>
+          <Text style={styles.message}>{status === 'denied' ? LOCATION_DENIED : LOCATION_ERROR}</Text>
+          <Pressable accessibilityRole="button" onPress={retry} style={styles.button}>
+            <Text style={styles.buttonText}>Try again</Text>
+          </Pressable>
+          {status === 'denied' ? (
+            <Pressable accessibilityRole="button" onPress={openSettings} style={styles.button}>
+              <Text style={styles.buttonText}>{OPEN_SETTINGS_LABEL}</Text>
+            </Pressable>
+          ) : null}
+        </View>
+        {topRow}
       </View>
     );
   }
@@ -68,30 +103,7 @@ export function MapScreen() {
           />
         ))}
       </MapView>
-      <View
-        testID="map-top-row"
-        onLayout={(e) => setRowHeight(e.nativeEvent.layout.height)}
-        style={[styles.topRow, { top: insets.top + 8 }]}
-      >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Communities"
-          onPress={() => router.push('/communities')}
-          style={[styles.pill, compact && styles.pillCompact]}
-        >
-          {compact ? <CommunitiesIcon /> : <Text style={styles.buttonText}>Communities</Text>}
-        </Pressable>
-        <View style={styles.spacer} />
-        <InboxBell compact={compact} />
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Profile"
-          onPress={() => router.push('/profile')}
-          style={[styles.pill, compact && styles.pillCompact]}
-        >
-          {compact ? <ProfileIcon /> : <Text style={styles.buttonText}>Profile</Text>}
-        </Pressable>
-      </View>
+      {topRow}
       <View testID="map-banner" style={[styles.banner, { top: insets.top + 8 + rowHeight + 8 }]}>
         <OutboxBanner />
       </View>

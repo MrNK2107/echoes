@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { GENERIC_ERROR, INCORRECT_PASSWORD } from '@/data/errors';
 import { useOutboxContext } from '@/features/outbox/useOutbox';
 import { useServices } from '@/services/ServicesProvider';
+import { BackButton } from '@/ui/BackButton';
 import { Notice } from '@/ui/Notice';
 import { colors } from '@/ui/theme';
 
@@ -50,6 +51,7 @@ export function DeleteAccountScreen() {
 
   return (
     <View style={styles.container}>
+      <BackButton />
       <Text accessibilityRole="header" style={styles.title}>
         Delete account
       </Text>
@@ -88,7 +90,7 @@ export function DeleteAccountScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background, padding: 16, paddingTop: 64 },
+  container: { flex: 1, backgroundColor: colors.background, padding: 16 },
   title: { color: colors.text, fontSize: 24, fontWeight: '700', marginBottom: 12 },
   body: { color: colors.textSecondary, fontSize: 16, lineHeight: 22, marginBottom: 20 },
   input: {

@@ -1,3 +1,4 @@
+import { Linking } from 'react-native';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 
 import { DEMO_USER } from '@/data/seed';
@@ -81,6 +82,28 @@ describe('MapScreen', () => {
     await setup(testServices({ location: fakeLocation({ error: new Error('x') }) }));
     expect(await screen.findByText("Couldn't get your location.")).toBeOnTheScreen();
     expect(screen.getByText('Try again')).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: 'Open settings' })).toBeNull();
+  });
+
+  it.each([
+    ['denied', { permission: 'denied' as const }],
+    ['error', { error: new Error('x') }],
+  ])('keeps Communities, notifications and Profile reachable when location is %s', async (_n, opts) => {
+    await setup(testServices({ location: fakeLocation(opts) }));
+    await screen.findByText('Try again');
+    expect(screen.getByRole('button', { name: /^Notifications/ })).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('button', { name: 'Communities' }));
+    expect(mockPush).toHaveBeenLastCalledWith('/communities');
+    await fireEvent.press(screen.getByRole('button', { name: 'Profile' }));
+    expect(mockPush).toHaveBeenLastCalledWith('/profile');
+  });
+
+  it('offers Open settings when permission is denied', async () => {
+    const open = jest.spyOn(Linking, 'openSettings').mockResolvedValue(undefined);
+    await setup(testServices({ location: fakeLocation({ permission: 'denied' }) }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Open settings' }));
+    expect(open).toHaveBeenCalled();
+    open.mockRestore();
   });
 
   it('shows empty state', async () => {

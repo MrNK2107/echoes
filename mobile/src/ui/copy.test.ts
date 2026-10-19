@@ -26,7 +26,7 @@ describe('shared UI copy', () => {
       PUSH_ENABLE_LABEL: 'Turn on push notifications',
       PUSH_ON: 'Push notifications are on',
       PUSH_BLOCKED: 'Push notifications are blocked in system settings.',
-      PUSH_OPEN_SETTINGS: 'Open settings',
+      OPEN_SETTINGS_LABEL: 'Open settings',
       PUSH_UNAVAILABLE: 'Push notifications need the ECHOES app build.',
       AR_EMPTY: 'No memory places within 1 km.',
       AR_CAMERA_DENIED: 'Camera access is needed for AR. Showing radar instead.',
@@ -42,6 +42,11 @@ describe('shared UI copy', () => {
       CHART_AXIS_LATEST: 'Latest',
       BACK_LABEL: 'Back',
       BACK_TEXT: '< Back',
+      FORGOT_PASSWORD_LABEL: 'Forgot password?',
+      PASSWORD_RESET_SENT: "If an account exists for that email, we've sent a reset link.",
+      PRIVACY_POLICY_LABEL: 'Privacy Policy',
+      LOCATION_DENIED: 'Location permission is needed to find memories near you.',
+      LOCATION_ERROR: "Couldn't get your location.",
     });
   });
 });

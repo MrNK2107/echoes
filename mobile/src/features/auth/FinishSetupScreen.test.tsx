@@ -1,9 +1,11 @@
+import { Linking } from 'react-native';
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 
 import { USER_EXISTS } from '@/data/errors';
 import { testServices } from '@/device/fakes';
 import { DISPLAY_NAME_ERROR } from '@/domain/profiles';
 import type { AuthSession } from '@/domain/types';
+import * as pushDevice from '@/features/push/pushDevice';
 import { NAME_REQUIRED } from '@/ui/copy';
 
 import { renderWithServices } from '../../../test/renderWithServices';
@@ -79,6 +81,29 @@ describe('FinishSetupScreen', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Continue' }));
     await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/'));
     expect(done).toHaveBeenCalled();
+  });
+
+  it('links the Terms, Community Guidelines and Privacy Policy pages from config', async () => {
+    const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
+    await renderWithServices(testServices(), <FinishSetupScreen session={SESSION} />);
+    for (const name of ['Terms of Service', 'Community Guidelines', 'Privacy Policy']) {
+      await fireEvent.press(await screen.findByRole('link', { name }));
+    }
+    expect(open.mock.calls).toEqual([
+      ['https://echoes.app/terms'],
+      ['https://echoes.app/guidelines'],
+      ['https://echoes.app/privacy'],
+    ]);
+    open.mockRestore();
+  });
+
+  it('signs out through signOutDevice so the push token is released', async () => {
+    const services = testServices();
+    const spy = jest.spyOn(pushDevice, 'signOutDevice').mockResolvedValue(undefined);
+    await renderWithServices(services, <FinishSetupScreen session={SESSION} />);
+    await fireEvent.press(await screen.findByRole('button', { name: 'Sign out' }));
+    await waitFor(() => expect(spy).toHaveBeenCalledWith(services, 'user-new'));
+    spy.mockRestore();
   });
 
   it('Sign out failures are logged, not thrown', async () => {

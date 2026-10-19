@@ -68,6 +68,11 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         "android.permission.CAMERA",
         "android.permission.POST_NOTIFICATIONS",
       ],
+      // Dependencies (dev client, audio) can merge these in; the app never needs either.
+      blockedPermissions: [
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK",
+      ],
       adaptiveIcon: {
         backgroundColor: "#E6F4FE",
         foregroundImage: "./assets/android-icon-foreground.png",
@@ -88,6 +93,14 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         {
           locationWhenInUsePermission:
             "ECHOES uses your location to find and pin memories near you.",
+          // Foreground use only: no always-on location, background mode or motion activity.
+          locationAlwaysAndWhenInUsePermission: false,
+          locationAlwaysPermission: false,
+          motionUsagePermission: false,
+          isIosBackgroundLocationEnabled: false,
+          isAndroidBackgroundLocationEnabled: false,
+          isAndroidForegroundServiceEnabled: false,
+          isAndroidMotionActivityEnabled: false,
         },
       ],
       [
@@ -100,7 +113,12 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       ["expo-notifications", { color: "#58A6FF" }],
       [
         "expo-audio",
-        { microphonePermission: "ECHOES records voice notes for your memories." },
+        {
+          microphonePermission: "ECHOES records voice notes for your memories.",
+          // Voice notes play and record in the foreground only (no UIBackgroundModes, no foreground service).
+          enableBackgroundPlayback: false,
+          enableBackgroundRecording: false,
+        },
       ],
       ...viroPlugin(),
       ...sentryPlugin(),

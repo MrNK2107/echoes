@@ -6,7 +6,6 @@ import type { CrashReporter } from './types';
 const PUSH_TOKEN = /Expo(?:nent)?PushToken\[[^\]]*\]/g;
 const EMAIL = /[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+/g;
 // A query string is `?` followed by key=value pairs; it ends at whitespace, a quote or a fragment.
-// A query string is `?` followed by key=value pairs; it ends at whitespace, a quote or a fragment.
 const QUERY = /\?[^\s"'#]*=[^\s"'#]*/g;
 // OAuth-style fragments carry tokens (`#access_token=...`); plain anchors like `#top` stay.
 const FRAGMENT = /#[^\s"'#]*=[^\s"'#]*/g;
@@ -14,6 +13,8 @@ const BEARER = /Bearer\s+\S+/gi;
 // Storage and Firestore paths embed the uid (`memory-images/<uid>/...`, `users/<uid>`); Storage URLs may encode the slash.
 const STORAGE_UID = /memory-(images|audio)(\/|%2F)[^/\s%"'?#]+(?=\/|%2F)/gi;
 const DOC_UID = /\b(users|publicProfiles)\/[^/\s"'?#]+/g;
+// Span attributes such as `http.query` / `url.query` hold the bare query (no leading `?`).
+const BARE_QUERY_KEY = /(^|[._-])(query|fragment)$/i;
 const MAX_DEPTH = 12;
 
 function scrubString(s: string): string {
@@ -42,11 +43,13 @@ function walk(value: unknown, depth: number, copies: Map<object, unknown>): unkn
   }
   const out: Record<string, unknown> = {};
   copies.set(value, out);
-  for (const [k, v] of Object.entries(value)) out[k] = walk(v, depth + 1, copies);
+  for (const [k, v] of Object.entries(value)) {
+    out[k] = typeof v === 'string' && BARE_QUERY_KEY.test(k) ? '' : walk(v, depth + 1, copies);
+  }
   return out;
 }
 
-/** Removes query strings, Expo push tokens and email-shaped substrings from any string in an event or breadcrumb. */
+/** Removes query strings, Expo push tokens and email-shaped substrings from any string in an event, transaction, span or breadcrumb. */
 export function scrub<T>(event: T): T {
   return walk(event, 0, new Map()) as T;
 }
@@ -84,6 +87,7 @@ export function createCrashReporter(opts: CrashReporterOptions): CrashReporter {
           environment: opts.environment,
           beforeSend: scrub,
           beforeBreadcrumb: scrub,
+          beforeSendTransaction: scrub,
         });
         sentry = mod;
       } catch {

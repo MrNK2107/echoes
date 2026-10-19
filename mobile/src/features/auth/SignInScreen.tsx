@@ -1,8 +1,7 @@
-import { useState, type ComponentProps } from 'react';
+import { useRef, useState, type ComponentProps } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
-  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -12,17 +11,19 @@ import {
   View,
 } from 'react-native';
 
-import { BAD_CREDENTIALS, EMAIL_IN_USE, GENERIC_ERROR, TIMEOUT_ERROR } from '@/data/errors';
+import { BAD_CREDENTIALS, EMAIL_IN_USE, GENERIC_ERROR, INVALID_EMAIL, TIMEOUT_ERROR } from '@/data/errors';
 import { DEMO_USER } from '@/data/seed';
 import { DISPLAY_NAME_ERROR } from '@/domain/profiles';
 import { useServices } from '@/services/ServicesProvider';
+import { FORGOT_PASSWORD_LABEL, PASSWORD_RESET_SENT } from '@/ui/copy';
 import { Notice } from '@/ui/Notice';
 import { colors } from '@/ui/theme';
 
+import { LegalLinks } from './LegalLinks';
 import { validateDisplayName, validateEmail, validatePassword } from './validators';
 
 /** Domain messages the auth repositories throw on purpose; everything else is mapped to generic copy. */
-const KNOWN_AUTH_MESSAGES = new Set([BAD_CREDENTIALS, EMAIL_IN_USE, DISPLAY_NAME_ERROR]);
+const KNOWN_AUTH_MESSAGES = new Set([BAD_CREDENTIALS, EMAIL_IN_USE, INVALID_EMAIL, DISPLAY_NAME_ERROR]);
 
 function authErrorCopy(e: unknown): string {
   if (e instanceof Error && KNOWN_AUTH_MESSAGES.has(e.message)) return e.message;
@@ -36,9 +37,8 @@ type Errors = { email?: string; password?: string; name?: string; age?: string; 
 export const TERMS_LABEL = 'I agree to the Terms of Service and Community Guidelines.';
 export const TERMS_REQUIRED = 'Please accept the Terms of Service and Community Guidelines.';
 
-function openLink(url: string) {
-  Linking.openURL(url).catch((e: unknown) => console.warn('Could not open link', e));
-}
+/** A reset link is not re-sent for this long after one was sent. */
+const RESET_COOLDOWN_MS = 30_000;
 
 export function SignInScreen() {
   const { repos, config, now } = useServices();
@@ -53,12 +53,41 @@ export function SignInScreen() {
   const [formError, setFormError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  const [resetNotice, setResetNotice] = useState<string | null>(null);
+  const resetting = useRef(false);
+  const lastResetAt = useRef<number | null>(null);
+
   const register = mode === 'register';
 
   const toggleMode = () => {
     setMode(register ? 'signIn' : 'register');
     setErrors({});
     setFormError(null);
+    setResetNotice(null);
+  };
+
+  const forgotPassword = async () => {
+    if (resetting.current) return;
+    const emailErr = validateEmail(email);
+    setErrors(emailErr ? { email: emailErr } : {});
+    setFormError(null);
+    setResetNotice(null);
+    if (emailErr) return;
+    const at = now().getTime();
+    if (lastResetAt.current !== null && at - lastResetAt.current < RESET_COOLDOWN_MS) {
+      setResetNotice(PASSWORD_RESET_SENT);
+      return;
+    }
+    resetting.current = true;
+    try {
+      await repos.auth.sendPasswordReset(email.trim());
+      lastResetAt.current = at;
+      setResetNotice(PASSWORD_RESET_SENT);
+    } catch (e) {
+      setFormError(authErrorCopy(e));
+    } finally {
+      resetting.current = false;
+    }
   };
 
   const submit = async () => {
@@ -159,19 +188,13 @@ export function SignInScreen() {
               <Text style={styles.checkLabel}>{TERMS_LABEL}</Text>
             </Pressable>
             {/* Separate focusable links: links nested in the checkbox are unreachable by screen readers. */}
-            <View style={styles.links}>
-              <Pressable accessibilityRole="link" hitSlop={8} onPress={() => openLink(config.termsUrl)}>
-                <Text style={styles.link}>Terms of Service</Text>
-              </Pressable>
-              <Pressable accessibilityRole="link" hitSlop={8} onPress={() => openLink(config.guidelinesUrl)}>
-                <Text style={styles.link}>Community Guidelines</Text>
-              </Pressable>
-            </View>
+            <LegalLinks />
             {errors.terms ? <Text style={styles.error}>{errors.terms}</Text> : null}
           </View>
         )}
 
         <Notice tone="error" message={formError} style={styles.error} />
+        <Notice message={resetNotice} style={styles.info} />
 
         <Pressable
           testID="submit-button"
@@ -187,6 +210,18 @@ export function SignInScreen() {
             <Text style={styles.submitText}>{register ? 'Create account' : 'Sign in'}</Text>
           )}
         </Pressable>
+
+        {!register && (
+          <Pressable
+            testID="forgot-password"
+            accessibilityRole="button"
+            hitSlop={8}
+            onPress={forgotPassword}
+            style={styles.toggle}
+          >
+            <Text style={styles.toggleText}>{FORGOT_PASSWORD_LABEL}</Text>
+          </Pressable>
+        )}
 
         <Pressable testID="mode-toggle" accessibilityRole="button" onPress={toggleMode} style={styles.toggle}>
           <Text style={styles.toggleText}>{register ? 'I already have an account' : 'Create an account'}</Text>
@@ -251,8 +286,7 @@ const styles = StyleSheet.create({
   boxChecked: { backgroundColor: colors.accent, borderColor: colors.accent },
   tick: { color: colors.background, fontSize: 14, fontWeight: '700' },
   checkLabel: { color: colors.text, flex: 1, fontSize: 14 },
-  links: { flexDirection: 'row', gap: 20, marginTop: 8, marginLeft: 32 },
-  link: { color: colors.accent, fontSize: 14, textDecorationLine: 'underline' },
+  info: { color: colors.textSecondary, fontSize: 13, marginTop: 6 },
   submit: {
     backgroundColor: colors.accent,
     borderRadius: 8,

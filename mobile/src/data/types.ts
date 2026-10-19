@@ -110,6 +110,12 @@ export interface AuthRepository {
    */
   register(email: string, password: string, displayName: string, acceptedTermsAt: Date): Promise<AuthSession>;
   signOut(): Promise<void>;
+  /**
+   * Emails a password reset link. Resolves the same whether or not an account exists for the
+   * address (no account enumeration; the memory backend sends nothing). Rejects with
+   * Error(INVALID_EMAIL) for a malformed address; network failures reject as the SDK reports them.
+   */
+  sendPasswordReset(email: string): Promise<void>;
   /** Rejects with Error(INCORRECT_PASSWORD) (see ./errors) when the password is wrong; the session stays. */
   deleteAccount(password: string): Promise<void>;
   /** Rejects with Error(NOT_SIGNED_IN) without a session. */

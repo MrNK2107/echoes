@@ -56,6 +56,12 @@ describe('DeleteAccountScreen', () => {
     expect(screen.getByRole('button', { name: 'Delete permanently' })).toBeEnabled();
   });
 
+  it('has the shared Back control, which goes back', async () => {
+    await setup();
+    await fireEvent.press(screen.getByTestId('back-button'));
+    expect(mockBack).toHaveBeenCalled();
+  });
+
   it('Cancel goes back', async () => {
     await setup();
     await fireEvent.press(screen.getByRole('button', { name: 'Cancel' }));

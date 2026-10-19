@@ -1,11 +1,12 @@
 import { validateDisplayName as validateProfileName } from '@/domain/profiles';
+import { INVALID_EMAIL } from '@/data/errors';
 import { NAME_REQUIRED } from '@/ui/copy';
 
 export function validateEmail(v: string): string | null {
   const t = v.trim();
   if (!t) return 'Email is required';
   const at = t.indexOf('@');
-  if (at < 0 || !t.slice(at).includes('.')) return 'Enter a valid email';
+  if (at < 0 || !t.slice(at).includes('.')) return INVALID_EMAIL;
   return null;
 }
 

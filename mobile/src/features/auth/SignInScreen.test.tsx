@@ -119,7 +119,7 @@ describe('SignInScreen', () => {
     });
     expect(box.props.testID).toBe('terms-checkbox');
     expect(within(box).queryByRole('link')).toBeNull();
-    expect(screen.getAllByRole('link')).toHaveLength(2);
+    expect(screen.getAllByRole('link')).toHaveLength(3);
   });
 
   it('opens the configured Terms and Guidelines pages', async () => {
@@ -132,9 +132,83 @@ describe('SignInScreen', () => {
     await act(async () => {
       fireEvent.press(screen.getByRole('link', { name: 'Community Guidelines' }));
     });
-    expect(open.mock.calls).toEqual([['https://echoes.app/terms'], ['https://echoes.app/guidelines']]);
+    await act(async () => {
+      fireEvent.press(screen.getByRole('link', { name: 'Privacy Policy' }));
+    });
+    expect(open.mock.calls).toEqual([
+      ['https://echoes.app/terms'],
+      ['https://echoes.app/guidelines'],
+      ['https://echoes.app/privacy'],
+    ]);
     expect(screen.getByTestId('terms-checkbox').props.accessibilityState).toEqual({ checked: false });
     open.mockRestore();
+  });
+
+  describe('forgot password', () => {
+    const NEUTRAL = "If an account exists for that email, we've sent a reset link.";
+
+    it('is offered on sign-in only', async () => {
+      await setup();
+      expect(screen.getByRole('button', { name: 'Forgot password?' })).toBeOnTheScreen();
+      await press('mode-toggle');
+      expect(screen.queryByRole('button', { name: 'Forgot password?' })).toBeNull();
+    });
+
+    it('asks for a valid email first and sends nothing without one', async () => {
+      const { services } = await setup();
+      const send = jest.spyOn(services.repos.auth, 'sendPasswordReset');
+      await press('forgot-password');
+      expect(screen.getByText('Email is required')).toBeOnTheScreen();
+      await type('email-input', 'nope');
+      await press('forgot-password');
+      expect(screen.getByText('Enter a valid email')).toBeOnTheScreen();
+      expect(send).not.toHaveBeenCalled();
+    });
+
+    it('shows the same neutral confirmation for a known and an unknown address', async () => {
+      const { services } = await setup();
+      const send = jest.spyOn(services.repos.auth, 'sendPasswordReset');
+      await type('email-input', ' nobody@example.com ');
+      await press('forgot-password');
+      expect(send).toHaveBeenCalledWith('nobody@example.com');
+      expect(screen.getByText(NEUTRAL)).toBeOnTheScreen();
+      expect(screen.queryByRole('alert')).toBeNull();
+    });
+
+    it('ignores taps while a request is in flight and during the cooldown', async () => {
+      let tick = 0;
+      const services = testServices({ now: () => new Date(Date.UTC(2026, 9, 19, 9, 0, 0) + tick) });
+      let release: () => void = () => {};
+      const send = jest.spyOn(services.repos.auth, 'sendPasswordReset').mockImplementation(
+        () => new Promise<void>((resolve) => { release = resolve; }),
+      );
+      await setup(services);
+      await type('email-input', 'a@example.com');
+      await press('forgot-password');
+      await press('forgot-password');
+      expect(send).toHaveBeenCalledTimes(1);
+      await act(async () => release());
+      await press('forgot-password');
+      expect(send).toHaveBeenCalledTimes(1);
+      tick = 31_000;
+      await press('forgot-password');
+      expect(send).toHaveBeenCalledTimes(2);
+    });
+
+    it('maps a network failure to connection copy and never claims success', async () => {
+      const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      const { services } = await setup();
+      jest.spyOn(services.repos.auth, 'sendPasswordReset').mockRejectedValue(
+        Object.assign(new Error('x'), { code: 'auth/network-request-failed' }),
+      );
+      await type('email-input', 'a@example.com');
+      await press('forgot-password');
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        'Could not reach the server. Check your connection and try again.',
+      );
+      expect(screen.queryByText(NEUTRAL)).toBeNull();
+      warn.mockRestore();
+    });
   });
 
   it('signs in with the demo credentials', async () => {

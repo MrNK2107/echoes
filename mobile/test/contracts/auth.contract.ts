@@ -83,6 +83,17 @@ export function authRepositoryContract(
       await expect(ctx.repos.auth.sendEmailVerification()).resolves.toBeUndefined();
     });
 
+    it('sendPasswordReset resolves the same for a known and an unknown address, and keeps the session', async () => {
+      await ctx.repos.auth.register('reset@example.com', 'secret12', 'Rita', TERMS_AT);
+      await expect(ctx.repos.auth.sendPasswordReset('reset@example.com')).resolves.toBeUndefined();
+      await expect(ctx.repos.auth.sendPasswordReset('nobody-here@example.com')).resolves.toBeUndefined();
+      expect((await ctx.repos.auth.refreshUser()).email).toBe('reset@example.com');
+    });
+
+    it('sendPasswordReset rejects a malformed address', async () => {
+      await expect(ctx.repos.auth.sendPasswordReset('not-an-email')).rejects.toThrow('Enter a valid email');
+    });
+
     itLifecycle('deleteAccount with a wrong password rejects and the session stays', async () => {
       const s = await ctx.repos.auth.register('del1@example.com', 'secret12', 'Del', TERMS_AT);
       const emitted: (AuthSession | null)[] = [];

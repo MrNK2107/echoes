@@ -11,6 +11,7 @@ describe('shared error copy', () => {
       INCORRECT_PASSWORD: 'Incorrect password.',
       BAD_CREDENTIALS: 'Incorrect email or password.',
       EMAIL_IN_USE: 'An account already exists for that email.',
+      INVALID_EMAIL: 'Enter a valid email',
       NOT_SIGNED_IN: 'Not signed in.',
       USER_EXISTS: 'This account is already set up.',
       PHOTO_TOO_LARGE: 'Photo is too large to upload.',

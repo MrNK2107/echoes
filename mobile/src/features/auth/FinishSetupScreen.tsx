@@ -15,11 +15,13 @@ import {
 import { GENERIC_ERROR, USER_EXISTS } from '@/data/errors';
 import { DISPLAY_NAME_ERROR } from '@/domain/profiles';
 import type { AuthSession } from '@/domain/types';
+import { signOutDevice } from '@/features/push/pushDevice';
 import { useServices } from '@/services/ServicesProvider';
 import { FINISH_SETUP_CONTINUE, FINISH_SETUP_TITLE, SIGN_OUT_LABEL } from '@/ui/copy';
 import { Notice } from '@/ui/Notice';
 import { colors } from '@/ui/theme';
 
+import { LegalLinks } from './LegalLinks';
 import { completeRegistration } from './repairRegistration';
 import { TERMS_LABEL, TERMS_REQUIRED } from './SignInScreen';
 import { validateDisplayName } from './validators';
@@ -99,6 +101,7 @@ export function FinishSetupScreen({ session, onDone }: { session: AuthSession; o
             </View>
             <Text style={styles.checkLabel}>{TERMS_LABEL}</Text>
           </Pressable>
+          <LegalLinks />
           {termsError ? <Text style={styles.error}>{termsError}</Text> : null}
         </View>
         <Notice tone="error" message={formError} style={styles.error} />
@@ -119,7 +122,7 @@ export function FinishSetupScreen({ session, onDone }: { session: AuthSession; o
         </Pressable>
         <Pressable
           accessibilityRole="button"
-          onPress={() => services.repos.auth.signOut().catch((e: unknown) => console.warn('Could not sign out', e))}
+          onPress={() => signOutDevice(services, session.userId).catch((e: unknown) => console.warn('Could not sign out', e))}
           style={styles.signOut}
         >
           <Text style={styles.signOutText}>{SIGN_OUT_LABEL}</Text>
