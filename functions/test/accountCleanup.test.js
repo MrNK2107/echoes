@@ -36,6 +36,28 @@ test("cleanup deletes the public profile, admin roles and the user's own reports
   assert.deepEqual(db._list("reports/"), ["reports/byBob"]);
 });
 
+test("a failing admins collection-group query is logged and the rest of the cleanup still runs", async () => {
+  const db = seed();
+  const real = db.collectionGroup.bind(db);
+  db.collectionGroup = (id) => {
+    if (id === "admins") throw new Error("FAILED_PRECONDITION: index not ready");
+    return real(id);
+  };
+  const logged = [];
+  const orig = console.error;
+  console.error = (...args) => logged.push(args.join(" "));
+  try {
+    await cleanupUserSocialData(db, "alice", { batchSize: 2 });
+  } finally {
+    console.error = orig;
+  }
+  assert.ok(logged.some((l) => l.includes("admins")));
+  assert.equal(db._get("publicProfiles/alice"), undefined);
+  assert.deepEqual(db._get("institutions/i1").adminUserIds, ["bob"]);
+  assert.deepEqual(db._get("institutions/i2").adminUserIds, []);
+  assert.deepEqual(db._list("reports/"), ["reports/byBob"]);
+});
+
 test("cleanup is safe to re-run and for a user with nothing to clean", async () => {
   const db = seed();
   await cleanupUserSocialData(db, "alice");

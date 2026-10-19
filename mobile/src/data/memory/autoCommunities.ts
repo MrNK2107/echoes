@@ -118,5 +118,6 @@ export function cleanupUserCommunities(store: Store, uid: string): void {
     });
   }
   for (const admins of store.institutionAdmins.values()) admins.delete(uid);
+  store.notify(store.institutionListeners);
   store.leftCommunityIds.delete(uid);
 }

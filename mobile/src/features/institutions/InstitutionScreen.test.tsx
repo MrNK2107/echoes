@@ -66,8 +66,9 @@ describe('InstitutionScreen', () => {
   });
 
   it('follows subscribeIsAdmin for the signed-in user (admin lists are private)', async () => {
-    const { services } = servicesWithAdmin();
+    const { services, admin } = servicesWithAdmin();
     await signIn(services);
+    const id = await registerInstitution(services, admin, { name: NAME, allowedEmailDomains: ['echoes.app'] });
     let push: (isAdmin: boolean) => void = () => {};
     const sub = jest.spyOn(services.repos.institutions, 'subscribeIsAdmin').mockImplementation((_id, _uid, cb) => {
       push = cb;
@@ -76,11 +77,40 @@ describe('InstitutionScreen', () => {
     });
     await render(
       <ServicesProvider services={services}>
-        <InstitutionScreen institutionId="nope" />
+        <InstitutionScreen institutionId={id} />
       </ServicesProvider>,
     );
-    expect(sub).toHaveBeenCalledWith('nope', DEMO_UID, expect.any(Function), expect.any(Function));
-    expect(push).toBeDefined();
+    expect(sub).toHaveBeenCalledWith(id, DEMO_UID, expect.any(Function), expect.any(Function));
+    expect(await screen.findByRole('button', { name: 'Verify as admin' })).toBeOnTheScreen();
+    await act(async () => {
+      push(true);
+    });
+    expect(await screen.findByRole('button', { name: 'Add sub-zone here' })).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: 'Verify as admin' })).toBeNull();
+  });
+
+  it('resets the admin state when the institution changes', async () => {
+    const { services, admin } = servicesWithAdmin();
+    await signIn(services);
+    const a = await registerInstitution(services, admin, { name: NAME, allowedEmailDomains: ['echoes.app'] });
+    const b = await registerInstitution(services, admin, { name: 'Other', allowedEmailDomains: ['echoes.app'] });
+    jest.spyOn(services.repos.institutions, 'subscribeIsAdmin').mockImplementation((id, _uid, cb) => {
+      if (id === a) cb(true);
+      return () => {};
+    });
+    const view = await render(
+      <ServicesProvider services={services}>
+        <InstitutionScreen institutionId={a} />
+      </ServicesProvider>,
+    );
+    expect(await screen.findByRole('button', { name: 'Add sub-zone here' })).toBeOnTheScreen();
+    await view.rerender(
+      <ServicesProvider services={services}>
+        <InstitutionScreen institutionId={b} />
+      </ServicesProvider>,
+    );
+    expect(await screen.findByRole('button', { name: 'Verify as admin' })).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: 'Add sub-zone here' })).toBeNull();
   });
 
   it('shows not-found copy for an unknown id', async () => {

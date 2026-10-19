@@ -57,7 +57,8 @@ export function createInstitutionRepository(store: Store): InstitutionRepository
       return store.institutions.get(id) ?? null;
     },
     subscribeIsAdmin(id, uid, cb) {
-      const emit = () => cb(store.institutionAdmins.get(id)?.has(uid) === true);
+      // Firestore only lets a user read their own admins doc; any other uid reads as not-admin.
+      const emit = () => cb(store.session?.userId === uid && store.institutionAdmins.get(id)?.has(uid) === true);
       store.institutionListeners.add(emit);
       emit();
       return () => { store.institutionListeners.delete(emit); };

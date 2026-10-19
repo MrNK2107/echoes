@@ -67,13 +67,20 @@ export function InstitutionScreen({ institutionId }: { institutionId: string }) 
   }, [repos.institutions, institutionId, uid]);
 
   // The admin list is private: the screen only learns whether the signed-in user is an admin.
-  const [isAdmin, setIsAdmin] = useState(false);
+  // The value is keyed by institution and user, so it never carries over when either changes
+  // (or when the user signs out): a stale key reads as "not an admin" until the new one reports.
+  const adminKey = uid === null ? null : `${institutionId}:${uid}`;
+  const [adminState, setAdminState] = useState<{ key: string; isAdmin: boolean } | null>(null);
+  const isAdmin = adminKey !== null && adminState?.key === adminKey && adminState.isAdmin;
   useEffect(() => {
-    if (!uid) return;
-    return repos.institutions.subscribeIsAdmin(institutionId, uid, setIsAdmin, (e) =>
-      console.warn('Could not read the admin role', e),
+    if (!uid || adminKey === null) return;
+    return repos.institutions.subscribeIsAdmin(
+      institutionId,
+      uid,
+      (value) => setAdminState({ key: adminKey, isAdmin: value }),
+      (e) => console.warn('Could not read the admin role', e),
     );
-  }, [repos.institutions, institutionId, uid]);
+  }, [repos.institutions, institutionId, uid, adminKey]);
 
   /** Re-reads the account (verified email, fresh token); a verified email clears the prompt. */
   const recheckAccount = useCallback(async () => {

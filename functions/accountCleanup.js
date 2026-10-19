@@ -24,14 +24,20 @@ async function deleteNotificationsFrom(db, uid, { batchSize = BATCH_SIZE } = {})
 async function cleanupUserSocialData(db, uid, { batchSize = BATCH_SIZE } = {}) {
   await db.collection("publicProfiles").doc(uid).delete();
 
-  // Private admin docs (institutions/{id}/admins/{uid}), found through the collection group.
-  for (;;) {
-    const admins = await db.collectionGroup("admins").where("userId", "==", uid).limit(batchSize).get();
-    if (admins.empty) break;
-    const batch = db.batch();
-    admins.docs.forEach((doc) => batch.delete(doc.ref));
-    await batch.commit();
-    if (admins.docs.length < batchSize) break;
+  // Private admin docs (institutions/{id}/admins/{uid}), found through the collection group. A
+  // failure (e.g. FAILED_PRECONDITION while the admins.userId index is still building) is logged
+  // and must not stop the legacy and report cleanup below; the auth trigger retry re-runs it.
+  try {
+    for (;;) {
+      const admins = await db.collectionGroup("admins").where("userId", "==", uid).limit(batchSize).get();
+      if (admins.empty) break;
+      const batch = db.batch();
+      admins.docs.forEach((doc) => batch.delete(doc.ref));
+      await batch.commit();
+      if (admins.docs.length < batchSize) break;
+    }
+  } catch (e) {
+    console.error(`cleanupUserSocialData: could not delete institution admin docs for ${uid} (admins)`, e);
   }
 
   // Legacy adminUserIds[] on institutions not yet migrated (migrateInstitutionAdmins).

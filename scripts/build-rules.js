@@ -22,8 +22,19 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const DEFAULT_BUCKET = "demo-echoes.appspot.com";
-// ECHOES_RULES_ROOT lets rules_test exercise --prod without touching the committed files.
-const ROOT = process.env.ECHOES_RULES_ROOT || path.join(__dirname, "..");
+const REPO_ROOT = path.join(__dirname, "..");
+
+// rules_test exercises --prod without touching the committed files: output goes to `--root <dir>`
+// (or ECHOES_RULES_ROOT when NODE_ENV is "test"). Otherwise the repo root is always used.
+function resolveRoot(argv, env) {
+  const i = argv.indexOf("--root");
+  if (i >= 0) {
+    if (!argv[i + 1]) throw new Error("--root needs a directory");
+    return path.resolve(argv[i + 1]);
+  }
+  if (env.NODE_ENV === "test" && env.ECHOES_RULES_ROOT) return path.resolve(env.ECHOES_RULES_ROOT);
+  return REPO_ROOT;
+}
 
 const HEADER_MARKER = "// @@GENERATED_HEADER@@";
 const PREFIX_MARKER = "// @@STORAGE_URL_PREFIX@@";
@@ -75,6 +86,7 @@ function render(template, { bucket, lan, prod = false }) {
 }
 
 function main() {
+  const ROOT = resolveRoot(process.argv, process.env);
   const prod = process.argv.includes("--prod");
   if ((prod || process.argv.includes("--require-bucket")) && !process.env.FIREBASE_STORAGE_BUCKET) {
     console.error(
@@ -88,7 +100,7 @@ function main() {
   const targets = prod ? [["firestore.rules", false]] : [["firestore.rules", false], ["firestore.lan.rules", true]];
   for (const [file, lan] of targets) {
     fs.writeFileSync(path.join(ROOT, file), render(template, { bucket, lan, prod }));
-    console.log(`Wrote ${file} (bucket ${bucket}${prod ? ", production: no emulator hosts" : lan ? ", private-LAN emulator hosts" : ""})`);
+    console.log(`Wrote ${path.join(ROOT, file)} (bucket ${bucket}${prod ? ", production: no emulator hosts" : lan ? ", private-LAN emulator hosts" : ""})`);
   }
 }
 
