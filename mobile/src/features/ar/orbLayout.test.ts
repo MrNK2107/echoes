@@ -1,4 +1,4 @@
-import { ORB_HIT, PLACE_HIT, orbLabel, orbLayout, truncateName } from './orbLayout';
+import { MAX_ORB_EXTENT, ORB_HIT, PLACE_HIT, orbLabel, orbLayout, plotPosition, truncateName } from './orbLayout';
 
 type Box = { l: number; t: number; r: number; b: number };
 const box = (cx: number, cy: number, size: number): Box => ({
@@ -45,5 +45,26 @@ describe('truncateName', () => {
   it('truncates long names with an ellipsis', () => {
     expect(truncateName('UB City')).toBe('UB City');
     expect(truncateName('Sree Kanteerava Stadium')).toBe('Sree Kanteerava…');
+  });
+});
+
+describe('radar bounds', () => {
+  const size = 328;
+  for (const aura of [6, 20]) {
+    for (const count of [1, 8]) {
+      for (const bearing of [0, 45, 90, 180, 270]) {
+        it(`keeps a 1000 m place with ${count} orbs inside the radar (aura ${aura}px, bearing ${bearing})`, () => {
+          const pos = plotPosition(size, 1000, bearing, 0);
+          const inside = (b: Box) => b.l >= 0 && b.t >= 0 && b.r <= size && b.b <= size;
+          expect(inside(box(pos.x, pos.y, PLACE_HIT))).toBe(true);
+          const layout = orbLayout(aura, count);
+          layout.orbs.forEach((o) => expect(inside(box(pos.x + o.dx, pos.y + o.dy, layout.hit))).toBe(true));
+        });
+      }
+    }
+  }
+
+  it('reserves the largest possible orb extent as padding', () => {
+    expect(MAX_ORB_EXTENT).toBeGreaterThanOrEqual(orbLayout(20, 8).ring + ORB_HIT / 2);
   });
 });

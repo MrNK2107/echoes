@@ -32,3 +32,24 @@ export function orbLabel(orb: { text: string; media: 'photo' | 'voice note' | nu
 export function truncateName(name: string): string {
   return name.length > NAME_MAX ? `${name.slice(0, NAME_MAX).trimEnd()}…` : name;
 }
+
+const MAX_AURA_PX = 20;
+export const RADAR_MAX_METERS = 1000;
+
+/** Furthest an orb hit box reaches from its place centre, for any orb count and aura size. */
+export const MAX_ORB_EXTENT =
+  Math.max(...Array.from({ length: 8 }, (_, i) => orbLayout(MAX_AURA_PX, i + 1).ring)) + ORB_HIT / 2;
+
+/** Heading-up position of a place in a square radar; the plotting radius leaves room for orbs. */
+export function plotPosition(
+  size: number,
+  distanceMeters: number,
+  bearingDegrees: number,
+  headingDegrees: number,
+): { x: number; y: number } {
+  const c = size / 2;
+  const radius = c - MAX_ORB_EXTENT;
+  const r = (Math.min(distanceMeters, RADAR_MAX_METERS) / RADAR_MAX_METERS) * radius;
+  const a = ((bearingDegrees - headingDegrees) * Math.PI) / 180;
+  return { x: c + r * Math.sin(a), y: c - r * Math.cos(a) };
+}

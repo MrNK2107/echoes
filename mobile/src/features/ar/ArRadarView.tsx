@@ -5,12 +5,11 @@ import Svg, { Circle } from 'react-native-svg';
 import { formatDistance } from '@/ui/format';
 import { colors } from '@/ui/theme';
 
-import { ORB_DOT, PLACE_HIT, orbLabel, orbLayout, truncateName } from './orbLayout';
+import { MAX_ORB_EXTENT, ORB_DOT, PLACE_HIT, orbLabel, orbLayout, plotPosition, truncateName } from './orbLayout';
 import { AR_RADIUS_METERS, type ArPlace } from './useArScene';
 
 const RINGS = [250, 500, 1000];
-const PAD = 24;
-const rad = (d: number) => (d * Math.PI) / 180;
+const NAME_WIDTH = 80;
 const auraPixels = (auraRadius: number) => 6 + ((auraRadius - 1.8) / 3.2) * 14;
 
 function ArRadarViewBase({
@@ -27,13 +26,8 @@ function ArRadarViewBase({
   const { width } = useWindowDimensions();
   const size = Math.max(240, Math.min(width, 520) - 32);
   const c = size / 2;
-  const radius = c - PAD;
-  // Heading up: a place at the heading's bearing sits straight above the centre.
-  const at = (distance: number, bearing: number) => {
-    const r = (Math.min(distance, AR_RADIUS_METERS) / AR_RADIUS_METERS) * radius;
-    const a = rad(bearing - heading);
-    return { x: c + r * Math.sin(a), y: c - r * Math.cos(a) };
-  };
+  const radius = c - MAX_ORB_EXTENT;
+  const at = (distance: number, bearing: number) => plotPosition(size, distance, bearing, heading);
   const placed = places.map((p) => ({ p, pos: at(p.distanceMeters, p.bearingDegrees), aura: auraPixels(p.auraRadius) }));
 
   return (
@@ -73,7 +67,7 @@ function ArRadarViewBase({
           importantForAccessibility="no"
           pointerEvents="none"
           numberOfLines={1}
-          style={[styles.name, { left: pos.x - 50, top: pos.y + aura + 2 }]}
+          style={[styles.name, { left: Math.min(Math.max(pos.x - NAME_WIDTH / 2, 0), size - NAME_WIDTH), top: pos.y + aura + 2 }]}
         >
           {truncateName(p.name)}
         </Text>
@@ -119,7 +113,7 @@ export const ArRadarView = memo(ArRadarViewBase);
 const styles = StyleSheet.create({
   radar: { alignSelf: 'center' },
   ringLabel: { position: 'absolute', color: colors.textSecondary, fontSize: 11 },
-  name: { position: 'absolute', width: 100, textAlign: 'center', color: colors.text, fontSize: 10 },
+  name: { position: 'absolute', width: NAME_WIDTH, textAlign: 'center', color: colors.text, fontSize: 10 },
   placeTarget: { position: 'absolute', width: PLACE_HIT, height: PLACE_HIT, borderRadius: PLACE_HIT / 2 },
   orbHit: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
   orb: { width: ORB_DOT, height: ORB_DOT, borderRadius: ORB_DOT / 2, borderWidth: 1, borderColor: colors.text },

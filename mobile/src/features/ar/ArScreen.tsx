@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { AccessibilityInfo, ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useServices } from '@/services/ServicesProvider';
 import {
@@ -67,6 +67,11 @@ export function ArScreen() {
         : trackingLost
           ? AR_TRACKING_ERROR
           : null;
+
+  useEffect(() => {
+    // iOS ignores accessibilityLiveRegion, so announce notice changes explicitly.
+    if (notice) AccessibilityInfo.announceForAccessibility(notice);
+  }, [notice]);
 
   const back = (
     <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => router.back()} style={styles.back}>

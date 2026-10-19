@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { StyleSheet, Text } from 'react-native';
+import { AccessibilityInfo, StyleSheet, Text } from 'react-native';
 
 import { DEMO_CENTER as SEED_CENTER, DEMO_USER } from '@/data/seed';
 import { mapArScene } from '@/domain/arScene';
@@ -224,6 +224,14 @@ describe('ArScreen', () => {
     const notice = await screen.findByText(AR_UNSUPPORTED);
     expect(notice.props.accessibilityLiveRegion).toBe('polite');
     expect(notice.props.accessibilityRole).toBe('alert');
+  });
+
+  it('announces the mode notice for screen readers that ignore live regions', async () => {
+    const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
+    await setup();
+    await screen.findByText(AR_UNSUPPORTED);
+    expect(announce).toHaveBeenCalledWith(AR_UNSUPPORTED);
+    announce.mockRestore();
   });
 
   it('draws place names as decorative labels that screen readers skip', async () => {
