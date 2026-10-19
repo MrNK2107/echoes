@@ -1,0 +1,22 @@
+appId: ${APP_ID}
+name: Sign in and see the map
+---
+- launchApp:
+    clearState: true
+- tapOn: "Email"
+- inputText: "demo@echoes.app"
+- tapOn: "Password"
+- inputText: "echoes-demo"
+- tapOn: "Sign in"
+- extendedWaitUntil:
+    visible: "Cubbon Park"
+    timeout: 20000
+# Memory mode pins location to the demo centre; this keeps real-backend runs consistent
+# (Cubbon Park, the first seeded place).
+- setLocation:
+    latitude: 12.9763
+    longitude: 77.5929
+- assertVisible: "Communities"
+- assertVisible: "Profile"
+- assertVisible: "Explore in AR"
+- assertVisible: "Add memory"

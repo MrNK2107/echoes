@@ -1,0 +1,23 @@
+appId: ${APP_ID}
+name: Delete account
+---
+- launchApp:
+    clearState: true
+- tapOn: "Email"
+- inputText: "demo@echoes.app"
+- tapOn: "Password"
+- inputText: "echoes-demo"
+- tapOn: "Sign in"
+- extendedWaitUntil:
+    visible: "Cubbon Park"
+    timeout: 20000
+- tapOn: "Profile"
+- scrollUntilVisible:
+    element:
+      text: "Delete account"
+- tapOn: "Delete account"
+- tapOn: "Confirm your password"
+- inputText: "echoes-demo"
+- hideKeyboard
+- tapOn: "Delete permanently"
+- assertVisible: "Sign in"

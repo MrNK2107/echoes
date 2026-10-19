@@ -1,0 +1,21 @@
+appId: ${APP_ID}
+name: Add a memory
+---
+- launchApp:
+    clearState: true
+- tapOn: "Email"
+- inputText: "demo@echoes.app"
+- tapOn: "Password"
+- inputText: "echoes-demo"
+- tapOn: "Sign in"
+- extendedWaitUntil:
+    visible: "Cubbon Park"
+    timeout: 20000
+- tapOn: "Add memory"
+- tapOn: "Memory text"
+- inputText: "Evening walk under the old trees"
+- hideKeyboard
+- tapOn: "Use my location"
+- assertVisible: "Location captured"
+- tapOn: "Save memory"
+- assertNotVisible: "Save memory"

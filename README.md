@@ -228,6 +228,16 @@ Push notifications and camera AR need native code, so they require an EAS build;
 
 Expo Go still works for everything except remote push and camera AR (AR falls back to the 2D view). See ADR-0009.
 
+### End-to-end flows (Maestro)
+
+Flows live in `mobile/.maestro/` and run against the `e2e` EAS build (demo backend, account `demo@echoes.app` / `echoes-demo`). Install the build on an emulator or device, then run from the repo root with the build's app id (`com.phantom.echoes` for Android, `com.mrnk2107.echoes` for the iOS simulator):
+
+```
+maestro test -e APP_ID=com.phantom.echoes mobile/.maestro
+```
+
+Use a normal-width screen so the map top-row buttons keep their labels. CI cannot run this; `npm test` only lints the flows against the app copy (`mobile/test/maestroFlows.test.ts`). A real run is an owner release gate (ADR-0012).
+
 ### Development build and device testing
 
 1. Build: `cd mobile && npx eas-cli build --profile development --platform android` (needs `EXPO_PUBLIC_EAS_PROJECT_ID`, see above).

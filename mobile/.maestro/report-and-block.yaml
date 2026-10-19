@@ -1,0 +1,28 @@
+appId: ${APP_ID}
+name: Report and block
+---
+- launchApp:
+    clearState: true
+- tapOn: "Email"
+- inputText: "demo@echoes.app"
+- tapOn: "Password"
+- inputText: "echoes-demo"
+- tapOn: "Sign in"
+- extendedWaitUntil:
+    visible: "Cubbon Park"
+    timeout: 20000
+- tapOn: "Cubbon Park"
+- tapOn: "I love this park.*"
+- tapOn: "Report memory"
+- assertVisible: "Why are you reporting this?"
+- tapOn: "Spam"
+- tapOn: "Send report"
+- assertVisible: "Thanks.*review it."
+- tapOn: "Report Asha Rao"
+- tapOn: "Harassment or bullying"
+- tapOn: "Send report"
+- assertVisible: "Thanks.*review it."
+- tapOn: "Block Asha Rao"
+- assertVisible: "You won't see their memories.*"
+- tapOn: "Block"
+- assertVisible: "This memory is no longer available."

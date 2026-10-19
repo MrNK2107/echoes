@@ -1,0 +1,30 @@
+appId: ${APP_ID}
+name: Edit, delete and restore a memory
+---
+- launchApp:
+    clearState: true
+- tapOn: "Email"
+- inputText: "demo@echoes.app"
+- tapOn: "Password"
+- inputText: "echoes-demo"
+- tapOn: "Sign in"
+- extendedWaitUntil:
+    visible: "Cubbon Park"
+    timeout: 20000
+- tapOn: "Cubbon Park"
+- tapOn: "What a wonderful.*"
+- tapOn: "Edit"
+- assertVisible: "Save changes"
+- tapOn: "Back"
+- tapOn: "Delete"
+- assertVisible: "Delete this memory?"
+- tapOn: "Delete"
+- tapOn: "Back"
+- tapOn: "Profile"
+- scrollUntilVisible:
+    element:
+      text: "Recently deleted"
+- tapOn: "Recently deleted"
+- assertVisible: "Restorable for.*"
+- tapOn: "Restore"
+- assertVisible: "Nothing here.*"

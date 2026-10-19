@@ -1,0 +1,25 @@
+appId: ${APP_ID}
+name: Communities
+---
+- launchApp:
+    clearState: true
+- tapOn: "Email"
+- inputText: "demo@echoes.app"
+- tapOn: "Password"
+- inputText: "echoes-demo"
+- tapOn: "Sign in"
+- extendedWaitUntil:
+    visible: "Cubbon Park"
+    timeout: 20000
+- tapOn: "Communities"
+- assertVisible: "Cubbon Park Walkers"
+- tapOn: "Discover"
+- tapOn: "Mine"
+- tapOn: "Create community"
+- tapOn: "Name"
+- inputText: "Evening Walkers"
+- tapOn: "Description"
+- inputText: "A short walk after work."
+- hideKeyboard
+- tapOn: "Create"
+- assertVisible: "Invite"
