@@ -7,7 +7,11 @@ export const NEARBY_RADIUS_METERS = 1500;
 
 export type NearbyStatus = 'locating' | 'denied' | 'error' | 'ready';
 
-export function useNearbyPlaces(): {
+/**
+ * `once` takes the first snapshot and then drops the listener (one fewer open subscription, for screens
+ * that only need the places around the user when they open, such as AR).
+ */
+export function useNearbyPlaces(options: { once?: boolean } = {}): {
   status: NearbyStatus;
   center: LatLng | null;
   places: Place[];
@@ -18,6 +22,7 @@ export function useNearbyPlaces(): {
   const [center, setCenter] = useState<LatLng | null>(null);
   const [places, setPlaces] = useState<Place[]>([]);
   const [attempt, setAttempt] = useState(0);
+  const once = options.once === true;
 
   useEffect(() => {
     let active = true;
@@ -33,12 +38,15 @@ export function useNearbyPlaces(): {
         const position = await location.getCurrentPosition();
         if (!active) return;
         setCenter(position);
+        let received = false;
         unsubscribe = repos.places.subscribeNearby(
           { center: position, radiusMeters: NEARBY_RADIUS_METERS },
           (next) => {
-            if (!active) return;
+            if (!active || (once && received)) return;
+            received = true;
             setPlaces(next);
             setStatus('ready');
+            if (once) queueMicrotask(() => unsubscribe?.());
           },
           () => {
             if (active) setStatus('error');
@@ -52,7 +60,7 @@ export function useNearbyPlaces(): {
       active = false;
       unsubscribe?.();
     };
-  }, [location, repos, attempt]);
+  }, [location, repos, attempt, once]);
 
   const retry = useCallback(() => {
     setStatus('locating');

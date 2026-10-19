@@ -52,7 +52,7 @@ export function useArScene(): ArSceneState {
   const { repos, now } = useServices();
   const { session } = useSession();
   const viewerId = session?.userId ?? null;
-  const { status, center, places: nearby, retry } = useNearbyPlaces();
+  const { status, center, places: nearby, retry } = useNearbyPlaces({ once: true });
   const { heading, unavailable, ready: headingReady } = useHeading();
   const blocks = useBlocksState();
   const [loaded, setLoaded] = useState<{ key: string; byPlace: Record<string, Memory[]> }>({ key: '', byPlace: {} });

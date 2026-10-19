@@ -41,6 +41,7 @@
     "typescript": "~6.0.3"
   },
   "scripts": {
+    "check:bundle": "node scripts/check-bundle-size.js dist dist-ios",
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
