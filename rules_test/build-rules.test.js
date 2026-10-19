@@ -47,3 +47,34 @@ test("render refuses bucket names that are not plain bucket ids", () => {
     assert.throws(() => render(template, { bucket: bad, lan: false }), /bucket/i);
   }
 });
+
+test("--prod writes only firestore.rules, with no loopback hosts, and needs a bucket", () => {
+  const { execFileSync, spawnSync } = require("node:child_process");
+  const script = path.join(root, "scripts", "build-rules.js");
+  const fakeRoot = fs.mkdtempSync(path.join(require("node:os").tmpdir(), "rules-prod-"));
+  try {
+    fs.writeFileSync(path.join(fakeRoot, "firestore.rules.template"), fs.readFileSync(path.join(root, "firestore.rules.template")));
+    const env = { ...process.env, ECHOES_RULES_ROOT: fakeRoot };
+    delete env.FIREBASE_STORAGE_BUCKET;
+    const noBucket = spawnSync(process.execPath, [script, "--prod"], { env, encoding: "utf8" });
+    assert.notEqual(noBucket.status, 0);
+    assert.match(noBucket.stderr, /FIREBASE_STORAGE_BUCKET/);
+    assert.deepEqual(fs.readdirSync(fakeRoot), ["firestore.rules.template"]);
+
+    execFileSync(process.execPath, [script, "--prod"], {
+      env: { ...env, FIREBASE_STORAGE_BUCKET: "echoes-prod.appspot.com" },
+    });
+    assert.deepEqual(fs.readdirSync(fakeRoot).sort(), ["firestore.rules", "firestore.rules.template"]);
+    const out = fs.readFileSync(path.join(fakeRoot, "firestore.rules"), "utf8");
+    assert.ok(out.includes("echoes-prod[.]appspot[.]com"));
+    assert.doesNotMatch(out, /127|localhost|9199/);
+  } finally {
+    fs.rmSync(fakeRoot, { recursive: true, force: true });
+  }
+});
+
+test("render in prod mode emits only the googleapis host", () => {
+  const prod = render(template, { bucket: "echoes-prod.appspot.com", lan: false, prod: true });
+  assert.match(prod, /firebasestorage[.]googleapis/);
+  assert.doesNotMatch(prod, /127|localhost|9199/);
+});

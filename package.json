@@ -4,6 +4,6 @@
   "description": "Repo-root scripts for the ECHOES Firebase backend (no dependencies).",
   "scripts": {
     "build:rules": "node scripts/build-rules.js",
-    "deploy:rules": "node scripts/build-rules.js --require-bucket && npx firebase-tools deploy --only firestore:rules,storage"
+    "deploy:rules": "node scripts/build-rules.js --prod && npx firebase-tools deploy --only firestore:rules,storage"
   }
 }

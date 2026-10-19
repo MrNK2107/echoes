@@ -57,7 +57,7 @@ test("createInstitution stores normalized domains and a system-owned institution
   const inst = db._get(`institutions/${id}`);
   assert.equal(inst.name, "Riverside School");
   assert.deepEqual(inst.allowedEmailDomains, ["riverside.edu", "staff.riverside.org"]);
-  assert.deepEqual(inst.adminUserIds, []);
+  assert.equal(inst.adminUserIds, undefined);
   assert.deepEqual(inst.subZones, []);
   assert.equal(inst.communityId, `inst-${id}`);
   assert.equal(typeof inst.createdAt, "string");
@@ -113,7 +113,7 @@ test("rejects subdomain and unverified email", async () => {
   assert.equal(await claim(verified("alice@notriverside.edu")), "permission-denied");
   assert.equal(await claim(verified("alice@riverside.org")), "permission-denied");
   assert.equal(await claim({ email_verified: true }), "permission-denied");
-  assert.deepEqual(db._get(`institutions/${id}`).adminUserIds, []);
+  assert.equal(db._get(`institutions/${id}/admins/alice`), undefined);
   assert.equal(db._get(`communities/inst-${id}`).memberCount, 0);
   assert.equal(db._get(`communities/inst-${id}/members/alice`), undefined);
 });
@@ -123,7 +123,10 @@ test("exact-domain claim (case-insensitive) makes an admin and a guardian member
   const id = await institution(db);
   const res = await call(db, "claimInstitutionAdmin", "alice", { institutionId: id }, verified("Alice@RIVERSIDE.edu"));
   assert.deepEqual(res, { name: "Riverside School" });
-  assert.deepEqual(db._get(`institutions/${id}`).adminUserIds, ["alice"]);
+  const adminDoc = db._get(`institutions/${id}/admins/alice`);
+  assert.equal(adminDoc.userId, "alice");
+  assert.equal(typeof adminDoc.since, "string");
+  assert.equal(db._get(`institutions/${id}`).adminUserIds, undefined);
   const m = db._get(`communities/inst-${id}/members/alice`);
   assert.equal(m.userId, "alice");
   assert.equal(m.role, "guardian");
@@ -133,7 +136,11 @@ test("exact-domain claim (case-insensitive) makes an admin and a guardian member
   // The second allowed domain works too; a repeat claim counts once.
   await call(db, "claimInstitutionAdmin", "bob", { institutionId: id }, verified("bob@staff.riverside.org"));
   await call(db, "claimInstitutionAdmin", "alice", { institutionId: id }, verified("alice@riverside.edu"));
-  assert.deepEqual(db._get(`institutions/${id}`).adminUserIds, ["alice", "bob"]);
+  assert.deepEqual(db._list(`institutions/${id}/admins/`).sort(), [
+    `institutions/${id}/admins/alice`,
+    `institutions/${id}/admins/bob`,
+  ]);
+  assert.equal(db._get(`institutions/${id}`).adminUserIds, undefined);
   assert.equal(db._get(`communities/inst-${id}`).memberCount, 2);
   assert.deepEqual(db._get("users/alice").communityIds, [`inst-${id}`]);
 });
@@ -229,4 +236,23 @@ test("an institution keeps at most 100 sub-zones", async () => {
     await codeOf(call(db, "addInstitutionSubZone", "alice", { institutionId: id, name: "One more", latitude: 0, longitude: 0 })),
     "failed-precondition",
   );
+});
+
+test("a legacy adminUserIds entry still allows adding a sub-zone (until migrateInstitutionAdmins)", async () => {
+  const db = seed();
+  const id = await institution(db);
+  db._put(`institutions/${id}`, { ...db._get(`institutions/${id}`), adminUserIds: ["legacy"] });
+  const data = { institutionId: id, name: "Gym", latitude: 51.5, longitude: -0.12 };
+  const res = await call(db, "addInstitutionSubZone", "legacy", data);
+  assert.equal(typeof res.id, "string");
+  assert.equal(await codeOf(call(db, "addInstitutionSubZone", "bob", data)), "permission-denied");
+});
+
+test("an admins doc (not adminUserIds) grants sub-zone permission", async () => {
+  const db = seed();
+  const id = await institution(db);
+  db._put(`institutions/${id}/admins/carol`, { userId: "carol", since: "2026-10-01T00:00:00.000Z" });
+  const data = { institutionId: id, name: "Hall", latitude: 51.5, longitude: -0.12 };
+  const res = await call(db, "addInstitutionSubZone", "carol", data);
+  assert.equal(typeof res.id, "string");
 });

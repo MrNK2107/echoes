@@ -66,6 +66,15 @@ export function InstitutionScreen({ institutionId }: { institutionId: string }) 
     };
   }, [repos.institutions, institutionId, uid]);
 
+  // The admin list is private: the screen only learns whether the signed-in user is an admin.
+  const [isAdmin, setIsAdmin] = useState(false);
+  useEffect(() => {
+    if (!uid) return;
+    return repos.institutions.subscribeIsAdmin(institutionId, uid, setIsAdmin, (e) =>
+      console.warn('Could not read the admin role', e),
+    );
+  }, [repos.institutions, institutionId, uid]);
+
   /** Re-reads the account (verified email, fresh token); a verified email clears the prompt. */
   const recheckAccount = useCallback(async () => {
     try {
@@ -134,7 +143,6 @@ export function InstitutionScreen({ institutionId }: { institutionId: string }) 
   }
 
   const { institution } = state;
-  const isAdmin = uid !== null && institution.adminUserIds.includes(uid);
 
   const claim = () =>
     run(async () => {

@@ -24,6 +24,17 @@ async function deleteNotificationsFrom(db, uid, { batchSize = BATCH_SIZE } = {})
 async function cleanupUserSocialData(db, uid, { batchSize = BATCH_SIZE } = {}) {
   await db.collection("publicProfiles").doc(uid).delete();
 
+  // Private admin docs (institutions/{id}/admins/{uid}), found through the collection group.
+  for (;;) {
+    const admins = await db.collectionGroup("admins").where("userId", "==", uid).limit(batchSize).get();
+    if (admins.empty) break;
+    const batch = db.batch();
+    admins.docs.forEach((doc) => batch.delete(doc.ref));
+    await batch.commit();
+    if (admins.docs.length < batchSize) break;
+  }
+
+  // Legacy adminUserIds[] on institutions not yet migrated (migrateInstitutionAdmins).
   const institutions = await db.collection("institutions").where("adminUserIds", "array-contains", uid).get();
   for (let i = 0; i < institutions.docs.length; i += batchSize) {
     const batch = db.batch();

@@ -1,6 +1,8 @@
 // Institutions (spec "Plan 3 decisions", ADR-0007): server-only writes; clients read
-// institutions/{id} = { name, allowedEmailDomains[], adminUserIds[], subZones[], communityId,
-// createdAt, updatedAt }. Each institution has a system-owned community `inst-<id>` (R25):
+// institutions/{id} = { name, allowedEmailDomains[], subZones[], communityId, createdAt, updatedAt }.
+// Admins are private (spec "Plan 5 decisions"): institutions/{id}/admins/{uid} = { userId, since },
+// readable only by that user. Legacy institutions may still carry adminUserIds[] until
+// functions/tools/backfill.js migrateInstitutionAdmins runs, so permission checks accept both. Each institution has a system-owned community `inst-<id>` (R25):
 // no user owns it; admins join it as `guardian`.
 // Errors: createInstitution: permission-denied (caller lacks the `staff` claim),
 // invalid-argument. claimInstitutionAdmin: failed-precondition (email not verified),
@@ -24,6 +26,7 @@ const HOSTNAME = new RegExp(`^(?=.{1,253}$)(?:${LABEL}\\.)+(?=[a-z0-9-]*[a-z])${
 
 const institutionRef = (db, id) => db.collection("institutions").doc(id);
 const communityRef = (db, id) => db.collection("communities").doc(id);
+const adminRef = (db, institutionId, uid) => institutionRef(db, institutionId).collection("admins").doc(uid);
 
 function normalizeDomains(domains) {
   const out = [];
@@ -49,7 +52,6 @@ async function createInstitution({ data: { name, allowedEmailDomains }, db, requ
   batch.create(ref, {
     name,
     allowedEmailDomains: domains,
-    adminUserIds: [],
     subZones: [],
     communityId,
     createdAt: at,
@@ -100,7 +102,8 @@ async function claimInstitutionAdmin({ uid, data: { institutionId }, db, request
       tx.get(db.collection("users").doc(uid)),
     ]);
     const at = new Date().toISOString();
-    tx.update(institution.ref, { adminUserIds: FieldValue.arrayUnion(uid), updatedAt: at });
+    tx.set(adminRef(db, institutionId, uid), { userId: uid, since: at });
+    tx.update(institution.ref, { updatedAt: at });
     if (community.exists) {
       if (!existing.exists) {
         tx.set(existing.ref, member(uid, "guardian", at));
@@ -127,7 +130,9 @@ async function addInstitutionSubZone({ uid, data, db }) {
     const institution = await tx.get(institutionRef(db, institutionId));
     if (!institution.exists) throw new HttpsError("not-found", "Institution not found.");
     const { adminUserIds, subZones } = institution.data();
-    if (!Array.isArray(adminUserIds) || !adminUserIds.includes(uid)) {
+    const adminDoc = await tx.get(adminRef(db, institutionId, uid));
+    const legacyAdmin = Array.isArray(adminUserIds) && adminUserIds.includes(uid);
+    if (!adminDoc.exists && !legacyAdmin) {
       throw new HttpsError("permission-denied", "Only institution admins can add sub-zones.");
     }
     if (Array.isArray(subZones) && subZones.length >= MAX_SUB_ZONES) {

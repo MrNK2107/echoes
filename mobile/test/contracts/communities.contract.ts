@@ -250,7 +250,7 @@ export function institutionRepositoryContract(name: string, make: ContractFactor
       const id = await registerAsStaff();
       expect(await ctx.repos.auth.refreshUser()).toMatchObject({ staff: true });
       expect(await ctx.repos.institutions.findById(id)).toEqual({
-        id, name: 'City Uni', allowedEmailDomains: ['uni.edu'], adminUserIds: [], subZones: [],
+        id, name: 'City Uni', allowedEmailDomains: ['uni.edu'], subZones: [],
         communityId: `inst-${id}`,
       });
       expect(await ctx.repos.institutions.findById('missing')).toBeNull();
@@ -266,6 +266,9 @@ export function institutionRepositoryContract(name: string, make: ContractFactor
       const id = await registerAsStaff();
       await ctx.signInAs('viewer');
       await ctx.setAccount('viewer', { email: 'vik@uni.edu', emailVerified: false });
+      await observe<boolean>((cb) => ctx.repos.institutions.subscribeIsAdmin(id, 'viewer', cb), (isAdmin) =>
+        expect(isAdmin).toBe(false),
+      );
       await expect(ctx.repos.institutions.claimAdmin(id)).rejects.toThrow('Verify your email address first.');
       await ctx.setAccount('viewer', { email: 'vik@other.edu', emailVerified: true });
       expect(await ctx.repos.auth.refreshUser()).toEqual({ email: 'vik@other.edu', emailVerified: true, staff: false });
@@ -274,7 +277,11 @@ export function institutionRepositoryContract(name: string, make: ContractFactor
       );
       await ctx.setAccount('viewer', { email: 'vik@uni.edu', emailVerified: true });
       await ctx.repos.institutions.claimAdmin(id);
-      expect((await ctx.repos.institutions.findById(id))?.adminUserIds).toEqual(['viewer']);
+      // The admin list is private: a user only sees whether they themselves are an admin.
+      await observe<boolean>((cb) => ctx.repos.institutions.subscribeIsAdmin(id, 'viewer', cb), (isAdmin) =>
+        expect(isAdmin).toBe(true),
+      );
+      expect(await ctx.repos.institutions.findById(id)).not.toHaveProperty('adminUserIds');
       await observe<CommunityMembership | null>((cb) => ctx.repos.communities.subscribeMembership(`inst-${id}`, 'viewer', cb), (m) =>
         expect(m?.role).toBe('guardian'),
       );

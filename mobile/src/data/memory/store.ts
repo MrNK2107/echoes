@@ -90,6 +90,8 @@ export class Store {
   readonly leftCommunityIds = new Map<string, Set<string>>();
   readonly transfers = new Map<string, StoredTransfer>();
   readonly institutions = new Map<string, Institution>();
+  /** institutions/{id}/admins: admin uids by institution id (private; each user reads only their own). */
+  readonly institutionAdmins = new Map<string, Set<string>>();
   /** places/{id}/auraHistory in insertion (recordedAt) order. */
   readonly auraHistory = new Map<string, AuraHistoryEntry[]>();
   session: AuthSession | null = null;

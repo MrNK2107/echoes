@@ -124,7 +124,6 @@ export interface Institution {
   id: string;
   name: string;
   allowedEmailDomains: string[];
-  adminUserIds: string[];
   subZones: SubZone[];
   communityId: string | null;
 }

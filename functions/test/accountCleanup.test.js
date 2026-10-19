@@ -8,6 +8,10 @@ const seed = () => {
     "publicProfiles/alice": { displayName: "Alice", displayNameLower: "alice" },
     "publicProfiles/bob": { displayName: "Bob", displayNameLower: "bob" },
     "institutions/i1": { name: "Uni", adminUserIds: ["alice", "bob"] },
+    "institutions/i1/admins/alice": { userId: "alice", since: "2026-10-01" },
+    "institutions/i1/admins/bob": { userId: "bob", since: "2026-10-01" },
+    "institutions/i2/admins/alice": { userId: "alice", since: "2026-10-01" },
+    "institutions/i3/admins/bob": { userId: "bob", since: "2026-10-01" },
     "institutions/i2": { name: "Museum", adminUserIds: ["alice"] },
     "institutions/i3": { name: "Library", adminUserIds: ["bob"] },
     "reports/byBob": { memoryId: "m-alice", reporterId: "bob", reason: "Spam", note: "", createdAt: "2026-10-01" },
@@ -26,6 +30,9 @@ test("cleanup deletes the public profile, admin roles and the user's own reports
   assert.deepEqual(db._get("institutions/i1").adminUserIds, ["bob"]);
   assert.deepEqual(db._get("institutions/i2").adminUserIds, []);
   assert.deepEqual(db._get("institutions/i3").adminUserIds, ["bob"]);
+  assert.deepEqual(db._list("institutions/i1/admins/"), ["institutions/i1/admins/bob"]);
+  assert.deepEqual(db._list("institutions/i2/admins/"), []);
+  assert.deepEqual(db._list("institutions/i3/admins/"), ["institutions/i3/admins/bob"]);
   assert.deepEqual(db._list("reports/"), ["reports/byBob"]);
 });
 

@@ -56,6 +56,12 @@ export function createInstitutionRepository(store: Store): InstitutionRepository
     async findById(id) {
       return store.institutions.get(id) ?? null;
     },
+    subscribeIsAdmin(id, uid, cb) {
+      const emit = () => cb(store.institutionAdmins.get(id)?.has(uid) === true);
+      store.institutionListeners.add(emit);
+      emit();
+      return () => { store.institutionListeners.delete(emit); };
+    },
     create(input) {
       return runCallable(() => {
         const uid = callerId(store);
@@ -66,7 +72,7 @@ export function createInstitutionRepository(store: Store): InstitutionRepository
         const allowedEmailDomains = normalizeDomains(raw);
         const id = store.nextId('institution');
         const communityId = `inst-${id}`;
-        const institution: Institution = { id, name, allowedEmailDomains, adminUserIds: [], subZones: [], communityId };
+        const institution: Institution = { id, name, allowedEmailDomains, subZones: [], communityId };
         store.institutions.set(id, institution);
         store.communities.set(
           communityId,
@@ -95,10 +101,9 @@ export function createInstitutionRepository(store: Store): InstitutionRepository
         if (!domain || !institution.allowedEmailDomains.some((d) => d.toLowerCase() === domain)) {
           throw callableFailure('permission-denied');
         }
-        const adminUserIds = institution.adminUserIds.includes(uid)
-          ? institution.adminUserIds
-          : [...institution.adminUserIds, uid];
-        store.institutions.set(id, { ...institution, adminUserIds });
+        const admins = store.institutionAdmins.get(id) ?? new Set<string>();
+        admins.add(uid);
+        store.institutionAdmins.set(id, admins);
         const communityId = institution.communityId ?? `inst-${id}`;
         if (store.communities.has(communityId)) {
           const existing = store.members.get(communityId)?.get(uid);
@@ -118,7 +123,7 @@ export function createInstitutionRepository(store: Store): InstitutionRepository
         const longitude = validNumber(input.longitude, -180, 180);
         const institution = store.institutions.get(id);
         if (!institution) throw callableFailure('not-found');
-        if (!institution.adminUserIds.includes(uid)) throw callableFailure('permission-denied');
+        if (store.institutionAdmins.get(id)?.has(uid) !== true) throw callableFailure('permission-denied');
         if (institution.subZones.length >= MAX_SUB_ZONES) throw callableFailure('failed-precondition');
         const zone = { id: store.nextId('zone'), name, latitude, longitude, radiusMeters: DEFAULT_RADIUS_METERS };
         store.institutions.set(id, { ...institution, subZones: [...institution.subZones, zone] });

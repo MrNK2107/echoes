@@ -40,7 +40,8 @@ export function createProfileRepository(db: Firestore, auth?: Auth): ProfileRepo
       const chunks: string[][] = [];
       for (let i = 0; i < ids.length; i += IN_CHUNK) chunks.push(ids.slice(i, i + IN_CHUNK));
       const snaps = await Promise.all(
-        chunks.map((c) => getDocs(query(profiles, where(documentId(), 'in', c)))),
+        // limit(chunk.length): the publicProfiles list rule requires limit <= 30 (Plan 5).
+        chunks.map((c) => getDocs(query(profiles, where(documentId(), 'in', c), limit(c.length)))),
       );
       const out = new Map<string, PublicProfile>();
       for (const snap of snaps) for (const d of snap.docs) out.set(d.id, profileFromDoc(d.id, d.data()));

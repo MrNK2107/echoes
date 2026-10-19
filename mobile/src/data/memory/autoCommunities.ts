@@ -117,10 +117,6 @@ export function cleanupUserCommunities(store: Store, uid: string): void {
       ...community, ownerId: heir[0], memberCount: community.memberCount - 1, updatedAt: store.now(),
     });
   }
-  for (const [id, inst] of store.institutions) {
-    if (inst.adminUserIds.includes(uid)) {
-      store.institutions.set(id, { ...inst, adminUserIds: inst.adminUserIds.filter((a) => a !== uid) });
-    }
-  }
+  for (const admins of store.institutionAdmins.values()) admins.delete(uid);
   store.leftCommunityIds.delete(uid);
 }

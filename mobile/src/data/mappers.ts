@@ -289,7 +289,6 @@ export function institutionFromDoc(id: string, d: DocumentData): Institution {
     id,
     name: String(d.name),
     allowedEmailDomains: strings(d.allowedEmailDomains),
-    adminUserIds: strings(d.adminUserIds),
     subZones: zones
       .filter((z): z is DocumentData => typeof z === 'object' && z !== null)
       .map(subZoneFromDoc),

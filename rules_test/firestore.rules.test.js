@@ -18,6 +18,7 @@ const {
 const {
   collection,
   getDocs,
+  limit,
   query,
   where,
   writeBatch,
@@ -599,10 +600,45 @@ test("public profiles are readable by any signed-in user", async () => {
         collection(strangerDb, "publicProfiles"),
         where("displayNameLower", ">=", "as"),
         where("displayNameLower", "<", "as"),
+        limit(11),
       ),
     ),
   );
   await assertFails(getDoc(doc(unauthenticatedDb, "publicProfiles/creator")));
+});
+
+test("public profile lists must carry a limit of at most 30 (Plan 5)", async () => {
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await setDoc(doc(context.firestore(), "publicProfiles/creator"), profileDoc());
+  });
+  const strangerDb = testEnv.authenticatedContext("stranger").firestore();
+  const unauthenticatedDb = testEnv.unauthenticatedContext().firestore();
+  const profiles = collection(strangerDb, "publicProfiles");
+  await assertFails(getDocs(profiles));
+  await assertFails(getDocs(query(profiles, limit(31))));
+  await assertSucceeds(getDocs(query(profiles, limit(30))));
+  await assertSucceeds(getDocs(query(profiles, limit(1))));
+  await assertSucceeds(getDoc(doc(strangerDb, "publicProfiles/creator")));
+  await assertFails(getDocs(query(collection(unauthenticatedDb, "publicProfiles"), limit(10))));
+});
+
+test("institution admins are private: only the admin reads their own doc, nobody writes", async () => {
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await setDoc(doc(context.firestore(), "institutions/inst-1/admins/creator"), {
+      userId: "creator", since: ISO,
+    });
+  });
+  const creatorDb = testEnv.authenticatedContext("creator").firestore();
+  const strangerDb = testEnv.authenticatedContext("stranger").firestore();
+  const unauthenticatedDb = testEnv.unauthenticatedContext().firestore();
+  await assertSucceeds(getDoc(doc(creatorDb, "institutions/inst-1/admins/creator")));
+  await assertFails(getDoc(doc(strangerDb, "institutions/inst-1/admins/creator")));
+  await assertFails(getDoc(doc(unauthenticatedDb, "institutions/inst-1/admins/creator")));
+  await assertFails(getDocs(collection(strangerDb, "institutions/inst-1/admins")));
+  await assertFails(getDocs(collection(creatorDb, "institutions/inst-1/admins")));
+  await assertFails(setDoc(doc(creatorDb, "institutions/inst-1/admins/creator"), { userId: "creator", since: ISO }));
+  await assertFails(setDoc(doc(strangerDb, "institutions/inst-1/admins/stranger"), { userId: "stranger", since: ISO }));
+  await assertFails(deleteDoc(doc(creatorDb, "institutions/inst-1/admins/creator")));
 });
 
 test("only the owner writes their public profile, with exactly the allowed keys", async () => {

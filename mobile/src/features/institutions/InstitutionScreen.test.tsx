@@ -65,6 +65,24 @@ describe('InstitutionScreen', () => {
     expect(screen.queryByRole('button', { name: 'Add sub-zone here' })).toBeNull();
   });
 
+  it('follows subscribeIsAdmin for the signed-in user (admin lists are private)', async () => {
+    const { services } = servicesWithAdmin();
+    await signIn(services);
+    let push: (isAdmin: boolean) => void = () => {};
+    const sub = jest.spyOn(services.repos.institutions, 'subscribeIsAdmin').mockImplementation((_id, _uid, cb) => {
+      push = cb;
+      cb(false);
+      return () => {};
+    });
+    await render(
+      <ServicesProvider services={services}>
+        <InstitutionScreen institutionId="nope" />
+      </ServicesProvider>,
+    );
+    expect(sub).toHaveBeenCalledWith('nope', DEMO_UID, expect.any(Function), expect.any(Function));
+    expect(push).toBeDefined();
+  });
+
   it('shows not-found copy for an unknown id', async () => {
     const { services } = servicesWithAdmin();
     await signIn(services);

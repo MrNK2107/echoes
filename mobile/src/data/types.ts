@@ -225,6 +225,11 @@ export interface InstitutionRepository {
   /** By name, at most 50. */
   subscribeAll(cb: (institutions: Institution[]) => void, onError?: (e: Error) => void): Unsubscribe;
   findById(id: string): Promise<Institution | null>;
+  /**
+   * Whether `uid` administers the institution. Admin lists are private (institutions/{id}/admins/{uid}
+   * is readable only by that user), so only the signed-in user's own role can be observed.
+   */
+  subscribeIsAdmin(institutionId: string, uid: string, cb: (isAdmin: boolean) => void, onError?: (e: Error) => void): Unsubscribe;
   /** Staff only (the `staff` custom claim). Returns the new institution's id. */
   create(input: { name: string; allowedEmailDomains: string[] }): Promise<string>;
   /** Rejects with Error(VERIFY_EMAIL_FIRST) or Error(EMAIL_DOMAIN_NOT_APPROVED). */

@@ -88,3 +88,13 @@ test("notifyReleasedTags has its memories (privacy, releaseDate) composite index
   );
   assert.ok(found);
 });
+
+test("admins.userId has a collection-group index (account-deletion cleanup, Plan 5)", () => {
+  const override = config.fieldOverrides.find(
+    (o) => o.collectionGroup === "admins" && o.fieldPath === "userId",
+  );
+  assert.ok(override, "fieldOverrides entry for admins.userId");
+  assert.ok(
+    override.indexes.some((i) => i.queryScope === "COLLECTION_GROUP" && i.order === "ASCENDING"),
+  );
+});

@@ -255,16 +255,16 @@ describe('Plan 3 social mappers (server-written docs with ISO dates)', () => {
   it('maps institutions and their sub-zones', () => {
     expect(
       institutionFromDoc('i1', {
-        name: 'Uni', allowedEmailDomains: ['uni.edu'], adminUserIds: ['a'],
+        name: 'Uni', allowedEmailDomains: ['uni.edu'], adminUserIds: ['legacy'],
         subZones: [{ id: 'z', name: 'Library', latitude: 1, longitude: 2, radiusMeters: 60 }],
         communityId: 'inst-i1', createdAt: ISO, updatedAt: ISO,
       }),
     ).toEqual({
-      id: 'i1', name: 'Uni', allowedEmailDomains: ['uni.edu'], adminUserIds: ['a'],
+      id: 'i1', name: 'Uni', allowedEmailDomains: ['uni.edu'],
       subZones: [{ id: 'z', name: 'Library', latitude: 1, longitude: 2, radiusMeters: 60 }], communityId: 'inst-i1',
     });
     expect(institutionFromDoc('i2', { name: 'Uni' })).toEqual({
-      id: 'i2', name: 'Uni', allowedEmailDomains: [], adminUserIds: [], subZones: [], communityId: null,
+      id: 'i2', name: 'Uni', allowedEmailDomains: [], subZones: [], communityId: null,
     });
   });
   it('maps aura history entries', () => {

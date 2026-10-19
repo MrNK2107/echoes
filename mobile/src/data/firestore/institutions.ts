@@ -1,5 +1,5 @@
 import { reload, type Auth } from 'firebase/auth';
-import { collection, doc, getDoc, limit, orderBy, query, type Firestore } from 'firebase/firestore';
+import { collection, doc, getDoc, limit, onSnapshot, orderBy, query, type Firestore } from 'firebase/firestore';
 import { CLAIM_ADMIN_ERRORS } from '../callableErrors';
 import { institutionFromDoc } from '../mappers';
 import type { InstitutionRepository } from '../types';
@@ -53,6 +53,13 @@ export function createInstitutionRepository(
       const snap = await getDoc(doc(institutions, id));
       const data = snap.data();
       return data === undefined ? null : institutionFromDoc(snap.id, data);
+    },
+    subscribeIsAdmin(institutionId, uid, cb, onError) {
+      return onSnapshot(
+        doc(institutions, institutionId, 'admins', uid),
+        (snap) => cb(snap.exists()),
+        (e) => onError?.(e),
+      );
     },
     async create({ name, allowedEmailDomains }) {
       await refreshClaims();

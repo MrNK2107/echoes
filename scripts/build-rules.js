@@ -3,8 +3,12 @@
 //
 //   node scripts/build-rules.js            writes firestore.rules and firestore.lan.rules
 //   FIREBASE_STORAGE_BUCKET=<bucket> node scripts/build-rules.js
-//   node scripts/build-rules.js --require-bucket   fails unless FIREBASE_STORAGE_BUCKET is set
-//                                                  (used by `npm run deploy:rules`)
+//   node scripts/build-rules.js --prod             production: requires FIREBASE_STORAGE_BUCKET, writes ONLY
+//                                                  firestore.rules, and emits no 127.0.0.1/localhost
+//                                                  emulator hosts (used by `npm run deploy:rules`).
+//                                                  It overwrites the committed firestore.rules, so run
+//                                                  `git checkout firestore.rules` after the deploy.
+//   --require-bucket                               fails unless FIREBASE_STORAGE_BUCKET is set (no --prod)
 //
 // Firestore rules cannot see the project id, so the Storage bucket that memory media URLs must
 // point at is baked in here. The default is the emulator/demo bucket; the committed files use it
@@ -18,7 +22,8 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const DEFAULT_BUCKET = "demo-echoes.appspot.com";
-const ROOT = path.join(__dirname, "..");
+// ECHOES_RULES_ROOT lets rules_test exercise --prod without touching the committed files.
+const ROOT = process.env.ECHOES_RULES_ROOT || path.join(__dirname, "..");
 
 const HEADER_MARKER = "// @@GENERATED_HEADER@@";
 const PREFIX_MARKER = "// @@STORAGE_URL_PREFIX@@";
@@ -35,12 +40,14 @@ function bucketPattern(bucket) {
   return bucket.replace(/\./g, "[.]");
 }
 
-function storageUrlPrefixFunction(bucket, lan) {
+function storageUrlPrefixFunction(bucket, lan, prod) {
   const hosts = lan ? `${LOOPBACK_HOSTS}|${LAN_HOSTS}` : LOOPBACK_HOSTS;
   return [
     "    function storageUrlPrefix() {",
-    "      return '^(https://firebasestorage[.]googleapis[.]com' +",
-    `        '|http://(${hosts}):9199)' +`,
+    prod
+      ? "      return '^https://firebasestorage[.]googleapis[.]com' +"
+      : "      return '^(https://firebasestorage[.]googleapis[.]com' +",
+    ...(prod ? [] : [`        '|http://(${hosts}):9199)' +`]),
     `        '/v0/b/${bucketPattern(bucket)}/o/';`,
     "    }",
   ].join("\n");
@@ -60,15 +67,16 @@ function replaceOnce(text, marker, replacement) {
   return parts.join(replacement);
 }
 
-/** Renders the template; `lan` adds the private-LAN emulator hosts. */
-function render(template, { bucket, lan }) {
+/** Renders the template; `lan` adds the private-LAN emulator hosts, `prod` drops every emulator host. */
+function render(template, { bucket, lan, prod = false }) {
   const src = template.replace(/\r\n/g, "\n");
   const withHeader = replaceOnce(src, HEADER_MARKER, header());
-  return replaceOnce(withHeader, PREFIX_MARKER, storageUrlPrefixFunction(bucket, lan));
+  return replaceOnce(withHeader, PREFIX_MARKER, storageUrlPrefixFunction(bucket, lan, prod));
 }
 
 function main() {
-  if (process.argv.includes("--require-bucket") && !process.env.FIREBASE_STORAGE_BUCKET) {
+  const prod = process.argv.includes("--prod");
+  if ((prod || process.argv.includes("--require-bucket")) && !process.env.FIREBASE_STORAGE_BUCKET) {
     console.error(
       "FIREBASE_STORAGE_BUCKET is not set. Use the exact bucket name from the Firebase console " +
         "(e.g. <project>.firebasestorage.app); the default demo bucket would reject every media URL.",
@@ -77,9 +85,10 @@ function main() {
   }
   const bucket = process.env.FIREBASE_STORAGE_BUCKET || DEFAULT_BUCKET;
   const template = fs.readFileSync(path.join(ROOT, "firestore.rules.template"), "utf8");
-  for (const [file, lan] of [["firestore.rules", false], ["firestore.lan.rules", true]]) {
-    fs.writeFileSync(path.join(ROOT, file), render(template, { bucket, lan }));
-    console.log(`Wrote ${file} (bucket ${bucket}${lan ? ", private-LAN emulator hosts" : ""})`);
+  const targets = prod ? [["firestore.rules", false]] : [["firestore.rules", false], ["firestore.lan.rules", true]];
+  for (const [file, lan] of targets) {
+    fs.writeFileSync(path.join(ROOT, file), render(template, { bucket, lan, prod }));
+    console.log(`Wrote ${file} (bucket ${bucket}${prod ? ", production: no emulator hosts" : lan ? ", private-LAN emulator hosts" : ""})`);
   }
 }
 
