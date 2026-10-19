@@ -242,4 +242,24 @@ describe('ProfileScreen', () => {
       expect(screen.getByLabelText('Community invitations').props.value).toBe(true);
     });
   });
+
+  it('lists the places you look after and opens one', async () => {
+    await setup();
+    expect(screen.getByText('Places you look after')).toBeOnTheScreen();
+    const rows = await screen.findAllByTestId(/^custodian-place-/);
+    expect(rows.map((r) => r.props.testID)).toEqual([
+      'custodian-place-place-6',
+      'custodian-place-place-4',
+      'custodian-place-place-2',
+    ]);
+    await act(async () => {
+      fireEvent.press(screen.getByText('Vidhana Soudha'));
+    });
+    expect(mockPush).toHaveBeenCalledWith('/place/place-2');
+  });
+
+  it('shows the transfer history section', async () => {
+    await setup();
+    expect(screen.getByText('Transfer history')).toBeOnTheScreen();
+  });
 });

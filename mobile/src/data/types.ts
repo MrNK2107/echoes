@@ -43,6 +43,8 @@ export interface PlaceRepository {
   findById(id: string): Promise<Place | null>;
   findNearest(q: { center: LatLng; radiusMeters: number }): Promise<Place | null>;
   create(place: Place): Promise<void>;
+  /** Places whose custodianIds include the user, by name, at most 50. */
+  subscribeCustodianOf(uid: string, cb: (places: Place[]) => void, onError?: (e: Error) => void): Unsubscribe;
   /** The place's 14 most recent aura history entries, oldest first (chart order). */
   subscribeAuraHistory(
     placeId: string,

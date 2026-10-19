@@ -20,6 +20,7 @@ import { subscribeUnion } from './snapshots';
 
 const CANDIDATE_LIMIT = 50;
 const AURA_HISTORY_LIMIT = 14;
+const CUSTODIAN_LIMIT = 50;
 
 /** One geohash range query per covering prefix (see `coveringPrefixes` for why not just `queryPrefixes`). */
 function prefixQueries(db: Firestore, q: { center: LatLng; radiusMeters: number }) {
@@ -63,6 +64,20 @@ export function createPlaceRepository(db: Firestore): PlaceRepository {
     },
     async create(place) {
       await setDoc(doc(db, 'places', place.id), placeToDoc(place));
+    },
+    subscribeCustodianOf(uid, cb, onError) {
+      // Single-field array-contains: no composite index. Sorted by name on the client.
+      const q = query(collection(db, 'places'), where('custodianIds', 'array-contains', uid), limit(CUSTODIAN_LIMIT));
+      return subscribeUnion(
+        [q],
+        (docs) =>
+          cb(
+            docs
+              .map((d) => placeFromDoc(d.id, d.data()))
+              .sort((a, b) => a.name.localeCompare(b.name) || (a.id < b.id ? -1 : 1)),
+          ),
+        onError,
+      );
     },
     subscribeAuraHistory(placeId, cb, onError) {
       // Server-appended by onMemoryWritten; ISO `recordedAt` strings sort chronologically.

@@ -1,6 +1,9 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
+import { GENERIC_ERROR } from '@/data/errors';
+import type { Transfer } from '@/data/types';
 import { ServicesProvider } from '@/services/ServicesProvider';
+import type { Services } from '@/services/services';
 
 import { InboxScreen } from './InboxScreen';
 import { inboxServices, note } from './testInbox';
@@ -9,8 +12,9 @@ const mockPush = jest.fn();
 const mockBack = jest.fn();
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush, back: mockBack }) }));
 
-async function setup(list: Parameters<typeof inboxServices>[0]) {
+async function setup(list: Parameters<typeof inboxServices>[0], prepare?: (s: Services) => void) {
   const s = await inboxServices(list);
+  prepare?.(s.services);
   await render(
     <ServicesProvider services={s.services}>
       <InboxScreen />
@@ -112,5 +116,103 @@ describe('InboxScreen', () => {
       fireEvent.press(await screen.findByText('Mark all read'));
     });
     expect(await screen.findByRole('alert')).toBeOnTheScreen();
+  });
+
+  describe('custodianship requests', () => {
+    const transfer = (id: string): Transfer => ({
+      id,
+      placeId: 'place-1',
+      fromUserId: 'user-asha',
+      toUserId: 'user-demo',
+      status: 'pending',
+      createdAt: new Date('2026-10-17T00:00:00Z'),
+      respondedAt: null,
+      revokeUntil: new Date('2026-10-24T00:00:00Z'),
+    });
+    const request = (over: { id: string; transferId: string }) =>
+      note({
+        id: over.id,
+        type: 'transferRequest',
+        title: 'Custodianship request',
+        body: 'Asha Rao wants you to become a custodian of Cubbon Park.',
+        data: { transferId: over.transferId, placeId: 'place-1' },
+      });
+
+    /** Pending incoming transfers the test controls; respond answers and drops the transfer. */
+    function fakeTransfers(initial: Transfer[]) {
+      let pending = initial;
+      const listeners = new Set<() => void>();
+      const respond = jest.fn(async (id: string, _accept: boolean) => {
+        pending = pending.filter((t) => t.id !== id);
+        listeners.forEach((l) => l());
+      });
+      const prepare = (services: Services) => {
+        jest.spyOn(services.repos.transfers, 'subscribeIncoming').mockImplementation((_uid, cb) => {
+          const l = () => cb(pending);
+          listeners.add(l);
+          l();
+          return () => {
+            listeners.delete(l);
+          };
+        });
+        jest.spyOn(services.repos.transfers, 'respond').mockImplementation(respond);
+      };
+      return { prepare, respond };
+    }
+
+    it('accepts a pending request inline and marks it read', async () => {
+      const fake = fakeTransfers([transfer('t1')]);
+      const { notifications } = await setup([request({ id: 'n1', transferId: 't1' })], fake.prepare);
+      await act(async () => {
+        fireEvent.press(await screen.findByRole('button', { name: 'Accept' }));
+      });
+      expect(fake.respond).toHaveBeenCalledWith('t1', true);
+      expect(notifications.markRead).toHaveBeenCalledWith(expect.any(String), 'n1', expect.any(Date));
+      expect(screen.queryByRole('button', { name: 'Accept' })).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Decline' })).toBeNull();
+      expect(mockPush).not.toHaveBeenCalled();
+    });
+
+    it('declines a pending request inline', async () => {
+      const fake = fakeTransfers([transfer('t1')]);
+      await setup([request({ id: 'n1', transferId: 't1' })], fake.prepare);
+      await act(async () => {
+        fireEvent.press(await screen.findByRole('button', { name: 'Decline' }));
+      });
+      expect(fake.respond).toHaveBeenCalledWith('t1', false);
+      expect(screen.queryByRole('button', { name: 'Decline' })).toBeNull();
+    });
+
+    it('answers once however often the button is pressed', async () => {
+      const fake = fakeTransfers([transfer('t1')]);
+      let finish!: () => void;
+      fake.respond.mockImplementationOnce(() => new Promise<void>((r) => (finish = r)));
+      await setup([request({ id: 'n1', transferId: 't1' })], fake.prepare);
+      const accept = await screen.findByRole('button', { name: 'Accept' });
+      await act(async () => {
+        fireEvent.press(accept);
+        fireEvent.press(accept);
+        fireEvent.press(screen.getByRole('button', { name: 'Decline' }));
+      });
+      expect(fake.respond).toHaveBeenCalledTimes(1);
+      await act(async () => finish());
+    });
+
+    it('offers no actions once the request is no longer pending', async () => {
+      const fake = fakeTransfers([]);
+      await setup([request({ id: 'n1', transferId: 't1' })], fake.prepare);
+      expect(await screen.findByText('Custodianship request')).toBeOnTheScreen();
+      expect(screen.queryByRole('button', { name: 'Accept' })).toBeNull();
+    });
+
+    it('shows the generic copy when the request was already answered or expired', async () => {
+      const fake = fakeTransfers([transfer('t1')]);
+      fake.respond.mockRejectedValueOnce(new Error(GENERIC_ERROR));
+      await setup([request({ id: 'n1', transferId: 't1' })], fake.prepare);
+      await act(async () => {
+        fireEvent.press(await screen.findByRole('button', { name: 'Accept' }));
+      });
+      expect(await screen.findByText(GENERIC_ERROR)).toBeOnTheScreen();
+    });
   });
 });

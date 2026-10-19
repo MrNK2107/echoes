@@ -21,14 +21,16 @@ type Results = { query: string; people: PublicProfile[] } | { query: string; err
 interface Props {
   selectedIds: string[];
   onChange: (ids: string[]) => void;
+  /** People never offered, e.g. a place's existing custodians. */
+  excludeIds?: readonly string[];
 }
 
 /**
  * Finds people by display name and keeps the picked ones as removable chips. Never offers the
- * signed-in user, people they blocked, or people already picked.
+ * signed-in user, people they blocked, people already picked, or `excludeIds`.
  * testIDs: person-{uid}, chip-{uid}
  */
-export function UserSearchField({ selectedIds, onChange }: Props) {
+export function UserSearchField({ selectedIds, onChange, excludeIds = [] }: Props) {
   const { repos } = useServices();
   const { session } = useSession();
   const uid = session?.userId;
@@ -64,7 +66,9 @@ export function UserSearchField({ selectedIds, onChange }: Props) {
   const current = results && results.query === query ? results : null;
   const people =
     current && !('error' in current)
-      ? current.people.filter((p) => p.id !== uid && !blocked.has(p.id) && !selectedIds.includes(p.id))
+      ? current.people.filter(
+          (p) => p.id !== uid && !blocked.has(p.id) && !selectedIds.includes(p.id) && !excludeIds.includes(p.id),
+        )
       : null;
 
   const pick = (person: PublicProfile) => {

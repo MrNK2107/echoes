@@ -1,9 +1,11 @@
 import { useRouter } from 'expo-router';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { useSession } from '@/features/auth/useSession';
 import { useAuthorNames } from '@/features/people/useAuthorNames';
 import { useBlocksState, withoutBlocked } from '@/features/safety/useBlocks';
+import { REQUEST_SENT, TransferSheet } from '@/features/transfers/TransferSheet';
 import { formatCount } from '@/ui/format';
 import { colors } from '@/ui/theme';
 
@@ -15,7 +17,10 @@ const ERROR_COPY = "Couldn't load memories.";
 
 export function PlaceScreen({ placeId }: { placeId: string }) {
   const router = useRouter();
+  const { session } = useSession();
   const { status, place, memories: visible } = usePlaceMemories(placeId);
+  const [transferring, setTransferring] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const blocks = useBlocksState();
   // Nothing renders until the block list is known, so a blocked author's memory never flashes.
   const memories = useMemo(
@@ -45,6 +50,8 @@ export function PlaceScreen({ placeId }: { placeId: string }) {
     );
   }
 
+  const isCustodian = !!session && place.custodianIds.includes(session.userId);
+
   return (
     <View style={styles.container}>
       {back}
@@ -56,6 +63,23 @@ export function PlaceScreen({ placeId }: { placeId: string }) {
           </View>
           {listReady ? <Text style={styles.meta}>{formatCount(memories.length)}</Text> : null}
         </View>
+        {isCustodian ? (
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => {
+              setNotice(null);
+              setTransferring(true);
+            }}
+            style={styles.action}
+          >
+            <Text style={styles.actionText}>Transfer custodianship</Text>
+          </Pressable>
+        ) : null}
+        {notice ? (
+          <Text role="status" style={styles.notice}>
+            {notice}
+          </Text>
+        ) : null}
       </View>
       {listError ? <Text style={styles.message}>{ERROR_COPY}</Text> : null}
       {!listReady && !listError ? <ActivityIndicator style={styles.spinner} color={colors.accent} /> : null}
@@ -67,6 +91,17 @@ export function PlaceScreen({ placeId }: { placeId: string }) {
         renderItem={({ item }) => <MemoryCard memory={item} authorName={names.get(item.userId)} />}
         ListEmptyComponent={<Text style={styles.message}>{listReady ? 'No memories here yet.' : ''}</Text>}
       />
+      {isCustodian ? (
+        <TransferSheet
+          place={place}
+          visible={transferring}
+          onClose={() => setTransferring(false)}
+          onSent={() => {
+            setTransferring(false);
+            setNotice(REQUEST_SENT);
+          }}
+        />
+      ) : null}
     </View>
   );
 }
@@ -82,6 +117,9 @@ const styles = StyleSheet.create({
   chip: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
   chipText: { color: colors.background, fontWeight: '600' },
   meta: { color: colors.textSecondary },
+  action: { alignSelf: 'flex-start', borderColor: colors.accent, borderWidth: 1, borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8, marginTop: 12 },
+  actionText: { color: colors.accent, fontWeight: '600' },
+  notice: { color: colors.textSecondary, marginTop: 8 },
   list: { padding: 16 },
   spinner: { marginTop: 16 },
   message: { color: colors.textSecondary, textAlign: 'center', padding: 16 },

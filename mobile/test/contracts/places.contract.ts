@@ -2,7 +2,7 @@ import type { Place } from '@/domain/types';
 import { emptyAura } from '@/domain/aura';
 import { encodeGeohash, queryPrefixes } from '@/domain/geo';
 import type { ContractFactory } from './util';
-import { waitFor } from './util';
+import { observe, waitFor } from './util';
 
 const CENTER = { latitude: 12.9716, longitude: 77.5946 };
 const M_PER_DEG_LAT = 111_195;
@@ -70,6 +70,21 @@ export function placeRepositoryContract(name: string, make: ContractFactory): vo
       } finally {
         unsub();
       }
+    });
+
+    it('subscribeCustodianOf emits the places the user looks after, by name then id', async () => {
+      // Clients may only create places named 'Memory Place' (rules), so the order falls to the id.
+      await ctx.repos.places.create(place('b', 0));
+      await ctx.repos.places.create(place('a', 300));
+      const mine = await observe<string[]>(
+        (cb) => ctx.repos.places.subscribeCustodianOf(CUSTODIAN, (ps) => cb(ps.map((p) => p.id))),
+        (ids) => expect(ids).toEqual(['a', 'b']),
+      );
+      expect(mine).toEqual(['a', 'b']);
+      await observe<string[]>(
+        (cb) => ctx.repos.places.subscribeCustodianOf('stranger', (ps) => cb(ps.map((p) => p.id))),
+        (ids) => expect(ids).toEqual([]),
+      );
     });
 
     it('subscribeNearby emits within 1500 m sorted by distance, excludes 2 km, re-emits after create', async () => {

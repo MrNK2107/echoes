@@ -9,6 +9,8 @@ import { useSession } from '@/features/auth/useSession';
 import { rememberName } from '@/features/people/useAuthorNames';
 import { MemoryCard } from '@/features/places/MemoryCard';
 import { useBlocks, withoutBlocked } from '@/features/safety/useBlocks';
+import { TransferHistory } from '@/features/transfers/TransferHistory';
+import { useCustodianPlaces } from '@/features/transfers/useTransfers';
 import { useServices } from '@/services/ServicesProvider';
 import { colors } from '@/ui/theme';
 
@@ -25,7 +27,7 @@ const CHOICES: { value: DefaultPrivacy; label: string }[] = [
   { value: 'private', label: 'Private' },
 ];
 
-/** testIDs: default-privacy-{public|private} */
+/** testIDs: default-privacy-{public|private}, custodian-place-{placeId} */
 export function ProfileScreen() {
   const router = useRouter();
   const { repos, now } = useServices();
@@ -34,6 +36,7 @@ export function ProfileScreen() {
   const [user, setUser] = useState<AppUser | null>(null);
   const [ownMemories, setMemories] = useState<Memory[]>([]);
   const blocked = useBlocks();
+  const custodianOf = useCustodianPlaces();
   // Own memories are never by a blocked author; the filter keeps every memory list consistent (R20).
   const memories = useMemo(() => withoutBlocked(ownMemories, blocked), [ownMemories, blocked]);
   const [nameDraft, setNameDraft] = useState<string | null>(null);
@@ -225,6 +228,27 @@ export function ProfileScreen() {
           />
         </View>
       ))}
+
+      <Text accessibilityRole="header" style={styles.section}>
+        Places you look after
+      </Text>
+      {custodianOf.items.map((p) => (
+        <Pressable
+          key={p.id}
+          testID={`custodian-place-${p.id}`}
+          accessibilityRole="button"
+          onPress={() => router.push(`/place/${p.id}`)}
+          style={styles.row}
+        >
+          <Text style={styles.rowText}>{p.name}</Text>
+        </Pressable>
+      ))}
+      {custodianOf.loaded && custodianOf.items.length === 0 ? (
+        <Text style={styles.meta}>{"You don't look after any places yet."}</Text>
+      ) : null}
+      {custodianOf.error ? <Text style={styles.meta}>{"Couldn't load your places."}</Text> : null}
+
+      <TransferHistory />
 
       <Text style={styles.section}>Your memories</Text>
       {memories.map((m) => (

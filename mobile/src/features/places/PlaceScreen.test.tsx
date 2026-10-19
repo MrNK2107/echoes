@@ -1,9 +1,13 @@
-import { act, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+
+import { TRANSFER_DUPLICATE } from '@/data/errors';
 
 import { DEMO_USER } from '@/data/seed';
 import { testServices } from '@/device/fakes';
 import { ServicesProvider } from '@/services/ServicesProvider';
 import type { Services } from '@/services/services';
+
+import { SEARCH_DEBOUNCE_MS } from '@/features/people/UserSearchField';
 
 import { PlaceScreen } from './PlaceScreen';
 
@@ -123,5 +127,106 @@ describe('PlaceScreen', () => {
     });
     await setup('place-2', services);
     await waitFor(() => expect(screen.getByText("Couldn't load memories.")).toBeOnTheScreen());
+  });
+
+  describe('custodianship transfer', () => {
+    async function search(query: string) {
+      await act(async () => {
+        fireEvent.changeText(screen.getByLabelText('Search people'), query);
+      });
+      await act(async () => {
+        await jest.advanceTimersByTimeAsync(SEARCH_DEBOUNCE_MS);
+      });
+    }
+
+    async function pickPerson(query: string, uid: string) {
+      await search(query);
+      await act(async () => {
+        fireEvent.press(await screen.findByTestId(`person-${uid}`));
+      });
+    }
+
+    beforeEach(() => jest.useFakeTimers());
+    afterEach(() => jest.useRealTimers());
+
+    it('offers no transfer action to a non-custodian', async () => {
+      await setup('place-7');
+      expect(await screen.findByText('Sree Kanteerava Stadium')).toBeOnTheScreen();
+      expect(screen.queryByText('Transfer custodianship')).toBeNull();
+    });
+
+    it('sends a request to the chosen person and confirms it', async () => {
+      const services = await setup('place-2');
+      const initiate = jest.spyOn(services.repos.transfers, 'initiate');
+      await act(async () => {
+        fireEvent.press(await screen.findByText('Transfer custodianship'));
+      });
+      expect(screen.getByText('Choose the new custodian')).toBeOnTheScreen();
+      expect(screen.getByRole('button', { name: 'Send request' })).toBeDisabled();
+      await pickPerson('Asha', 'user-asha');
+      await act(async () => {
+        fireEvent.press(screen.getByRole('button', { name: 'Send request' }));
+      });
+      expect(initiate).toHaveBeenCalledTimes(1);
+      expect(initiate).toHaveBeenCalledWith({ placeId: 'place-2', toUserId: 'user-asha' });
+      expect(await screen.findByText('Request sent.')).toBeOnTheScreen();
+      expect(screen.queryByText('Choose the new custodian')).toBeNull();
+      let pending: string[] = [];
+      services.repos.transfers.subscribeHistory('user-demo', (ts) => (pending = ts.map((t) => `${t.toUserId}:${t.status}`)))();
+      expect(pending).toEqual(['user-asha:pending']);
+    });
+
+    it('shows the duplicate copy when a request to that person is pending', async () => {
+      const services = await setup('place-2');
+      await act(async () => {
+        await services.repos.transfers.initiate({ placeId: 'place-2', toUserId: 'user-asha' });
+      });
+      await act(async () => {
+        fireEvent.press(await screen.findByText('Transfer custodianship'));
+      });
+      await pickPerson('Asha', 'user-asha');
+      await act(async () => {
+        fireEvent.press(screen.getByRole('button', { name: 'Send request' }));
+      });
+      expect(await screen.findByText(TRANSFER_DUPLICATE)).toBeOnTheScreen();
+      expect(screen.getByText('Choose the new custodian')).toBeOnTheScreen();
+      expect(screen.queryByText('Request sent.')).toBeNull();
+    });
+
+    it('does not send twice while a request is in flight', async () => {
+      const services = await setup('place-2');
+      let finish!: () => void;
+      const initiate = jest
+        .spyOn(services.repos.transfers, 'initiate')
+        .mockImplementation(() => new Promise<void>((r) => (finish = r)));
+      await act(async () => {
+        fireEvent.press(await screen.findByText('Transfer custodianship'));
+      });
+      await pickPerson('Asha', 'user-asha');
+      const send = screen.getByRole('button', { name: 'Send request' });
+      await act(async () => {
+        fireEvent.press(send);
+        fireEvent.press(send);
+      });
+      expect(initiate).toHaveBeenCalledTimes(1);
+      await act(async () => finish());
+      expect(await screen.findByText('Request sent.')).toBeOnTheScreen();
+    });
+
+    it('never offers existing custodians as the new custodian', async () => {
+      const services = testServices();
+      const real = services.repos.places.findById.bind(services.repos.places);
+      jest.spyOn(services.repos.places, 'findById').mockImplementation(async (id) => {
+        const p = await real(id);
+        return p && { ...p, custodianIds: [...p.custodianIds, 'user-asha'] };
+      });
+      await setup('place-2', services);
+      await act(async () => {
+        fireEvent.press(await screen.findByText('Transfer custodianship'));
+      });
+      await search('Asha');
+      expect(await screen.findByText('No people found.')).toBeOnTheScreen();
+      expect(screen.queryByTestId('person-user-asha')).toBeNull();
+    });
   });
 });
