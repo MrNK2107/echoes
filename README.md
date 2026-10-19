@@ -233,6 +233,8 @@ Push notifications and camera AR need native code, so they require an EAS build;
 
 Operations, store listing and privacy labels: `docs/ops/runbook.md`, `docs/store/`.
 
+The camera permission string covers photos only until camera AR ships; the AR wording returns with it (ADR-0010).
+
 Expo Go still works for everything except remote push and camera AR (AR falls back to the 2D view). See ADR-0009.
 
 ### End-to-end flows (Maestro)

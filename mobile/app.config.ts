@@ -1,8 +1,8 @@
 import type { ConfigContext, ExpoConfig } from "expo/config";
 
 // Single source of truth for Expo config (app.json was removed).
-const CAMERA_PERMISSION =
-  "ECHOES uses the camera to attach photos to your memories and to show memories around you in AR.";
+// Camera AR is not in v1, so the string covers photos only; the AR wording returns with camera AR (ADR-0010).
+const CAMERA_PERMISSION = "ECHOES uses the camera to attach photos to your memories.";
 
 // Viro is a native module; include its plugin only once the package is installed
 // so `expo export` and Expo Go keep working without it.

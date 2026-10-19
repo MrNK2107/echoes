@@ -11,12 +11,17 @@ const QUERY = /\?[^\s"'#]*=[^\s"'#]*/g;
 // OAuth-style fragments carry tokens (`#access_token=...`); plain anchors like `#top` stay.
 const FRAGMENT = /#[^\s"'#]*=[^\s"'#]*/g;
 const BEARER = /Bearer\s+\S+/gi;
+// Storage and Firestore paths embed the uid (`memory-images/<uid>/...`, `users/<uid>`); Storage URLs may encode the slash.
+const STORAGE_UID = /memory-(images|audio)(\/|%2F)[^/\s%"'?#]+(?=\/|%2F)/gi;
+const DOC_UID = /\b(users|publicProfiles)\/[^/\s"'?#]+/g;
 const MAX_DEPTH = 12;
 
 function scrubString(s: string): string {
   return s
     .replace(PUSH_TOKEN, '[push-token]')
     .replace(BEARER, '[bearer]')
+    .replace(STORAGE_UID, (_m, kind: string, sep: string) => `memory-${kind}${sep}[uid]`)
+    .replace(DOC_UID, '$1/[uid]')
     .replace(QUERY, '')
     .replace(FRAGMENT, '')
     .replace(EMAIL, '[email]');

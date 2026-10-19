@@ -54,3 +54,6 @@ includes many mid-range phones without ARCore.
 - `useArScene` keeps at most 5 memory subscriptions (one per place, nearest 5
   within 1 km), re-created only when the set of place ids changes. Heading never
   triggers data loading. Orbs stay hidden until the block list is ready.
+
+## Camera wording (Plan 5, R5-7)
+Camera AR is not in v1, so the camera permission string (iOS `NSCameraUsageDescription`, the image picker and the guarded viro plugin in `mobile/app.config.ts`) covers photos only: "ECHOES uses the camera to attach photos to your memories." The AR wording ("... and to show memories around you in AR") returns when camera AR ships. Re-check the store privacy labels at that time.

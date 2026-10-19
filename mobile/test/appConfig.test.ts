@@ -2,7 +2,7 @@ import type { ConfigContext, ExpoConfig } from 'expo/config';
 import appConfig from '../app.config';
 
 const CAMERA =
-  'ECHOES uses the camera to attach photos to your memories and to show memories around you in AR.';
+  'ECHOES uses the camera to attach photos to your memories.';
 
 function build(env: Record<string, string | undefined> = {}): ExpoConfig {
   const saved = process.env.EXPO_PUBLIC_EAS_PROJECT_ID;

@@ -4,22 +4,23 @@ Commands were checked against the repo (`package.json`, `functions/tools/backfil
 
 ## 1. Deploy order
 
-Do not skip or reorder. Every step except the client release can be repeated.
+Do not reorder. Every step except the client release can be repeated.
 
-0. **Rehearse the backfill on the emulator** (required before any production `--apply`; procedure in `docs/release-readiness.md`, "Expo Plan 5 data backfill runbook"). Do this once, before step 4.
-1. **Indexes, including TTL.** `npx firebase deploy --only firestore:indexes --project <id>`. `firestore.indexes.json` carries the TTL `fieldOverrides` (`rateLimits.expireAt`, `notifications.expireAt`, `pushReceipts.expireAt`) and the collection-group overrides (`pushTokens.token`, `notifications.actorId`, `admins.userId`). Wait until every index shows Enabled in the console; the new queries and the account cleanup fail until then.
-2. **Functions.** `npx firebase deploy --only functions --project <id>`. Set `EXPO_ACCESS_TOKEN` first (section 7). Functions run with `maxInstances: 50` (`functions/globalOptions.js`).
-3. **Rules and Storage rules.** The rules pin the Storage bucket, so a bucket value is required. Set `FIREBASE_STORAGE_BUCKET` to the exact bucket in the Firebase console (for example `<project>.firebasestorage.app`), then:
+Why rules come after the client: the new Firestore rules deny the legacy Flutter client's direct writes and hide memories without `moderation` from non-authors, so deploying them locks the legacy client out. The Expo client must already be approved and released, and the data backfill must run straight after the rules.
+
+1. **Indexes, including TTL.** `npx firebase deploy --only firestore:indexes --project <id>`. `firestore.indexes.json` carries the TTL `fieldOverrides` (`rateLimits.expireAt`, `notifications.expireAt`, `pushReceipts.expireAt`) and five collection-group overrides (`notifications.actorId`, `members.userId`, `admins.userId`, `counterShards.updatedAt`, `pushTokens.token`). Wait until every index shows Enabled; the new queries and account cleanup fail until then.
+2. **Functions.** First configure the Expo push token (section 6, "Expo"): put `EXPO_ACCESS_TOKEN=...` in the gitignored `functions/.env.<projectId>` (`functions/push.js` reads `process.env`; there is no `defineSecret`). Then `npx firebase deploy --only functions --project <id>`. Every v2 function runs with `maxInstances: 50` (`functions/globalOptions.js`); `cleanupDeletedUser` is a v1 function and is not capped by it.
+3. **Backfill emulator rehearsal** (required before any production `--apply`; procedure in `docs/release-readiness.md`, "Expo Plan 5 data backfill runbook").
+4. **Backfill dry run** against production: `node functions/tools/backfill.js all --project <id>` and read the per-task summary (`invalid=` counts `releaseDate` strings left for manual review). Dry run is the default and writes nothing.
+5. **Client approved and released** to both stores (EAS `production` profile, submit, wait for review, release). The legacy Flutter client still works until step 6.
+6. **Rules and Storage rules.** The rules pin the Storage bucket, so a bucket value is required. Set `FIREBASE_STORAGE_BUCKET` to the exact bucket in the Firebase console (for example `<project>.firebasestorage.app`), then:
    - bash: `FIREBASE_STORAGE_BUCKET=<bucket> npm run deploy:rules -- --project <id>`
    - PowerShell: `$env:FIREBASE_STORAGE_BUCKET="<bucket>"; npm run deploy:rules -- --project <id>`
 
-   `deploy:rules` runs `node scripts/build-rules.js --prod`, which refuses to run without the variable and overwrites the committed `firestore.rules` (it pins the emulator bucket). **Immediately run `git checkout firestore.rules`**, or the next `rules_test` run fails. The old root `.env.example` documented this variable; it is deleted with the Flutter tree, so this paragraph is the record. Never deploy `firestore.lan.rules`.
-   Deploying these rules retires the legacy Flutter client and hides memories that lack `moderation` from non-authors, so run step 4 straight after.
-4. **Backfill (dry run, then apply).** Always with `--project <id>`; dry run is the default.
-   - `node functions/tools/backfill.js all --project <id>`, read the per-task summary (`invalid=` are `releaseDate` strings left for manual review).
-   - `node functions/tools/backfill.js all --apply --project <id>` (moderation, releaseDate, member userId).
-5. **Institution admins.** `node functions/tools/backfill.js migrateInstitutionAdmins --project <id>` (dry run), then with `--apply`. It needs the functions and indexes from steps 1 and 2. A concurrent change shows `failed=` and exit code 1; re-run. Optional: `deleteLegacyNotificationRequests --apply`.
-6. **Client release.** Build with EAS (`mobile/` , profile `production`), submit, then roll out. Follow-up C11: once the `migrateInstitutionAdmins` dry run shows `changed=0`, ship the change that drops the legacy `adminUserIds` fallback.
+   `deploy:rules` runs `node scripts/build-rules.js --prod`, which refuses to run without the variable and overwrites the committed `firestore.rules` (it pins the emulator bucket). **Immediately run `git checkout firestore.rules`**, or the next `rules_test` run fails. The old root `.env.example` documented this variable; it is deleted with the Flutter tree, so this paragraph is the record. Never deploy `firestore.lan.rules`. Create a release tag at each deploy (section 5 needs it for rollback).
+7. **`backfill all --apply` straight after step 6:** `node functions/tools/backfill.js all --apply --project <id>` (moderation, releaseDate, member userId). Until it runs, memories without `moderation` are hidden and string `releaseDate` memories never notify.
+8. **Institution admins.** `node functions/tools/backfill.js migrateInstitutionAdmins --project <id>` (dry run), then with `--apply`. A concurrent change shows `failed=` and exit code 1; re-run. Optional: `deleteLegacyNotificationRequests --apply`.
+9. Follow-up C11: once the `migrateInstitutionAdmins` dry run shows `changed=0`, ship the change that drops the legacy `adminUserIds` fallback.
 
 Cost and flags: `node functions/tools/backfill.js --help` (`--page-size`, `--resume-after <doc path>` for a single task). Each task is a full collection scan; every updated memory fires `onMemoryWritten`, so run off-peak.
 
@@ -47,7 +48,7 @@ Cost and flags: `node functions/tools/backfill.js --help` (`--page-size`, `--res
 - Alert on `checkPushReceipts` failures (log-based: severity ERROR from function `checkPushReceipts`); it runs every 30 minutes, so silence for over 2 hours is also a signal.
 - Alert on Firestore document reads per day (set the threshold near twice the expected launch volume).
 - Billing budgets with alerts at 50, 90 and 100 percent of the monthly budget.
-- Quotas: callable functions rely on per-user daily rate limits in `rateLimits` (for example reports 20 per day) and on `maxInstances: 50` for every function, which caps cost under abuse. Raise the cap in `functions/globalOptions.js` only with a reason. Review Firestore, Storage egress and Cloud Functions quotas in the console before launch.
+- Quotas: callable functions rely on per-user daily rate limits in `rateLimits` (for example reports 20 per day) and on `maxInstances: 50` for every v2 function (`cleanupDeletedUser` is v1 and uncapped), which caps cost under abuse. Raise the cap in `functions/globalOptions.js` only with a reason. Review Firestore, Storage egress and Cloud Functions quotas in the console before launch.
 - Auth: enable email-enumeration protection (Firebase console, Authentication, Settings, User actions) so sign-in and password reset do not reveal whether an email exists. OWNER: enable and note the date here.
 
 ## 4. Moderation procedures (staff)
@@ -67,15 +68,15 @@ Legal or safety escalations (threats, illegal content): preserve the report and 
 Severity: SEV1 (data exposure, rules wide open, app unusable for everyone), SEV2 (a core flow broken for many, push outage, abuse flood), SEV3 (degraded or limited impact), SEV4 (cosmetic). Declare, name an owner, write the timeline.
 
 - **Abuse spike (many reports or spam).** Check `rateLimits` and the function logs for the offender, disable the Auth user, hide or delete the content (section 4), and if it continues disable the abused callable (below).
-- **Push outage.** Check Expo status and the `checkPushReceipts` logs. In-app notifications still work because the inbox is Firestore. Kill switch: revoke the `EXPO_ACCESS_TOKEN` in the Expo dashboard (sends then fail); create a new one and redeploy functions when resolved.
-- **Rules regression.** Redeploy the previous release's rules: `git checkout <previous-release-tag> -- firestore.rules.template storage.rules`, then `FIREBASE_STORAGE_BUCKET=<bucket> npm run deploy:rules -- --project <id>`, then `git checkout firestore.rules` and restore the working tree. Do not deploy the committed `firestore.rules` as it is: it pins the emulator bucket.
+- **Push outage.** Check Expo status and the `checkPushReceipts` logs. In-app notifications still work because the inbox is Firestore. Kill switch: revoke the `EXPO_ACCESS_TOKEN` in the Expo dashboard (sends then fail); create a new one in `functions/.env.<projectId>` and redeploy functions when resolved.
+- **Rules regression.** Roll back to the previous release's rules: `git checkout <previous-release-tag> -- firestore.rules.template storage.rules`, then rebuild and deploy with `FIREBASE_STORAGE_BUCKET=<bucket> npm run deploy:rules -- --project <id>` (it runs `build-rules.js --prod`), then `git checkout HEAD -- firestore.rules firestore.rules.template storage.rules` to restore the tree. Do not deploy the committed `firestore.rules` as it is: it pins the emulator bucket. This needs a release tag created at every deploy (step 6).
 - **Disable a function.** Delete it with `npx firebase functions:delete <name> --project <id>` (redeploy to bring it back), or for a scheduled function pause its Cloud Scheduler job in the console. Remove the user-facing entry point first if the app depends on it.
 - **Bad client release.** Halt the staged rollout in the store console; ship a fix. Backend changes in this repo are backward compatible with the previous client unless noted.
 
 ## 6. Secret and token rotation
 
 - **Sentry.** Create a new auth token in Sentry (Settings, Auth Tokens), replace the `SENTRY_AUTH_TOKEN` EAS secret, revoke the old token, then rebuild so source maps upload with the new one. To rotate the DSN, change `EXPO_PUBLIC_SENTRY_DSN` and rebuild; the old DSN keeps accepting events from shipped apps until you disable its key in Sentry.
-- **Expo.** Create a new `EXPO_ACCESS_TOKEN` (Expo dashboard, Access tokens), update the functions secret or environment, redeploy functions, then delete the old token. Enhanced push security must stay enabled.
+- **Expo.** Create a new `EXPO_ACCESS_TOKEN` (Expo dashboard, Access tokens), edit `EXPO_ACCESS_TOKEN=...` in the gitignored `functions/.env.<projectId>` (the code reads `process.env`; no `defineSecret`), redeploy functions, then delete the old token. Enhanced push security must stay enabled.
 - **Maps.** Rotate `GOOGLE_MAPS_ANDROID_API_KEY` in Google Cloud (restricted to the package and signing certificate), update the EAS secret and rebuild.
 
 ## 7. Owner gates (none of these is done; tick only after doing it)
@@ -86,7 +87,7 @@ Severity: SEV1 (data exposure, rules wide open, app unusable for everyone), SEV2
 - [ ] Sentry project, `EXPO_PUBLIC_SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_PROJECT`, and `SENTRY_AUTH_TOKEN` as an EAS secret.
 - [ ] A symbolicated test crash visible in Sentry from a production-profile build (readable stack, correct release).
 - [ ] `GOOGLE_MAPS_ANDROID_API_KEY` set as an EAS secret for production Android builds (the maps block is silently omitted without it).
-- [ ] `EXPO_ACCESS_TOKEN` set on functions and enhanced push security enabled in Expo.
+- [ ] `EXPO_ACCESS_TOKEN=...` in `functions/.env.<projectId>` (gitignored by `.env.*`) before the functions deploy, and enhanced push security enabled in Expo.
 - [ ] Legal text: Terms of Service, Community Guidelines, privacy policy, support URL and a real support inbox; set `EXPO_PUBLIC_TERMS_URL`, `EXPO_PUBLIC_GUIDELINES_URL`, `EXPO_PUBLIC_SUPPORT_EMAIL`.
 - [ ] Store listing, screenshots, privacy labels, age rating and reviewer account (`docs/store/`).
 - [ ] PITR, backup schedule, alerts, budgets and Auth email-enumeration protection (sections 2 and 3).

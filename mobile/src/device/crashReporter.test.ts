@@ -81,6 +81,22 @@ describe('createCrashReporter', () => {
 });
 
 describe('scrub', () => {
+  it('replaces uids in Storage and Firestore paths', () => {
+    const out = scrub({
+      a: 'https://x/o/memory-images/uidABC123/p.jpg',
+      b: 'memory-audio/uidABC123/v.m4a failed',
+      c: 'permission denied at /databases/(default)/documents/users/uidABC123/blocks/other',
+      d: 'publicProfiles/uidABC123',
+    });
+    expect(out).toEqual({
+      a: 'https://x/o/memory-images/[uid]/p.jpg',
+      b: 'memory-audio/[uid]/v.m4a failed',
+      c: 'permission denied at /databases/(default)/documents/users/[uid]/blocks/other',
+      d: 'publicProfiles/[uid]',
+    });
+  });
+
+
   it('removes push tokens, emails and query strings, deeply', () => {
     const out = scrub({
       message: 'failed for ExponentPushToken[abc-123] and ExpoPushToken[zzz]',
