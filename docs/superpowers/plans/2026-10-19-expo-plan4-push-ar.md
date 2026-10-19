@@ -87,9 +87,9 @@
   - Android permissions for camera and notifications.
 - Install with `npx expo install expo-notifications expo-device` and `npx expo install @reactvision/react-viro`. If the latter isn't compatible with SDK 58, report it and keep the guarded plugin.
 
-- [ ] **Step 1: Write failing tests** that evaluate the config function with env stubs: ids, plugins present, the camera string, projectId passthrough, and a missing projectId leading to no `extra.eas`.
-- [ ] **Step 2–4:** FAIL → implement → PASS. Run the android and ios `expo export`.
-- [ ] **Step 5: Commit** `build(mobile): EAS profiles and app identity`.
+- [x] **Step 1: Write failing tests** that evaluate the config function with env stubs: ids, plugins present, the camera string, projectId passthrough, and a missing projectId leading to no `extra.eas`.
+- [x] **Step 2–4:** FAIL → implement → PASS. Run the android and ios `expo export`.
+- [x] **Step 5: Commit** `build(mobile): EAS profiles and app identity`.
 
 ---
 
