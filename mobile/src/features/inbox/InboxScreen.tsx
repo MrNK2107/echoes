@@ -9,19 +9,8 @@ import { useServices } from '@/services/ServicesProvider';
 import { INBOX_LOAD_ERROR } from '@/ui/copy';
 import { colors } from '@/ui/theme';
 
+import { inboxDestination } from './routeForNotification';
 import { useInbox } from './useInbox';
-
-/** Where a notification leads; transfer notifications are answered in the inbox itself. */
-function destination(n: AppNotification): string | null {
-  switch (n.type) {
-    case 'memoryTagged':
-      return n.data.memoryId ? `/memory/${n.data.memoryId}` : null;
-    case 'communityInvite':
-      return n.data.communityId ? `/communities/${n.data.communityId}` : null;
-    default:
-      return null;
-  }
-}
 
 /** testIDs: notification-{id} */
 export function InboxScreen() {
@@ -79,7 +68,7 @@ export function InboxScreen() {
   const open = async (n: AppNotification) => {
     // Opening never waits on, or fails because of, the read receipt.
     if (n.readAt === null) void markRead(n.id);
-    const to = destination(n);
+    const to = inboxDestination(n.type, n.data);
     if (to) router.push(to);
   };
 

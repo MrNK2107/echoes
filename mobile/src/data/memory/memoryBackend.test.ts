@@ -3,6 +3,7 @@ import { placeRepositoryContract } from '../../../test/contracts/places.contract
 import { memoryRepositoryContract } from '../../../test/contracts/memories.contract';
 import { authRepositoryContract } from '../../../test/contracts/auth.contract';
 
+import { pushTokenRepositoryContract } from '../../../test/contracts/pushTokens.contract';
 import { userRepositoryContract } from '../../../test/contracts/users.contract';
 import {
   LIMIT_UIDS,
@@ -46,6 +47,7 @@ placeRepositoryContract('memory', make);
 memoryRepositoryContract('memory', make);
 authRepositoryContract('memory', make);
 userRepositoryContract('memory', make);
+pushTokenRepositoryContract('memory', make);
 profileRepositoryContract('memory', make);
 notificationRepositoryContract('memory', make);
 safetyRepositoryContract('memory', make);

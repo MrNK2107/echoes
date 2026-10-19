@@ -63,6 +63,7 @@ export function createAuthRepository(store: Store): AuthRepository {
       store.users.delete(session.userId);
       store.profiles.delete(session.userId);
       store.notifications.delete(session.userId);
+      store.pushTokens.delete(session.userId);
       store.blocks.delete(session.userId);
       cleanupUserCommunities(store, session.userId);
       store.accounts.delete(acct.email.toLowerCase());

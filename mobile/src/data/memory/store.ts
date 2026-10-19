@@ -1,5 +1,6 @@
 import { normalizeName } from '@/domain/communities';
 import { validateDisplayName } from '@/domain/profiles';
+import type { PushTokenRecord } from '../types';
 import type {
   AppNotification,
   AppUser,
@@ -66,6 +67,8 @@ export class Store {
   readonly users = new Map<string, AppUser>();
   readonly accounts = new Map<string, Account>(); // keyed by lowercased email
   readonly profiles = new Map<string, StoredProfile>();
+  /** users/{uid}/pushTokens, keyed by uid then token. */
+  readonly pushTokens = new Map<string, Map<string, PushTokenRecord>>();
   /** users/{uid}/notifications, keyed by uid then notification id. */
   readonly notifications = new Map<string, Map<string, AppNotification>>();
   /** users/{uid}/blocks, keyed by uid then blocked uid, valued by createdAt. */

@@ -223,6 +223,24 @@ export interface InstitutionRepository {
   addSubZone(id: string, input: { name: string; latitude: number; longitude: number }): Promise<void>;
 }
 
+export interface PushTokenRecord {
+  token: string;
+  platform: 'ios' | 'android';
+  createdAt: Date;
+  lastSeenAt: Date;
+}
+
+export interface PushTokenRepository {
+  /**
+   * Creates the token (createdAt = lastSeenAt = at); when it exists, refreshes lastSeenAt only, and
+   * only if the stored value is more than 24 hours older than `at` (otherwise no write).
+   */
+  register(uid: string, token: string, platform: 'ios' | 'android', at: Date): Promise<void>;
+  /** Deletes the token; a missing token is not an error. */
+  unregister(uid: string, token: string): Promise<void>;
+  get(uid: string, token: string): Promise<PushTokenRecord | null>;
+}
+
 export interface Repositories {
   places: PlaceRepository;
   memories: MemoryRepository;
@@ -235,4 +253,5 @@ export interface Repositories {
   communities: CommunityRepository;
   transfers: TransferRepository;
   institutions: InstitutionRepository;
+  pushTokens: PushTokenRepository;
 }

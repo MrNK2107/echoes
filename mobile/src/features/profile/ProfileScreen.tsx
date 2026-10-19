@@ -12,7 +12,16 @@ import { MemoryCard } from '@/features/places/MemoryCard';
 import { useBlocks, withoutBlocked } from '@/features/safety/useBlocks';
 import { TransferHistory } from '@/features/transfers/TransferHistory';
 import { useCustodianPlaces } from '@/features/transfers/useTransfers';
+import { registerDevice, signOutDevice } from '@/features/push/pushDevice';
 import { useServices } from '@/services/ServicesProvider';
+import {
+  PUSH_BLOCKED,
+  PUSH_ENABLE_LABEL,
+  PUSH_ON,
+  PUSH_OPEN_SETTINGS,
+  PUSH_UNAVAILABLE,
+} from '@/ui/copy';
+import type { PushPermission } from '@/device/types';
 import { colors } from '@/ui/theme';
 
 /** subscribeForUser returns at most this many memories. */
@@ -31,7 +40,8 @@ const CHOICES: { value: DefaultPrivacy; label: string }[] = [
 /** testIDs: default-privacy-{public|private}, custodian-place-{placeId} */
 export function ProfileScreen() {
   const router = useRouter();
-  const { repos, now, config } = useServices();
+  const services = useServices();
+  const { repos, now, config, push } = services;
   const { session } = useSession();
   const uid = session?.userId;
   const [user, setUser] = useState<AppUser | null>(null);
@@ -47,6 +57,51 @@ export function ProfileScreen() {
   const [loaded, setLoaded] = useState(false);
   const [privacy, setPrivacy] = useState<DefaultPrivacy>('public');
   const [error, setError] = useState<string | null>(null);
+  const pushAvailable = push.availability() === 'available';
+  const [pushPermission, setPushPermission] = useState<PushPermission | null>(null);
+  const [enablingPush, setEnablingPush] = useState(false);
+  const enablingPushRef = useRef(false);
+
+  useEffect(() => {
+    if (!pushAvailable) return;
+    let cancelled = false;
+    push
+      .permission()
+      .then((p) => {
+        if (!cancelled) setPushPermission(p);
+      })
+      .catch(() => {
+        if (!cancelled) setPushPermission('undetermined');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [push, pushAvailable]);
+
+  const enablePush = async () => {
+    if (!uid || enablingPushRef.current) return;
+    enablingPushRef.current = true;
+    setEnablingPush(true);
+    setError(null);
+    try {
+      const result = await push.request();
+      setPushPermission(result);
+      if (result === 'granted') await registerDevice(services, uid);
+    } catch {
+      setError(GENERIC_ERROR);
+    } finally {
+      enablingPushRef.current = false;
+      setEnablingPush(false);
+    }
+  };
+
+  const openPushSettings = async () => {
+    try {
+      await push.openSettings();
+    } catch {
+      setError(GENERIC_ERROR);
+    }
+  };
 
   useEffect(() => {
     if (!uid) return;
@@ -171,7 +226,7 @@ export function ProfileScreen() {
 
   const signOut = async () => {
     try {
-      await repos.auth.signOut();
+      await signOutDevice(services);
     } catch {
       setError(GENERIC_ERROR);
     }
@@ -257,6 +312,29 @@ export function ProfileScreen() {
           />
         </View>
       ))}
+
+      {!pushAvailable ? (
+        <Text style={styles.meta}>{PUSH_UNAVAILABLE}</Text>
+      ) : pushPermission === 'granted' ? (
+        <Text style={styles.meta}>{PUSH_ON}</Text>
+      ) : pushPermission === 'denied' ? (
+        <>
+          <Text style={styles.meta}>{PUSH_BLOCKED}</Text>
+          <Pressable accessibilityRole="button" onPress={() => void openPushSettings()} style={styles.row}>
+            <Text style={styles.rowText}>{PUSH_OPEN_SETTINGS}</Text>
+          </Pressable>
+        </>
+      ) : pushPermission === 'undetermined' ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ disabled: enablingPush, busy: enablingPush }}
+          disabled={enablingPush}
+          onPress={() => void enablePush()}
+          style={[styles.row, enablingPush && styles.disabled]}
+        >
+          <Text style={styles.rowText}>{PUSH_ENABLE_LABEL}</Text>
+        </Pressable>
+      ) : null}
 
       <Text accessibilityRole="header" style={styles.section}>
         Places you look after

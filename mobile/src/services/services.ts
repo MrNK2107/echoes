@@ -7,6 +7,7 @@ import type {
   ImagePickerService,
   KeyValueStore,
   LocationService,
+  PushService,
 } from '@/device/types';
 
 import type { AppConfig } from './config';
@@ -22,6 +23,7 @@ export interface Services {
   files: FileStore;
   audioRecorder: AudioRecorderService;
   audioPlayer: AudioPlayerService;
+  push: PushService;
   now(): Date;
   newId(): string;
 }

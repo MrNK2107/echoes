@@ -11,6 +11,7 @@ import { createMemoryRepository } from './memories';
 import { createNotificationRepository } from './notifications';
 import { createPlaceRepository } from './places';
 import { createProfileRepository } from './profiles';
+import { createPushTokenRepository } from './pushTokens';
 import { createSafetyRepository } from './safety';
 import { createTransferRepository } from './transfers';
 import { createUserRepository } from './users';
@@ -22,6 +23,8 @@ export function createFirestoreBackend(deps: {
   functions: Functions;
   /** Device connectivity; callables report failures while offline as TIMEOUT_ERROR. */
   isOnline(): Promise<boolean>;
+  /** Hex SHA-256 of a string (expo-crypto in the app); names push token documents. */
+  sha256Hex(value: string): Promise<string>;
 }): Repositories {
   const callables = { functions: deps.functions, isOnline: deps.isOnline };
   const users = createUserRepository(deps.db);
@@ -38,5 +41,6 @@ export function createFirestoreBackend(deps: {
     communities: createCommunityRepository(deps.db, callables),
     transfers: createTransferRepository(deps.db, callables),
     institutions: createInstitutionRepository(deps.db, deps.auth, callables),
+    pushTokens: createPushTokenRepository(deps.db, deps.sha256Hex),
   };
 }

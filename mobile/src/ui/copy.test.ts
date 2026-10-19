@@ -16,6 +16,11 @@ describe('shared UI copy', () => {
       REMOVE_TAGGED_LABEL: 'Remove tagged person',
       FEED_LOAD_ERROR: "Couldn't load memories.",
       INBOX_LOAD_ERROR: "Couldn't load notifications.",
+      PUSH_ENABLE_LABEL: 'Turn on push notifications',
+      PUSH_ON: 'Push notifications are on',
+      PUSH_BLOCKED: 'Push notifications are blocked in system settings.',
+      PUSH_OPEN_SETTINGS: 'Open settings',
+      PUSH_UNAVAILABLE: 'Push notifications need the ECHOES app build.',
     });
   });
 });

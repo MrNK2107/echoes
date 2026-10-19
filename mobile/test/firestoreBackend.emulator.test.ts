@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import { deleteApp, initializeApp, type FirebaseApp } from 'firebase/app';
 import { connectAuthEmulator, getAuth, signInWithCustomToken, signOut, type Auth } from 'firebase/auth';
 import { connectFirestoreEmulator, getFirestore, type Firestore } from 'firebase/firestore';
@@ -14,6 +15,7 @@ import type { Services } from '@/services/services';
 import { authRepositoryContract } from './contracts/auth.contract';
 import { memoryRepositoryContract } from './contracts/memories.contract';
 import { placeRepositoryContract } from './contracts/places.contract';
+import { pushTokenRepositoryContract } from './contracts/pushTokens.contract';
 import { userRepositoryContract } from './contracts/users.contract';
 import {
   notificationRepositoryContract,
@@ -133,7 +135,8 @@ async function makeCtx(): Promise<Ctx> {
   const functions = getFunctions(app);
   connectFunctionsEmulator(functions, HOST, 5001);
   // The suite runs against live emulators, so the device is always online.
-  const repos = createFirestoreBackend({ db, auth, storage, functions, isOnline: async () => true });
+  const repos = createFirestoreBackend({ db, auth, storage, functions, isOnline: async () => true,
+    sha256Hex: async (t) => createHash('sha256').update(t).digest('hex') });
   return {
     app, db, auth, storage, repos,
     async signInAs(uid) {
@@ -165,6 +168,7 @@ placeRepositoryContract('firestore', make);
 memoryRepositoryContract('firestore', make, { supportsLifecycle: true, supportsClientDeletionTime: false });
 authRepositoryContract('firestore', make, { supportsLifecycle: true });
 userRepositoryContract('firestore', make, { supportsLifecycle: true });
+pushTokenRepositoryContract('firestore', make);
 // Tag notifications (onMemoryCreatedTags) and reports (reportMemory) run in the functions emulator.
 profileRepositoryContract('firestore', make);
 notificationRepositoryContract('firestore', make);

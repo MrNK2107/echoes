@@ -7,6 +7,7 @@ import { createMemoryRepository } from './memories';
 import { createNotificationRepository } from './notifications';
 import { createPlaceRepository } from './places';
 import { createProfileRepository } from './profiles';
+import { createPushTokenRepository } from './pushTokens';
 import { createSafetyRepository } from './safety';
 import { Store, type MemoryBackendOptions, type MemorySeed } from './store';
 import { createTransferRepository } from './transfers';
@@ -37,6 +38,7 @@ export function createMemoryBackendWithAdmin(
     communities: createCommunityRepository(store),
     transfers: createTransferRepository(store),
     institutions: createInstitutionRepository(store),
+    pushTokens: createPushTokenRepository(store),
   };
   const admin: MemoryBackendAdmin = {
     updateAccount(uid, patch) {

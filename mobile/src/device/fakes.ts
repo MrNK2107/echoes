@@ -13,6 +13,9 @@ import type {
   ImagePickerService,
   KeyValueStore,
   LocationService,
+  PushAvailability,
+  PushPermission,
+  PushService,
 } from './types';
 
 export const SEED_CENTER: LatLng = DEMO_CENTER;
@@ -114,6 +117,48 @@ export function fakeAudioPlayer(): AudioPlayerService & { calls: string[] } {
   };
 }
 
+export interface FakePush extends PushService {
+  calls: string[];
+  /** Simulates the user tapping a notification. */
+  emitResponse(data: Record<string, string>): void;
+}
+
+export function fakePush(
+  r: {
+    availability?: PushAvailability;
+    permission?: PushPermission;
+    /** What the system prompt answers. */
+    grant?: 'granted' | 'denied';
+    token?: string | null;
+  } = {},
+): FakePush {
+  const calls: string[] = [];
+  let permission: PushPermission = r.permission ?? 'undetermined';
+  const listeners = new Set<(d: Record<string, string>) => void>();
+  return {
+    calls,
+    availability: () => r.availability ?? 'available',
+    permission: async () => permission,
+    async request() {
+      calls.push('request');
+      const result = r.grant ?? 'granted';
+      permission = result;
+      return result;
+    },
+    token: async () => (r.token === undefined ? 'ExponentPushToken[fake]' : r.token),
+    onResponse(cb) {
+      listeners.add(cb);
+      return () => {
+        listeners.delete(cb);
+      };
+    },
+    async openSettings() {
+      calls.push('openSettings');
+    },
+    emitResponse: (data) => listeners.forEach((cb) => cb(data)),
+  };
+}
+
 export function testServices(overrides: Partial<Services> = {}): Services {
   let n = 0;
   const now = overrides.now ?? (() => new Date(TEST_NOW));
@@ -127,6 +172,7 @@ export function testServices(overrides: Partial<Services> = {}): Services {
     files: fakeFiles(),
     audioRecorder: fakeAudioRecorder(),
     audioPlayer: fakeAudioPlayer(),
+    push: fakePush(),
     now,
     newId: () => `id-${++n}`,
     ...overrides,

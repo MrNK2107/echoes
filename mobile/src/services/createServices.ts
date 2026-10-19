@@ -1,4 +1,4 @@
-import { randomUUID } from 'expo-crypto';
+import { CryptoDigestAlgorithm, digestStringAsync, randomUUID } from 'expo-crypto';
 
 import type { Repositories } from '@/data/types';
 import type { ConnectivityService } from '@/device/types';
@@ -10,6 +10,8 @@ import { expoImagePicker } from '@/device/expoImagePicker';
 import { demoLocation } from '@/device/demoLocation';
 import { expoLocation } from '@/device/expoLocation';
 import { outboxFiles } from '@/device/fileStore';
+import { expoPush } from '@/device/expoPush';
+import { unavailablePush } from '@/device/unavailablePush';
 import { asyncKeyValue } from '@/device/keyValueStore';
 
 import type { AppConfig } from './config';
@@ -26,7 +28,9 @@ function createFirebaseRepos(config: AppConfig, connectivity: ConnectivityServic
   const { createFirestoreBackend } = require('@/data/firestore') as typeof import('@/data/firestore');
   const { initFirebase } = require('./firebase') as typeof import('./firebase');
   /* eslint-enable @typescript-eslint/no-require-imports */
-  return createFirestoreBackend({ ...initFirebase(config), isOnline: () => connectivity.isOnline() });
+  return createFirestoreBackend({ ...initFirebase(config), isOnline: () => connectivity.isOnline(),
+    sha256Hex: (value) => digestStringAsync(CryptoDigestAlgorithm.SHA256, value),
+  });
 }
 
 export function createServices(config: AppConfig, overrides: Partial<Services> = {}): Services {
@@ -47,6 +51,8 @@ export function createServices(config: AppConfig, overrides: Partial<Services> =
     files: outboxFiles,
     audioRecorder: expoAudioRecorder,
     audioPlayer: expoAudioPlayer,
+    // Demo mode has no push backend; it shows the unavailable copy instead of touching native code.
+    push: config.backend === 'memory' ? unavailablePush : expoPush,
     now,
     newId: () => randomUUID(),
     ...overrides,

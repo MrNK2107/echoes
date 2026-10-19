@@ -59,3 +59,17 @@ export interface AudioPlayerHandle {
 export interface AudioPlayerService {
   load(url: string): AudioPlayerHandle;
 }
+
+export type PushAvailability = 'available' | 'expo-go' | 'simulator';
+export type PushPermission = 'granted' | 'denied' | 'undetermined';
+
+export interface PushService {
+  availability(): PushAvailability;
+  permission(): Promise<PushPermission>;
+  request(): Promise<'granted' | 'denied'>;
+  /** The Expo push token; null when unavailable or not granted. */
+  token(): Promise<string | null>;
+  /** Notification taps (cold start once, then warm); data is `{ type, notificationId, ...data }`. Returns unsubscribe. */
+  onResponse(cb: (data: Record<string, string>) => void): () => void;
+  openSettings(): Promise<void>;
+}
