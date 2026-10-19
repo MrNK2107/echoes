@@ -15,7 +15,7 @@
 
 ## Global Constraints
 
-- All Plan 1–3 Global Constraints apply. No Claude attribution and no `Co-Authored-By` trailer. Branch `expo-rewrite`.
+- All Plan 1–3 Global Constraints apply. Branch `expo-rewrite`.
 - Copy is verbatim from "Plan 4 decisions". Shared copy goes in `mobile/src/ui/copy.ts` or `data/errors.ts`.
 - **Expo Go must keep working.**
   - Native-only modules (`expo-notifications` remote token, `@reactvision/react-viro`) are imported only behind runtime guards in `src/device/*`. Missing modules degrade to the documented fallback copy.

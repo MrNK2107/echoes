@@ -18,7 +18,6 @@
 ## Global Constraints
 
 - All Plan 1–4 Global Constraints apply. Branch `expo-rewrite`. Never push.
-- **No Claude attribution and no `Co-Authored-By` trailer in any commit.**
 - TDD: failing test first, then code, then green; tests order-independent and pristine; RNTL 14 always `await`.
 - **Expo Go must keep working.** Sentry, notifications and viro load only behind runtime guards. `npx expo export` for android and ios must succeed after every client task.
 - Copy is verbatim from "Plan 5 decisions" and single-sourced in `mobile/src/ui/copy.ts` (or `data/errors.ts`).

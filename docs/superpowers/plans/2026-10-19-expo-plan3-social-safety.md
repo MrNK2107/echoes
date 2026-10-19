@@ -19,7 +19,7 @@
 
 ## Global Constraints
 
-- All Plan 1/2 Global Constraints apply. No Claude attribution and no `Co-Authored-By` trailer in commits. Branch `expo-rewrite`.
+- All Plan 1/2 Global Constraints apply. Branch `expo-rewrite`.
 - Copy strings are taken verbatim from the spec's "Plan 3 decisions". Shared copy lives in `mobile/src/data/errors.ts` (or `mobile/src/ui/copy.ts` for UI-only strings) and is never duplicated as literals.
 - Callables:
   - Every callable requires auth (`unauthenticated` otherwise) and validates all input (`invalid-argument`).

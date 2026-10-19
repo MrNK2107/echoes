@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- All Plan 1 Global Constraints still apply (see `docs/superpowers/plans/2026-10-18-expo-foundation-core-loop.md`), except commit messages: **no Claude attribution, no `Co-Authored-By` trailer**.
+- All Plan 1 Global Constraints still apply (see `docs/superpowers/plans/2026-10-18-expo-foundation-core-loop.md`).
 - Work on branch `expo-rewrite`.
 - `RESTORE_WINDOW_DAYS = 30`; `MAX_VOICE_SECONDS = 60`; voice upload limit `5_242_880` bytes; outbox backoff seconds `[2, 4, 8, 16, 32, 64]`.
 - Firestore memory update payloads must only touch fields allowed by `firestore.rules` (`mutableMemoryEditOnly`, `softDeleteOnly`, `restoreOnly`); never rewrite immutable fields with new values.
