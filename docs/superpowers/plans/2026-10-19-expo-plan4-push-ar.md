@@ -137,14 +137,14 @@
 - Sign-out unregisters the device token before `auth.signOut()`, with a best-effort timeout.
 - Tapping a notification calls `router.push(routeForNotification(data))`.
 
-- [ ] **Step 1: Write failing tests:**
+- [x] **Step 1: Write failing tests:**
   - **`push is unavailable in Expo Go`** (fake availability shows the copy and no request);
   - grant leads to register; denied shows the blocked copy and `Open settings` calls `openSettings`;
   - **`sign-out unregisters the device token`**;
   - a tap response routes per type;
   - repository contract on both backends, plus the emulator.
-- [ ] **Step 2–4:** FAIL → implement → PASS.
-- [ ] **Step 5: Commit** `feat(push): register devices, settings and tap routing`.
+- [x] **Step 2–4:** FAIL → implement → PASS.
+- [x] **Step 5: Commit** `feat(push): register devices, settings and tap routing`.
 
 ---
 
