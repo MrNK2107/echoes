@@ -199,7 +199,7 @@
 - `Notice({ message: string | null; tone?: 'info' | 'error' }): JSX.Element | null`. It renders `accessibilityRole="alert"` and `accessibilityLiveRegion="polite"`, and calls `AccessibilityInfo.announceForAccessibility(message)` on iOS when `message` changes.
 - `separateOrbs(points: {x: number; y: number}[], minDistance = 12): {x: number; y: number}[]` in `orbLayout.ts`.
 
-- [ ] **Step 1: Write failing tests:**
+- [x] **Step 1: Write failing tests:**
   - Notice announces on iOS only on change, and Android relies on the live region;
   - `top row collapses at 320dp / fontScale 2` (mock `useWindowDimensions`; `Communities` is reachable by accessibilityLabel);
   - the map top row and the AR back button apply the top inset (mock `useSafeAreaInsets` with 47);
@@ -207,8 +207,8 @@
   - radar ring labels are hidden under 280 px;
   - `separateOrbs` leaves no pair closer than 12 and is deterministic;
   - there are no remaining raw `accessibilityLiveRegion` uses outside `Notice` (grep test).
-- [ ] **Step 2–4:** FAIL → implement → PASS (+ android and ios export).
-- [ ] **Step 5: Commit** `feat(a11y): Notice live region, safe areas, compact map row, chart and radar legibility`.
+- [x] **Step 2–4:** FAIL → implement → PASS (+ android and ios export).
+- [x] **Step 5: Commit** `feat(a11y): Notice live region, safe areas, compact map row, chart and radar legibility`.
 
 ---
 
