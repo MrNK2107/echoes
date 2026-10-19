@@ -7,6 +7,12 @@ export const expoHeading: HeadingService = {
     const permission = await Location.getForegroundPermissionsAsync();
     if (!permission.granted) throw new Error('location permission not granted');
     const sub = await Location.watchHeadingAsync((h) => cb(h.trueHeading >= 0 ? h.trueHeading : h.magHeading));
-    return () => sub.remove();
+    return () => {
+      try {
+        sub.remove();
+      } catch {
+        // already removed
+      }
+    };
   },
 };
