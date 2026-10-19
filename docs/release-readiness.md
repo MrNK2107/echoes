@@ -2,6 +2,23 @@
 
 The Expo app in `mobile/` is the shipping client. The deploy order, backups, alerts, incident and moderation procedures are in `docs/ops/runbook.md`; the store listing and privacy labels are in `docs/store/`. Items below are owner gates unless they say otherwise; none is complete until a person does it.
 
+## Launch checklist (owner gates)
+
+Mirrors `status.md` (Plan 5). Each stays unchecked until a person does it; details are in the sections below and in `docs/ops/runbook.md`.
+
+- [ ] EAS credentials configured and production builds made
+- [ ] Play Console and App Store Connect listings and privacy labels submitted
+- [ ] Legal pages hosted and the `EXPO_PUBLIC_*` URLs set
+- [ ] Sentry project, DSN, `SENTRY_AUTH_TOKEN`, symbolicated test crash and retention confirmed
+- [ ] `GOOGLE_MAPS_ANDROID_API_KEY` set for production Android
+- [ ] Maestro run on a device
+- [ ] Backfills applied (runbook order)
+- [ ] TTL, PITR, backups and alerts configured
+- [ ] `EXPO_ACCESS_TOKEN` set
+- [ ] Device performance measured against the budgets
+- [ ] Camera AR still off pending viro
+- [ ] First green CI run on GitHub
+
 ## Repository automation (must be green first)
 
 ```powershell

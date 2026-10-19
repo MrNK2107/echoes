@@ -2,7 +2,7 @@
 
 ECHOES is a place-based memory app: users attach photos, voice notes and text to locations, places develop emotional aura summaries, and custodians can preserve memory spaces over time. The client is a React Native + Expo app in [`mobile/`](mobile/); the backend is Firebase (Firestore, Storage, Auth, Cloud Functions in `functions/`). The earlier Flutter client was removed; it remains in git history, and `fixtures/domain/*.json` (its golden outputs) are the oracle for the TypeScript domain code.
 
-Status and release gates: [`status.md`](status.md), [`docs/release-readiness.md`](docs/release-readiness.md). Operations (deploy order, backfill, rollback): [`docs/ops/runbook.md`](docs/ops/runbook.md). Store listing and privacy labels: [`docs/store/`](docs/store/).
+Status and release gates: [`status.md`](status.md). Launch checklist (owner gates): [`docs/release-readiness.md`](docs/release-readiness.md#launch-checklist-owner-gates). Operations (deploy order, backfill, rollback): [`docs/ops/runbook.md`](docs/ops/runbook.md). Store listing and privacy labels: [`docs/store/`](docs/store/).
 
 ## Repository layout
 

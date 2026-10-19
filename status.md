@@ -3,6 +3,53 @@
 **Updated:** October 19, 2026  
 **Target:** Production-ready v1 for Android and iOS, age 13+
 
+## Expo rewrite - Plan 5
+
+Plan 5 (launch readiness) delivered: report and moderation pipeline, admin subcollection and institution admin migration, server-side rollups (time/era `memberCount` from a `count()` of `members`), push receipt polling (`checkPushReceipts`) with TTL policies declared in `firestore.indexes.json`, fail-closed block handling, accessibility and safe-area fixes, account repair and finish-setup flows, Android and iOS config for store builds, Sentry crash reporting (ADR-0011, off without a DSN), listener budgets, Maestro flows and the 30-day restore flow (ADR-0012), the data backfill tool and runbook, store and privacy material, and removal of the Flutter client. The export bundle budget was amended to 7 864 320 bytes (R5-4). Camera AR stays off pending a compatible viro.
+
+| Command | Result |
+| --- | --- |
+| `cd mobile && npx jest` (3 runs) | Pass (88 suites, 1116 tests, identical each run) |
+| `cd mobile && npx jest --randomize` | Pass (88 suites, 1116 tests, seed -1867974891) |
+| `cd mobile && npx tsc --noEmit` | Pass |
+| `cd mobile && npx eslint .` | Pass (0 errors, 4 `no-require-imports` warnings in jest.setup.ts) |
+| `npm test` in `functions/` | Pass (365 tests) |
+| `npx firebase-tools emulators:exec --project demo-echoes --only auth,firestore,storage,functions "npm --prefix mobile run test:emulator"` | Pass (72 passed, 1 skipped) |
+| `npx firebase-tools emulators:exec --project demo-echoes --only firestore,storage "npm test --prefix rules_test"` | Pass (57 tests) |
+| `node scripts/build-rules.js` then `git status --porcelain` | Pass (clean) |
+| `FIREBASE_STORAGE_BUCKET=demo-echoes.appspot.com node scripts/build-rules.js --prod`, then `git checkout firestore.rules` | Pass (tree clean afterwards) |
+| `cd mobile && npx expo export --platform android --output-dir dist` and `--platform ios --output-dir dist-ios` | Pass |
+| `cd mobile && npm run check:bundle` | Pass (android 7,336,536 bytes, ios 7,337,246 bytes, budget 7,864,320) |
+
+### Owner-gate checklist (none done)
+
+- [ ] EAS credentials configured and production builds made (Android app bundle, iOS)
+- [ ] Play Console and App Store Connect listings and privacy labels submitted (`docs/store/`)
+- [ ] Legal pages hosted and `EXPO_PUBLIC_TERMS_URL`, `EXPO_PUBLIC_GUIDELINES_URL`, `EXPO_PUBLIC_SUPPORT_EMAIL` set
+- [ ] Sentry project created, DSN set, `SENTRY_AUTH_TOKEN` EAS secret set, symbolicated test crash confirmed, retention confirmed
+- [ ] `GOOGLE_MAPS_ANDROID_API_KEY` set as an EAS secret for production Android
+- [ ] Maestro flows run on a device against the `e2e` build (index selectors unverified)
+- [ ] Backfills applied in runbook order (emulator rehearsal first), then `migrateInstitutionAdmins --apply`
+- [ ] TTL policies deployed with indexes, PITR, backups and alerts configured
+- [ ] `EXPO_ACCESS_TOKEN` set in `functions/.env.<projectId>` and enhanced push security enabled
+- [ ] Device performance measured against the budgets (cold start 3 s, memory load 2 s, location update 1 s)
+- [ ] Camera AR still off pending a compatible `@reactvision/react-viro` (do not ship on mocks)
+- [ ] First green `.github/workflows/ci.yml` run on GitHub
+
+### Known follow-ups
+
+- Drop the legacy `adminUserIds` fallback in `functions/institutions.js` once `migrateInstitutionAdmins` dry run shows `changed=0` (C11).
+- Report id `_` collision assumption comment; memory-backend shared-budget test.
+- Rollup `rolledUpAt` skip optimisation; demo emulation lower window bound.
+- Receipt deletes could use `BulkWriter`; backfill makes one pass per task over `memories` (two for `all`).
+- 15 hand-wrapped test files not migrated to `renderWithServices`; uid-switch test never red.
+- `InstitutionsScreen` list refresh throttle (only `InstitutionScreen` covered).
+- AR nearby places load once while AR is open, so aura colour can be stale until reopened (R5-5); empty first snapshot shows the empty state while the listener stays open (R5-6).
+- iOS camera string omits AR wording until camera AR ships (R5-7).
+- Maestro index selectors unverified; Plan 4 follow-ups below still apply except receipt polling, which now exists.
+
+---
+
 ## Expo rewrite — Plan 4
 
 Plan 4 (push and AR) adds Expo Push delivery for inbox notifications (`functions/push.js` `onNotificationCreated`: at most the 10 most recently seen tokens per user, chunks of 100, `DeviceNotRegistered` pruning; `onPushTokenCreated` dedupes a token across users on shared phones), client registration on sign-in or opt-in and unregistration on sign-out, tap routing from a notification to its target, and an AR screen. **`@reactvision/react-viro` does not install on Expo SDK 58 / RN 0.88 (ERESOLVE), so per R-P4-9 the 2D radar is the AR experience everywhere today.** The camera AR code (the `ViroArScene` factory) switches on automatically once a compatible viro installs; its Viro API usage is unverified until then.
