@@ -135,6 +135,63 @@ See ADR-0009 (EAS development build + Expo push) and ADR-0010 (AR with ViroReact
 - Push copy (Profile → Notifications): button `Turn on push notifications`; on `Push notifications are on`; denied `Push notifications are blocked in system settings.` with `Open settings`; unavailable (Expo Go / simulator) `Push notifications need the ECHOES app build.`
 - AR: map button text `AR` (accessibilityLabel `Explore in AR`), route `/ar`, radius 1000 m, up to 5 places and 8 orbs per place; toggle `Radar view` / `Camera view`; empty `No memory places within 1 km.`; camera denied `Camera access is needed for AR. Showing radar instead.`; unsupported `AR isn't available on this device. Showing radar instead.`; heading unavailable `Compass unavailable — the radar won't rotate.`; orb tap → `/memory/{id}`; aura tap → `/place/{id}`.
 
+## Plan 5 decisions (2026-10-19) — launch readiness
+See ADR-0011 (crash and error reporting) and ADR-0012 (E2E with Maestro). Every item in `docs/superpowers/plan5-backlog.md` is either built here or listed under "Deferred" with its reason.
+
+Safety and moderation:
+- **Verified reporters hide.** Report docs gain `reporterVerified` (the caller's ID token `email_verified`). A memory is auto-hidden when **3 distinct verified** reporters have reported it. Unverified reports are stored for staff review but never count.
+- **Reporting names.** A new callable `reportContent({ targetType: 'community' | 'profile', targetId, reason, note })` writes `reports/{targetType}_{targetId}_{uid}` = `{ targetType, targetId, reporterId, reporterVerified, reason, note, createdAt }`. It never auto-hides (staff act). Same reasons, the same 20/day budget as `reportMemory` (shared action `reportMemory`).
+- **Notifications carry `actorId`** (server-written; `null` for system). Account deletion deletes every notification whose `actorId` is the deleted user, so their name leaves other inboxes. Older docs without `actorId` age out through the 90-day TTL.
+- **Community invites** use the id `communityInvite_{communityId}_{to}_{yyyymmdd}` (UTC day): a re-invite on a later day notifies again; same-day repeats still collapse.
+- **Released time-release tags notify.** A scheduled function `notifyReleasedTags` (every 60 min) finds `timeRelease` memories whose `releaseDate` fell in the last 2 h and sends the usual `memoryTagged` notifications (deterministic ids make overlapping windows safe).
+- **Own-read in the server visibility mirror.** `functions/lib/visibility.js` gains `canReadMemory` = author OR `isVisibleMemory`, matching the rules.
+
+Privacy and scale:
+- `publicProfiles`: single-doc `get` stays open to signed-in users; `list` requires `request.query.limit <= 30` (the `in`-chunk size). Clients always pass a limit.
+- Institution admins move to `institutions/{id}/admins/{uid}` = `{ userId, since }`, readable only by that user. `adminUserIds` is removed from the institution doc (backfill migrates it).
+- **Sharded member counts** for auto communities `time-*` and `era-*`: increments go to `communities/{id}/counterShards/{0..9}` (`{ count, updatedAt }`). A scheduled `rollupMemberCounts` (every 10 min) writes the sum into `memberCount`. Other communities keep direct increments. Counts on sharded communities may lag by up to 10 minutes.
+- Functions run with `setGlobalOptions({ maxInstances: 50 })` to bound cost under abuse.
+- **Production rules** are built with `node scripts/build-rules.js --prod`, which implies `--require-bucket` and drops the loopback emulator hosts. `deploy:rules` uses it.
+- **Listener budgets** (repository-level subscriptions while a screen is mounted, memory backend): Map ≤ 4, Place ≤ 4, Community ≤ 4, AR ≤ 7. Each `subscribeVisibleForPlace` fans out to about 4 Firestore listeners.
+- **Bundle budget:** each exported Hermes bundle (android, ios) ≤ **6 815 744 bytes** (6.5 MiB). Device budgets stay as in release-readiness: cold start < 3 s, memory load < 2 s, location update < 1 s on a mid-range phone.
+
+Push:
+- **Lock-screen text never contains user-generated strings.** Push bodies are generic per type; the inbox keeps the full body:
+  `memoryTagged` `Someone tagged you in a memory.`; `transferRequest` `You have a new custodianship request.`; `transferAccepted` `Your custodianship request was accepted.`; `transferRejected` `Your custodianship request was declined.`; `communityInvite` `You have a new community invitation.` Titles are unchanged.
+- **Receipts.** Each ok ticket is stored at `pushReceipts/{ticketId}` = `{ uid, tokenId, createdAt, expireAt (+1 day) }` (server-only). `checkPushReceipts` (every 30 min) fetches receipts older than 15 min in chunks of 300 (≤ 1000 per run), deletes the token on `DeviceNotRegistered`, then deletes the receipt doc.
+- **Client registration** re-runs on foreground at most once per **6 h** per user unless permission changed. A registration that failed offline retries on the next offline → online transition.
+
+Client polish and accessibility:
+- `<Notice>` (`src/ui/Notice.tsx`) is the only way to show transient status text: polite Android live region, plus `AccessibilityInfo.announceForAccessibility` on iOS when the message changes.
+- `BlocksProvider` is mounted once in `app/(app)/_layout.tsx`; `useBlocksState()` reads it.
+- Safe areas: `SafeAreaProvider` at the root; the map top row, the AR back button and full-screen sheets respect insets.
+- Map top row: when `width / fontScale < 360` the `Communities` button becomes icon-only (accessibilityLabel `Communities`) and the row wraps.
+- Aura history chart: 16:9 aspect from its width; axis text uses `textSecondary`; lines are at least 3:1 against `surface`.
+- Inbox hides items whose `actorId` is blocked.
+- Institution screens force-refresh the ID token at most once per 60 s.
+- Radar: ring labels are hidden when the radar is under 280 px; orbs closer than 12 px are nudged apart.
+
+Copy (exact):
+- Report entry points: community screen action `Report community`; memory detail (non-author) `Report {name}`. Sheet title `Why are you reporting this?` (unchanged); duplicate `You already reported this.`
+- Membership load error: `Couldn't check your membership.` with `Retry` (no `Join` while unknown).
+- Registration repair (Auth account without a `users` doc): title `Finish setting up`, field `Name`, the existing terms checkbox and its error, button `Continue`.
+
+Crash reporting (ADR-0011): `@sentry/react-native` is on only when `EXPO_PUBLIC_SENTRY_DSN` is set and the app is not in Expo Go. No PII: no user id, no email, `sendDefaultPii: false`, no session replay. Functions rely on Cloud Error Reporting and Cloud Monitoring alerts.
+
+E2E (ADR-0012): Maestro flows in `mobile/.maestro/`, run by the owner against the `e2e` EAS profile (memory backend). In CI a Jest test parses each flow and checks every text selector still exists in the source.
+
+Store and operations:
+- App config gains the `expo-audio` plugin (microphone string `ECHOES records voice notes for your memories.`), `android.config.googleMaps.apiKey` from `GOOGLE_MAPS_ANDROID_API_KEY`, `ios.config.usesNonExemptEncryption: false`, and an iOS privacy manifest (`NSPrivacyAccessedAPICategoryUserDefaults` reason `CA92.1`, `NSPrivacyAccessedAPICategoryFileTimestamp` reason `C617.1`, tracking false).
+- Store listing, Google Play Data safety and Apple privacy labels live in `docs/store/`. The ops runbook lives in `docs/ops/runbook.md`.
+- Legacy data is fixed by one backfill tool (`functions/tools/backfill.js`, dry-run by default).
+- **The Flutter client is deleted last**, along with the legacy `dispatchNotificationRequest` function and the Flutter CI workflow. `fixtures/domain/*.json` stay and become the oracle; the Dart exporters remain in git history.
+
+Deferred to after launch, with reasons:
+- **Unregister on auth-state null without sign-out:** once auth is gone the client cannot delete its token doc. Three things already cover it: explicit sign-out unregisters, account deletion deletes the subcollection, and `onPushTokenCreated` moves a reused token to the next user.
+- **Viro plugin and API verification:** blocked until `@reactvision/react-viro` installs on SDK 58. The release gate keeps camera AR off.
+- **Firebase App Check:** needs the native Firebase SDK, which conflicts with ADR-0002. Callables are rate-limited and rules require auth.
+- **EAS Update (OTA):** not needed for v1.
+
 ## Roadmap
 | Plan | Scope | Runs in |
 |---|---|---|
