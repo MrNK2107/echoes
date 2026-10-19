@@ -1,10 +1,10 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 
 import { GENERIC_ERROR } from '@/data/errors';
 import { DISPLAY_NAME_ERROR, validateDisplayName } from '@/domain/profiles';
-import type { AppUser, Memory } from '@/domain/types';
+import type { AppUser, Memory, NotificationPrefs } from '@/domain/types';
 import { useSession } from '@/features/auth/useSession';
 import { rememberName } from '@/features/people/useAuthorNames';
 import { MemoryCard } from '@/features/places/MemoryCard';
@@ -15,6 +15,11 @@ import { colors } from '@/ui/theme';
 /** subscribeForUser returns at most this many memories. */
 const LIMIT = 50;
 type DefaultPrivacy = 'public' | 'private';
+const PREF_TOGGLES: { key: keyof NotificationPrefs; label: string }[] = [
+  { key: 'transfers', label: 'Custodianship requests' },
+  { key: 'tags', label: 'Tags' },
+  { key: 'communityInvites', label: 'Community invitations' },
+];
 const CHOICES: { value: DefaultPrivacy; label: string }[] = [
   { value: 'public', label: 'Public' },
   { value: 'private', label: 'Private' },
@@ -94,6 +99,21 @@ export function ProfileScreen() {
       await repos.users.updateDefaultPrivacy(uid, next, now());
     } catch {
       setPrivacy(previous);
+      setError(GENERIC_ERROR);
+    }
+  };
+
+  const prefs: NotificationPrefs = user?.notificationPrefs ?? { transfers: true, tags: true, communityInvites: true };
+  const togglePref = async (key: keyof NotificationPrefs, value: boolean) => {
+    if (!uid || !user) return;
+    const previous = user.notificationPrefs;
+    const next = { ...prefs, [key]: value };
+    setUser((u) => (u ? { ...u, notificationPrefs: next } : u));
+    setError(null);
+    try {
+      await repos.users.updateNotificationPrefs(uid, next, now());
+    } catch {
+      setUser((u) => (u ? { ...u, notificationPrefs: previous } : u));
       setError(GENERIC_ERROR);
     }
   };
@@ -193,6 +213,19 @@ export function ProfileScreen() {
         ))}
       </View>
 
+      <Text style={styles.section}>Notifications</Text>
+      {PREF_TOGGLES.map((t) => (
+        <View key={t.key} style={styles.toggleRow}>
+          <Text style={styles.toggleLabel}>{t.label}</Text>
+          <Switch
+            accessibilityLabel={t.label}
+            value={prefs[t.key]}
+            disabled={!user}
+            onValueChange={(v) => togglePref(t.key, v)}
+          />
+        </View>
+      ))}
+
       <Text style={styles.section}>Your memories</Text>
       {memories.map((m) => (
         <MemoryCard key={m.id} memory={m} />
@@ -234,6 +267,8 @@ const styles = StyleSheet.create({
   segmentOn: { backgroundColor: colors.accent },
   segmentText: { color: colors.text },
   segmentTextOn: { color: colors.background, fontWeight: '600' },
+  toggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6 },
+  toggleLabel: { color: colors.text, fontSize: 16 },
   emptyBox: { alignItems: 'center', padding: 16, gap: 4 },
   emptyTitle: { color: colors.text, fontSize: 16 },
   row: { backgroundColor: colors.surface, borderRadius: 12, padding: 14, marginTop: 8 },

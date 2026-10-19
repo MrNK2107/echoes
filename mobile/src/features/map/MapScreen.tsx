@@ -4,6 +4,7 @@ import MapView, { Marker } from 'react-native-maps';
 
 import { distanceMeters } from '@/domain/geo';
 import type { Place } from '@/domain/types';
+import { InboxBell } from '@/features/inbox/InboxBell';
 import { OutboxBanner } from '@/features/outbox/OutboxBanner';
 import { formatCount } from '@/ui/format';
 import { colors } from '@/ui/theme';
@@ -70,6 +71,9 @@ export function MapScreen() {
       >
         <Text style={styles.buttonText}>Profile</Text>
       </Pressable>
+      <View style={styles.bell}>
+        <InboxBell />
+      </View>
       <View style={styles.banner}>
         <OutboxBanner />
       </View>
@@ -102,6 +106,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background, padding: 24 },
   map: { flex: 1 },
   banner: { position: 'absolute', top: 96, left: 16, right: 16 },
+  bell: { position: 'absolute', top: 48, right: 112 },
   profile: {
     position: 'absolute',
     top: 48,

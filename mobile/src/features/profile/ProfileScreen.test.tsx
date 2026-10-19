@@ -184,4 +184,40 @@ describe('ProfileScreen', () => {
       expect(await screen.findByText('Something went wrong. Please try again.')).toBeOnTheScreen();
     });
   });
+
+  describe('notification preferences', () => {
+    it('shows the three toggles on by default', async () => {
+      await setup();
+      expect(screen.getByText('Notifications')).toBeOnTheScreen();
+      for (const label of ['Custodianship requests', 'Tags', 'Community invitations']) {
+        const sw = await screen.findByLabelText(label);
+        await waitFor(() => expect(screen.getByLabelText(label).props.value).toBe(true));
+        expect(sw).toBeOnTheScreen();
+      }
+    });
+
+    it('persists a toggled preference and keeps the others', async () => {
+      const services = await setup();
+      await waitFor(() => expect(screen.getByLabelText('Tags').props.disabled).toBeFalsy());
+      await fireEvent(screen.getByLabelText('Tags'), 'valueChange', false);
+      await waitFor(async () =>
+        expect((await services.repos.users.get('user-demo'))?.notificationPrefs).toEqual({
+          transfers: true,
+          tags: false,
+          communityInvites: true,
+        }),
+      );
+      expect(screen.getByLabelText('Tags').props.value).toBe(false);
+    });
+
+    it('reverts and shows the generic error when saving fails', async () => {
+      const services = testServices();
+      jest.spyOn(services.repos.users, 'updateNotificationPrefs').mockRejectedValue(new Error('x'));
+      await setup(services);
+      await waitFor(() => expect(screen.getByLabelText('Community invitations').props.disabled).toBeFalsy());
+      await fireEvent(screen.getByLabelText('Community invitations'), 'valueChange', false);
+      expect(await screen.findByText('Something went wrong. Please try again.')).toBeOnTheScreen();
+      expect(screen.getByLabelText('Community invitations').props.value).toBe(true);
+    });
+  });
 });

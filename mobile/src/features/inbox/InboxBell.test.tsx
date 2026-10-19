@@ -1,0 +1,50 @@
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
+
+import { ServicesProvider } from '@/services/ServicesProvider';
+
+import { InboxBell } from './InboxBell';
+import { inboxServices, note } from './testInbox';
+
+const mockPush = jest.fn();
+jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush }) }));
+
+async function setup(unread: number, read = 0) {
+  const list = Array.from({ length: unread + read }, (_, i) =>
+    note({ id: `n${i}`, readAt: i < unread ? null : new Date() }),
+  );
+  const s = await inboxServices(list);
+  await render(
+    <ServicesProvider services={s.services}>
+      <InboxBell />
+    </ServicesProvider>,
+  );
+  return s;
+}
+
+describe('InboxBell', () => {
+  beforeEach(() => mockPush.mockClear());
+
+  it('shows no badge when nothing is unread', async () => {
+    await setup(0, 2);
+    expect(await screen.findByLabelText('Notifications')).toBeOnTheScreen();
+    expect(screen.queryByTestId('inbox-badge')).toBeNull();
+  });
+
+  it('shows the unread count', async () => {
+    await setup(3, 2);
+    expect(await screen.findByText('3')).toBeOnTheScreen();
+  });
+
+  it('caps the badge at 9+', async () => {
+    await setup(12);
+    expect(await screen.findByText('9+')).toBeOnTheScreen();
+  });
+
+  it('opens the inbox', async () => {
+    await setup(1);
+    await act(async () => {
+      fireEvent.press(await screen.findByLabelText('Notifications'));
+    });
+    expect(mockPush).toHaveBeenCalledWith('/notifications');
+  });
+});

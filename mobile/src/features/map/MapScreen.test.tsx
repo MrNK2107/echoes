@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 
+import { DEMO_USER } from '@/data/seed';
 import { fakeConnectivity, fakeLocation, testServices } from '@/device/fakes';
 import { outboxDraft } from '@/features/outbox/fixtures';
 import { Outbox } from '@/features/outbox/outbox';
@@ -113,5 +114,16 @@ describe('MapScreen', () => {
       fireEvent.press(screen.getByLabelText('Profile'));
     });
     expect(mockPush).toHaveBeenCalledWith('/profile');
+  });
+
+  it('shows the notifications bell with the unread count and opens the inbox', async () => {
+    const services = testServices();
+    await services.repos.auth.signIn(DEMO_USER.email, DEMO_USER.password);
+    await setup(services);
+    expect(await screen.findByLabelText('Notifications')).toBeOnTheScreen();
+    await act(async () => {
+      fireEvent.press(screen.getByLabelText('Notifications'));
+    });
+    expect(mockPush).toHaveBeenCalledWith('/notifications');
   });
 });
