@@ -77,15 +77,15 @@
 - `deleteNotificationsFrom(db, uid)` in `accountCleanup.js` uses a paged collection-group delete.
 - The invite id is `communityInvite_${communityId}_${to}_${yyyymmdd}`.
 
-- [ ] **Step 1: Write failing tests:**
+- [x] **Step 1: Write failing tests:**
   - notify writes `actorId`;
   - cleanup deletes other users' notifications whose `actorId` is the deleted uid, and `notification without actorId is kept`;
   - re-invite on the next UTC day creates a second notification, and the same day reports `duplicate`;
   - released tags notify once, `overlapping windows notify once`, unreleased ones are skipped, and hidden or deleted ones are skipped;
   - the mapper reads a missing `actorId` as null;
   - the indexes test lists both new indexes.
-- [ ] **Step 2–4:** FAIL → implement → PASS (functions, mobile and rules gates).
-- [ ] **Step 5: Commit** `feat(functions): actor-linked notifications, daily re-invites, released tag notifications`.
+- [x] **Step 2–4:** FAIL → implement → PASS (functions, mobile and rules gates).
+- [x] **Step 5: Commit** `feat(functions): actor-linked notifications, daily re-invites, released tag notifications`.
 
 ---
 
