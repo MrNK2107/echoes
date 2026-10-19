@@ -52,11 +52,13 @@ Expo app features: map and places, add memories with photos and 60 s voice notes
 
 Social features: public profiles and people search, tagging people in memories, community-only privacy, communities (create, join, leave, invite), institutions with sub-zones, memory transfer requests (request, accept, decline, revoke), an in-app notifications inbox with preferences, and safety (report a memory, auto-hide after 3 reports, block and unblock, profanity warning, terms acceptance) plus an aura history chart on the place screen. Communities, transfers and institutions are written only by callable Cloud Functions.
 
-Optional safety links (set in `mobile/.env`):
+Safety links (set in `mobile/.env`). Optional with the `memory` and `emulator` backends (development defaults under `https://echoes.app/`), but **required for production**: with `EXPO_PUBLIC_BACKEND=firebase` the app refuses to start (`Missing EXPO_PUBLIC_...`) unless all of them are set, so placeholder links never ship:
 
 - `EXPO_PUBLIC_TERMS_URL`: Terms of Service page
 - `EXPO_PUBLIC_GUIDELINES_URL`: Community Guidelines page
+- `EXPO_PUBLIC_PRIVACY_URL`: Privacy Policy page (linked from registration, finish-setup and Profile)
 - `EXPO_PUBLIC_SUPPORT_EMAIL`: support contact address
+- `EXPO_PUBLIC_EAS_PROJECT_ID`: EAS project id (also required in firebase mode)
 
 ### Granting the `staff` claim
 
@@ -140,10 +142,10 @@ Push notifications and camera AR need native code, so they require an EAS build;
    - `e2e`: internal distribution, Android APK and iOS simulator build, `EXPO_PUBLIC_BACKEND=memory` (demo data, used by the Maestro flows).
    - `production`: store build with `autoIncrement`, Android `app-bundle`, iOS on the `m-medium` resource class, `EXPO_PUBLIC_BACKEND=firebase`.
 
-   Preview and production builds need these EAS environment variables (a missing Firebase key fails at startup): `EXPO_PUBLIC_FIREBASE_API_KEY`, `EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN`, `EXPO_PUBLIC_FIREBASE_PROJECT_ID`, `EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET`, `EXPO_PUBLIC_FIREBASE_APP_ID`, `EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`, `EXPO_PUBLIC_EAS_PROJECT_ID`, `EXPO_PUBLIC_TERMS_URL`, `EXPO_PUBLIC_GUIDELINES_URL`, `EXPO_PUBLIC_SUPPORT_EMAIL`, plus the build-time secret `GOOGLE_MAPS_ANDROID_API_KEY` (Android Google Maps key; required for production Android, set it as an EAS secret, e.g. `npx eas-cli env:create --name GOOGLE_MAPS_ANDROID_API_KEY --visibility secret`; when absent the maps config is omitted).
+   Preview and production builds need these EAS environment variables (a missing Firebase key, legal link, support address or project id fails at startup): `EXPO_PUBLIC_FIREBASE_API_KEY`, `EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN`, `EXPO_PUBLIC_FIREBASE_PROJECT_ID`, `EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET`, `EXPO_PUBLIC_FIREBASE_APP_ID`, `EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`, `EXPO_PUBLIC_EAS_PROJECT_ID`, `EXPO_PUBLIC_TERMS_URL`, `EXPO_PUBLIC_GUIDELINES_URL`, `EXPO_PUBLIC_PRIVACY_URL`, `EXPO_PUBLIC_SUPPORT_EMAIL`, plus the build-time secret `GOOGLE_MAPS_ANDROID_API_KEY` (Android Google Maps key; required for production Android, set it as an EAS secret, e.g. `npx eas-cli env:create --name GOOGLE_MAPS_ANDROID_API_KEY --visibility secret`; when absent the maps config is omitted).
 3. Build with `npx eas-cli build --profile development --platform android` (or `ios`).
 
-**Crash reporting (Sentry, ADR-0011).** Off unless `EXPO_PUBLIC_SENTRY_DSN` is set, and always off in Expo Go and tests. Build-time `SENTRY_ORG` and `SENTRY_PROJECT` add the Sentry config plugin; set `SENTRY_AUTH_TOKEN` as an EAS secret so source maps upload. Owner gate: a symbolicated test crash (see `docs/release-readiness.md`).
+**Crash reporting (Sentry, ADR-0011).** Off unless `EXPO_PUBLIC_SENTRY_DSN` is set, and always off in Expo Go and tests. Build-time `SENTRY_ORG` and `SENTRY_PROJECT` add the Sentry config plugin; set `SENTRY_AUTH_TOKEN` as an EAS secret so source maps upload. Owner gates: a symbolicated test crash, and in the Sentry project enable "Prevent storing of IP addresses" and server-side data scrubbing (see `docs/release-readiness.md`).
 
 **Bundle size.** After `npx expo export --platform android --output-dir dist` and `npx expo export --platform ios --output-dir dist-ios`, run `npm run check:bundle` in `mobile/`.
 
@@ -175,7 +177,7 @@ Use a normal-width screen so the map top-row buttons keep their labels. CI canno
 - Create a notification for yourself (for example have another account send a transfer request); with the app backgrounded the push arrives.
 - Tap it; the app opens the target screen (cold start and background).
 - Sign out; the token doc is removed. On a shared phone, signing in as someone else must not deliver the previous user's pushes.
-- Functions send through Expo Push; set the optional `EXPO_ACCESS_TOKEN` on functions if you enabled enhanced push security in your Expo account.
+- Functions send through Expo Push; set `EXPO_ACCESS_TOKEN` on functions (required for production; enable enhanced push security in your Expo account).
 
 **AR device checklist:**
 

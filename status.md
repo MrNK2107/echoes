@@ -9,7 +9,7 @@ Plan 5 (launch readiness) delivered: report and moderation pipeline, admin subco
 
 | Command | Result |
 | --- | --- |
-| `cd mobile && npx jest` (3 runs) | Pass (88 suites, 1116 tests, identical each run) |
+| `cd mobile && npx jest` | Pass (90 suites, 1146 tests after the final-review client fixes; earlier 3 runs of 88 suites, 1116 tests were identical) |
 | `cd mobile && npx jest --randomize` | Pass (88 suites, 1116 tests, seed -1867974891) |
 | `cd mobile && npx tsc --noEmit` | Pass |
 | `cd mobile && npx eslint .` | Pass (0 errors, 4 `no-require-imports` warnings in jest.setup.ts) |
@@ -188,6 +188,10 @@ The active client is now the React Native + Expo app in `mobile/` (branch `expo-
 - Date picker and Google Maps rendering are not verified on a device.
 
 ---
+
+## Historical (Flutter client, removed)
+
+Everything below describes the removed Flutter client and is kept only as history. It does not describe the Expo app.
 
 ## Outcome
 

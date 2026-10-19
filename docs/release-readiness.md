@@ -8,7 +8,7 @@ Mirrors `status.md` (Plan 5). Each stays unchecked until a person does it; detai
 
 - [ ] EAS credentials configured and production builds made
 - [ ] Play Console and App Store Connect listings and privacy labels submitted
-- [ ] Legal pages hosted and the `EXPO_PUBLIC_*` URLs set
+- [ ] Legal pages (Terms, Guidelines, Privacy Policy) hosted and the `EXPO_PUBLIC_*` URLs set (production builds refuse to start without them)
 - [ ] Sentry project, DSN, `SENTRY_AUTH_TOKEN`, symbolicated test crash and retention confirmed
 - [ ] `GOOGLE_MAPS_ANDROID_API_KEY` set for production Android
 - [ ] Maestro run on a device
@@ -42,15 +42,15 @@ npx firebase emulators:exec --only firestore,storage "npm test --prefix rules_te
 
 - Firebase production project: Auth, Firestore, Storage, Functions and the `EXPO_PUBLIC_FIREBASE_*` keys.
 - **Google Maps:** `GOOGLE_MAPS_ANDROID_API_KEY` must be set as an EAS secret for production Android builds; without it the maps config is omitted and the map does not render on the store build. Restrict the key by package and signing certificate.
-- **Sentry (ADR-0011):** create the Sentry project; set `EXPO_PUBLIC_SENTRY_DSN`, `SENTRY_ORG` and `SENTRY_PROJECT` as EAS environment variables and `SENTRY_AUTH_TOKEN` as an EAS secret. Reporting is off without a DSN and always off in Expo Go. Gate: produce a test crash from a production-profile build and confirm it is symbolicated in Sentry (readable stack, release `bundleId@version+build`).
-- **Push:** put `EXPO_ACCESS_TOKEN=...` in the gitignored `functions/.env.<projectId>` and enable enhanced push security in Expo (details below).
+- **Sentry (ADR-0011):** create the Sentry project; set `EXPO_PUBLIC_SENTRY_DSN`, `SENTRY_ORG` and `SENTRY_PROJECT` as EAS environment variables and `SENTRY_AUTH_TOKEN` as an EAS secret. Reporting is off without a DSN and always off in Expo Go. Gate: produce a test crash from a production-profile build and confirm it is symbolicated in Sentry (readable stack, release `bundleId@version+build`). Also in the Sentry project settings enable "Prevent storing of IP addresses" and server-side data scrubbing as a second line behind the in-app scrubbing of events, transactions, spans and breadcrumbs.
+- **Push (required):** put `EXPO_ACCESS_TOKEN=...` in the gitignored `functions/.env.<projectId>` and enable enhanced push security in Expo (details below).
 - **Rules:** build the Firestore rules for the production bucket first. `firestore.rules` is generated from `firestore.rules.template` and the committed copy pins the emulator bucket. Set `FIREBASE_STORAGE_BUCKET` and run `npm run deploy:rules -- --project <project-id>` (it refuses to run without the variable), then `git checkout firestore.rules`. Never deploy `firestore.lan.rules`.
 - **Deploying the Plan 3 rules retires the legacy Flutter client.** Its direct writes are denied and memories without `moderation` are hidden from non-authors. Release order: indexes, functions, backfill emulator rehearsal, backfill dry run, client approved and released, then rules (`npm run deploy:rules`, then `git checkout firestore.rules`), then `backfill all --apply` straight after, then `migrateInstitutionAdmins --apply`. The legacy Flutter client is locked out by the new rules, so the Expo client must be live first (full steps in `docs/ops/runbook.md`).
 - Android signing and the Apple signing profile are managed through EAS credentials.
 
 ## Device and store gates
 
-- Android and iOS (iOS 15+): sign up with the 13+ terms checkbox, sign in, delete the account, confirm backend cleanup (profile, media, memberships, transfers, notifications).
+- Android and iOS (iOS 16.4+): sign up with the 13+ terms checkbox, sign in, delete the account, confirm backend cleanup (profile, media, memberships, transfers, notifications).
 - Location and notification allow, deny and permanently-denied states.
 - Create text, photo and 60-second voice-note memories in every privacy mode; offline retry when connectivity returns.
 - Maps markers and details, communities, institutions, aura history, custodianship transfer, 30-day restore, report and block.
@@ -58,7 +58,7 @@ npx firebase emulators:exec --only firestore,storage "npm test --prefix rules_te
 - **AR device matrix** (Plan 4 section below). Camera AR is not shipped; the radar is.
 - Performance on a mid-range phone: cold start under 3 s, memory load under 2 s, location update under 1 s.
 - Store submission: privacy labels, age rating, listing, screenshots, support URL, privacy policy, reviewer account (`docs/store/`).
-- Legal text: `EXPO_PUBLIC_TERMS_URL`, `EXPO_PUBLIC_GUIDELINES_URL`, `EXPO_PUBLIC_SUPPORT_EMAIL` must be real (client item C8); the `echoes.app` defaults must not ship.
+- Legal text: `EXPO_PUBLIC_TERMS_URL`, `EXPO_PUBLIC_GUIDELINES_URL`, `EXPO_PUBLIC_PRIVACY_URL`, `EXPO_PUBLIC_SUPPORT_EMAIL` must be real. Firebase-mode builds fail at startup without them (and without `EXPO_PUBLIC_EAS_PROJECT_ID`), so the `echoes.app` development defaults cannot ship.
 
 ## Expo Plan 3 backend notes
 
@@ -67,7 +67,7 @@ npx firebase emulators:exec --only firestore,storage "npm test --prefix rules_te
 - **Restoring hidden memories.** Staff set `moderation` to `null`; never delete the field (ADR-0008).
 - **TTL policies** are declared in `firestore.indexes.json` (`fieldOverrides` with `ttl: true`) and deploy with `firebase deploy --only firestore:indexes`: `rateLimits.expireAt` (two days after the UTC day starts), `notifications.expireAt` (90 days after `createdAt`), `pushReceipts.expireAt` (one day after the ticket). TTL deletion is not instant.
 - **Push delivery (required launch step).** Enable enhanced push security in the Expo dashboard and put `EXPO_ACCESS_TOKEN=...` in the gitignored `functions/.env.<projectId>` (`functions/push.js` reads `process.env`; there is no `defineSecret`) and redeploy functions; the function then sends `Authorization: Bearer <token>`. Without it anyone who learns a push token could send to it.
-- **EAS environment.** Preview and production builds set `EXPO_PUBLIC_BACKEND=firebase` (in `mobile/eas.json`) and need all `EXPO_PUBLIC_FIREBASE_*` keys (API_KEY, AUTH_DOMAIN, PROJECT_ID, STORAGE_BUCKET, APP_ID, MESSAGING_SENDER_ID), `EXPO_PUBLIC_EAS_PROJECT_ID`, `EXPO_PUBLIC_TERMS_URL`, `EXPO_PUBLIC_GUIDELINES_URL`, `EXPO_PUBLIC_SUPPORT_EMAIL`, the Sentry variables above and the secret `GOOGLE_MAPS_ANDROID_API_KEY`. The production profile builds an Android app bundle (`app-bundle`) and an iOS build on the `m-medium` resource class. The development profile needs `EXPO_PUBLIC_EMULATOR_HOST` set to the PC's LAN IP for physical phones.
+- **EAS environment.** Preview and production builds set `EXPO_PUBLIC_BACKEND=firebase` (in `mobile/eas.json`) and need all `EXPO_PUBLIC_FIREBASE_*` keys (API_KEY, AUTH_DOMAIN, PROJECT_ID, STORAGE_BUCKET, APP_ID, MESSAGING_SENDER_ID), `EXPO_PUBLIC_EAS_PROJECT_ID`, `EXPO_PUBLIC_TERMS_URL`, `EXPO_PUBLIC_GUIDELINES_URL`, `EXPO_PUBLIC_PRIVACY_URL`, `EXPO_PUBLIC_SUPPORT_EMAIL`, the Sentry variables above and the secret `GOOGLE_MAPS_ANDROID_API_KEY`. The production profile builds an Android app bundle (`app-bundle`) and an iOS build on the `m-medium` resource class. The development profile needs `EXPO_PUBLIC_EMULATOR_HOST` set to the PC's LAN IP for physical phones.
 
 ## Expo Plan 5 data backfill runbook
 
@@ -91,5 +91,5 @@ Cost: each task is a full collection scan (reads = documents scanned); `all` sca
 - **Expo Push:** `functions/push.js` sends via the Expo push API. Put `EXPO_ACCESS_TOKEN=...` in `functions/.env.<projectId>` (Expo account token) to authenticate requests; it is required at launch (enhanced push security). Token docs must match `ExponentPushToken[...]`/`ExpoPushToken[...]` (enforced by rules) and a user keeps at most 10 tokens. Sends go to at most the 10 most recently seen tokens per user, in chunks of 100; `DeviceNotRegistered` tickets prune the token. `checkPushReceipts` (every 30 minutes) polls receipts for ok tickets and prunes tokens reported `DeviceNotRegistered`.
 - **Index deploy:** run `npx firebase deploy --only firestore:indexes --project <project-id>` before shipping. `firestore.indexes.json` includes the `pushTokens.token` collection-group field override that `onPushTokenCreated` uses to dedupe a token across users on shared phones.
 - **Deploy functions** (`onNotificationCreated`, `onPushTokenCreated`) together with the indexes.
-- **ARCore/ARKit device matrix:** test on at least one ARCore-supported Android device, one non-ARCore Android device, one ARKit iPhone (iOS 15+) and, if possible, a low-end device. Record radar behaviour (orbs, compass heading, 4 s north-up fallback) and, once camera AR is enabled, camera scene, FPS (30 or better) and the fallback to radar.
+- **ARCore/ARKit device matrix:** test on at least one ARCore-supported Android device, one non-ARCore Android device, one ARKit iPhone (iOS 16.4+) and, if possible, a low-end device. Record radar behaviour (orbs, compass heading, 4 s north-up fallback) and, once camera AR is enabled, camera scene, FPS (30 or better) and the fallback to radar.
 - **Viro compatibility gate:** `@reactvision/react-viro` currently fails to install on Expo SDK 58 / RN 0.88 (ERESOLVE), so the radar is the shipping AR experience. Before enabling camera AR in a release, install a compatible viro version, verify its API usage and config-plugin options (unverified today), and complete the camera AR device matrix above. Do not ship camera AR on the strength of mocks alone.

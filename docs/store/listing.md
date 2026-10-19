@@ -12,7 +12,7 @@ All text is a draft for the owner to approve. Items marked OWNER need a person, 
 - **Support email:** the `EXPO_PUBLIC_SUPPORT_EMAIL` value (placeholder `support@echoes.app`; OWNER: real inbox).
 - **Support URL / Marketing URL:** `https://echoes.app/support`, `https://echoes.app` (placeholders; OWNER).
 - **Privacy policy URL:** `https://echoes.app/privacy` (placeholder; OWNER writes and hosts it, consistent with `privacy-labels.md`).
-- **Terms / Community Guidelines:** `EXPO_PUBLIC_TERMS_URL`, `EXPO_PUBLIC_GUIDELINES_URL`. The defaults on `echoes.app` must not ship unless those pages exist.
+- **Terms / Community Guidelines / Privacy Policy:** `EXPO_PUBLIC_TERMS_URL`, `EXPO_PUBLIC_GUIDELINES_URL`, `EXPO_PUBLIC_PRIVACY_URL` (the store consoles also need the privacy policy URL). The defaults on `echoes.app` must not ship unless those pages exist.
 - **Keywords (iOS, 100 chars):** memories,places,map,journal,voice notes,photos,local history,community,aura,nostalgia
 
 ## Full description
@@ -24,7 +24,7 @@ ECHOES lets you leave a memory where it happened. Pin a photo, a few words or a 
 - You decide who sees it: keep it private, share it publicly, tag people, share it with a community, or set it to appear on a future date.
 - Communities and institutions: join neighbourhood, theme or school communities and see what they remember.
 - Place custodians: care for a place and hand custodianship to someone else with a transfer request.
-- Radar view: see memories around you as you walk.
+- Radar view: see memories around you.
 - Works offline: saves are queued and retried when you are back online.
 - Safe by design: report any memory, community or profile, block people, and rely on a moderation team that aims to respond within 24 hours. Memories reported by three verified users are hidden until staff review them.
 - Your data, your control: delete a memory (kept 30 days so you can restore it) or delete your whole account from inside the app.

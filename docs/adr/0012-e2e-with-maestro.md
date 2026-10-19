@@ -7,7 +7,7 @@
 ADR-0005 planned Maestro flows in CI. The project is developed on Windows, and CI has no device farm or iOS simulator. EAS builds also need the owner's Expo account. Flows must not depend on a live Firebase project, which would leave test data and need real accounts.
 
 ## Decision
-- **Flows** live in `mobile/.maestro/*.yaml` with `appId: ${APP_ID}`, because the two builds have different bundle ids: `com.phantom.echoes` (Android) and `com.mrnk2107.echoes` (iOS). The owner passes the right one with `-e APP_ID=...`. They select elements only by visible copy (the app has no `testID`s; copy is single-sourced in `src/ui/copy.ts`).
+- **Flows** live in `mobile/.maestro/*.yaml` with `appId: ${APP_ID}`, because the two builds have different bundle ids: `com.phantom.echoes` (Android) and `com.mrnk2107.echoes` (iOS). The owner passes the right one with `-e APP_ID=...`. They select elements only by visible text or accessibility label, never by `id` (the app does set `testID`s for Jest, but the flows do not use them; copy is single-sourced in `src/ui/copy.ts`).
 - **Target:** a new EAS profile `e2e` (internal distribution, Android APK, iOS simulator build) with `EXPO_PUBLIC_BACKEND=memory`. The seeded demo backend gives deterministic data and the demo account `demo@echoes.app` / `echoes-demo`. Location comes from Maestro `setLocation` at a seeded place.
 - **CI gate:** `mobile/test/maestroFlows.test.ts` parses every flow (`yaml` devDependency; linter in `mobile/test/maestroLint.ts`) and checks that:
   - `appId` is `${APP_ID}` (or the literal `com.phantom.echoes`), and both bundle ids exist in `app.config.ts`;

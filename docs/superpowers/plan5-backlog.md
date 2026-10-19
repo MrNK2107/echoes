@@ -57,3 +57,11 @@ Launch-readiness items deferred from Plan 3's final whole-branch review. Plan 5'
 - rolledUpAt skip.
 - BulkWriter for push receipts.
 - Single-pass backfill.
+- Help and support fallback when no mail client is installed (mailto fails).
+- Retry affordances on the memory detail and inbox load-error states (memory backend included).
+- Report a profile from user search and from the blocked list.
+- Remote minimum-version gate (force update).
+- Once-nearby: wait for a `fromCache: false` snapshot before treating the list as final.
+- Migrate the remaining 15 screen test files to `renderWithServices`.
+- Red test for switching uid within one session (stale listeners and caches).
+- Throttle InstitutionsScreen searches.

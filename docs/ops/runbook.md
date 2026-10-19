@@ -50,7 +50,7 @@ Cost and flags: `node functions/tools/backfill.js --help` (`--page-size`, `--res
 - Alert on Firestore document reads per day (set the threshold near twice the expected launch volume).
 - Billing budgets with alerts at 50, 90 and 100 percent of the monthly budget.
 - Quotas: callable functions rely on per-user daily rate limits in `rateLimits` (for example reports 20 per day) and on `maxInstances: 50` for every function (v2 through `functions/globalOptions.js`, v1 `cleanupDeletedUser` in its `runWith`), which caps cost under abuse. Raise the cap in `functions/globalOptions.js` only with a reason. Review Firestore, Storage egress and Cloud Functions quotas in the console before launch.
-- Auth: enable email-enumeration protection (Firebase console, Authentication, Settings, User actions) so sign-in and password reset do not reveal whether an email exists. OWNER: enable and note the date here.
+- Auth: enable email-enumeration protection (Firebase console, Authentication, Settings, User actions) so sign-in and password reset do not reveal whether an email exists. The app has a password reset flow (Sign-in, "Forgot password?"), whose confirmation never says whether an account exists; customise the Firebase reset email template and sender domain before launch. OWNER: enable and note the date here.
 
 ## 4. Moderation procedures (staff)
 
@@ -88,11 +88,12 @@ Severity: SEV1 (data exposure, rules wide open, app unusable for everyone), SEV2
 - [ ] Sentry project, `EXPO_PUBLIC_SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_PROJECT`, and `SENTRY_AUTH_TOKEN` as an EAS secret.
 - [ ] A symbolicated test crash visible in Sentry from a production-profile build (readable stack, correct release).
 - [ ] `GOOGLE_MAPS_ANDROID_API_KEY` set as an EAS secret for production Android builds (the maps block is silently omitted without it).
+- [ ] Sentry project settings: "Prevent storing of IP addresses" on and server-side data scrubbing enabled.
 - [ ] `EXPO_ACCESS_TOKEN=...` in `functions/.env.<projectId>` (gitignored by `.env.*`) before the functions deploy, and enhanced push security enabled in Expo.
-- [ ] Legal text: Terms of Service, Community Guidelines, privacy policy, support URL and a real support inbox; set `EXPO_PUBLIC_TERMS_URL`, `EXPO_PUBLIC_GUIDELINES_URL`, `EXPO_PUBLIC_SUPPORT_EMAIL`.
+- [ ] Legal text: Terms of Service, Community Guidelines, Privacy Policy, support URL and a real support inbox; set `EXPO_PUBLIC_TERMS_URL`, `EXPO_PUBLIC_GUIDELINES_URL`, `EXPO_PUBLIC_PRIVACY_URL`, `EXPO_PUBLIC_SUPPORT_EMAIL` (production builds will not start without them).
 - [ ] Store listing, screenshots, privacy labels, age rating and reviewer account (`docs/store/`).
 - [ ] PITR, backup schedule, alerts, budgets and Auth email-enumeration protection (sections 2 and 3).
 - [ ] Maestro flows run on a device against the `e2e` build (ADR-0012; index selectors are unverified).
 - [ ] AR device matrix (`docs/release-readiness.md`); camera AR stays off until the Viro gate passes.
-- [ ] First `ci.yml` run green on GitHub (when T15 adds it).
+- [ ] First run of the existing `.github/workflows/ci.yml` is green on GitHub (the workflow is committed; only a push can prove it).
 - [ ] Moderation staff named, the `staff` claim granted, and the 24 hour response rota agreed.

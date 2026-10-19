@@ -10,7 +10,7 @@ Derived from the code on branch `expo-rewrite`, not from intent. Owner gate: a h
 | Display name | `users/{uid}.displayName`; public copy in `publicProfiles/{uid}` (readable by other signed-in users; name only) | `types.ts` (`AppUser`, `PublicProfile`); `functions/onPublicProfileWritten.js` |
 | Profile photo URL | `users/{uid}.photoUrl` (field exists; no upload UI in v1) | `types.ts` (`AppUser.photoUrl`) |
 | Precise location of memories | `memories/{id}.latitude/longitude/geohash`; place coordinates in `places/{id}` | `types.ts` (`Memory`, `Place`) |
-| Current device location | Read on device to find and pin nearby memories; the live position is not stored. It becomes data only as the coordinates of a memory the user saves | `mobile/app.config.ts` (`expo-location`, when-in-use only); `mobile/src/device/expoLocation.ts` |
+| Current device location | Read on device to find and pin nearby memories; the live position is not stored. It becomes data only as the coordinates of a memory the user saves | `mobile/app.config.ts` (`expo-location`, when-in-use only; always-on, background mode and motion are switched off and asserted by `mobile/test/appConfig.introspect.test.ts`); `mobile/src/device/expoLocation.ts` |
 | Photos | Firebase Storage `memory-images/{uid}/...` (max 1 MB, image/*); URL on the memory | `storage.rules`; `types.ts` (`Memory.imageUrl`) |
 | Voice notes (audio) | Firebase Storage `memory-audio/{uid}/...` (max 5 MB, audio/*, 60 s cap in the app); URL on the memory | `storage.rules`; `app.config.ts` (`expo-audio`) |
 | Other user content | Memory text, tags, privacy mode, community and transfer records, community names and descriptions, institution data, notification preferences, terms acceptance time | `types.ts` |
@@ -18,7 +18,7 @@ Derived from the code on branch `expo-rewrite`, not from intent. Owner gate: a h
 | In-app notifications | `users/{uid}/notifications/{id}` (title, body, ids, actor id); expire 90 days after creation | `types.ts` (`AppNotification`); `firestore.indexes.json` TTL |
 | User ID | Firebase Auth uid on every owned document | all of the above |
 | Device ID (Expo push token) | `users/{uid}/pushTokens/{tokenId}` (max 10 per user); sent to Expo Push to deliver notifications | `functions/push.js`; `firestore.rules.template` |
-| Crash logs, diagnostics, performance | Sentry, only in builds with `EXPO_PUBLIC_SENTRY_DSN`. `sendDefaultPii: false`, no `setUser`, no session replay, `tracesSampleRate: 0.1`. Query strings, push tokens, bearer tokens, email-shaped strings and uids in Storage and Firestore paths (`memory-images/<uid>/`, `users/<uid>`, `publicProfiles/<uid>`) are scrubbed in `beforeSend` and `beforeBreadcrumb`, which is why the Apple "not linked" answer holds. Retention is the Sentry project setting (default 90 days; OWNER confirms) | `mobile/src/device/crashReporter.ts`; ADR-0011 |
+| Crash logs, diagnostics, performance | Sentry, only in builds with `EXPO_PUBLIC_SENTRY_DSN`. `sendDefaultPii: false`, no `setUser`, no session replay, `tracesSampleRate: 0.1`. Query strings, push tokens, bearer tokens, email-shaped strings and uids in Storage and Firestore paths (`memory-images/<uid>/`, `users/<uid>`, `publicProfiles/<uid>`) are scrubbed in `beforeSend`, `beforeSendTransaction` (transactions, span descriptions, data and attributes) and `beforeBreadcrumb`, which is why the Apple "not linked" answer holds. Retention is the Sentry project setting (default 90 days; OWNER confirms). OWNER also enables "Prevent storing of IP addresses" and server-side data scrubbing in Sentry | `mobile/src/device/crashReporter.ts`; ADR-0011 |
 | Camera / microphone / photo library | Camera: only to attach a photo (the permission string says so; camera AR is not in v1 and its wording returns with it, ADR-0010). Microphone: only to record a voice note. Content leaves the device only as the photo or audio the user saves | `app.config.ts` permissions and plugin strings |
 
 Not collected: contacts, advertising ID, browsing history, financial data, health data, background location (when-in-use only), analytics events. No ads SDK and no analytics SDK are in `mobile/package.json`. `NSPrivacyTracking` is `false` in `app.config.ts`.
@@ -68,11 +68,19 @@ Analytics purpose: none declared. Sentry data is declared as App Functionality, 
 
 The app also ships an Apple privacy manifest (`app.config.ts` `privacyManifests`): `NSPrivacyTracking: false`, UserDefaults (CA92.1) and File timestamp (C617.1) required-reason APIs. Re-check the prebuild output and third-party SDK manifests (Sentry, Firebase) before submission (owner gate).
 
+## Permission inventory (introspected, final review C1)
+
+`mobile/test/appConfig.introspect.test.ts` runs `expo config --type introspect` so the real config plugins execute, and asserts the shipped native config:
+
+- iOS: usage strings only for camera, photo library, microphone and location when in use. No `UIBackgroundModes`, no always-on location strings, no `NSMotionUsageDescription`.
+- Android: `CAMERA`, `POST_NOTIFICATIONS`, `ACCESS_COARSE_LOCATION`, `ACCESS_FINE_LOCATION`, `RECORD_AUDIO`, `MODIFY_AUDIO_SETTINGS`, storage read/write from the image picker, `INTERNET`. No `FOREGROUND_SERVICE*`, no `ACCESS_BACKGROUND_LOCATION`, no activity recognition. `SYSTEM_ALERT_WINDOW` and `FOREGROUND_SERVICE_MEDIA_PLAYBACK` are in `blockedPermissions`.
+- `expo-audio` runs with `enableBackgroundPlayback: false` and `enableBackgroundRecording: false`, so voice notes pause when the app leaves the foreground. The plugin default would have added the iOS `audio` background mode and a media-playback foreground service that the Play and App Store declarations do not cover.
+
 ## Cross-check log (Task 14 Step 1)
 
 Compared `types.ts` (every persisted field), `app.config.ts` (camera, notifications, location, microphone, photos) and `crashReporter.ts` with the tables above.
 
 - Found in code but not in the brief's list, now declared: profile photo URL field (no UI sets it; covered under Photos), notification content and actor id (Other User Content), reports and blocks, `acceptedTermsAt`. Fixed here as defects of the brief's list.
-- `app.config.ts` Android permissions are only CAMERA and POST_NOTIFICATIONS; location and microphone come from plugins. Foreground location only, so no background-location declaration is needed.
+- `app.config.ts` Android permissions are only CAMERA and POST_NOTIFICATIONS; location and microphone come from plugins (see the permission inventory above). Foreground location only, so no background-location declaration is needed.
 - Code differs from ADR-0011 wording: the Sentry release is the SDK default (`bundleId@version+build`), not just the app version (ADR corrected).
 - Platform ids differ on purpose (ADR-0009 records the split); store application ids are permanent once the apps are created, so confirm them first. Platform ids: Android `com.phantom.echoes`, iOS `com.mrnk2107.echoes`. Not a label issue, but confirm both before creating the store records (owner gate).
