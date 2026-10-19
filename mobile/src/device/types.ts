@@ -82,6 +82,11 @@ export interface HeadingService {
   subscribe(cb: (degrees: number) => void): Promise<() => void>;
 }
 
+export interface CrashReporter {
+  init(): void;
+  captureException(e: unknown, context?: Record<string, string>): void;
+}
+
 export interface ArSceneProps {
   places: (ArScenePlace & { name: string; color: string; memoryIds: string[] })[];
   heading: number;

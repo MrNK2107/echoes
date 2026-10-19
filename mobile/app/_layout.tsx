@@ -1,9 +1,10 @@
-import { Stack } from 'expo-router';
+import { Stack, type ErrorBoundaryProps } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { readConfig } from '@/services/config';
 import { createServices } from '@/services/createServices';
 import { ServicesProvider } from '@/services/ServicesProvider';
+import { ErrorFallback } from '@/ui/ErrorFallback';
 
 // Expo inlines EXPO_PUBLIC_* only for static `process.env.NAME` accesses, so list them explicitly.
 const config = readConfig({
@@ -18,8 +19,15 @@ const config = readConfig({
   EXPO_PUBLIC_TERMS_URL: process.env.EXPO_PUBLIC_TERMS_URL,
   EXPO_PUBLIC_GUIDELINES_URL: process.env.EXPO_PUBLIC_GUIDELINES_URL,
   EXPO_PUBLIC_SUPPORT_EMAIL: process.env.EXPO_PUBLIC_SUPPORT_EMAIL,
+  EXPO_PUBLIC_SENTRY_DSN: process.env.EXPO_PUBLIC_SENTRY_DSN,
 });
 const services = createServices(config);
+services.crashReporter.init();
+
+/** expo-router renders this in place of the layout when a screen throws; it sits outside the providers. */
+export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
+  return <ErrorFallback error={error} retry={retry} reporter={services.crashReporter} />;
+}
 
 export default function RootLayout() {
   return (

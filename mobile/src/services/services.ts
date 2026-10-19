@@ -4,6 +4,7 @@ import type {
   AudioPlayerService,
   AudioRecorderService,
   ConnectivityService,
+  CrashReporter,
   FileStore,
   HeadingService,
   ImagePickerService,
@@ -28,6 +29,7 @@ export interface Services {
   push: PushService;
   heading: HeadingService;
   arRenderer: ArRenderer;
+  crashReporter: CrashReporter;
   now(): Date;
   newId(): string;
 }

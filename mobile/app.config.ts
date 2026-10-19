@@ -23,6 +23,14 @@ function viroPlugin(): [string, Record<string, unknown>][] {
   ];
 }
 
+// Sentry's plugin only wires native build phases and source-map upload; add it only when the
+// owner has configured an org and project so `expo export` and Expo Go need no account (ADR-0011).
+function sentryPlugin(): [string, Record<string, unknown>][] {
+  const organization = process.env.SENTRY_ORG;
+  const project = process.env.SENTRY_PROJECT;
+  return organization && project ? [["@sentry/react-native/expo", { organization, project }]] : [];
+}
+
 export default ({ config }: ConfigContext): ExpoConfig => {
   const projectId = process.env.EXPO_PUBLIC_EAS_PROJECT_ID;
   const mapsKey = process.env.GOOGLE_MAPS_ANDROID_API_KEY;
@@ -95,6 +103,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         { microphonePermission: "ECHOES records voice notes for your memories." },
       ],
       ...viroPlugin(),
+      ...sentryPlugin(),
     ],
     ...(projectId ? { extra: { eas: { projectId } } } : {}),
   };

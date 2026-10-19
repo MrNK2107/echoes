@@ -1,3 +1,4 @@
+import Constants from 'expo-constants';
 import { CryptoDigestAlgorithm, digestStringAsync, randomUUID } from 'expo-crypto';
 
 import type { Repositories } from '@/data/types';
@@ -5,6 +6,7 @@ import type { ConnectivityService } from '@/device/types';
 import { createMemoryBackend } from '@/data/memory';
 import { buildSeed, DEMO_CENTER } from '@/data/seed';
 import { expoArRenderer } from '@/device/arRenderer';
+import { createCrashReporter } from '@/device/crashReporter';
 import { expoHeading } from '@/device/expoHeading';
 import { expoAudioPlayer, expoAudioRecorder } from '@/device/expoAudio';
 import { expoConnectivity } from '@/device/expoNetwork';
@@ -57,6 +59,12 @@ export function createServices(config: AppConfig, overrides: Partial<Services> =
     push: config.backend === 'memory' ? unavailablePush : expoPush,
     heading: expoHeading,
     arRenderer: expoArRenderer,
+    crashReporter: createCrashReporter({
+      dsn: config.sentryDsn,
+      appOwnership: Constants.appOwnership ?? null,
+      environment: config.backend,
+      release: Constants.expoConfig?.version ?? '0.0.0',
+    }),
     now,
     newId: () => randomUUID(),
     ...overrides,

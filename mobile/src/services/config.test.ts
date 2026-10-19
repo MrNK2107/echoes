@@ -79,4 +79,9 @@ describe('readConfig', () => {
   it('throws on an unknown backend', () => {
     expect(() => readConfig({ EXPO_PUBLIC_BACKEND: 'x' })).toThrow('Unknown EXPO_PUBLIC_BACKEND: x');
   });
+
+  it('reads the optional Sentry DSN', () => {
+    expect(readConfig({}).sentryDsn).toBeNull();
+    expect(readConfig({ EXPO_PUBLIC_SENTRY_DSN: 'https://k@o.io/1' }).sentryDsn).toBe('https://k@o.io/1');
+  });
 });

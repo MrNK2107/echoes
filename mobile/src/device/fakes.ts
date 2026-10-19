@@ -11,6 +11,7 @@ import type {
   ArStatus,
   AudioRecorderService,
   ConnectivityService,
+  CrashReporter,
   FileStore,
   HeadingService,
   ImagePickerService,
@@ -182,6 +183,25 @@ export function fakeArRenderer(status: ArStatus): ArRenderer {
   return { status: async () => status, requestCamera: async () => 'granted', Scene: null };
 }
 
+export interface FakeCrashReporter extends CrashReporter {
+  inits: number;
+  captured: { error: unknown; context?: Record<string, string> }[];
+}
+
+export function fakeCrashReporter(): FakeCrashReporter {
+  const r: FakeCrashReporter = {
+    inits: 0,
+    captured: [],
+    init() {
+      r.inits += 1;
+    },
+    captureException(error, context) {
+      r.captured.push(context ? { error, context } : { error });
+    },
+  };
+  return r;
+}
+
 export function testServices(overrides: Partial<Services> = {}): Services {
   let n = 0;
   const now = overrides.now ?? (() => new Date(TEST_NOW));
@@ -198,6 +218,7 @@ export function testServices(overrides: Partial<Services> = {}): Services {
     push: fakePush(),
     heading: fakeHeading('unavailable'),
     arRenderer: fakeArRenderer('missing'),
+    crashReporter: fakeCrashReporter(),
     now,
     newId: () => `id-${++n}`,
     ...overrides,

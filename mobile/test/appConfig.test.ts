@@ -128,4 +128,23 @@ describe('eas.json', () => {
     expect(eas.build.production.ios).toEqual({ resourceClass: 'm-medium' });
     expect(eas.build.production.android).toEqual({ buildType: 'app-bundle' });
   });
+
+  it('adds the Sentry plugin only with both SENTRY_ORG and SENTRY_PROJECT', () => {
+    const saved = [process.env.SENTRY_ORG, process.env.SENTRY_PROJECT];
+    try {
+      delete process.env.SENTRY_ORG;
+      delete process.env.SENTRY_PROJECT;
+      expect(plugin(build(), '@sentry/react-native/expo')).toBeUndefined();
+      expect(plugin(build({ SENTRY_ORG: 'o' }), '@sentry/react-native/expo')).toBeUndefined();
+      delete process.env.SENTRY_ORG;
+      expect(plugin(build({ SENTRY_ORG: 'o', SENTRY_PROJECT: 'p' }), '@sentry/react-native/expo')).toEqual([
+        '@sentry/react-native/expo',
+        { organization: 'o', project: 'p' },
+      ]);
+    } finally {
+      [process.env.SENTRY_ORG, process.env.SENTRY_PROJECT] = saved;
+      if (saved[0] === undefined) delete process.env.SENTRY_ORG;
+      if (saved[1] === undefined) delete process.env.SENTRY_PROJECT;
+    }
+  });
 });

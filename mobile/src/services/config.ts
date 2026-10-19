@@ -18,6 +18,8 @@ export interface AppConfig {
   guidelinesUrl: string;
   /** ADR-0008: the address behind the profile's `Help & support` link. */
   supportEmail: string;
+  /** ADR-0011: Sentry DSN; null keeps crash reporting off. */
+  sentryDsn: string | null;
 }
 
 export const DEFAULT_TERMS_URL = 'https://echoes.app/terms';
@@ -74,5 +76,6 @@ export function readConfig(env: Record<string, string | undefined>): AppConfig {
     termsUrl: env.EXPO_PUBLIC_TERMS_URL || DEFAULT_TERMS_URL,
     guidelinesUrl: env.EXPO_PUBLIC_GUIDELINES_URL || DEFAULT_GUIDELINES_URL,
     supportEmail: env.EXPO_PUBLIC_SUPPORT_EMAIL || DEFAULT_SUPPORT_EMAIL,
+    sentryDsn: env.EXPO_PUBLIC_SENTRY_DSN || null,
   };
 }
