@@ -40,6 +40,21 @@ describe('InboxBell', () => {
     expect(await screen.findByText('9+')).toBeOnTheScreen();
   });
 
+  it('announces the unread count', async () => {
+    await setup(3);
+    expect((await screen.findByLabelText('Notifications')).props.accessibilityValue).toEqual({ text: '3 unread' });
+  });
+
+  it('announces 9+ unread past the cap and nothing when all read', async () => {
+    await setup(12);
+    expect((await screen.findByLabelText('Notifications')).props.accessibilityValue).toEqual({ text: '9+ unread' });
+  });
+
+  it('has no accessibility value when nothing is unread', async () => {
+    await setup(0, 1);
+    expect((await screen.findByLabelText('Notifications')).props.accessibilityValue?.text).toBeUndefined();
+  });
+
   it('opens the inbox', async () => {
     await setup(1);
     await act(async () => {

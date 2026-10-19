@@ -37,6 +37,15 @@ describe('InboxScreen', () => {
     expect(screen.getByText('Second title')).toBeOnTheScreen();
   });
 
+  it('exposes unread state in the row label', async () => {
+    await setup([
+      note({ id: 'a', title: 'T1', body: 'B1' }),
+      note({ id: 'b', title: 'T2', body: 'B2', readAt: new Date() }),
+    ]);
+    expect(await screen.findByLabelText('Unread. T1. B1')).toBeOnTheScreen();
+    expect(screen.getByLabelText('T2. B2')).toBeOnTheScreen();
+  });
+
   it('shows the empty state', async () => {
     await setup([]);
     expect(await screen.findByText("You're all caught up.")).toBeOnTheScreen();

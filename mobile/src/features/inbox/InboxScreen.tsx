@@ -60,6 +60,7 @@ export function InboxScreen() {
             <Pressable
               testID={`notification-${item.id}`}
               accessibilityRole="button"
+              accessibilityLabel={`${isUnread ? 'Unread. ' : ''}${item.title}. ${item.body}`}
               onPress={() => open(item)}
               style={[styles.row, isUnread && styles.rowUnread]}
             >

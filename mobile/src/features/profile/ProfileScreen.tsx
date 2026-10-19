@@ -106,14 +106,14 @@ export function ProfileScreen() {
   const prefs: NotificationPrefs = user?.notificationPrefs ?? { transfers: true, tags: true, communityInvites: true };
   const togglePref = async (key: keyof NotificationPrefs, value: boolean) => {
     if (!uid || !user) return;
-    const previous = user.notificationPrefs;
+    const previous = prefs[key];
     const next = { ...prefs, [key]: value };
-    setUser((u) => (u ? { ...u, notificationPrefs: next } : u));
+    setUser((u) => (u ? { ...u, notificationPrefs: { ...u.notificationPrefs, [key]: value } } : u));
     setError(null);
     try {
       await repos.users.updateNotificationPrefs(uid, next, now());
     } catch {
-      setUser((u) => (u ? { ...u, notificationPrefs: previous } : u));
+      setUser((u) => (u ? { ...u, notificationPrefs: { ...u.notificationPrefs, [key]: previous } } : u));
       setError(GENERIC_ERROR);
     }
   };

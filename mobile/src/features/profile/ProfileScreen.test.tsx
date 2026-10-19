@@ -210,6 +210,22 @@ describe('ProfileScreen', () => {
       expect(screen.getByLabelText('Tags').props.value).toBe(false);
     });
 
+    it('rolls back only the failed toggle when two toggles are flipped quickly', async () => {
+      const services = testServices();
+      jest
+        .spyOn(services.repos.users, 'updateNotificationPrefs')
+        .mockRejectedValueOnce(new Error('x'))
+        .mockResolvedValue(undefined);
+      await setup(services);
+      await waitFor(() => expect(screen.getByLabelText('Tags').props.disabled).toBeFalsy());
+      await act(async () => {
+        fireEvent(screen.getByLabelText('Tags'), 'valueChange', false);
+        fireEvent(screen.getByLabelText('Custodianship requests'), 'valueChange', false);
+      });
+      await waitFor(() => expect(screen.getByLabelText('Tags').props.value).toBe(true));
+      expect(screen.getByLabelText('Custodianship requests').props.value).toBe(false);
+    });
+
     it('reverts and shows the generic error when saving fails', async () => {
       const services = testServices();
       jest.spyOn(services.repos.users, 'updateNotificationPrefs').mockRejectedValue(new Error('x'));

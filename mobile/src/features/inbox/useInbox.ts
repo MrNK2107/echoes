@@ -11,7 +11,7 @@ export interface Inbox {
   loaded: boolean;
   unread: number;
   error: string | null;
-  /** Marks one read; resolves false (and sets `error`) when saving fails. */
+  /** Marks one read; resolves false when saving fails (silently: the row stays unread, no error is set). */
   markRead: (id: string) => Promise<boolean>;
   markAllRead: () => Promise<void>;
 }

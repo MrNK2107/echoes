@@ -13,6 +13,7 @@ export function InboxBell() {
     <Pressable
       accessibilityRole="button"
       accessibilityLabel="Notifications"
+      accessibilityValue={unread > 0 ? { text: `${unread > 9 ? '9+' : unread} unread` } : undefined}
       onPress={() => router.push('/notifications' as never)}
       style={styles.bell}
     >
