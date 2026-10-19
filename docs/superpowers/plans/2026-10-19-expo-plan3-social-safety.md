@@ -279,15 +279,15 @@ PlaceRepository.subscribeAuraHistory(placeId, cb, onError?): Unsubscribe   // �
 AuthRepository: sendEmailVerification(): Promise<void>; refreshUser(): Promise<{ email: string; emailVerified: boolean; staff: boolean }>
 ```
 
-- [ ] **Step 1: Failing contract cases:**
+- [x] **Step 1: Failing contract cases:**
   - community create/join/leave/invite/feed (community-privacy memory visible to members only);
   - auto year community appears in `subscribeMine` after a memory create (poll);
   - transfers full flow incl. revoke and duplicate pending error;
   - institution create (memory backend: staff flag on the test identity; emulator: custom claim via Auth emulator REST);
   - claimAdmin with verified/unverified email (emulator: set `emailVerified` via Auth emulator REST);
   - aura history emits entries after memory writes.
-- [ ] **Step 2–4:** FAIL → implement → PASS (unit + emulator).
-- [ ] **Step 5: Commit** `feat(data): communities, transfers, institutions, aura history`.
+- [x] **Step 2–4:** FAIL → implement → PASS (unit + emulator).
+- [x] **Step 5: Commit** `feat(data): communities, transfers, institutions, aura history`.
 
 ---
 
