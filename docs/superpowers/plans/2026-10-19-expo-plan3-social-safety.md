@@ -354,13 +354,13 @@ AuthRepository: sendEmailVerification(): Promise<void>; refreshUser(): Promise<{
 
 **Files:** Create `mobile/src/features/transfers/{TransferSheet,TransferHistory,useTransfers}.tsx` + tests; Modify `PlaceScreen` (action for custodians), `InboxScreen` (Accept/Decline for `transferRequest`), `ProfileScreen` (`Places you look after`, `Transfer history` with `Revoke` until `revokeUntil`).
 
-- [ ] **Step 1: Failing tests:**
+- [x] **Step 1: Failing tests:**
   - custodian-only action; send request → `Request sent.`; duplicate copy;
   - Accept/Decline from the inbox update status;
   - Revoke visible only while `now <= revokeUntil` → `Transfer revoked.`;
   - non-custodian sees no action.
-- [ ] **Step 2–4:** FAIL → implement → PASS.
-- [ ] **Step 5: Commit** `feat(transfers): request, accept, decline, revoke`.
+- [x] **Step 2–4:** FAIL → implement → PASS.
+- [x] **Step 5: Commit** `feat(transfers): request, accept, decline, revoke`.
 
 ---
 
