@@ -93,21 +93,29 @@ async function sendPushForNotification(
         }
         const result = await response.json();
         const tickets = Array.isArray(result?.data) ? result.data : [];
+        // Each ticket is handled on its own: one failed write must not skip the others.
         await Promise.all(
           tickets.map(async (ticket, index) => {
             const code = ticket?.details?.error;
-            if (ticket?.status === "ok" && typeof ticket.id === "string" && ticket.id && group[index]) {
-              const createdAt = now();
-              await db.collection("pushReceipts").doc(ticket.id).set({
-                uid,
-                tokenId: group[index].ref.id,
-                createdAt,
-                expireAt: new Date(createdAt.getTime() + RECEIPT_TTL_MS),
-              });
-            } else if (code === "DeviceNotRegistered" && group[index]) {
-              await group[index].ref.delete();
-            } else if (ticket?.status === "error") {
-              logger.warn("Expo push ticket error", { uid, notificationId, error: code ?? "unknown" });
+            try {
+              if (ticket?.status === "ok" && typeof ticket.id === "string" && ticket.id && group[index]) {
+                const createdAt = now();
+                await db.collection("pushReceipts").doc(ticket.id).set({
+                  uid,
+                  tokenId: group[index].ref.id,
+                  createdAt,
+                  expireAt: new Date(createdAt.getTime() + RECEIPT_TTL_MS),
+                });
+              } else if (code === "DeviceNotRegistered" && group[index]) {
+                await group[index].ref.delete();
+              } else if (ticket?.status === "error") {
+                logger.warn("Expo push ticket error", { uid, notificationId, error: code ?? "unknown" });
+              }
+            } catch (error) {
+              logger.error(
+                ticket?.status === "ok" ? "Could not store a push receipt" : "Could not prune a push token",
+                { uid, notificationId, error: String(error) },
+              );
             }
           }),
         );
@@ -180,7 +188,7 @@ async function receiptsHandler(
   now,
   { logger = firebaseLogger, env = process.env } = {},
 ) {
-  const summary = { checked: 0, removedTokens: 0, deletedReceipts: 0 };
+  const summary = { checked: 0, removedTokens: 0, deletedReceipts: 0, expiredReceipts: 0 };
   try {
     const cutoff = new Date(now().getTime() - RECEIPT_MIN_AGE_MS);
     const snapshot = await db
@@ -209,7 +217,16 @@ async function receiptsHandler(
         await Promise.all(
           group.map(async (d) => {
             const receipt = receipts[d.id];
-            if (!receipt) return;
+            if (!receipt) {
+              // Expo no longer knows this id: give up on it once it is older than the receipt TTL.
+              const createdAt = d.data()?.createdAt;
+              const ms = createdAt?.toDate ? createdAt.toDate().getTime() : new Date(createdAt).getTime();
+              if (ms < now().getTime() - RECEIPT_TTL_MS) {
+                await d.ref.delete();
+                summary.expiredReceipts += 1;
+              }
+              return;
+            }
             const code = receipt.details?.error;
             if (receipt.status === "error") {
               const { uid, tokenId } = d.data();

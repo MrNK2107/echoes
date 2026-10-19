@@ -59,6 +59,7 @@ export function ProfileScreen() {
   const [error, setError] = useState<string | null>(null);
   const pushAvailable = push.availability() === 'available';
   const [pushPermission, setPushPermission] = useState<PushPermission | null>(null);
+  const pushPermissionRef = useRef<PushPermission | null>(null);
   const [enablingPush, setEnablingPush] = useState(false);
   const enablingPushRef = useRef(false);
 
@@ -68,7 +69,9 @@ export function ProfileScreen() {
     push
       .permission()
       .then((p) => {
-        if (!cancelled) setPushPermission(p);
+        if (cancelled) return;
+        pushPermissionRef.current = p;
+        setPushPermission(p);
       })
       .catch(() => {
         if (!cancelled) setPushPermission('undetermined');
@@ -88,8 +91,10 @@ export function ProfileScreen() {
         .permission()
         .then(async (p) => {
           if (cancelled) return;
+          const wasGranted = pushPermissionRef.current === 'granted';
+          pushPermissionRef.current = p;
           setPushPermission(p);
-          if (p === 'granted') await registerDevice(services, uid);
+          if (p === 'granted') await registerDevice(services, uid, { force: !wasGranted });
         })
         .catch((e: unknown) => console.warn('Could not refresh push permission', e));
     });
@@ -106,8 +111,9 @@ export function ProfileScreen() {
     setError(null);
     try {
       const result = await push.request();
+      pushPermissionRef.current = result;
       setPushPermission(result);
-      if (result === 'granted') await registerDevice(services, uid);
+      if (result === 'granted') await registerDevice(services, uid, { force: true });
     } catch {
       setError(GENERIC_ERROR);
     } finally {

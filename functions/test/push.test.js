@@ -406,7 +406,10 @@ test("receipts: processes at most 1000 receipts per run, in chunks of 300", asyn
   const calls = [];
   await receiptsHandler(db, receiptFetch(calls), () => NOW);
   assert.deepEqual(calls.map((c) => c.ids.length), [300, 300, 300, 100]);
-  assert.equal(db._list("pushReceipts").length, 100);
+  const left = db._list("pushReceipts").length;
+  assert.equal(left, 100);
+  for (let i = 1000; i < 1100; i++) assert.ok(db._get("pushReceipts/r" + String(i).padStart(4, "0")), "newest kept");
+  assert.equal(db._get("pushReceipts/r0000"), undefined);
 });
 
 test("receipts: a fetch failure keeps the receipt docs", async () => {
@@ -428,4 +431,56 @@ test("receipts: ids Expo does not know yet are kept", async () => {
 
 test("checkPushReceipts runs every 30 minutes", () => {
   assert.equal(checkPushReceipts.__endpoint.scheduleTrigger.schedule, "every 30 minutes");
+});
+
+test("receipts: an id Expo does not know is deleted once it is older than 24 h, kept before", async () => {
+  const db = createFakeFirestore();
+  putReceipt(db, "stale", 25 * 60);
+  putReceipt(db, "recent", 60);
+  const summary = await receiptsHandler(db, async () => ({ ok: true, status: 200, json: async () => ({ data: {} }) }), () => NOW);
+  assert.equal(db._get("pushReceipts/stale"), undefined);
+  assert.ok(db._get("pushReceipts/recent"));
+  assert.equal(summary.expiredReceipts, 1);
+});
+
+test("receipts: an error other than DeviceNotRegistered logs the code only and deletes the receipt", async () => {
+  const db = createFakeFirestore();
+  seedTokens(db, 1);
+  putReceipt(db, "r1", 30);
+  const warns = [];
+  const logger = { error() {}, info() {}, warn: (...a) => warns.push(a) };
+  await receiptsHandler(
+    db,
+    receiptFetch([], () => ({ status: "error", message: "bad ExponentPushToken[0]", details: { error: "MessageRateExceeded" } })),
+    () => NOW,
+    { logger },
+  );
+  assert.equal(db._get("pushReceipts/r1"), undefined);
+  assert.ok(db._get("users/u1/pushTokens/t0"));
+  const text = JSON.stringify(warns);
+  assert.equal(warns.length, 1);
+  assert.ok(text.includes("MessageRateExceeded"));
+  assert.ok(!text.includes("ExponentPushToken"));
+});
+
+test("a failing receipt write does not stop DeviceNotRegistered pruning, and is logged on its own", async () => {
+  const db = createFakeFirestore();
+  seedTokens(db, 2);
+  const real = db.collection.bind(db);
+  db.collection = (name) => {
+    if (name === "pushReceipts") throw new Error("write failed");
+    return real(name);
+  };
+  const logs = [];
+  const logger = { error: (m) => logs.push(m), warn() {}, info() {} };
+  const fetch = async (url, init) => ({
+    ok: true, status: 200,
+    json: async () => ({
+      data: JSON.parse(init.body).map((m, i) =>
+        i === 0 ? { status: "error", details: { error: "DeviceNotRegistered" } } : { status: "ok", id: "tk" }),
+    }),
+  });
+  await sendPushForNotification(db, "u1", "n1", doc, { fetch, logger });
+  assert.equal(db._get("users/u1/pushTokens/t1"), undefined);
+  assert.deepEqual(logs, ["Could not store a push receipt"]);
 });

@@ -148,6 +148,19 @@ describe('registration throttle and offline retry', () => {
     expect(register).toHaveBeenCalledTimes(1);
   });
 
+  it('force registers despite the throttle', async () => {
+    const { services, register } = setup();
+    await registerDevice(services, 'A');
+    await registerDevice(services, 'A', { force: true });
+    expect(register).toHaveBeenCalledTimes(2);
+  });
+
+  it('concurrent calls share one in-flight attempt', async () => {
+    const { services, register } = setup();
+    await Promise.all([registerDevice(services, 'A'), registerDevice(services, 'A'), registerDevice(services, 'A')]);
+    expect(register).toHaveBeenCalledTimes(1);
+  });
+
   it('a failure while already waiting for the network does not subscribe twice', async () => {
     const { services, subscribe, register } = setup({ failFirst: true });
     await expect(registerDevice(services, 'A')).rejects.toThrow('offline');

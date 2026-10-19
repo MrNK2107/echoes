@@ -54,10 +54,18 @@ bundle `com.mrnk2107.echoes`.
   smoke-tested on a development build.
 
 ## Token squatting
-A client can register another device's token under its own uid (the rules only check the token's
-format, and a push token is not a secret to the device that holds it). The impact is limited: the
-squatter receives that device's pushes for the squatter's own inbox, and the real owner's
-notifications are unaffected because tokens are per user. The mitigation is the dedupe in
-`onPushTokenCreated`, which removes the token from every other user when it is registered again,
-plus Expo's enhanced push security (an access token is required to send, so nobody else can push
-to a token they merely know).
+A client can register another device's push token under its own uid: the rules only check the
+token's format. The effects:
+- **Impact.** The attacker's notifications are delivered to the victim's device (the token now
+  belongs to the attacker's inbox). `onPushTokenCreated` also removes the token from every other
+  user, so the victim's own token doc is deleted and the victim stops receiving their own pushes
+  until their client registers again.
+- **No content leaks.** Push bodies are generic per type and titles are fixed, so the victim sees
+  only text such as "You have a new community invitation."; the inbox keeps the details, and it is
+  readable only by its owner.
+- **Bounded.** The victim's next registration (app start, foreground after 6 h, or enabling
+  push) reclaims the token and removes it from the attacker. The attacker also needs the victim's
+  token, which is not public.
+- **Enhanced push security.** Setting `EXPO_ACCESS_TOKEN` makes Expo require it for sends, so
+  third parties who learn a token cannot send to it. It stops outsiders only; it does not stop the
+  registration above. It must be enabled for the project before launch.

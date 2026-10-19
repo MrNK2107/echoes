@@ -73,11 +73,12 @@ Do these before shipping the Expo client.
 - **Restoring hidden memories.** Staff restore a hidden memory by setting
   `moderation` to `null`. Never delete the field: a memory without it is hidden
   from non-authors (ADR-0008).
-- **TTL policies** (Firestore console or `gcloud firestore fields ttls update`):
-  - collection group `rateLimits`, field `expireAt` (counters expire two days
-    after their UTC day starts);
-  - collection group `notifications`, field `expireAt` (notifications expire 90
-    days after `createdAt`).
+- **TTL policies** are declared in `firestore.indexes.json` (`fieldOverrides` with
+  `ttl: true`) and deploy with `firebase deploy --only firestore:indexes`; no
+  console step is needed:
+  - `rateLimits.expireAt` (counters expire two days after their UTC day starts);
+  - `notifications.expireAt` (notifications expire 90 days after `createdAt`);
+  - `pushReceipts.expireAt` (push receipts expire one day after the ticket).
   TTL deletion is not instant; expired docs may linger for up to a day or so.
 - **Client item C8.** Set real `EXPO_PUBLIC_TERMS_URL`,
   `EXPO_PUBLIC_GUIDELINES_URL` and `EXPO_PUBLIC_SUPPORT_EMAIL` values before store

@@ -20,6 +20,8 @@ interface DeviceState {
   last?: { uid: string; at: number; permission: string };
   /** Cancels the pending "retry when back online" subscription, if any. */
   cancelRetry?: () => void;
+  /** The attempt in flight, shared by concurrent callers of the same user. */
+  inflight?: { uid: string; promise: Promise<void> };
 }
 const states = new WeakMap<PushService, DeviceState>();
 const stateOf = (push: PushService): DeviceState => {
@@ -56,13 +58,14 @@ function retryWhenOnline(services: Services, uid: string, state: DeviceState): v
   if (done) unsubscribe();
 }
 
-async function attempt(services: Services, uid: string, armRetry: boolean): Promise<void> {
+async function attempt(services: Services, uid: string, armRetry: boolean, force = false): Promise<void> {
   const state = stateOf(services.push);
   const epoch = state.epoch;
   try {
     const permission = await services.push.permission();
     const last = state.last;
     if (
+      !force &&
       last &&
       last.uid === uid &&
       last.permission === permission &&
@@ -92,10 +95,20 @@ async function attempt(services: Services, uid: string, armRetry: boolean): Prom
 /**
  * Fetches this device's push token and stores it for the user; no-op when there is no token.
  * Skipped when this user registered successfully within 6 h and the permission is unchanged. A
- * failure subscribes once to connectivity and retries on the first online event.
+ * `force` skips that check (permission just granted). A failure subscribes once to connectivity and retries on the first online event.
  */
-export function registerDevice(services: Services, uid: string): Promise<void> {
-  return attempt(services, uid, true);
+export function registerDevice(
+  services: Services,
+  uid: string,
+  { force = false }: { force?: boolean } = {},
+): Promise<void> {
+  const state = stateOf(services.push);
+  if (state.inflight?.uid === uid) return state.inflight.promise;
+  const promise = attempt(services, uid, true, force).finally(() => {
+    if (state.inflight?.promise === promise) state.inflight = undefined;
+  });
+  state.inflight = { uid, promise };
+  return promise;
 }
 
 /** Removes this device's token for `uid` (best effort, one short timeout), then always signs out. */

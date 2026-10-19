@@ -280,6 +280,9 @@
     }
   ],
   "fieldOverrides": [
+    { "collectionGroup": "pushReceipts", "fieldPath": "expireAt", "ttl": true, "indexes": [] },
+    { "collectionGroup": "notifications", "fieldPath": "expireAt", "ttl": true, "indexes": [] },
+    { "collectionGroup": "rateLimits", "fieldPath": "expireAt", "ttl": true, "indexes": [] },
     {
       "collectionGroup": "notifications",
       "fieldPath": "actorId",

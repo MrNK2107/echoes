@@ -109,3 +109,14 @@ test("counterShards.updatedAt has a collection-group index (member-count rollup,
     "collection-group ascending index",
   );
 });
+
+test("TTL policies are declared as code (pushReceipts, notifications, rateLimits expireAt)", () => {
+  for (const group of ["pushReceipts", "notifications", "rateLimits"]) {
+    const override = config.fieldOverrides.find(
+      (o) => o.collectionGroup === group && o.fieldPath === "expireAt",
+    );
+    assert.ok(override, "fieldOverrides entry for " + group + ".expireAt");
+    assert.equal(override.ttl, true);
+    assert.deepEqual(override.indexes, []);
+  }
+});

@@ -10,6 +10,7 @@ import { ServicesProvider } from '@/services/ServicesProvider';
 import type { Services } from '@/services/services';
 
 import { PushBridge } from '@/features/push/PushBridge';
+import { registerDevice } from '@/features/push/pushDevice';
 
 import { ProfileScreen } from './ProfileScreen';
 
@@ -171,5 +172,44 @@ describe('Profile push settings', () => {
     await waitFor(async () =>
       expect(await services.repos.pushTokens.get('user-demo', 'ExponentPushToken[abc]')).not.toBeNull(),
     );
+  });
+});
+
+describe('Profile push re-grant within the throttle window', () => {
+  const hook = () => {
+    let onChange: ((s: AppStateStatus) => void) | undefined;
+    jest.spyOn(AppState, 'addEventListener').mockImplementation((_t, h) => {
+      onChange = h as (s: AppStateStatus) => void;
+      return { remove: jest.fn() };
+    });
+    return (s: AppStateStatus) => act(async () => onChange?.(s));
+  };
+
+  it('enabling after the permission was reset registers again', async () => {
+    const emit = hook();
+    const push = fakePush({ permission: 'granted', token: 'ExponentPushToken[abc]' });
+    const services = await setup(push, {}, false);
+    const register = jest.spyOn(services.repos.pushTokens, 'register');
+    await screen.findByText('Push notifications are on');
+    await registerDevice(services, 'user-demo');
+    push.setPermission('undetermined');
+    await emit('active');
+    await fireEvent.press(await screen.findByText(ENABLE));
+    await screen.findByText('Push notifications are on');
+    await waitFor(() => expect(register).toHaveBeenCalled());
+  });
+
+  it('a permission re-granted in settings registers again within the window', async () => {
+    const emit = hook();
+    const push = fakePush({ permission: 'granted', token: 'ExponentPushToken[abc]' });
+    const services = await setup(push, {}, false);
+    await registerDevice(services, 'user-demo');
+    const register = jest.spyOn(services.repos.pushTokens, 'register');
+    push.setPermission('denied');
+    await emit('active');
+    await screen.findByText('Push notifications are blocked in system settings.');
+    push.setPermission('granted');
+    await emit('active');
+    await waitFor(() => expect(register).toHaveBeenCalledTimes(1));
   });
 });
