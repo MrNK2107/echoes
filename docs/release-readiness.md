@@ -87,3 +87,12 @@ Do these before shipping the Expo client.
   it in the Expo dashboard and set `EXPO_ACCESS_TOKEN` as a function secret or
   environment variable; the function then sends `Authorization: Bearer <token>`.
   Not required for push to work.
+
+## Expo Plan 4 push and AR runbook
+
+- **EAS credentials:** the owner runs `npx eas-cli init` in `mobile/` and sets `EXPO_PUBLIC_EAS_PROJECT_ID` (local `.env` and EAS environment variables). Configure Android FCM credentials (upload the Firebase service account key / `google-services.json` through `eas credentials`) and iOS APNs credentials (EAS manages the key with an Apple Developer account). Without them Expo Push cannot deliver to physical devices.
+- **Expo Push:** `functions/push.js` sends via the Expo push API. Optionally set `EXPO_ACCESS_TOKEN` on the functions environment (Expo account token) to authenticate requests when enhanced push security is on. Sends go to at most the 10 most recently seen tokens per user, in chunks of 100; `DeviceNotRegistered` tickets prune the token. Receipt polling is not implemented.
+- **Index deploy:** run `npx firebase deploy --only firestore:indexes --project <project-id>` before shipping. `firestore.indexes.json` includes the `pushTokens.token` collection-group field override that `onPushTokenCreated` uses to dedupe a token across users on shared phones.
+- **Deploy functions** (`onNotificationCreated`, `onPushTokenCreated`) together with the indexes.
+- **ARCore/ARKit device matrix:** test on at least one ARCore-supported Android device, one non-ARCore Android device, one ARKit iPhone (iOS 15+) and, if possible, a low-end device. Record radar behaviour (orbs, compass heading, 4 s north-up fallback) and, once camera AR is enabled, camera scene, FPS (30 or better) and the fallback to radar.
+- **Viro compatibility gate:** `@reactvision/react-viro` currently fails to install on Expo SDK 58 / RN 0.88 (ERESOLVE), so the radar is the shipping AR experience. Before enabling camera AR in a release, install a compatible viro version, verify its API usage and config-plugin options (unverified today), and complete the camera AR device matrix above. Do not ship camera AR on the strength of mocks alone.

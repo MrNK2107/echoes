@@ -3,6 +3,44 @@
 **Updated:** October 19, 2026  
 **Target:** Production-ready v1 for Android and iOS, age 13+
 
+## Expo rewrite — Plan 4
+
+Plan 4 (push and AR) adds Expo Push delivery for inbox notifications (`functions/push.js` `onNotificationCreated`: at most the 10 most recently seen tokens per user, chunks of 100, `DeviceNotRegistered` pruning; `onPushTokenCreated` dedupes a token across users on shared phones), client registration on sign-in or opt-in and unregistration on sign-out, tap routing from a notification to its target, and an AR screen. **`@reactvision/react-viro` does not install on Expo SDK 58 / RN 0.88 (ERESOLVE), so per R-P4-9 the 2D radar is the AR experience everywhere today.** The camera AR code (the `ViroArScene` factory) switches on automatically once a compatible viro installs; its Viro API usage is unverified until then.
+
+| Command | Result |
+| --- | --- |
+| `cd mobile && npx jest` (3 runs) | Pass (68 suites, 935 tests, identical each run) |
+| `cd mobile && npx jest --randomize` | Pass (68 suites, 935 tests) |
+| `cd mobile && npx tsc --noEmit` | Pass |
+| `cd mobile && npx eslint .` | Pass (0 errors, 4 `no-require-imports` warnings in jest.setup.ts) |
+| `npm test` in `functions/` | Pass (252 tests) |
+| `npx firebase-tools emulators:exec --project demo-echoes --only auth,firestore,storage,functions "npm --prefix mobile run test:emulator"` | Pass (68 passed, 1 skipped) |
+| `npx firebase-tools emulators:exec --only firestore,storage --project demo-echoes "cd rules_test && npm test"` | Pass (46 tests) |
+| `node scripts/build-rules.js` then `git status --porcelain` | Pass (no rules changes, generated rules in sync) |
+| `cd mobile && npx expo export --platform android` and `--platform ios` | Pass (both bundles exported) |
+
+### Device-only checklist
+
+- [ ] Owner runs `npx eas-cli init`, sets `EXPO_PUBLIC_EAS_PROJECT_ID`, builds and installs the development build (`npx eas-cli build --profile development --platform android`)
+- [ ] Push: opt in from the inbox or settings and accept the OS permission
+- [ ] Push: trigger a notification (for example a transfer request); it arrives with the app backgrounded
+- [ ] Push: tapping it opens the right screen, from cold start and from background
+- [ ] Push: sign out on a shared phone; the previous user stops receiving pushes, and the next user's sign-in registers cleanly
+- [ ] AR radar on a device: orbs and place target render, taps open the place or memory, the compass heading rotates the radar, and the radar falls back to north-up when the compass never reports (4 s timeout)
+- [ ] Camera AR: once a compatible `@reactvision/react-viro` installs, verify the camera scene, orb placement, tap handling and the ARCore/ARKit fallback to radar
+
+### Known follow-ups
+
+- Viro is not installed (ERESOLVE on SDK 58 / RN 0.88). Camera AR is untested and its API usage and config-plugin options are unverified until it installs.
+- AR and push have been validated only on mocks until a device run; an EAS build needs the owner's Expo account.
+- Push receipt polling is not implemented (only ticket-level `DeviceNotRegistered` pruning); users with more than 10 devices miss pushes on the stale ones.
+- Deploy `firestore.indexes.json` before relying on push: it carries the `pushTokens.token` collection-group override used by the dedupe trigger.
+- Optional `EXPO_ACCESS_TOKEN` on functions enables Expo's enhanced push security.
+- Radar polish for the device check: orb overlap across places in dense areas, ring crowding on small radars, safe-area back button, Firestore union listener cost (about 4 listeners per place).
+- Push token registration re-runs on foreground rather than only on a not-granted to granted change; offline registration fails and is retried later.
+
+---
+
 ## Expo rewrite — Plan 3
 
 Plan 3 (social and safety) adds public profiles and people search, tagged and community privacy, server-authoritative communities, transfers and institutions (callables), a notifications inbox with preferences, safety (report, auto-hide at 3, block, profanity warning, terms acceptance, help and terms links) and an aura history chart.
@@ -35,7 +73,7 @@ Plan 3 (social and safety) adds public profiles and people search, tagged and co
 
 ### Known follow-ups
 
-- Push delivery is Plan 4 (inbox is in-app only).
+- Push delivery landed in Plan 4 (see above).
 - No staff review UI for reports or institution verification yet.
 - Terms, Guidelines and support content is the owner's to write and host.
 - Production rules must be generated with the real storage bucket (`FIREBASE_STORAGE_BUCKET`) and deployed only after the legacy data backfill sets `moderation: null` on existing memories; see docs/release-readiness.md.

@@ -226,6 +226,28 @@ Push notifications and camera AR need native code, so they require an EAS build;
 
 Expo Go still works for everything except remote push and camera AR (AR falls back to the 2D view). See ADR-0009.
 
+### Development build and device testing
+
+1. Build: `cd mobile && npx eas-cli build --profile development --platform android` (needs `EXPO_PUBLIC_EAS_PROJECT_ID`, see above).
+2. Install the resulting APK on the phone (scan the EAS QR code or download the artifact).
+3. Start Metro for the dev client: `npx expo start --dev-client`, then open the installed ECHOES app.
+
+**Push smoke test** (dev build, signed in with a real or emulator backend):
+
+- Opt in to notifications and accept the OS prompt; a doc appears under `users/{uid}/pushTokens`.
+- Create a notification for yourself (for example have another account send a transfer request); with the app backgrounded the push arrives.
+- Tap it; the app opens the target screen (cold start and background).
+- Sign out; the token doc is removed. On a shared phone, signing in as someone else must not deliver the previous user's pushes.
+- Functions send through Expo Push; set the optional `EXPO_ACCESS_TOKEN` on functions if you enabled enhanced push security in your Expo account.
+
+**AR device checklist:**
+
+- Open AR from the map. Today this is the 2D radar everywhere: `@reactvision/react-viro` does not install on Expo SDK 58 / RN 0.88, so camera AR is dormant and unverified. It turns on automatically once a compatible viro installs.
+- Radar shows the place target and aura/memory orbs; tapping opens the place or memory.
+- Turning the phone rotates the radar with the compass; if the compass never reports, it falls back to north-up after 4 s.
+- Location permission denied shows the denied copy; the camera permission request is only made in camera mode.
+- When viro installs: verify the camera scene on an ARCore (Android) and ARKit (iOS) device and the radar fallback on a non-AR device.
+
 ## Release Build Commands
 
 Android APK:
