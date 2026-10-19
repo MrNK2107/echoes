@@ -229,4 +229,19 @@ describe('PlaceScreen', () => {
       expect(screen.queryByTestId('person-user-asha')).toBeNull();
     });
   });
+
+  it('shows the aura history chart below the chip when there is history', async () => {
+    const services = testServices();
+    const aura = (await services.repos.places.findById('place-2'))!.aura;
+    services.repos.places.subscribeAuraHistory = (_id, cb) => {
+      cb([
+        { id: 'h1', aura, recordedAt: new Date(0) },
+        { id: 'h2', aura, recordedAt: new Date(1) },
+      ]);
+      return () => {};
+    };
+    await setup('place-2', services);
+    expect(await screen.findByText('Aura history')).toBeOnTheScreen();
+    expect(screen.getAllByTestId(/^aura-bar-/)).toHaveLength(2);
+  });
 });

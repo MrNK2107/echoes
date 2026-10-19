@@ -2,17 +2,17 @@ import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { AuraHistoryChart } from '@/features/aura/AuraHistoryChart';
 import { useSession } from '@/features/auth/useSession';
 import { useAuthorNames } from '@/features/people/useAuthorNames';
 import { useBlocksState, withoutBlocked } from '@/features/safety/useBlocks';
 import { REQUEST_SENT, TransferSheet } from '@/features/transfers/TransferSheet';
-import { formatCount } from '@/ui/format';
+import { capitalise, formatCount } from '@/ui/format';
 import { colors } from '@/ui/theme';
 
 import { MemoryCard } from './MemoryCard';
 import { usePlaceMemories } from './usePlaceMemories';
 
-const capitalise = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 const ERROR_COPY = "Couldn't load memories.";
 
 export function PlaceScreen({ placeId }: { placeId: string }) {
@@ -63,6 +63,7 @@ export function PlaceScreen({ placeId }: { placeId: string }) {
           </View>
           {listReady ? <Text style={styles.meta}>{formatCount(memories.length)}</Text> : null}
         </View>
+        <AuraHistoryChart key={placeId} placeId={placeId} />
         {isCustodian ? (
           <Pressable
             accessibilityRole="button"
