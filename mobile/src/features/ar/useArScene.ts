@@ -27,6 +27,8 @@ export interface ArSceneState {
   places: ArPlace[];
   heading: number;
   headingUnavailable: boolean;
+  /** True once a real compass sample has arrived. */
+  headingReady: boolean;
   retry(): void;
 }
 
@@ -51,7 +53,7 @@ export function useArScene(): ArSceneState {
   const { session } = useSession();
   const viewerId = session?.userId ?? null;
   const { status, center, places: nearby, retry } = useNearbyPlaces();
-  const { heading, unavailable } = useHeading();
+  const { heading, unavailable, ready: headingReady } = useHeading();
   const blocks = useBlocksState();
   const [loaded, setLoaded] = useState<{ key: string; byPlace: Record<string, Memory[]> }>({ key: '', byPlace: {} });
 
@@ -115,5 +117,5 @@ export function useArScene(): ArSceneState {
     [scene, memoriesByPlace, blocks.ready, blocks.blocked],
   );
 
-  return { status, places, heading, headingUnavailable: unavailable, retry };
+  return { status, places, heading, headingUnavailable: unavailable, headingReady, retry };
 }

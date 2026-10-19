@@ -5,11 +5,12 @@ import { useServices } from '@/services/ServicesProvider';
 
 const MIN_STEP_DEGREES = 1;
 
-export function useHeading(): { heading: number; unavailable: boolean } {
+export function useHeading(): { heading: number; unavailable: boolean; ready: boolean } {
   const { heading: service } = useServices();
-  const [state, setState] = useState<{ heading: number; unavailable: boolean }>({
+  const [state, setState] = useState<{ heading: number; unavailable: boolean; ready: boolean }>({
     heading: 0,
     unavailable: false,
+    ready: false,
   });
 
   useEffect(() => {
@@ -24,18 +25,18 @@ export function useHeading(): { heading: number; unavailable: boolean } {
         // Sub-degree jitter is not worth a re-render (shortest arc, so 359.9 -> 0.1 counts as 0.2).
         if (emitted !== null && Math.abs(((((smoothed - emitted) % 360) + 540) % 360) - 180) < MIN_STEP_DEGREES) return;
         emitted = smoothed;
-        setState({ heading: smoothed, unavailable: false });
+        setState({ heading: smoothed, unavailable: false, ready: true });
       })
       .then((unsubscribe) => {
         if (!unsubscribe) {
-          if (active) setState({ heading: 0, unavailable: true });
+          if (active) setState({ heading: 0, unavailable: true, ready: false });
           return;
         }
         if (active) off = unsubscribe;
         else unsubscribe();
       })
       .catch(() => {
-        if (active) setState({ heading: 0, unavailable: true });
+        if (active) setState({ heading: 0, unavailable: true, ready: false });
       });
     return () => {
       active = false;

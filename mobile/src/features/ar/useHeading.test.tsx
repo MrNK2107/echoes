@@ -27,6 +27,18 @@ function controllable() {
 }
 
 describe('useHeading', () => {
+  it('is ready only once a real sample has arrived', async () => {
+    const c = controllable();
+    const { result } = await renderHook(() => useHeading(), { wrapper: wrap(c.service) });
+    await act(async () => {});
+    expect(result.current.ready).toBe(false);
+    await act(async () => c.emit(NaN));
+    expect(result.current.ready).toBe(false);
+    await act(async () => c.emit(123));
+    expect(result.current).toMatchObject({ ready: true, unavailable: false });
+    expect(result.current.heading).toBeCloseTo(123);
+  });
+
   it('heading wraps without jumping', async () => {
     const c = controllable();
     const { result } = await renderHook(() => useHeading(), { wrapper: wrap(c.service) });
@@ -42,7 +54,7 @@ describe('useHeading', () => {
   it('no compass keeps north up', async () => {
     const { result } = await renderHook(() => useHeading(), { wrapper: wrap(fakeHeading('unavailable')) });
     await act(async () => {});
-    expect(result.current).toEqual({ heading: 0, unavailable: true });
+    expect(result.current).toEqual({ heading: 0, unavailable: true, ready: false });
   });
 
   it('drops non-finite readings', async () => {
@@ -95,6 +107,6 @@ describe('useHeading', () => {
     const service = { subscribe: async () => null } as unknown as HeadingService;
     const { result } = await renderHook(() => useHeading(), { wrapper: wrap(service) });
     await act(async () => {});
-    expect(result.current).toEqual({ heading: 0, unavailable: true });
+    expect(result.current).toEqual({ heading: 0, unavailable: true, ready: false });
   });
 });

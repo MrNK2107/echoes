@@ -56,8 +56,11 @@ export function ArScreen() {
 
   const openPlace = useCallback((id: string) => router.push(`/place/${id}`), [router]);
   const openMemory = useCallback((id: string) => router.push(`/memory/${id}`), [router]);
-  const canCamera = capability === 'ready' && !!Scene;
+  // Without a compass the camera scene cannot be oriented, so it is never offered.
+  const canCamera = capability === 'ready' && !!Scene && !scene.headingUnavailable;
   const showCamera = canCamera && mode === 'camera' && !trackingLost;
+  // The scene latches its start heading on mount, so wait for a real compass sample.
+  const awaitingHeading = showCamera && !scene.headingReady;
 
   const notice =
     capability === 'unsupported'
@@ -80,7 +83,7 @@ export function ArScreen() {
   );
 
   let body;
-  if (scene.status === 'locating' || capability === 'checking') {
+  if (scene.status === 'locating' || capability === 'checking' || (awaitingHeading && scene.places.length > 0)) {
     body = <ActivityIndicator style={styles.spinner} color={colors.accent} accessibilityLabel={AR_LOADING} />;
   } else if (scene.status === 'denied' || scene.status === 'error') {
     body = (

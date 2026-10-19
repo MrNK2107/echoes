@@ -1,8 +1,8 @@
-import React, { useEffect, useMemo, useRef } from "react";
-import type { ComponentType } from "react";
+import React, { useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import type { ComponentType } from 'react';
 
-import { rotateByHeading } from "@/domain/arScene";
-import type { ArSceneProps } from "@/device/types";
+import { rotateByHeading } from '@/domain/arScene';
+import type { ArSceneProps } from '@/device/types';
 
 /**
  * Minimal surface of `@reactvision/react-viro` used here. Shapes follow the
@@ -40,43 +40,60 @@ const ORB_RADIUS = 0.15;
 const ORB_RING_OFFSET = 0.6;
 const SCENE_Y = -1;
 const TRACKING_GRACE_MS = 5000;
-const ORB_MATERIAL = "echoes-orb";
+const ORB_MATERIAL = 'echoes-orb';
 
-const materialName = (color: string): string => `echoes-aura-${color}`;
+const materialName = (color: string): string => `echoes-aura-${color.toLowerCase()}`;
+
+function createStore(initial: ArSceneProps) {
+  let value = initial;
+  const listeners = new Set<() => void>();
+  return {
+    get: () => value,
+    set(next: ArSceneProps) {
+      if (next === value) return;
+      value = next;
+      listeners.forEach((l) => l());
+    },
+    subscribe(l: () => void) {
+      listeners.add(l);
+      return () => listeners.delete(l);
+    },
+  };
+}
 
 export function createViroArScene(viro: ViroApi): ComponentType<ArSceneProps> {
-  const {
-    ViroARSceneNavigator,
-    ViroARScene,
-    ViroSphere,
-    ViroMaterials,
-    ViroTrackingStateConstants,
-  } = viro;
+  const { ViroARSceneNavigator, ViroARScene, ViroSphere, ViroMaterials, ViroTrackingStateConstants } = viro;
   const registered = new Set<string>();
 
   function ensureMaterials(colors: string[]): void {
     const fresh: Record<string, { diffuseColor: string }> = {};
     if (!registered.has(ORB_MATERIAL)) {
       registered.add(ORB_MATERIAL);
-      fresh[ORB_MATERIAL] = { diffuseColor: "#ffffff" };
+      fresh[ORB_MATERIAL] = { diffuseColor: '#ffffff' };
     }
     for (const c of colors) {
       const name = materialName(c);
       if (registered.has(name)) continue;
       registered.add(name);
-      fresh[name] = { diffuseColor: c };
+      fresh[name] = { diffuseColor: c.toLowerCase() };
     }
     if (Object.keys(fresh).length > 0) ViroMaterials.createMaterials(fresh);
   }
 
   return function ViroArSceneView(props: ArSceneProps) {
-    const latest = useRef(props);
-    latest.current = props;
+    // The navigator keeps `initialScene` as its own state and never re-renders it for parent renders,
+    // so the scene subscribes to a per-instance store instead of closing over props.
+    const [store] = useState(() => createStore(props));
+    // Latched once for the whole session; ArScreen only mounts the scene after a real compass sample.
     const startHeading = useRef(props.heading);
     const errored = useRef(false);
     const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     ensureMaterials(props.places.map((p) => p.color));
+
+    useEffect(() => {
+      store.set(props);
+    });
 
     useEffect(
       () => () => {
@@ -85,34 +102,29 @@ export function createViroArScene(viro: ViroApi): ComponentType<ArSceneProps> {
       [],
     );
 
-    const Scene = useMemo(() => {
+    const [Scene] = useState(() => {
       const fail = () => {
         if (errored.current) return;
         errored.current = true;
-        if (timer.current) clearTimeout(timer.current);
-        latest.current.onTrackingError();
+        store.get().onTrackingError();
       };
       const onTrackingUpdated = (state: number) => {
         if (errored.current) return;
         if (state === ViroTrackingStateConstants.TRACKING_NORMAL) {
           if (timer.current) clearTimeout(timer.current);
           timer.current = null;
-        } else if (state === ViroTrackingStateConstants.TRACKING_UNAVAILABLE) {
-          fail();
         } else if (!timer.current) {
+          // UNAVAILABLE and LIMITED both get a grace period: ARCore reports a brief UNAVAILABLE at session start.
           timer.current = setTimeout(fail, TRACKING_GRACE_MS);
         }
       };
       return function ArSceneContent() {
-        const { places, onPressPlace, onPressOrb } = latest.current;
+        const { places, onPressPlace, onPressOrb } = useSyncExternalStore(store.subscribe, store.get);
         return (
           <ViroARScene onTrackingUpdated={onTrackingUpdated}>
             {places.map((place) => {
               const { x, z } = rotateByHeading(place, startHeading.current);
-              const orbCount = Math.min(
-                place.visibleOrbCount,
-                place.memoryIds.length,
-              );
+              const orbCount = Math.min(place.visibleOrbCount, place.memoryIds.length);
               const ringRadius = place.auraRadius + ORB_RING_OFFSET;
               return (
                 <React.Fragment key={place.placeId}>
@@ -128,11 +140,7 @@ export function createViroArScene(viro: ViroApi): ComponentType<ArSceneProps> {
                     return (
                       <ViroSphere
                         key={memoryId}
-                        position={[
-                          x + ringRadius * Math.cos(angle),
-                          SCENE_Y,
-                          z + ringRadius * Math.sin(angle),
-                        ]}
+                        position={[x + ringRadius * Math.cos(angle), SCENE_Y, z + ringRadius * Math.sin(angle)]}
                         radius={ORB_RADIUS}
                         materials={[ORB_MATERIAL]}
                         onClick={() => onPressOrb(memoryId)}
@@ -145,14 +153,8 @@ export function createViroArScene(viro: ViroApi): ComponentType<ArSceneProps> {
           </ViroARScene>
         );
       };
-    }, []);
+    });
 
-    return (
-      <ViroARSceneNavigator
-        initialScene={{ scene: Scene }}
-        autofocus
-        style={{ flex: 1 }}
-      />
-    );
+    return <ViroARSceneNavigator initialScene={{ scene: Scene }} autofocus style={{ flex: 1 }} />;
   };
 }

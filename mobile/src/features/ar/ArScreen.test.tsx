@@ -12,6 +12,7 @@ import {
   AR_CAMERA_VIEW,
   AR_EMPTY,
   AR_HEADING_UNAVAILABLE,
+  AR_LOADING,
   AR_RADAR_VIEW,
   AR_UNSUPPORTED,
 } from '@/ui/copy';
@@ -103,6 +104,35 @@ describe('ArScreen', () => {
       fireEvent.press(screen.getByText(AR_CAMERA_VIEW));
     });
     expect(await screen.findByText('camera scene')).toBeOnTheScreen();
+  });
+
+  it('mounts the camera scene only after a real compass sample and latches that heading', async () => {
+    let emit: (d: number) => void = () => {};
+    await setup({
+      arRenderer: availableRenderer(),
+      heading: {
+        subscribe: async (cb) => {
+          emit = cb;
+          return () => {};
+        },
+      },
+    });
+    await screen.findByTestId('radar-place-place-4').catch(() => null);
+    await waitFor(() => expect(screen.queryByLabelText(AR_LOADING)).toBeOnTheScreen());
+    expect(sceneSpy).not.toHaveBeenCalled();
+    await act(async () => emit(123));
+    expect(await screen.findByText('camera scene')).toBeOnTheScreen();
+    expect(sceneSpy.mock.calls[0][0].heading).toBeCloseTo(123);
+  });
+
+  it('shows the radar with the compass copy and no camera toggle when there is no compass', async () => {
+    await setup({ arRenderer: availableRenderer(), heading: fakeHeading('unavailable') });
+    expect(await screen.findByText(AR_HEADING_UNAVAILABLE)).toBeOnTheScreen();
+    expect(await screen.findByTestId('radar-place-place-4')).toBeOnTheScreen();
+    expect(screen.queryByText('camera scene')).toBeNull();
+    expect(screen.queryByText(AR_CAMERA_VIEW)).toBeNull();
+    expect(screen.queryByText(AR_RADAR_VIEW)).toBeNull();
+    expect(sceneSpy).not.toHaveBeenCalled();
   });
 
   it('falls back to the radar when the scene reports a tracking error', async () => {
