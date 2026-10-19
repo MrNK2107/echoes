@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { GENERIC_ERROR } from '@/data/errors';
 import { searchRange } from '@/domain/communities';
-import { MAX_TAGS } from '@/domain/privacy';
+import { MAX_TAGS, TAG_CAP_ERROR } from '@/domain/privacy';
 import type { PublicProfile } from '@/domain/types';
 import { useSession } from '@/features/auth/useSession';
 import { useBlocks } from '@/features/safety/useBlocks';
@@ -15,7 +15,6 @@ import { rememberName, useAuthorNames } from './useAuthorNames';
 export const SEARCH_DEBOUNCE_MS = 300;
 const MIN_LENGTH_HINT = 'Type at least 2 letters.';
 const NO_RESULTS = 'No people found.';
-const TAG_CAP = `You can tag up to ${MAX_TAGS} people.`;
 
 type Results = { query: string; people: PublicProfile[] } | { query: string; error: true };
 
@@ -90,13 +89,14 @@ export function UserSearchField({ selectedIds, onChange }: Props) {
       {selectedIds.length > 0 ? (
         <View style={styles.chips}>
           {selectedIds.map((id) => {
-            const name = names.get(id) ?? '…';
+            const known = names.get(id);
+            const name = known ?? '…';
             return (
               <View key={id} testID={`chip-${id}`} style={styles.chip}>
                 <Text style={styles.chipText}>{name}</Text>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={`Remove ${name}`}
+                  accessibilityLabel={known ? `Remove ${known}` : 'Remove tagged person'}
                   hitSlop={8}
                   onPress={() => remove(id)}
                 >
@@ -138,7 +138,7 @@ export function UserSearchField({ selectedIds, onChange }: Props) {
             </Pressable>
           ))
         : null}
-      {capError ? <Text style={styles.error}>{TAG_CAP}</Text> : null}
+      {capError ? <Text style={styles.error}>{TAG_CAP_ERROR}</Text> : null}
     </View>
   );
 }

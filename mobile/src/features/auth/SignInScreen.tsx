@@ -32,6 +32,7 @@ function authErrorCopy(e: unknown): string {
 
 type Errors = { email?: string; password?: string; name?: string; age?: string; terms?: string };
 
+const TERMS_LABEL = 'I agree to the Terms of Service and Community Guidelines.';
 export const TERMS_REQUIRED = 'Please accept the Terms of Service and Community Guidelines.';
 
 function openLink(url: string) {
@@ -144,6 +145,7 @@ export function SignInScreen() {
             <Pressable
               testID="terms-checkbox"
               accessibilityRole="checkbox"
+              accessibilityLabel={TERMS_LABEL}
               accessibilityState={{ checked: termsAcceptedAt !== null }}
               onPress={() => setTermsAcceptedAt(termsAcceptedAt ? null : now())}
               style={styles.checkRow}
@@ -151,18 +153,17 @@ export function SignInScreen() {
               <View style={[styles.box, termsAcceptedAt && styles.boxChecked]}>
                 {termsAcceptedAt && <Text style={styles.tick}>✓</Text>}
               </View>
-              <Text style={styles.checkLabel}>
-                I agree to the{' '}
-                <Text accessibilityRole="link" style={styles.link} onPress={() => openLink(config.termsUrl)}>
-                  Terms of Service
-                </Text>{' '}
-                and{' '}
-                <Text accessibilityRole="link" style={styles.link} onPress={() => openLink(config.guidelinesUrl)}>
-                  Community Guidelines
-                </Text>
-                .
-              </Text>
+              <Text style={styles.checkLabel}>{TERMS_LABEL}</Text>
             </Pressable>
+            {/* Separate focusable links: links nested in the checkbox are unreachable by screen readers. */}
+            <View style={styles.links}>
+              <Pressable accessibilityRole="link" hitSlop={8} onPress={() => openLink(config.termsUrl)}>
+                <Text style={styles.link}>Terms of Service</Text>
+              </Pressable>
+              <Pressable accessibilityRole="link" hitSlop={8} onPress={() => openLink(config.guidelinesUrl)}>
+                <Text style={styles.link}>Community Guidelines</Text>
+              </Pressable>
+            </View>
             {errors.terms ? <Text style={styles.error}>{errors.terms}</Text> : null}
           </View>
         )}
@@ -251,7 +252,8 @@ const styles = StyleSheet.create({
   boxChecked: { backgroundColor: colors.accent, borderColor: colors.accent },
   tick: { color: colors.background, fontSize: 14, fontWeight: '700' },
   checkLabel: { color: colors.text, flex: 1, fontSize: 14 },
-  link: { color: colors.accent, textDecorationLine: 'underline' },
+  links: { flexDirection: 'row', gap: 20, marginTop: 8, marginLeft: 32 },
+  link: { color: colors.accent, fontSize: 14, textDecorationLine: 'underline' },
   submit: {
     backgroundColor: colors.accent,
     borderRadius: 8,

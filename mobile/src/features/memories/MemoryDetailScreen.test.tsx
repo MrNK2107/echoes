@@ -85,6 +85,36 @@ describe('MemoryDetailScreen', () => {
     expect(screen.queryByText(/I love this park/)).toBeNull();
   });
 
+  it("does not show another author's memory until the block list has loaded", async () => {
+    const services = testServices();
+    let emit!: (ids: string[]) => void;
+    jest.spyOn(services.repos.safety, 'subscribeBlocks').mockImplementation((_uid, cb) => {
+      emit = cb;
+      return () => {};
+    });
+    await setup('memory-1', services);
+    await act(async () => {});
+    expect(screen.queryByText(/I love this park/)).toBeNull();
+    await act(async () => emit(['user-asha']));
+    expect(screen.getByText('This memory is no longer available.')).toBeOnTheScreen();
+    expect(screen.queryByText(/I love this park/)).toBeNull();
+  });
+
+  it('keeps the memory hidden with error copy when blocks fail before loading', async () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const services = testServices();
+    let fail!: (e: Error) => void;
+    jest.spyOn(services.repos.safety, 'subscribeBlocks').mockImplementation((_uid, _cb, onError) => {
+      fail = onError!;
+      return () => {};
+    });
+    await setup('memory-1', services);
+    await act(async () => fail(new Error('denied')));
+    expect(screen.queryByText(/I love this park/)).toBeNull();
+    expect(screen.getByText("Couldn't load this memory.")).toBeOnTheScreen();
+    warn.mockRestore();
+  });
+
   it('Edit navigates to the edit route', async () => {
     await setup('memory-2');
     await fireEvent.press(await screen.findByText('Edit'));

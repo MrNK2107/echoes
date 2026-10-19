@@ -65,7 +65,11 @@ function load(profiles: ProfileRepository, ids: string[]): Promise<void> {
   return Promise.all(waits).then(() => undefined);
 }
 
-/** Display names for the given uids (batched profiles.getMany, cached for the session). */
+/**
+ * Display names for the given uids, from one batched profiles.getMany. Names are cached per app
+ * session (until the app restarts), so a rename elsewhere shows up after a restart; the user's own
+ * rename updates the cache through rememberName.
+ */
 export function useAuthorNames(ids: readonly string[]): ReadonlyMap<string, string> {
   const { repos } = useServices();
   const profiles = repos.profiles;

@@ -1,9 +1,9 @@
 import { useRouter } from 'expo-router';
 import { useMemo } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useAuthorNames } from '@/features/people/useAuthorNames';
-import { useBlocks, withoutBlocked } from '@/features/safety/useBlocks';
+import { useBlocksState, withoutBlocked } from '@/features/safety/useBlocks';
 import { formatCount } from '@/ui/format';
 import { colors } from '@/ui/theme';
 
@@ -16,8 +16,14 @@ const ERROR_COPY = "Couldn't load memories.";
 export function PlaceScreen({ placeId }: { placeId: string }) {
   const router = useRouter();
   const { status, place, memories: visible } = usePlaceMemories(placeId);
-  const blocked = useBlocks();
-  const memories = useMemo(() => withoutBlocked(visible, blocked), [visible, blocked]);
+  const blocks = useBlocksState();
+  // Nothing renders until the block list is known, so a blocked author's memory never flashes.
+  const memories = useMemo(
+    () => (blocks.ready ? withoutBlocked(visible, blocks.blocked) : []),
+    [visible, blocks.ready, blocks.blocked],
+  );
+  const listReady = status === 'ready' && blocks.ready;
+  const listError = status === 'error' || blocks.error;
   const authorIds = useMemo(() => memories.map((m) => m.userId), [memories]);
   const names = useAuthorNames(authorIds);
 
@@ -48,17 +54,18 @@ export function PlaceScreen({ placeId }: { placeId: string }) {
           <View testID="aura-chip" style={[styles.chip, { backgroundColor: place.aura.colorHex }]}>
             <Text style={styles.chipText}>{capitalise(place.aura.dominantSentiment)}</Text>
           </View>
-          <Text style={styles.meta}>{formatCount(memories.length)}</Text>
+          {listReady ? <Text style={styles.meta}>{formatCount(memories.length)}</Text> : null}
         </View>
       </View>
-      {status === 'error' ? <Text style={styles.message}>{ERROR_COPY}</Text> : null}
+      {listError ? <Text style={styles.message}>{ERROR_COPY}</Text> : null}
+      {!listReady && !listError ? <ActivityIndicator style={styles.spinner} color={colors.accent} /> : null}
       <FlatList
         contentContainerStyle={styles.list}
         data={memories}
         keyExtractor={(m) => m.id}
         extraData={names}
         renderItem={({ item }) => <MemoryCard memory={item} authorName={names.get(item.userId)} />}
-        ListEmptyComponent={<Text style={styles.message}>{status === 'ready' ? 'No memories here yet.' : ''}</Text>}
+        ListEmptyComponent={<Text style={styles.message}>{listReady ? 'No memories here yet.' : ''}</Text>}
       />
     </View>
   );
@@ -76,5 +83,6 @@ const styles = StyleSheet.create({
   chipText: { color: colors.background, fontWeight: '600' },
   meta: { color: colors.textSecondary },
   list: { padding: 16 },
+  spinner: { marginTop: 16 },
   message: { color: colors.textSecondary, textAlign: 'center', padding: 16 },
 });

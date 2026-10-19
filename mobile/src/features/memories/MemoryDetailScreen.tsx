@@ -5,7 +5,7 @@ import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'rea
 import { TIMEOUT_ERROR } from '@/data/errors';
 import { useSession } from '@/features/auth/useSession';
 import { useAuthorNames } from '@/features/people/useAuthorNames';
-import { useBlocks } from '@/features/safety/useBlocks';
+import { useBlocksState } from '@/features/safety/useBlocks';
 import { useServices } from '@/services/ServicesProvider';
 import { privacyLabel } from '@/ui/privacyLabel';
 import { colors } from '@/ui/theme';
@@ -25,7 +25,7 @@ export function MemoryDetailScreen({ memoryId }: { memoryId: string }) {
   const [deleting, setDeleting] = useState(false);
   const deletingRef = useRef(false);
   const focusedOnce = useRef(false);
-  const blocked = useBlocks();
+  const blocks = useBlocksState();
   const authorIds = useMemo(() => (memory ? [memory.userId] : []), [memory]);
   const names = useAuthorNames(authorIds);
 
@@ -44,8 +44,11 @@ export function MemoryDetailScreen({ memoryId }: { memoryId: string }) {
   );
 
   // ADR-0008: memories by people you blocked are hidden everywhere, including by direct link.
-  const hiddenByBlock = memory !== null && memory.userId !== session?.userId && blocked.has(memory.userId);
-  if (!memory || hiddenByBlock) {
+  // Another author's memory waits for the block list, so it never flashes for a blocked author.
+  const isOwn = memory !== null && memory.userId === session?.userId;
+  const hiddenByBlock = memory !== null && !isOwn && blocks.ready && blocks.blocked.has(memory.userId);
+  const waitingForBlocks = memory !== null && !isOwn && !blocks.ready;
+  if (!memory || hiddenByBlock || waitingForBlocks) {
     return (
       <View style={styles.container}>
         {back}
@@ -53,7 +56,9 @@ export function MemoryDetailScreen({ memoryId }: { memoryId: string }) {
           {status === 'notFound' || hiddenByBlock ? (
             <Text style={styles.message}>This memory is no longer available.</Text>
           ) : null}
-          {status === 'error' ? <Text style={styles.message}>{"Couldn't load this memory."}</Text> : null}
+          {status === 'error' || (waitingForBlocks && blocks.error) ? (
+            <Text style={styles.message}>{"Couldn't load this memory."}</Text>
+          ) : null}
         </View>
       </View>
     );

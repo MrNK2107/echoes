@@ -61,6 +61,38 @@ describe('PlaceScreen', () => {
     expect(screen.getByText('2 memories')).toBeOnTheScreen();
   });
 
+  it('shows no memories until the block list has loaded', async () => {
+    const services = testServices();
+    let emit!: (ids: string[]) => void;
+    jest.spyOn(services.repos.safety, 'subscribeBlocks').mockImplementation((_uid, cb) => {
+      emit = cb;
+      return () => {};
+    });
+    await setup('place-2', services);
+    expect(await screen.findByText('Vidhana Soudha')).toBeOnTheScreen();
+    expect(screen.queryByTestId(/^memory-/)).toBeNull();
+    expect(screen.queryByText('No memories here yet.')).toBeNull();
+    await act(async () => emit(['user-asha']));
+    expect(screen.getByTestId('memory-memory-7')).toBeOnTheScreen();
+    expect(screen.queryByTestId('memory-memory-6')).toBeNull();
+  });
+
+  it('keeps memories hidden and shows error copy when blocks fail before loading', async () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const services = testServices();
+    let fail!: (e: Error) => void;
+    jest.spyOn(services.repos.safety, 'subscribeBlocks').mockImplementation((_uid, _cb, onError) => {
+      fail = onError!;
+      return () => {};
+    });
+    await setup('place-2', services);
+    expect(await screen.findByText('Vidhana Soudha')).toBeOnTheScreen();
+    await act(async () => fail(new Error('denied')));
+    expect(screen.queryByTestId(/^memory-/)).toBeNull();
+    expect(screen.getByText("Couldn't load memories.")).toBeOnTheScreen();
+    warn.mockRestore();
+  });
+
   it('shows the aura chip and community badge', async () => {
     await setup('place-1');
     expect(await screen.findByText('Cubbon Park')).toBeOnTheScreen();

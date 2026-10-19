@@ -30,6 +30,7 @@ export function isMemoryVisibleTo(
 
 /** Ruling R24: most people one memory can tag; firestore.rules enforces the same cap. */
 export const MAX_TAGS = 20;
+export const TAG_CAP_ERROR = `You can tag up to ${MAX_TAGS} people.`;
 
 export function validatePrivacy(input: {
   privacy: PrivacyType;
@@ -41,7 +42,7 @@ export function validatePrivacy(input: {
   switch (input.privacy) {
     case 'tagged':
       if (input.taggedUserIds.length === 0) return 'Add at least one tagged user.';
-      return input.taggedUserIds.length > MAX_TAGS ? `You can tag up to ${MAX_TAGS} people.` : null;
+      return input.taggedUserIds.length > MAX_TAGS ? TAG_CAP_ERROR : null;
     case 'timeRelease':
       if (input.releaseDate === null) return 'Choose a release date.';
       return input.releaseDate.getTime() > input.now.getTime()

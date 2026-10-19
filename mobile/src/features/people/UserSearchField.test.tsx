@@ -3,7 +3,7 @@ import { useState } from 'react';
 
 import { DEMO_USER } from '@/data/seed';
 import { testServices } from '@/device/fakes';
-import { MAX_TAGS } from '@/domain/privacy';
+import { MAX_TAGS, TAG_CAP_ERROR } from '@/domain/privacy';
 import { ServicesProvider } from '@/services/ServicesProvider';
 import type { Services } from '@/services/services';
 
@@ -127,6 +127,12 @@ describe('UserSearchField', () => {
     expect(screen.getByTestId('chip-user-asha')).toHaveTextContent(/Asha Rao/);
   });
 
+  it('labels the remove button generically when the name is unknown', async () => {
+    await setup(['nobody']);
+    await wait(0);
+    expect(screen.getByLabelText('Remove tagged person')).toBeOnTheScreen();
+  });
+
   it('does not offer people who are already selected', async () => {
     await setup(['user-asha']);
     await typeQuery('As');
@@ -145,5 +151,6 @@ describe('UserSearchField', () => {
     });
     expect(onChangeSpy).not.toHaveBeenCalled();
     expect(screen.getByText('You can tag up to 20 people.')).toBeOnTheScreen();
+    expect(TAG_CAP_ERROR).toBe('You can tag up to 20 people.');
   });
 });

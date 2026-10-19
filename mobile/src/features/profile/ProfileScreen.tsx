@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 
 import { GENERIC_ERROR } from '@/data/errors';
-import { DISPLAY_NAME_ERROR, validateDisplayName } from '@/domain/profiles';
+import { CUSTODIAN_FALLBACK_NAME, DISPLAY_NAME_ERROR, validateDisplayName } from '@/domain/profiles';
 import type { AppUser, Memory, NotificationPrefs } from '@/domain/types';
 import { useSession } from '@/features/auth/useSession';
 import { rememberName } from '@/features/people/useAuthorNames';
@@ -149,7 +149,7 @@ export function ProfileScreen() {
     }
   };
 
-  const name = (user ? user.displayName : session?.displayName) || 'ECHOES custodian';
+  const name = (user ? user.displayName : session?.displayName) || CUSTODIAN_FALLBACK_NAME;
   const email = (user ? user.email : session?.email) ?? null;
 
   return (

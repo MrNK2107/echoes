@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 import { Linking, Text } from 'react-native';
 
 import { DEMO_USER } from '@/data/seed';
@@ -104,6 +104,17 @@ describe('SignInScreen', () => {
     await press('submit-button');
     expect(screen.getByText('Use 2 to 40 characters.')).toBeOnTheScreen();
     expect(register).not.toHaveBeenCalled();
+  });
+
+  it('keeps the terms links outside the checkbox so screen readers reach them', async () => {
+    await setup();
+    await press('mode-toggle');
+    const box = screen.getByRole('checkbox', {
+      name: 'I agree to the Terms of Service and Community Guidelines.',
+    });
+    expect(box.props.testID).toBe('terms-checkbox');
+    expect(within(box).queryByRole('link')).toBeNull();
+    expect(screen.getAllByRole('link')).toHaveLength(2);
   });
 
   it('opens the configured Terms and Guidelines pages', async () => {

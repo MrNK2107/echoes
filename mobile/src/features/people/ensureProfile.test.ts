@@ -3,6 +3,8 @@ import { testServices } from '@/device/fakes';
 import type { AuthSession } from '@/domain/types';
 import type { Services } from '@/services/services';
 
+import { CUSTODIAN_FALLBACK_NAME } from '@/domain/profiles';
+
 import { ensurePublicProfile, fallbackDisplayName } from './ensureProfile';
 
 const SESSION: AuthSession = { userId: 'user-demo', email: DEMO_USER.email, displayName: 'Session Name' };
@@ -35,12 +37,12 @@ describe('ensurePublicProfile', () => {
     expect(set).toHaveBeenCalledWith('user-demo', 'Session Name', services.now());
   });
 
-  it('falls back to the email local part, skipping invalid names', async () => {
+  it('never publishes the email: falls back to ECHOES custodian', async () => {
     const services = testServices();
     const set = withoutProfile(services);
     jest.spyOn(services.repos.users, 'get').mockResolvedValue(null);
     await ensurePublicProfile(services, { userId: 'user-demo', email: 'kavya.n@example.com', displayName: 'x' });
-    expect(set).toHaveBeenCalledWith('user-demo', 'kavya.n', services.now());
+    expect(set).toHaveBeenCalledWith('user-demo', 'ECHOES custodian', services.now());
   });
 
   it('never throws when the repair fails', async () => {
@@ -54,9 +56,11 @@ describe('ensurePublicProfile', () => {
 });
 
 describe('fallbackDisplayName', () => {
-  it('pads a too-short local part and trims a long one to 40 characters', () => {
-    expect(fallbackDisplayName([null, ''], 'a@x.io')).toBe('ECHOES custodian');
-    expect(fallbackDisplayName([], `${'b'.repeat(60)}@x.io`)).toBe('b'.repeat(40));
-    expect(fallbackDisplayName(['  Ok Name '], 'z@x.io')).toBe('Ok Name');
+  it('trims and collapses spaces, cuts to 40 characters, and otherwise uses the custodian name', () => {
+    expect(fallbackDisplayName(['  Ok   Name '])).toBe('Ok Name');
+    expect(fallbackDisplayName([null, '', 'a'])).toBe('ECHOES custodian');
+    expect(fallbackDisplayName(['b'.repeat(60)])).toBe('b'.repeat(40));
+    expect(fallbackDisplayName(['x', 'Second Choice'])).toBe('Second Choice');
+    expect(fallbackDisplayName([])).toBe(CUSTODIAN_FALLBACK_NAME);
   });
 });

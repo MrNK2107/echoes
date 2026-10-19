@@ -5,7 +5,7 @@ import { DEMO_USER } from '@/data/seed';
 import { testServices } from '@/device/fakes';
 import { ServicesProvider } from '@/services/ServicesProvider';
 
-import { useBlocks, withoutBlocked } from './useBlocks';
+import { useBlocks, useBlocksState, withoutBlocked } from './useBlocks';
 
 function Blocked() {
   return <Text testID="blocked">{[...useBlocks()].sort().join(',')}</Text>;
@@ -40,6 +40,70 @@ describe('useBlocks', () => {
       </ServicesProvider>,
     );
     expect(screen.getByTestId('blocked')).toHaveTextContent('');
+  });
+});
+
+function State() {
+  const { ready, error, blocked } = useBlocksState();
+  return <Text testID="state">{`${ready}|${error}|${[...blocked].join(',')}`}</Text>;
+}
+
+describe('useBlocksState', () => {
+  async function renderWith(subscribe: jest.Mock) {
+    const services = testServices();
+    await act(async () => {
+      await services.repos.auth.signIn(DEMO_USER.email, DEMO_USER.password);
+    });
+    jest.spyOn(services.repos.safety, 'subscribeBlocks').mockImplementation(subscribe);
+    await render(
+      <ServicesProvider services={services}>
+        <State />
+      </ServicesProvider>,
+    );
+  }
+
+  it('is not ready until the first snapshot arrives', async () => {
+    let emit!: (ids: string[]) => void;
+    await renderWith(
+      jest.fn((_uid: string, cb: (ids: string[]) => void) => {
+        emit = cb;
+        return () => {};
+      }),
+    );
+    expect(screen.getByTestId('state')).toHaveTextContent('false|false|');
+    await act(async () => emit(['user-asha']));
+    expect(screen.getByTestId('state')).toHaveTextContent('true|false|user-asha');
+  });
+
+  it('stays not ready, with an error, when the subscription fails before any snapshot', async () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    let fail!: (e: Error) => void;
+    await renderWith(
+      jest.fn((_uid: string, _cb: unknown, onError: (e: Error) => void) => {
+        fail = onError;
+        return () => {};
+      }),
+    );
+    await act(async () => fail(new Error('denied')));
+    expect(screen.getByTestId('state')).toHaveTextContent('false|true|');
+    warn.mockRestore();
+  });
+
+  it('keeps the last list ready when a later error arrives', async () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    let emit!: (ids: string[]) => void;
+    let fail!: (e: Error) => void;
+    await renderWith(
+      jest.fn((_uid: string, cb: (ids: string[]) => void, onError: (e: Error) => void) => {
+        emit = cb;
+        fail = onError;
+        return () => {};
+      }),
+    );
+    await act(async () => emit(['user-asha']));
+    await act(async () => fail(new Error('later')));
+    expect(screen.getByTestId('state')).toHaveTextContent('true|false|user-asha');
+    warn.mockRestore();
   });
 });
 
