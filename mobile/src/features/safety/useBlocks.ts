@@ -1,6 +1,6 @@
 import { useContext } from 'react';
 
-import { BlocksContext, type BlocksState } from './BlocksProvider';
+import { BlocksContext, type BlocksContextValue, type BlocksState } from './BlocksProvider';
 
 export type { BlocksState };
 
@@ -10,7 +10,7 @@ export type { BlocksState };
  * for `ready`, so nothing by a blocked person renders before the list is known. An error before the
  * first snapshot leaves it not ready (with `error`); a later error keeps the last known list.
  */
-export function useBlocksState(): BlocksState {
+export function useBlocksState(): BlocksContextValue {
   const state = useContext(BlocksContext);
   if (!state) throw new Error('useBlocksState must be used inside a BlocksProvider');
   return state;

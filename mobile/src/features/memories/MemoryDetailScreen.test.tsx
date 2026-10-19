@@ -237,13 +237,13 @@ describe('MemoryDetailScreen safety', () => {
   it('offers Report and Block {name} to non-authors only', async () => {
     await setup('memory-1');
     expect(await screen.findByRole('button', { name: 'Block Asha Rao' })).toBeOnTheScreen();
-    expect(screen.getByRole('button', { name: 'Report' })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Report memory' })).toBeOnTheScreen();
   });
 
   it('offers neither Report nor Block to the author', async () => {
     await setup('memory-2');
     await screen.findByText('Edit');
-    expect(screen.queryByRole('button', { name: 'Report' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Report memory' })).toBeNull();
     expect(screen.queryByRole('button', { name: /^Block/ })).toBeNull();
   });
 
@@ -251,7 +251,7 @@ describe('MemoryDetailScreen safety', () => {
     const services = testServices();
     const report = jest.spyOn(services.repos.safety, 'reportMemory');
     await setup('memory-1', services);
-    await fireEvent.press(await screen.findByRole('button', { name: 'Report' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Report memory' }));
     expect(screen.getByText('Why are you reporting this?')).toBeOnTheScreen();
     await fireEvent.press(screen.getByRole('radio', { name: 'Spam' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Send report' }));
@@ -288,7 +288,7 @@ describe('MemoryDetailScreen safety', () => {
       await services.repos.safety.reportMemory({ memoryId: 'memory-1', reason: 'hate', note: null });
     });
     await setup('memory-1', services);
-    await fireEvent.press(await screen.findByRole('button', { name: 'Report' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Report memory' }));
     await fireEvent.press(screen.getByRole('radio', { name: 'Spam' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Send report' }));
     expect(await screen.findByText('You already reported this.')).toBeOnTheScreen();

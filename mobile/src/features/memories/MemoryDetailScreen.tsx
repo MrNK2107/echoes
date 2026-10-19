@@ -178,6 +178,7 @@ export function MemoryDetailScreen({ memoryId }: { memoryId: string }) {
           <View style={styles.actions}>
             <Pressable
               accessibilityRole="button"
+              accessibilityLabel="Report memory"
               onPress={() => {
                 setNotice(null);
                 setReporting({ type: 'memory', id: memory.id });

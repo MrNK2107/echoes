@@ -8,6 +8,7 @@ import { ServicesProvider } from '@/services/ServicesProvider';
 import type { Services } from '@/services/services';
 
 import { InboxScreen } from './InboxScreen';
+import { renderWithServices } from '../../../test/renderWithServices';
 import { inboxServices, note } from './testInbox';
 
 const mockPush = jest.fn();
@@ -284,4 +285,25 @@ describe('InboxScreen', () => {
     expect(screen.queryByText('From Asha')).toBeNull();
   });
 
+
+  it('fails closed: blocks that never arrive show the spinner, no items and no badge', async () => {
+    const s = await inboxServices([note({ id: 'a', title: 'Secret', actorId: 'user-asha' })]);
+    jest.spyOn(s.services.repos.safety, 'subscribeBlocks').mockImplementation(() => () => {});
+    await renderWithServices(s.services, <InboxScreen />);
+    expect(screen.queryByText('Secret')).toBeNull();
+    expect(screen.queryByText(INBOX_LOAD_ERROR)).toBeNull();
+  });
+
+  it('shows the load error when the block list fails', async () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const s = await inboxServices([note({ id: 'a', title: 'Secret', actorId: 'user-asha' })]);
+    jest.spyOn(s.services.repos.safety, 'subscribeBlocks').mockImplementation((_u, _cb, onError) => {
+      onError?.(new Error('denied'));
+      return () => {};
+    });
+    await renderWithServices(s.services, <InboxScreen />);
+    expect(await screen.findByText(INBOX_LOAD_ERROR)).toBeOnTheScreen();
+    expect(screen.queryByText('Secret')).toBeNull();
+    warn.mockRestore();
+  });
 });

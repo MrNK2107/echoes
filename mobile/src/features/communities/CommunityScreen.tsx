@@ -80,6 +80,8 @@ export function CommunityScreen({ communityId }: { communityId: string }) {
   const isOwner = membership?.role === 'owner' || community.ownerId === session?.userId;
   const ownerName = hasHumanOwner(community) ? ownerNames.get(community.ownerId) : undefined;
   const members = formatMembers(community.memberCount);
+  // Staff-run communities (system-owned or institution-backed) and your own are not reported from here.
+  const canReport = !isOwner && hasHumanOwner(community) && community.type !== 'institution' && !community.institutionId;
 
   const run = async (action: () => Promise<void>) => {
     if (busyRef.current) return;
@@ -199,18 +201,20 @@ export function CommunityScreen({ communityId }: { communityId: string }) {
           </Pressable>
         </View>
       ) : null}
-      <View style={styles.actions}>
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => {
-            setNotice(null);
-            setReporting(true);
-          }}
-          style={styles.secondary}
-        >
-          <Text style={styles.secondaryText}>{REPORT_COMMUNITY_LABEL}</Text>
-        </Pressable>
-      </View>
+      {canReport ? (
+        <View style={styles.actions}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => {
+              setNotice(null);
+              setReporting(true);
+            }}
+            style={styles.secondary}
+          >
+            <Text style={styles.secondaryText}>{REPORT_COMMUNITY_LABEL}</Text>
+          </Pressable>
+        </View>
+      ) : null}
       {error ? (
         <Text accessibilityRole="alert" style={styles.error}>
           {error}

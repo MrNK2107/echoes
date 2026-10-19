@@ -24,7 +24,7 @@ export function useInbox(): Inbox {
   const { repos, now } = useServices();
   const { session } = useSession();
   const uid = session?.userId ?? null;
-  const { blocked } = useBlocksState();
+  const blocks = useBlocksState();
   const [state, setState] = useState<{ uid: string | null; items: AppNotification[] }>({ uid: null, items: [] });
   const [error, setError] = useState<string | null>(null);
   const [failedUid, setFailedUid] = useState<string | null>(null);
@@ -43,9 +43,11 @@ export function useInbox(): Inbox {
 
   // Items from blocked actors are hidden (and not counted); system items carry no actorId and stay.
   const items = useMemo(() => {
-    if (state.uid !== uid) return [];
+    // Fails closed: nothing is listed (or counted) until the block list is known.
+    if (state.uid !== uid || !blocks.ready) return [];
+    const { blocked } = blocks;
     return blocked.size === 0 ? state.items : state.items.filter((n) => n.actorId === null || !blocked.has(n.actorId));
-  }, [state, uid, blocked]);
+  }, [state, uid, blocks]);
   const unread = useMemo(() => items.filter((n) => n.readAt === null).length, [items]);
 
   const markRead = useCallback(
@@ -71,5 +73,13 @@ export function useInbox(): Inbox {
     }
   }, [repos.notifications, uid, now]);
 
-  return { items, loaded: !!uid && state.uid === uid, loadFailed: failedUid === uid, unread, error, markRead, markAllRead };
+  return {
+    items,
+    loaded: !!uid && state.uid === uid && blocks.ready,
+    loadFailed: failedUid === uid || blocks.error,
+    unread,
+    error,
+    markRead,
+    markAllRead,
+  };
 }

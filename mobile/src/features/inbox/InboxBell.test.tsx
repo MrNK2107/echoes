@@ -4,6 +4,7 @@ import { BlocksProvider } from '@/features/safety/BlocksProvider';
 import { ServicesProvider } from '@/services/ServicesProvider';
 
 import { InboxBell } from './InboxBell';
+import { renderWithServices } from '../../../test/renderWithServices';
 import { inboxServices, note } from './testInbox';
 
 const mockPush = jest.fn();
@@ -84,4 +85,12 @@ describe('InboxBell', () => {
     expect((await screen.findByLabelText('Notifications')).props.accessibilityValue).toEqual({ text: '1 unread' });
   });
 
+
+  it('shows no badge until the block list is ready, and none when it fails', async () => {
+    const s = await inboxServices([note({ id: 'a', actorId: 'user-asha' })]);
+    jest.spyOn(s.services.repos.safety, 'subscribeBlocks').mockImplementation(() => () => {});
+    await renderWithServices(s.services, <InboxBell />);
+    expect(await screen.findByLabelText('Notifications')).toBeOnTheScreen();
+    expect(screen.queryByTestId('inbox-badge')).toBeNull();
+  });
 });

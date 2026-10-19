@@ -311,7 +311,11 @@ describe('Review focus', () => {
   it('reports the community from the Report community action', async () => {
     const services = testServices();
     const report = jest.spyOn(services.repos.safety, 'reportContent');
-    await setup(ERA, services, joinTimeCommunities);
+    await setup(ERA, services, async (s) => {
+      await joinTimeCommunities(s);
+      const real = await s.repos.communities.findById(ERA);
+      jest.spyOn(s.repos.communities, 'findById').mockResolvedValue({ ...real!, ownerId: 'user-asha', type: 'thematic' });
+    });
     await fireEvent.press(await screen.findByRole('button', { name: 'Report community' }));
     expect(screen.getByText('Why are you reporting this?')).toBeOnTheScreen();
     await fireEvent.press(screen.getByRole('radio', { name: 'Spam' }));
@@ -345,4 +349,28 @@ describe('Review focus', () => {
     warn.mockRestore();
   });
 
+
+  it('offers no Report community to the owner', async () => {
+    await setup(WALKERS);
+    await screen.findByRole('button', { name: 'Leave' });
+    expect(screen.queryByRole('button', { name: 'Report community' })).toBeNull();
+  });
+
+  it('offers no Report community on a system-owned community', async () => {
+    await setup(YEAR, testServices(), joinTimeCommunities);
+    await screen.findByRole('button', { name: 'Leave' });
+    expect(screen.queryByRole('button', { name: 'Report community' })).toBeNull();
+  });
+
+  it('offers no Report community on an institution community', async () => {
+    const services = testServices();
+    await setup(WALKERS, services, async (s) => {
+      const real = await s.repos.communities.findById(WALKERS);
+      jest
+        .spyOn(s.repos.communities, 'findById')
+        .mockResolvedValue({ ...real!, ownerId: 'user-asha', type: 'institution', institutionId: 'inst-1' });
+    });
+    await screen.findByRole('header', { name: 'Cubbon Park Walkers' });
+    expect(screen.queryByRole('button', { name: 'Report community' })).toBeNull();
+  });
 });
