@@ -1,7 +1,8 @@
-import Constants, { ExecutionEnvironment } from 'expo-constants';
+import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import { Linking, Platform } from 'react-native';
 
+import { isExpoGo } from './expoGo';
 import type { PushAvailability, PushPermission, PushService } from './types';
 
 /**
@@ -32,10 +33,8 @@ function projectId(): string | null {
 }
 
 function availability(): PushAvailability {
-  const inExpoGo =
-    Constants.appOwnership === 'expo' || Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
   // Without an EAS project id there is no push token to fetch; the Expo Go copy fits that case too.
-  if (inExpoGo || !projectId()) return 'expo-go';
+  if (isExpoGo() || !projectId()) return 'expo-go';
   if (!Device.isDevice) return 'simulator';
   return 'available';
 }

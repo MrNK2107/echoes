@@ -36,3 +36,6 @@ export const CHART_AXIS_OLDEST = 'Oldest';
 export const CHART_AXIS_LATEST = 'Latest';
 export const BACK_LABEL = 'Back';
 export const BACK_TEXT = '< Back';
+export const FINISH_SETUP_TITLE = 'Finish setting up';
+export const FINISH_SETUP_CONTINUE = 'Continue';
+export const SIGN_OUT_LABEL = 'Sign out';

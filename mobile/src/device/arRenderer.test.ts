@@ -71,6 +71,30 @@ describe('expoArRenderer', () => {
     await expect(p).resolves.toBe('unsupported');
   });
 
+  it("resolves 'unsupported' at exactly 3000 ms", async () => {
+    jest.useFakeTimers();
+    const r = mockViro(() => undefined);
+    let result: string | undefined;
+    void r.status().then((v: string) => (result = v));
+    await jest.advanceTimersByTimeAsync(2999);
+    expect(result).toBeUndefined();
+    await jest.advanceTimersByTimeAsync(1);
+    expect(result).toBe('unsupported');
+  });
+
+  it("is 'available' when support answers at 2999 ms", async () => {
+    jest.useFakeTimers();
+    const r = mockViro((_no, yes) => {
+      setTimeout(yes, 2999);
+    });
+    let result: string | undefined;
+    void r.status().then((v: string) => (result = v));
+    await jest.advanceTimersByTimeAsync(2999);
+    expect(result).toBe('available');
+    await jest.advanceTimersByTimeAsync(5);
+    expect(result).toBe('available');
+  });
+
   it("is 'unsupported' when the check throws", async () => {
     const r = mockViro(() => {
       throw new Error('boom');

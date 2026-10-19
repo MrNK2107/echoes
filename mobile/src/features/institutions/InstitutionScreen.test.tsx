@@ -7,7 +7,7 @@ import { fakeLocation } from '@/device/fakes';
 import { ServicesProvider } from '@/services/ServicesProvider';
 import type { Services } from '@/services/services';
 
-import { InstitutionScreen } from './InstitutionScreen';
+import { InstitutionScreen, TOKEN_REFRESH_MIN_INTERVAL_MS } from './InstitutionScreen';
 import { DEMO_UID, registerInstitution, servicesWithAdmin, signIn } from './testInstitutions';
 
 const mockPush = jest.fn();
@@ -162,6 +162,26 @@ describe('InstitutionScreen', () => {
     expect(screen.queryByRole('button', { name: 'Send verification email' })).toBeNull();
     await view.unmount();
     expect(remove).toHaveBeenCalled();
+  });
+
+  it('foregrounding twice within 60 s forces one token refresh', async () => {
+    let onAppState: ((s: AppStateStatus) => void) | undefined;
+    jest.spyOn(AppState, 'addEventListener').mockImplementation((type, handler) => {
+      if (type === 'change') onAppState = handler as (s: AppStateStatus) => void;
+      return { remove: jest.fn() };
+    });
+    let clock = 1_000_000;
+    jest.spyOn(Date, 'now').mockImplementation(() => clock);
+    const { services } = await setup({ emailVerified: true });
+    await screen.findByRole('header', { name: NAME });
+    const refresh = jest.spyOn(services.repos.auth, 'refreshUser');
+    clock += TOKEN_REFRESH_MIN_INTERVAL_MS; // clear the mount-time refresh
+    await act(async () => onAppState?.('active'));
+    await act(async () => onAppState?.('active'));
+    expect(refresh).toHaveBeenCalledTimes(1);
+    clock += TOKEN_REFRESH_MIN_INTERVAL_MS;
+    await act(async () => onAppState?.('active'));
+    expect(refresh).toHaveBeenCalledTimes(2);
   });
 
   it('keeps the verify prompt when the focus re-check says still unverified', async () => {

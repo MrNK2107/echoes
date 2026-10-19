@@ -11,6 +11,9 @@ import { Notice } from '@/ui/Notice';
 import { BackButton } from '@/ui/BackButton';
 import { colors } from '@/ui/theme';
 
+/** Foreground and focus re-checks refresh the ID token; repeats within this window are skipped. */
+export const TOKEN_REFRESH_MIN_INTERVAL_MS = 60_000;
+
 const SUB_ZONE_NAME_MAX = 60;
 const LOCATION_PERMISSION = 'Location permission is needed to add a sub-zone here.';
 
@@ -44,6 +47,11 @@ export function InstitutionScreen({ institutionId }: { institutionId: string }) 
   const [email, setEmail] = useState<string | null>(null);
   /** The last claim said the email is unverified; cleared once a refresh sees it verified. */
   const [verifyPrompt, setVerifyPrompt] = useState(false);
+  const verifyPromptRef = useRef(false);
+  useEffect(() => {
+    verifyPromptRef.current = verifyPrompt;
+  }, [verifyPrompt]);
+  const lastRecheckRef = useRef(0);
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -85,6 +93,11 @@ export function InstitutionScreen({ institutionId }: { institutionId: string }) 
 
   /** Re-reads the account (verified email, fresh token); a verified email clears the prompt. */
   const recheckAccount = useCallback(async () => {
+    // Re-reading forces a token refresh, so quick repeats are skipped; an open verify prompt is
+    // waiting on exactly this refresh and is never throttled.
+    const nowMs = Date.now();
+    if (!verifyPromptRef.current && nowMs - lastRecheckRef.current < TOKEN_REFRESH_MIN_INTERVAL_MS) return;
+    lastRecheckRef.current = nowMs;
     try {
       const account = await repos.auth.refreshUser();
       setEmail(account.email);

@@ -1,9 +1,8 @@
 import type { ComponentType } from 'react';
-import Constants, { ExecutionEnvironment } from 'expo-constants';
 import * as ImagePicker from 'expo-image-picker';
 
-import { createViroArScene, type ViroApi } from '@/features/ar/ViroArScene';
-
+import { createViroArScene, type ViroApi } from './ar/ViroArScene';
+import { isExpoGo } from './expoGo';
 import type { ArRenderer, ArSceneProps, ArStatus } from './types';
 
 interface ViroModule extends Partial<ViroApi> {
@@ -13,9 +12,7 @@ interface ViroModule extends Partial<ViroApi> {
 /** Optional native dependency: absent in Expo Go and until the dev build adds it. */
 function loadViro(): ViroModule | null {
   // Expo Go never ships the native module; do not even attempt the require there.
-  const inExpoGo =
-    Constants.appOwnership === 'expo' || Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
-  if (inExpoGo) return null;
+  if (isExpoGo()) return null;
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports -- optional native dep, must be lazy
     return require('@reactvision/react-viro') as ViroModule;

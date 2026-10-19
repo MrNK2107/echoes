@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import type { ComponentType } from 'react';
 
 import { rotateByHeading } from '@/domain/arScene';
-import type { ArSceneProps } from '@/device/types';
+import type { ArSceneProps } from '../types';
 
 /**
  * Minimal surface of `@reactvision/react-viro` used here. Shapes follow the

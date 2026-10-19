@@ -33,7 +33,7 @@ function authErrorCopy(e: unknown): string {
 
 type Errors = { email?: string; password?: string; name?: string; age?: string; terms?: string };
 
-const TERMS_LABEL = 'I agree to the Terms of Service and Community Guidelines.';
+export const TERMS_LABEL = 'I agree to the Terms of Service and Community Guidelines.';
 export const TERMS_REQUIRED = 'Please accept the Terms of Service and Community Guidelines.';
 
 function openLink(url: string) {
