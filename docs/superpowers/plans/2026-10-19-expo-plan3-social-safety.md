@@ -400,8 +400,8 @@ AuthRepository: sendEmailVerification(): Promise<void>; refreshUser(): Promise<{
 - Oldest → newest bars, height ∝ intensity, colour = entry `colorHex`.
 - Accessible summary `accessibilityLabel` = `Aura history: {first category} to {last category} over {n} updates`.
 
-- [ ] **Step 1: Failing tests:** hidden with < 2 entries; bar count equals entries; label text. **Step 2–4:** FAIL → implement → PASS (+ android export).
-- [ ] **Step 5: Commit** `feat(aura): history chart on place screen`.
+- [x] **Step 1: Failing tests:** hidden with < 2 entries; bar count equals entries; label text. **Step 2–4:** FAIL → implement → PASS (+ android export).
+- [x] **Step 5: Commit** `feat(aura): history chart on place screen`.
 
 ---
 
