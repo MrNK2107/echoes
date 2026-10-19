@@ -344,9 +344,9 @@ AuthRepository: sendEmailVerification(): Promise<void>; refreshUser(): Promise<{
 - Create sheet with validation.
 - Callable errors are mapped; offline → timeout copy.
 
-- [ ] **Step 1: Failing tests:** lists; join/leave flows incl. owner block and confirm; invite sends; create validation and success navigates to the new community; feed visibility; **`hides blocked authors' memories on place and community feeds`** (also covers PlaceScreen).
-- [ ] **Step 2–4:** FAIL → implement → PASS.
-- [ ] **Step 5: Commit** `feat(communities): browse, join, leave, invite, create, feed`.
+- [x] **Step 1: Failing tests:** lists; join/leave flows incl. owner block and confirm; invite sends; create validation and success navigates to the new community; feed visibility; **`hides blocked authors' memories on place and community feeds`** (also covers PlaceScreen).
+- [x] **Step 2–4:** FAIL → implement → PASS.
+- [x] **Step 5: Commit** `feat(communities): browse, join, leave, invite, create, feed`.
 
 ---
 
