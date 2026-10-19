@@ -328,9 +328,9 @@ AuthRepository: sendEmailVerification(): Promise<void>; refreshUser(): Promise<{
 - Badge shows the unread count (9+ cap).
 - Settings toggles persist `notificationPrefs`.
 
-- [ ] **Step 1: Failing tests:** list and order; tap marks read and navigates; badge count; toggles persist; empty state.
-- [ ] **Step 2–4:** FAIL → implement → PASS.
-- [ ] **Step 5: Commit** `feat(inbox): in-app notifications and preferences`.
+- [x] **Step 1: Failing tests:** list and order; tap marks read and navigates; badge count; toggles persist; empty state.
+- [x] **Step 2–4:** FAIL → implement → PASS.
+- [x] **Step 5: Commit** `feat(inbox): in-app notifications and preferences`.
 
 ---
 
