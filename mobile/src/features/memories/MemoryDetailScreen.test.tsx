@@ -5,6 +5,7 @@ import { DEMO_USER } from '@/data/seed';
 import { fakeAudioPlayer, testServices } from '@/device/fakes';
 import type { Memory } from '@/domain/types';
 import { MemoryCard } from '@/features/places/MemoryCard';
+import { BlocksProvider } from '@/features/safety/BlocksProvider';
 import { ServicesProvider } from '@/services/ServicesProvider';
 import type { Services } from '@/services/services';
 
@@ -27,7 +28,9 @@ async function setup(id: string, services: Services = testServices()) {
   });
   await render(
     <ServicesProvider services={services}>
-      <MemoryDetailScreen memoryId={id} />
+      <BlocksProvider>
+        <MemoryDetailScreen memoryId={id} />
+      </BlocksProvider>
     </ServicesProvider>,
   );
   return services;
@@ -257,6 +260,27 @@ describe('MemoryDetailScreen safety', () => {
     expect(screen.queryByText('Why are you reporting this?')).toBeNull();
   });
 
+  it('reports the author profile from Report {name} and shows the duplicate copy the second time', async () => {
+    const services = testServices();
+    const content = jest.spyOn(services.repos.safety, 'reportContent');
+    await setup('memory-1', services);
+    await fireEvent.press(await screen.findByRole('button', { name: 'Report Asha Rao' }));
+    await fireEvent.press(screen.getByRole('radio', { name: 'Hate speech' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Send report' }));
+    expect(await screen.findByText("Thanks — we'll review it.")).toBeOnTheScreen();
+    expect(content).toHaveBeenCalledWith({ targetType: 'profile', targetId: 'user-asha', reason: 'hate', note: null });
+    await fireEvent.press(screen.getByRole('button', { name: 'Report Asha Rao' }));
+    await fireEvent.press(screen.getByRole('radio', { name: 'Hate speech' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Send report' }));
+    expect(await screen.findByText('You already reported this.')).toBeOnTheScreen();
+  });
+
+  it('offers no Report {name} to the author', async () => {
+    await setup('memory-2');
+    await screen.findByText('Edit');
+    expect(screen.queryByRole('button', { name: /^Report / })).toBeNull();
+  });
+
   it('a second report shows the duplicate copy', async () => {
     const services = testServices();
     await act(async () => {
@@ -371,7 +395,9 @@ describe('MemoryCard', () => {
   async function renderCard(services: Services, memory: Memory, authorName?: string) {
     return render(
       <ServicesProvider services={services}>
-        <MemoryCard memory={memory} authorName={authorName} />
+        <BlocksProvider>
+          <MemoryCard memory={memory} authorName={authorName} />
+        </BlocksProvider>
       </ServicesProvider>,
     );
   }

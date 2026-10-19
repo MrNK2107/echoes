@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { GENERIC_ERROR } from '@/data/errors';
 import type { AppNotification } from '@/data/types';
 import { useSession } from '@/features/auth/useSession';
+import { useBlocksState } from '@/features/safety/useBlocks';
 import { useServices } from '@/services/ServicesProvider';
 
 export interface Inbox {
@@ -23,6 +24,7 @@ export function useInbox(): Inbox {
   const { repos, now } = useServices();
   const { session } = useSession();
   const uid = session?.userId ?? null;
+  const { blocked } = useBlocksState();
   const [state, setState] = useState<{ uid: string | null; items: AppNotification[] }>({ uid: null, items: [] });
   const [error, setError] = useState<string | null>(null);
   const [failedUid, setFailedUid] = useState<string | null>(null);
@@ -39,7 +41,11 @@ export function useInbox(): Inbox {
     );
   }, [repos.notifications, uid]);
 
-  const items = useMemo(() => (state.uid === uid ? state.items : []), [state, uid]);
+  // Items from blocked actors are hidden (and not counted); system items carry no actorId and stay.
+  const items = useMemo(() => {
+    if (state.uid !== uid) return [];
+    return blocked.size === 0 ? state.items : state.items.filter((n) => n.actorId === null || !blocked.has(n.actorId));
+  }, [state, uid, blocked]);
   const unread = useMemo(() => items.filter((n) => n.readAt === null).length, [items]);
 
   const markRead = useCallback(

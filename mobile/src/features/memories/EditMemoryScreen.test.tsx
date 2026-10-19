@@ -5,6 +5,7 @@ import { DEMO_USER } from '@/data/seed';
 import { testServices } from '@/device/fakes';
 import { analyzeSentiment } from '@/domain/sentiment';
 import type { Memory } from '@/domain/types';
+import { BlocksProvider } from '@/features/safety/BlocksProvider';
 import { ServicesProvider } from '@/services/ServicesProvider';
 import type { Services } from '@/services/services';
 
@@ -38,7 +39,9 @@ async function setup(id = 'memory-2', prepare?: (s: Services) => Promise<void>) 
   });
   await render(
     <ServicesProvider services={services}>
-      <EditMemoryScreen memoryId={id} />
+      <BlocksProvider>
+        <EditMemoryScreen memoryId={id} />
+      </BlocksProvider>
     </ServicesProvider>,
   );
   return services;

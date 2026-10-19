@@ -9,6 +9,10 @@ export type CommunityState = {
   community: Community | null;
   /** undefined until the first membership snapshot. */
   membership: CommunityMembership | null | undefined;
+  /** The membership subscription failed; the viewer's role is unknown (never offer Join). */
+  membershipError: boolean;
+  /** Re-subscribes to the membership after a failure. */
+  retryMembership: () => void;
   feed: { status: 'loading' | 'ready' | 'error'; memories: Memory[] };
 };
 
@@ -29,6 +33,8 @@ export function useCommunity(id: string): CommunityState {
   const [community, setCommunity] = useState<Keyed<{ status: CommunityState['status']; community: Community | null }> | null>(
     null,
   );
+  const [membershipFailed, setMembershipFailed] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
   const [feed, setFeed] = useState<Keyed<CommunityState['feed']> | null>(null);
 
   useEffect(() => {
@@ -36,13 +42,16 @@ export function useCommunity(id: string): CommunityState {
     return repos.communities.subscribeMembership(
       id,
       uid,
-      (m) => setMembership({ key, value: m }),
+      (m) => {
+        setMembershipFailed(null);
+        setMembership({ key, value: m });
+      },
       (e) => {
         console.warn('Could not load membership', e);
-        setMembership({ key, value: null });
+        setMembershipFailed(key);
       },
     );
-  }, [repos.communities, id, uid, key]);
+  }, [repos.communities, id, uid, key, attempt]);
 
   const memberKey = membership?.key === key ? (membership.value?.role ?? 'none') : null;
 
@@ -85,5 +94,10 @@ export function useCommunity(id: string): CommunityState {
     community: current?.community ?? null,
     membership: membership?.key === key ? membership.value : undefined,
     feed: currentFeed ?? { status: 'loading', memories: [] },
+    membershipError: membershipFailed === key && membership?.key !== key,
+    retryMembership: () => {
+      setMembershipFailed(null);
+      setAttempt((n) => n + 1);
+    },
   };
 }

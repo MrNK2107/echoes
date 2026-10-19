@@ -3,6 +3,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { GENERIC_ERROR } from '@/data/errors';
 import { INBOX_LOAD_ERROR } from '@/ui/copy';
 import type { Transfer } from '@/data/types';
+import { BlocksProvider } from '@/features/safety/BlocksProvider';
 import { ServicesProvider } from '@/services/ServicesProvider';
 import type { Services } from '@/services/services';
 
@@ -18,7 +19,9 @@ async function setup(list: Parameters<typeof inboxServices>[0], prepare?: (s: Se
   prepare?.(s.services);
   await render(
     <ServicesProvider services={s.services}>
-      <InboxScreen />
+      <BlocksProvider>
+        <InboxScreen />
+      </BlocksProvider>
     </ServicesProvider>,
   );
   return s;
@@ -127,7 +130,9 @@ describe('InboxScreen', () => {
     });
     await render(
       <ServicesProvider services={s.services}>
-        <InboxScreen />
+        <BlocksProvider>
+          <InboxScreen />
+        </BlocksProvider>
       </ServicesProvider>,
     );
     expect(await screen.findByRole('alert')).toHaveTextContent(INBOX_LOAD_ERROR);
@@ -139,7 +144,9 @@ describe('InboxScreen', () => {
     s.services.repos.notifications.subscribe = jest.fn(() => () => {});
     await render(
       <ServicesProvider services={s.services}>
-        <InboxScreen />
+        <BlocksProvider>
+          <InboxScreen />
+        </BlocksProvider>
       </ServicesProvider>,
     );
     expect(screen.getByTestId('inbox-loading')).toBeOnTheScreen();
@@ -257,4 +264,24 @@ describe('InboxScreen', () => {
       expect(await screen.findByText(GENERIC_ERROR)).toBeOnTheScreen();
     });
   });
+
+  it('hides a blocked actor items and keeps items with no actor', async () => {
+    const s = await inboxServices([
+      note({ id: 'blocked', title: 'From Asha', actorId: 'user-asha' }),
+      note({ id: 'system', title: 'From the system', actorId: null }),
+      note({ id: 'other', title: 'From Rohan', actorId: 'user-rohan' }),
+    ]);
+    await s.services.repos.safety.block('user-demo', 'user-asha', s.services.now());
+    await render(
+      <ServicesProvider services={s.services}>
+        <BlocksProvider>
+          <InboxScreen />
+        </BlocksProvider>
+      </ServicesProvider>,
+    );
+    expect(await screen.findByText('From the system')).toBeOnTheScreen();
+    expect(screen.getByText('From Rohan')).toBeOnTheScreen();
+    expect(screen.queryByText('From Asha')).toBeNull();
+  });
+
 });

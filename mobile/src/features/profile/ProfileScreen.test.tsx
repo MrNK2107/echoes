@@ -10,6 +10,7 @@ import { SUBMIT_TIMEOUT_MS } from '@/features/memories/submitMemory';
 import { OutboxProvider } from '@/features/outbox/useOutbox';
 import { AddMemoryScreen } from '@/features/memories/AddMemoryScreen';
 import { useSession } from '@/features/auth/useSession';
+import { BlocksProvider } from '@/features/safety/BlocksProvider';
 import { ServicesProvider } from '@/services/ServicesProvider';
 import type { Services } from '@/services/services';
 
@@ -32,8 +33,10 @@ async function setup(services: Services = testServices()) {
   });
   await render(
     <ServicesProvider services={services}>
-      <SessionProbe />
-      <ProfileScreen />
+      <BlocksProvider>
+        <SessionProbe />
+        <ProfileScreen />
+      </BlocksProvider>
     </ServicesProvider>,
   );
   return services;
@@ -117,9 +120,11 @@ describe('ProfileScreen', () => {
     expect(screen.getByTestId('default-privacy-private').props.accessibilityState).toMatchObject({ selected: true });
     await render(
       <ServicesProvider services={services}>
-        <OutboxProvider userId="user-demo">
-          <AddMemoryScreen />
-        </OutboxProvider>
+        <BlocksProvider>
+          <OutboxProvider userId="user-demo">
+            <AddMemoryScreen />
+          </OutboxProvider>
+        </BlocksProvider>
       </ServicesProvider>,
     );
     await waitFor(() =>

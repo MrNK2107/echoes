@@ -5,6 +5,7 @@ import { DEMO_USER } from '@/data/seed';
 import { testServices } from '@/device/fakes';
 import { SUBMIT_TIMEOUT_MS } from '@/features/memories/submitMemory';
 import { PlaceScreen } from '@/features/places/PlaceScreen';
+import { BlocksProvider } from '@/features/safety/BlocksProvider';
 import { ServicesProvider } from '@/services/ServicesProvider';
 import type { Services } from '@/services/services';
 
@@ -35,7 +36,9 @@ describe('BlockedScreen', () => {
     await signInAndBlock(services, ['user-asha', 'user-rohan']);
     await render(
       <ServicesProvider services={services}>
-        <BlockedScreen />
+        <BlocksProvider>
+          <BlockedScreen />
+        </BlocksProvider>
       </ServicesProvider>,
     );
     expect(screen.getByRole('header', { name: 'Blocked people' })).toBeOnTheScreen();
@@ -51,7 +54,9 @@ describe('BlockedScreen', () => {
     await signInAndBlock(services, []);
     await render(
       <ServicesProvider services={services}>
-        <BlockedScreen />
+        <BlocksProvider>
+          <BlockedScreen />
+        </BlocksProvider>
       </ServicesProvider>,
     );
     expect(await screen.findByText("You haven't blocked anyone.")).toBeOnTheScreen();
@@ -63,8 +68,10 @@ describe('BlockedScreen', () => {
     await signInAndBlock(services, ['user-asha']);
     await render(
       <ServicesProvider services={services}>
-        <PlaceScreen placeId="place-2" />
-        <BlockedScreen />
+        <BlocksProvider>
+          <PlaceScreen placeId="place-2" />
+          <BlockedScreen />
+        </BlocksProvider>
       </ServicesProvider>,
     );
     expect(await screen.findByTestId('memory-memory-7')).toBeOnTheScreen();
@@ -81,7 +88,9 @@ describe('BlockedScreen', () => {
     await signInAndBlock(services, ['user-asha']);
     await render(
       <ServicesProvider services={services}>
-        <BlockedScreen />
+        <BlocksProvider>
+          <BlockedScreen />
+        </BlocksProvider>
       </ServicesProvider>,
     );
     await fireEvent.press(await screen.findByRole('button', { name: 'Unblock Asha Rao' }));
@@ -95,7 +104,9 @@ describe('BlockedScreen', () => {
     await signInAndBlock(services, ['user-asha']);
     await render(
       <ServicesProvider services={services}>
-        <BlockedScreen />
+        <BlocksProvider>
+          <BlockedScreen />
+        </BlocksProvider>
       </ServicesProvider>,
     );
     const button = await screen.findByRole('button', { name: 'Unblock Asha Rao' });
@@ -121,7 +132,9 @@ describe('BlockedScreen', () => {
     await signInAndBlock(services, ['user-asha']);
     await render(
       <ServicesProvider services={services}>
-        <BlockedScreen />
+        <BlocksProvider>
+          <BlockedScreen />
+        </BlocksProvider>
       </ServicesProvider>,
     );
     const button = await screen.findByRole('button', { name: 'Unblock Asha Rao' });
@@ -138,7 +151,9 @@ describe('BlockedScreen', () => {
     await signInAndBlock(services, []);
     await render(
       <ServicesProvider services={services}>
-        <BlockedScreen />
+        <BlocksProvider>
+          <BlockedScreen />
+        </BlocksProvider>
       </ServicesProvider>,
     );
     await fireEvent.press(screen.getByRole('button', { name: 'Back' }));

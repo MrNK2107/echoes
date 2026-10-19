@@ -3,6 +3,7 @@ import { ActivityIndicator, View } from 'react-native';
 
 import { useSession } from '@/features/auth/useSession';
 import { OutboxProvider } from '@/features/outbox/useOutbox';
+import { BlocksProvider } from '@/features/safety/BlocksProvider';
 import { PushBridge } from '@/features/push/PushBridge';
 import { useEnsurePublicProfile } from '@/features/people/ensureProfile';
 import { colors } from '@/ui/theme';
@@ -23,7 +24,9 @@ export default function AppLayout() {
   return (
     <OutboxProvider userId={session.userId}>
       <PushBridge uid={session.userId} />
-      <Stack screenOptions={{ headerShown: false }} />
+      <BlocksProvider>
+        <Stack screenOptions={{ headerShown: false }} />
+      </BlocksProvider>
     </OutboxProvider>
   );
 }

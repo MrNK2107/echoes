@@ -5,11 +5,11 @@ import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'rea
 import { GENERIC_ERROR, TIMEOUT_ERROR } from '@/data/errors';
 import { useSession } from '@/features/auth/useSession';
 import { useAuthorNames } from '@/features/people/useAuthorNames';
-import { ReportSheet } from '@/features/safety/ReportSheet';
+import { ReportSheet, type ReportTarget } from '@/features/safety/ReportSheet';
 import { useBlocksState } from '@/features/safety/useBlocks';
 import { useServices } from '@/services/ServicesProvider';
 import { privacyLabel } from '@/ui/privacyLabel';
-import { HIDDEN_BADGE, REPORT_THANKS, THIS_PERSON } from '@/ui/copy';
+import { HIDDEN_BADGE, REPORT_THANKS, reportProfileLabel, THIS_PERSON } from '@/ui/copy';
 import { colors } from '@/ui/theme';
 
 import { TimeoutError, withTimeout } from './submitMemory';
@@ -25,7 +25,7 @@ export function MemoryDetailScreen({ memoryId }: { memoryId: string }) {
   const { status, memory, reload } = useMemory(memoryId);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const [reporting, setReporting] = useState(false);
+  const [reporting, setReporting] = useState<ReportTarget | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const deletingRef = useRef(false);
   const [blocking, setBlocking] = useState(false);
@@ -180,11 +180,21 @@ export function MemoryDetailScreen({ memoryId }: { memoryId: string }) {
               accessibilityRole="button"
               onPress={() => {
                 setNotice(null);
-                setReporting(true);
+                setReporting({ type: 'memory', id: memory.id });
               }}
               style={styles.action}
             >
               <Text style={styles.actionText}>Report</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                setNotice(null);
+                setReporting({ type: 'profile', id: memory.userId });
+              }}
+              style={styles.action}
+            >
+              <Text style={styles.actionText}>{reportProfileLabel(blockName)}</Text>
             </Pressable>
             <Pressable
               accessibilityRole="button"
@@ -199,11 +209,11 @@ export function MemoryDetailScreen({ memoryId }: { memoryId: string }) {
         )}
       </ScrollView>
       <ReportSheet
-        visible={reporting}
-        memoryId={memory.id}
-        onClose={() => setReporting(false)}
+        visible={reporting !== null}
+        target={reporting ?? { type: 'memory', id: memory.id }}
+        onClose={() => setReporting(null)}
         onReported={() => {
-          setReporting(false);
+          setReporting(null);
           setNotice(REPORT_THANKS);
         }}
       />

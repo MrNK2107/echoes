@@ -7,9 +7,18 @@ import { useSession } from '@/features/auth/useSession';
 import { UserSearchField } from '@/features/people/UserSearchField';
 import { useAuthorNames } from '@/features/people/useAuthorNames';
 import { MemoryCard } from '@/features/places/MemoryCard';
+import { ReportSheet } from '@/features/safety/ReportSheet';
 import { useBlocksState, withoutBlocked } from '@/features/safety/useBlocks';
 import { useServices } from '@/services/ServicesProvider';
-import { FEED_LOAD_ERROR, INVITE_CAP_ERROR, REMOVE_INVITED_LABEL } from '@/ui/copy';
+import {
+  FEED_LOAD_ERROR,
+  INVITE_CAP_ERROR,
+  MEMBERSHIP_ERROR,
+  REMOVE_INVITED_LABEL,
+  REPORT_COMMUNITY_LABEL,
+  REPORT_THANKS,
+  RETRY_LABEL,
+} from '@/ui/copy';
 import { colors } from '@/ui/theme';
 
 import { communityTypeLabel, formatMembers, hasHumanOwner } from './labels';
@@ -22,13 +31,14 @@ export function CommunityScreen({ communityId }: { communityId: string }) {
   const router = useRouter();
   const { repos } = useServices();
   const { session } = useSession();
-  const { status, community, membership, feed } = useCommunity(communityId);
+  const { status, community, membership, membershipError, retryMembership, feed } = useCommunity(communityId);
   const blocks = useBlocksState();
 
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [reporting, setReporting] = useState(false);
   const [inviting, setInviting] = useState(false);
   const [invitees, setInvitees] = useState<string[]>([]);
   const [sending, setSending] = useState(false);
@@ -179,6 +189,28 @@ export function CommunityScreen({ communityId }: { communityId: string }) {
           ) : null}
         </View>
       ) : null}
+      {membershipError ? (
+        <View style={styles.actions}>
+          <Text accessibilityRole="alert" style={styles.error}>
+            {MEMBERSHIP_ERROR}
+          </Text>
+          <Pressable accessibilityRole="button" onPress={retryMembership} style={styles.secondary}>
+            <Text style={styles.secondaryText}>{RETRY_LABEL}</Text>
+          </Pressable>
+        </View>
+      ) : null}
+      <View style={styles.actions}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => {
+            setNotice(null);
+            setReporting(true);
+          }}
+          style={styles.secondary}
+        >
+          <Text style={styles.secondaryText}>{REPORT_COMMUNITY_LABEL}</Text>
+        </Pressable>
+      </View>
       {error ? (
         <Text accessibilityRole="alert" style={styles.error}>
           {error}
@@ -190,7 +222,7 @@ export function CommunityScreen({ communityId }: { communityId: string }) {
         </Text>
       ) : null}
       {feedError ? <Text style={styles.message}>{FEED_LOAD_ERROR}</Text> : null}
-      {!feedReady && !feedError ? <ActivityIndicator style={styles.spinner} color={colors.accent} /> : null}
+      {!feedReady && !feedError && !membershipError ? <ActivityIndicator style={styles.spinner} color={colors.accent} /> : null}
     </View>
   );
 
@@ -205,6 +237,16 @@ export function CommunityScreen({ communityId }: { communityId: string }) {
         ListHeaderComponent={header}
         renderItem={({ item }) => <MemoryCard memory={item} authorName={names.get(item.userId)} />}
         ListEmptyComponent={feedReady ? <Text style={styles.message}>{FEED_EMPTY}</Text> : undefined}
+      />
+
+      <ReportSheet
+        visible={reporting}
+        target={{ type: 'community', id: community.id }}
+        onClose={() => setReporting(false)}
+        onReported={() => {
+          setReporting(false);
+          setNotice(REPORT_THANKS);
+        }}
       />
 
       <Modal visible={inviting} animationType="slide" transparent onRequestClose={closeInvite}>

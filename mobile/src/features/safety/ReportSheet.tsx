@@ -18,15 +18,17 @@ export const REPORT_REASONS: { value: ReportReason; label: string }[] = [
   { value: 'other', label: 'Something else' },
 ];
 
+export type ReportTarget = { type: 'memory' | 'community' | 'profile'; id: string };
+
 interface Props {
   visible: boolean;
-  memoryId: string;
+  target: ReportTarget;
   onClose: () => void;
   /** Called once the server accepted the report; the caller shows the thanks. */
   onReported: () => void;
 }
 
-export function ReportSheet({ visible, memoryId, onClose, onReported }: Props) {
+export function ReportSheet({ visible, target, onClose, onReported }: Props) {
   const { repos } = useServices();
   const [reason, setReason] = useState<ReportReason | null>(null);
   const [note, setNote] = useState('');
@@ -52,7 +54,12 @@ export function ReportSheet({ visible, memoryId, onClose, onReported }: Props) {
     setSending(true);
     setError(null);
     try {
-      await repos.safety.reportMemory({ memoryId, reason, note: note.trim() || null });
+      const trimmed = note.trim() || null;
+      if (target.type === 'memory') {
+        await repos.safety.reportMemory({ memoryId: target.id, reason, note: trimmed });
+      } else {
+        await repos.safety.reportContent({ targetType: target.type, targetId: target.id, reason, note: trimmed });
+      }
       reset();
       onReported();
     } catch (e) {

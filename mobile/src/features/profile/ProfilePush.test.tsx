@@ -6,6 +6,7 @@ import { GENERIC_ERROR } from '@/data/errors';
 import { DEMO_USER } from '@/data/seed';
 import { fakePush, testServices, type FakePush } from '@/device/fakes';
 import { useSession } from '@/features/auth/useSession';
+import { BlocksProvider } from '@/features/safety/BlocksProvider';
 import { ServicesProvider } from '@/services/ServicesProvider';
 import type { Services } from '@/services/services';
 
@@ -29,9 +30,11 @@ async function setup(push: FakePush, over: Partial<Services> = {}, bridge = true
   });
   await render(
     <ServicesProvider services={services}>
-      <SessionProbe />
-      {bridge ? <PushBridge uid="user-demo" /> : null}
-      <ProfileScreen />
+      <BlocksProvider>
+        <SessionProbe />
+        {bridge ? <PushBridge uid="user-demo" /> : null}
+        <ProfileScreen />
+      </BlocksProvider>
     </ServicesProvider>,
   );
   return services;

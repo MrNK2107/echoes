@@ -4,6 +4,7 @@ import { useState, type ComponentProps } from 'react';
 import { DEMO_USER } from '@/data/seed';
 import { testServices } from '@/device/fakes';
 import { MAX_TAGS, TAG_CAP_ERROR } from '@/domain/privacy';
+import { BlocksProvider } from '@/features/safety/BlocksProvider';
 import { ServicesProvider } from '@/services/ServicesProvider';
 import type { Services } from '@/services/services';
 
@@ -40,7 +41,9 @@ async function setup(
   const search = jest.spyOn(services.repos.profiles, 'search');
   await render(
     <ServicesProvider services={services}>
-      <Harness initial={initial} extra={extra} />
+      <BlocksProvider>
+        <Harness initial={initial} extra={extra} />
+      </BlocksProvider>
     </ServicesProvider>,
   );
   return { services, search };

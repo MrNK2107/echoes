@@ -5,6 +5,7 @@ import { DEMO_USER } from '@/data/seed';
 import { fakeAudioRecorder, fakeConnectivity, fakeImagePicker, fakeLocation, testServices } from '@/device/fakes';
 import type { Memory } from '@/domain/types';
 import { OutboxProvider } from '@/features/outbox/useOutbox';
+import { BlocksProvider } from '@/features/safety/BlocksProvider';
 import { ServicesProvider } from '@/services/ServicesProvider';
 import type { Services } from '@/services/services';
 
@@ -36,9 +37,11 @@ async function setup(overrides: Partial<Services> = {}) {
   });
   await render(
     <ServicesProvider services={services}>
-      <OutboxProvider userId="user-demo">
-        <AddMemoryScreen />
-      </OutboxProvider>
+      <BlocksProvider>
+        <OutboxProvider userId="user-demo">
+          <AddMemoryScreen />
+        </OutboxProvider>
+      </BlocksProvider>
     </ServicesProvider>,
   );
   return services;
@@ -55,9 +58,11 @@ describe('AddMemoryScreen', () => {
     });
     await render(
       <ServicesProvider services={services}>
-        <OutboxProvider userId="user-demo">
-          <AddMemoryScreen />
-        </OutboxProvider>
+        <BlocksProvider>
+          <OutboxProvider userId="user-demo">
+            <AddMemoryScreen />
+          </OutboxProvider>
+        </BlocksProvider>
       </ServicesProvider>,
     );
     await waitFor(() =>
@@ -79,9 +84,11 @@ describe('AddMemoryScreen', () => {
     });
     await render(
       <ServicesProvider services={services}>
-        <OutboxProvider userId="user-demo">
-          <AddMemoryScreen />
-        </OutboxProvider>
+        <BlocksProvider>
+          <OutboxProvider userId="user-demo">
+            <AddMemoryScreen />
+          </OutboxProvider>
+        </BlocksProvider>
       </ServicesProvider>,
     );
     expect(screen.getByTestId('save-button').props.accessibilityState).toMatchObject({ disabled: true });
@@ -102,9 +109,11 @@ describe('AddMemoryScreen', () => {
     });
     await render(
       <ServicesProvider services={services}>
-        <OutboxProvider userId="user-demo">
-          <AddMemoryScreen />
-        </OutboxProvider>
+        <BlocksProvider>
+          <OutboxProvider userId="user-demo">
+            <AddMemoryScreen />
+          </OutboxProvider>
+        </BlocksProvider>
       </ServicesProvider>,
     );
     await waitFor(() =>

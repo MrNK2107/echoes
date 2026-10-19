@@ -4,6 +4,7 @@ import { TRANSFER_DUPLICATE } from '@/data/errors';
 
 import { DEMO_USER } from '@/data/seed';
 import { testServices } from '@/device/fakes';
+import { BlocksProvider } from '@/features/safety/BlocksProvider';
 import { ServicesProvider } from '@/services/ServicesProvider';
 import type { Services } from '@/services/services';
 
@@ -20,7 +21,9 @@ async function setup(id: string, services: Services = testServices()) {
   });
   await render(
     <ServicesProvider services={services}>
-      <PlaceScreen placeId={id} />
+      <BlocksProvider>
+        <PlaceScreen placeId={id} />
+      </BlocksProvider>
     </ServicesProvider>,
   );
   return services;

@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
+import { BlocksProvider } from '@/features/safety/BlocksProvider';
 import { ServicesProvider } from '@/services/ServicesProvider';
 
 import { InboxBell } from './InboxBell';
@@ -15,7 +16,9 @@ async function setup(unread: number, read = 0) {
   const s = await inboxServices(list);
   await render(
     <ServicesProvider services={s.services}>
-      <InboxBell />
+      <BlocksProvider>
+        <InboxBell />
+      </BlocksProvider>
     </ServicesProvider>,
   );
   return s;
@@ -62,4 +65,23 @@ describe('InboxBell', () => {
     });
     expect(mockPush).toHaveBeenCalledWith('/notifications');
   });
+
+  it('does not count a blocked actor unread items', async () => {
+    const s = await inboxServices([
+      note({ id: 'a', actorId: 'user-asha' }),
+      note({ id: 'b', actorId: 'user-asha' }),
+      note({ id: 'c', actorId: null }),
+    ]);
+    await s.services.repos.safety.block('user-demo', 'user-asha', s.services.now());
+    await render(
+      <ServicesProvider services={s.services}>
+        <BlocksProvider>
+          <InboxBell />
+        </BlocksProvider>
+      </ServicesProvider>,
+    );
+    expect(await screen.findByText('1')).toBeOnTheScreen();
+    expect((await screen.findByLabelText('Notifications')).props.accessibilityValue).toEqual({ text: '1 unread' });
+  });
+
 });

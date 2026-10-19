@@ -1,3 +1,4 @@
+import type { ComponentProps } from 'react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 
 import { GENERIC_ERROR, REPORT_DUPLICATE, REPORT_RATE } from '@/data/errors';
@@ -11,13 +12,13 @@ import { REPORT_NOTE_MAX, REPORT_REASONS, ReportSheet } from './ReportSheet';
 const onClose = jest.fn();
 const onReported = jest.fn();
 
-async function setup(services: Services = testServices()) {
+async function setup(services: Services = testServices(), target: ComponentProps<typeof ReportSheet>['target'] = { type: 'memory', id: 'memory-1' }) {
   await act(async () => {
     await services.repos.auth.signIn(DEMO_USER.email, DEMO_USER.password);
   });
   await render(
     <ServicesProvider services={services}>
-      <ReportSheet visible memoryId="memory-1" onClose={onClose} onReported={onReported} />
+      <ReportSheet visible target={target} onClose={onClose} onReported={onReported} />
     </ServicesProvider>,
   );
   return services;
@@ -124,5 +125,53 @@ describe('ReportSheet', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Cancel' }));
     expect(onClose).toHaveBeenCalledTimes(1);
     expect(report).not.toHaveBeenCalled();
+  });
+
+  it('reports a community through reportContent and never through reportMemory', async () => {
+    const services = testServices();
+    const content = jest.spyOn(services.repos.safety, 'reportContent');
+    const memory = jest.spyOn(services.repos.safety, 'reportMemory');
+    await setup(services, { type: 'community', id: 'community-cubbon-walkers' });
+    await fireEvent.press(screen.getByRole('radio', { name: 'Spam' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Send report' }));
+    await waitFor(() => expect(onReported).toHaveBeenCalledTimes(1));
+    expect(content).toHaveBeenCalledWith({
+      targetType: 'community',
+      targetId: 'community-cubbon-walkers',
+      reason: 'spam',
+      note: null,
+    });
+    expect(memory).not.toHaveBeenCalled();
+  });
+
+  it('reports a profile and shows the duplicate copy the second time', async () => {
+    const services = testServices();
+    const content = jest.spyOn(services.repos.safety, 'reportContent');
+    await setup(services, { type: 'profile', id: 'user-asha' });
+    await fireEvent.press(screen.getByRole('radio', { name: 'Harassment or bullying' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Send report' }));
+    await waitFor(() => expect(onReported).toHaveBeenCalledTimes(1));
+    expect(content).toHaveBeenCalledWith({ targetType: 'profile', targetId: 'user-asha', reason: 'harassment', note: null });
+    await fireEvent.press(screen.getByRole('radio', { name: 'Spam' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Send report' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('You already reported this.');
+    expect(onReported).toHaveBeenCalledTimes(1);
+  });
+
+  it('ignores a second Send report while one is in flight', async () => {
+    const services = testServices();
+    let release!: () => void;
+    const content = jest
+      .spyOn(services.repos.safety, 'reportContent')
+      .mockImplementation(() => new Promise<void>((r) => (release = r)));
+    await setup(services, { type: 'community', id: 'community-cubbon-walkers' });
+    await fireEvent.press(screen.getByRole('radio', { name: 'Spam' }));
+    const send = screen.getByRole('button', { name: 'Send report' });
+    await fireEvent.press(send);
+    await act(async () => {
+      (send.props.onClick as () => void)();
+    });
+    expect(content).toHaveBeenCalledTimes(1);
+    await act(async () => release());
   });
 });

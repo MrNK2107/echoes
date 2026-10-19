@@ -5,6 +5,7 @@ import { OWNER_CANNOT_LEAVE, TIMEOUT_ERROR } from '@/data/errors';
 import { testServices } from '@/device/fakes';
 import type { Memory } from '@/domain/types';
 import { PlaceScreen } from '@/features/places/PlaceScreen';
+import { BlocksProvider } from '@/features/safety/BlocksProvider';
 import { ServicesProvider } from '@/services/ServicesProvider';
 import type { Services } from '@/services/services';
 
@@ -23,7 +24,9 @@ async function setup(id: string, services: Services = testServices(), prepare?: 
   await prepare?.(services);
   await render(
     <ServicesProvider services={services}>
-      <CommunityScreen communityId={id} />
+      <BlocksProvider>
+        <CommunityScreen communityId={id} />
+      </BlocksProvider>
     </ServicesProvider>,
   );
   return services;
@@ -277,7 +280,9 @@ describe('Review focus', () => {
     // Place feed: memory-6 at Vidhana Soudha is Asha's.
     const place = await render(
       <ServicesProvider services={services}>
-        <PlaceScreen placeId="place-2" />
+        <BlocksProvider>
+          <PlaceScreen placeId="place-2" />
+        </BlocksProvider>
       </ServicesProvider>,
     );
     expect(await screen.findByTestId('memory-memory-7')).toBeOnTheScreen();
@@ -287,7 +292,9 @@ describe('Review focus', () => {
     // Community feed: Asha's community memory is hidden, the viewer's own one stays.
     await render(
       <ServicesProvider services={services}>
-        <CommunityScreen communityId={WALKERS} />
+        <BlocksProvider>
+          <CommunityScreen communityId={WALKERS} />
+        </BlocksProvider>
       </ServicesProvider>,
     );
     expect(await screen.findByTestId('memory-memory-4')).toBeOnTheScreen();
@@ -300,4 +307,42 @@ describe('Review focus', () => {
     });
     expect(await screen.findByTestId('memory-memory-asha')).toBeOnTheScreen();
   });
+
+  it('reports the community from the Report community action', async () => {
+    const services = testServices();
+    const report = jest.spyOn(services.repos.safety, 'reportContent');
+    await setup(ERA, services, joinTimeCommunities);
+    await fireEvent.press(await screen.findByRole('button', { name: 'Report community' }));
+    expect(screen.getByText('Why are you reporting this?')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('radio', { name: 'Spam' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Send report' }));
+    expect(await screen.findByText("Thanks — we'll review it.")).toBeOnTheScreen();
+    expect(report).toHaveBeenCalledWith({ targetType: 'community', targetId: ERA, reason: 'spam', note: null });
+  });
+
+  it('shows a membership error with Retry and never Join, then recovers', async () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const services = testServices();
+    const real = services.repos.communities.subscribeMembership.bind(services.repos.communities);
+    let failing = true;
+    const subscribe = jest
+      .spyOn(services.repos.communities, 'subscribeMembership')
+      .mockImplementation((id, uid, cb, onError) => {
+        if (failing) {
+          onError?.(new Error('denied'));
+          return () => {};
+        }
+        return real(id, uid, cb, onError);
+      });
+    await setup(WALKERS, services);
+    expect(await screen.findByText("Couldn't check your membership.")).toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: 'Join' })).toBeNull();
+    failing = false;
+    await fireEvent.press(screen.getByRole('button', { name: 'Retry' }));
+    expect(await screen.findByRole('button', { name: 'Leave' })).toBeOnTheScreen();
+    expect(screen.queryByText("Couldn't check your membership.")).toBeNull();
+    expect(subscribe).toHaveBeenCalledTimes(2);
+    warn.mockRestore();
+  });
+
 });

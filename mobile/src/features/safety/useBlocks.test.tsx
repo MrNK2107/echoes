@@ -3,6 +3,7 @@ import { Text } from 'react-native';
 
 import { DEMO_USER } from '@/data/seed';
 import { testServices } from '@/device/fakes';
+import { BlocksProvider } from '@/features/safety/BlocksProvider';
 import { ServicesProvider } from '@/services/ServicesProvider';
 
 import { useBlocks, useBlocksState, withoutBlocked } from './useBlocks';
@@ -19,7 +20,9 @@ describe('useBlocks', () => {
     });
     await render(
       <ServicesProvider services={services}>
-        <Blocked />
+        <BlocksProvider>
+          <Blocked />
+        </BlocksProvider>
       </ServicesProvider>,
     );
     expect(screen.getByTestId('blocked')).toHaveTextContent('');
@@ -36,7 +39,9 @@ describe('useBlocks', () => {
   it('is empty when signed out', async () => {
     await render(
       <ServicesProvider services={testServices()}>
-        <Blocked />
+        <BlocksProvider>
+          <Blocked />
+        </BlocksProvider>
       </ServicesProvider>,
     );
     expect(screen.getByTestId('blocked')).toHaveTextContent('');
@@ -57,7 +62,9 @@ describe('useBlocksState', () => {
     jest.spyOn(services.repos.safety, 'subscribeBlocks').mockImplementation(subscribe);
     await render(
       <ServicesProvider services={services}>
-        <State />
+        <BlocksProvider>
+          <State />
+        </BlocksProvider>
       </ServicesProvider>,
     );
   }

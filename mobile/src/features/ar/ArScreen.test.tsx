@@ -5,6 +5,7 @@ import { DEMO_CENTER as SEED_CENTER, DEMO_USER } from '@/data/seed';
 import { mapArScene } from '@/domain/arScene';
 import { fakeHeading, testServices } from '@/device/fakes';
 import type { ArRenderer, ArSceneProps } from '@/device/types';
+import { BlocksProvider } from '@/features/safety/BlocksProvider';
 import { ServicesProvider } from '@/services/ServicesProvider';
 import type { Services } from '@/services/services';
 import {
@@ -41,7 +42,9 @@ async function setup(overrides: Partial<Services> = {}) {
   });
   await render(
     <ServicesProvider services={services}>
-      <ArScreen />
+      <BlocksProvider>
+        <ArScreen />
+      </BlocksProvider>
     </ServicesProvider>,
   );
   return services;
@@ -53,7 +56,9 @@ async function setupWith(services: Services) {
   });
   await render(
     <ServicesProvider services={services}>
-      <ArScreen />
+      <BlocksProvider>
+        <ArScreen />
+      </BlocksProvider>
     </ServicesProvider>,
   );
 }

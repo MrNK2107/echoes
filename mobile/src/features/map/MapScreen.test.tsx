@@ -5,6 +5,7 @@ import { fakeConnectivity, fakeLocation, testServices } from '@/device/fakes';
 import { outboxDraft } from '@/features/outbox/fixtures';
 import { Outbox } from '@/features/outbox/outbox';
 import { OutboxProvider } from '@/features/outbox/useOutbox';
+import { BlocksProvider } from '@/features/safety/BlocksProvider';
 import { ServicesProvider } from '@/services/ServicesProvider';
 import type { Services } from '@/services/services';
 
@@ -16,9 +17,11 @@ jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush }) }));
 async function setup(services: Services = testServices()) {
   await render(
     <ServicesProvider services={services}>
-      <OutboxProvider userId="user-demo">
-        <MapScreen />
-      </OutboxProvider>
+      <BlocksProvider>
+        <OutboxProvider userId="user-demo">
+          <MapScreen />
+        </OutboxProvider>
+      </BlocksProvider>
     </ServicesProvider>,
   );
   return services;
