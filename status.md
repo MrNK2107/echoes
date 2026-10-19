@@ -10,22 +10,22 @@ Plan 5 (launch readiness) delivered: report and moderation pipeline, admin subco
 | Command | Result |
 | --- | --- |
 | `cd mobile && npx jest` | Pass (90 suites, 1146 tests after the final-review client fixes; earlier 3 runs of 88 suites, 1116 tests were identical) |
-| `cd mobile && npx jest --randomize` | Pass (88 suites, 1116 tests, seed -1867974891) |
+| `cd mobile && npx jest --randomize` | Pass (90 suites, 1146 tests, seed 563868713, after the final-review fixes) |
 | `cd mobile && npx tsc --noEmit` | Pass |
 | `cd mobile && npx eslint .` | Pass (0 errors, 4 `no-require-imports` warnings in jest.setup.ts) |
-| `npm test` in `functions/` | Pass (365 tests) |
-| `npx firebase-tools emulators:exec --project demo-echoes --only auth,firestore,storage,functions "npm --prefix mobile run test:emulator"` | Pass (72 passed, 1 skipped) |
-| `npx firebase-tools emulators:exec --project demo-echoes --only firestore,storage "npm test --prefix rules_test"` | Pass (57 tests) |
+| `npm test` in `functions/` | Pass (376 tests after the final-review fixes) |
+| `npx firebase-tools emulators:exec --project demo-echoes --only auth,firestore,storage,functions "npm --prefix mobile run test:emulator"` | Pass (74 passed, 1 skipped, after the final-review fixes) |
+| `npx firebase-tools emulators:exec --project demo-echoes --only firestore,storage "npm test --prefix rules_test"` | Pass (58 tests after the final-review fixes) |
 | `node scripts/build-rules.js` then `git status --porcelain` | Pass (clean) |
 | `FIREBASE_STORAGE_BUCKET=demo-echoes.appspot.com node scripts/build-rules.js --prod`, then `git checkout firestore.rules` | Pass (tree clean afterwards) |
 | `cd mobile && npx expo export --platform android --output-dir dist` and `--platform ios --output-dir dist-ios` | Pass |
-| `cd mobile && npm run check:bundle` | Pass (android 7,336,536 bytes, ios 7,337,246 bytes, budget 7,864,320) |
+| `cd mobile && npm run check:bundle` | Pass (android 7,342,279 bytes, ios 7,343,069 bytes after the final-review fixes, budget 7,864,320) |
 
 ### Owner-gate checklist (none done)
 
 - [ ] EAS credentials configured and production builds made (Android app bundle, iOS)
 - [ ] Play Console and App Store Connect listings and privacy labels submitted (`docs/store/`)
-- [ ] Legal pages hosted and `EXPO_PUBLIC_TERMS_URL`, `EXPO_PUBLIC_GUIDELINES_URL`, `EXPO_PUBLIC_SUPPORT_EMAIL` set
+- [ ] Legal pages hosted and `EXPO_PUBLIC_TERMS_URL`, `EXPO_PUBLIC_GUIDELINES_URL`, `EXPO_PUBLIC_PRIVACY_URL`, `EXPO_PUBLIC_SUPPORT_EMAIL` set (production builds refuse to start without them)
 - [ ] Sentry project created, DSN set, `SENTRY_AUTH_TOKEN` EAS secret set, symbolicated test crash confirmed, retention confirmed
 - [ ] `GOOGLE_MAPS_ANDROID_API_KEY` set as an EAS secret for production Android
 - [ ] Maestro flows run on a device against the `e2e` build (index selectors unverified)

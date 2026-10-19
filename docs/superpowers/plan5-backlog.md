@@ -65,3 +65,11 @@ Launch-readiness items deferred from Plan 3's final whole-branch review. Plan 5'
 - Migrate the remaining 15 screen test files to `renderWithServices`.
 - Red test for switching uid within one session (stale listeners and caches).
 - Throttle InstitutionsScreen searches.
+
+## Post-launch (from the Plan 5 final fix-wave re-review)
+- cleanupDeletedUser: catch the admins-cleanup error inside the trigger and rethrow only after the Storage deletes, so a transient index error doesn't stall memory/user/media deletion until a retry.
+- Password reset cooldown: key the 30 s cooldown by email so a corrected typo can be sent immediately.
+- Unify `validateEmail` and `isValidEmail` (they disagree on `@b.co`).
+- Play foreground-service review: note expo-notifications' merged RECEIVE_BOOT_COMPLETED and expo-location's location foreground-service declarations (no foreground-service permission is requested).
+- Pin firebase-tools in the root `deploy:rules` script as CI does.
+- Exhausted tag-notify author still costs ~4 reads on their first memory per run; precheck the budget earlier.
