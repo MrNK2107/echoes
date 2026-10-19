@@ -82,3 +82,8 @@ Do these before shipping the Expo client.
 - **Client item C8.** Set real `EXPO_PUBLIC_TERMS_URL`,
   `EXPO_PUBLIC_GUIDELINES_URL` and `EXPO_PUBLIC_SUPPORT_EMAIL` values before store
   submission. The defaults point at `echoes.app` and must not ship.
+- **Push delivery (optional hardening).** `onNotificationCreated` sends to the Expo
+  Push Service without credentials by default. For enhanced push security, enable
+  it in the Expo dashboard and set `EXPO_ACCESS_TOKEN` as a function secret or
+  environment variable; the function then sends `Authorization: Bearer <token>`.
+  Not required for push to work.

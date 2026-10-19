@@ -215,6 +215,24 @@ service cloud.firestore {
         allow create, delete: if false;
       }
 
+      // Expo push tokens for this user's devices (ADR-0009). tokenId is the first 32 hex chars of
+      // the SHA-256 of the token. Read by functions/push.js via the Admin SDK.
+      match /pushTokens/{tokenId} {
+        allow read, delete: if isSelf(userId);
+        allow create: if isSelf(userId) &&
+          tokenId.matches('^[0-9a-f]{32}$') &&
+          request.resource.data.keys().hasOnly(['token', 'platform', 'createdAt', 'lastSeenAt']) &&
+          request.resource.data.keys().hasAll(['token', 'platform', 'createdAt', 'lastSeenAt']) &&
+          request.resource.data.token is string &&
+          request.resource.data.token.size() <= 256 &&
+          request.resource.data.platform in ['ios', 'android'] &&
+          request.resource.data.createdAt is string &&
+          request.resource.data.lastSeenAt is string;
+        allow update: if isSelf(userId) &&
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastSeenAt']) &&
+          request.resource.data.lastSeenAt is string;
+      }
+
       // Callables read both directions of a block, so blocks stay owner-only data.
       match /blocks/{otherUserId} {
         allow read, delete: if isSelf(userId);

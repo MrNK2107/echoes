@@ -1157,3 +1157,41 @@ function memoryDoc({
     updatedAt: now,
   };
 }
+
+test("pushTokens are owner-only {token, platform, createdAt, lastSeenAt} docs; update only lastSeenAt", async () => {
+  const creatorDb = testEnv.authenticatedContext("creator").firestore();
+  const strangerDb = testEnv.authenticatedContext("stranger").firestore();
+  const id = "0123456789abcdef0123456789abcdef";
+  const path = (tokenId = id) => `users/creator/pushTokens/${tokenId}`;
+  const good = {
+    token: "ExponentPushToken[abc]",
+    platform: "android",
+    createdAt: ISO,
+    lastSeenAt: ISO,
+  };
+
+  await assertFails(setDoc(doc(strangerDb, path()), good));
+  await assertSucceeds(setDoc(doc(creatorDb, path()), good));
+  await assertSucceeds(getDoc(doc(creatorDb, path())));
+  await assertFails(getDoc(doc(strangerDb, path())));
+  await assertFails(getDocs(collection(strangerDb, "users/creator/pushTokens")));
+
+  // bad shapes and ids
+  await assertFails(setDoc(doc(creatorDb, path("b".repeat(32))), { ...good, platform: "web" }));
+  await assertFails(setDoc(doc(creatorDb, path("c".repeat(32))), { ...good, extra: 1 }));
+  await assertFails(setDoc(doc(creatorDb, path("d".repeat(32))), { ...good, token: "x".repeat(257) }));
+  await assertFails(setDoc(doc(creatorDb, path("e".repeat(32))), { ...good, token: 5 }));
+  await assertFails(setDoc(doc(creatorDb, path("f".repeat(32))), { ...good, createdAt: 5 }));
+  await assertFails(setDoc(doc(creatorDb, path("short")), good));
+  await assertFails(setDoc(doc(creatorDb, path("A".repeat(32))), good));
+
+  // update: lastSeenAt only
+  await assertSucceeds(updateDoc(doc(creatorDb, path()), { lastSeenAt: "2026-10-20T00:00:00.000Z" }));
+  await assertFails(updateDoc(doc(creatorDb, path()), { lastSeenAt: 5 }));
+  await assertFails(updateDoc(doc(creatorDb, path()), { token: "ExponentPushToken[zzz]" }));
+  await assertFails(updateDoc(doc(creatorDb, path()), { lastSeenAt: ISO, platform: "ios" }));
+  await assertFails(updateDoc(doc(strangerDb, path()), { lastSeenAt: ISO }));
+
+  await assertFails(deleteDoc(doc(strangerDb, path())));
+  await assertSucceeds(deleteDoc(doc(creatorDb, path())));
+});
