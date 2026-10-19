@@ -49,7 +49,7 @@
 - `rotateByHeading(p: { sceneX; sceneZ }, headingDegrees): { x; z }`. Rotates so the device heading is "forward" (−z).
 - `smoothHeading(prev: number | null, next: number, alpha = 0.2): number`. Shortest-arc smoothing; it wraps 359→0.
 
-- [ ] **Step 1: Write the Dart exporter.** It covers at least 10 cases with the real `ArSceneMapper`:
+- [x] **Step 1: Write the Dart exporter.** It covers at least 10 cases with the real `ArSceneMapper`:
   - `origin`: a place at the same point;
   - `far`: 5 km away, clamped;
   - each cardinal direction;
@@ -57,13 +57,13 @@
   - intensity 0 and 1;
   - publicMemoryCount 20, capped at 8.
   - Run `flutter test test/tool/export_ar_fixtures_test.dart`.
-- [ ] **Step 2: Write failing TS tests.**
+- [x] **Step 2: Write failing TS tests.**
   - `it.each(fixtures)` with `toBeCloseTo(_, 10)`.
   - `rotateByHeading`: heading 90 maps east to forward.
   - `smoothHeading(350, 10)` moves toward 10 across 0, not via 180, and the result stays in [0, 360).
   - No NaN for the origin case.
-- [ ] **Step 3: Implement.** **Step 4:** Run the gates.
-- [ ] **Step 5: Commit** `feat(domain): AR scene mapping ported with golden fixtures`.
+- [x] **Step 3: Implement.** **Step 4:** Run the gates.
+- [x] **Step 5: Commit** `feat(domain): AR scene mapping ported with golden fixtures`.
 
 ---
 
