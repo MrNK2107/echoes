@@ -213,6 +213,19 @@ Record performance on a target mid-range Android device:
 - Location update under 1 second.
 - AR mode at 30 FPS or better.
 
+## EAS builds
+
+Push notifications and camera AR need native code, so they require an EAS build; everything else keeps working in Expo Go.
+
+1. The owner runs `npx eas-cli init` in `mobile/` once, then sets `EXPO_PUBLIC_EAS_PROJECT_ID` to the printed project id (in `mobile/.env` locally and as an EAS environment variable for builds).
+2. Profiles in `mobile/eas.json`:
+   - `development`: dev client, internal distribution, `EXPO_PUBLIC_BACKEND=emulator`.
+   - `preview`: internal distribution, Android APK.
+   - `production`: store build with `autoIncrement`.
+3. Build with `npx eas-cli build --profile development --platform android` (or `ios`).
+
+Expo Go still works for everything except remote push and camera AR (AR falls back to the 2D view). See ADR-0009.
+
 ## Release Build Commands
 
 Android APK:
