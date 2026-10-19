@@ -112,11 +112,11 @@
   - Log, and never throw, on HTTP or network errors.
 - `cleanupDeletedUser` already recursively deletes `users/{uid}`, including this subcollection; verify with a test.
 
-- [ ] **Step 1: Write failing tests:**
+- [x] **Step 1: Write failing tests:**
   - rules: owner allowed, stranger denied, a bad shape denied, a lastSeenAt-only update allowed;
   - functions: 230 tokens are sent in 3 chunks; **`removes tokens reported DeviceNotRegistered`**; a fetch failure is logged and doesn't throw; no tokens means no fetch.
-- [ ] **Step 2–4:** FAIL → implement → PASS (functions, rules and emulator gates).
-- [ ] **Step 5: Commit** `feat(functions): deliver inbox notifications as Expo push`.
+- [x] **Step 2–4:** FAIL → implement → PASS (functions, rules and emulator gates).
+- [x] **Step 5: Commit** `feat(functions): deliver inbox notifications as Expo push`.
 
 ---
 
