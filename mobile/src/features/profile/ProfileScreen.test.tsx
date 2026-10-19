@@ -1,8 +1,9 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
-import { Text } from 'react-native';
+import { Linking, Text } from 'react-native';
 
 import { DEMO_USER } from '@/data/seed';
 import { testServices } from '@/device/fakes';
+import { readConfig } from '@/services/config';
 import type { Memory } from '@/domain/types';
 import { OutboxProvider } from '@/features/outbox/useOutbox';
 import { AddMemoryScreen } from '@/features/memories/AddMemoryScreen';
@@ -142,6 +143,44 @@ describe('ProfileScreen', () => {
     await setup();
     await fireEvent.press(screen.getByRole('button', { name: 'Communities' }));
     expect(mockPush).toHaveBeenCalledWith('/communities');
+  });
+
+  it('opens institutions and blocked people', async () => {
+    await setup();
+    await fireEvent.press(screen.getByRole('button', { name: 'Institutions' }));
+    expect(mockPush).toHaveBeenCalledWith('/institutions');
+    await fireEvent.press(screen.getByRole('button', { name: 'Blocked people' }));
+    expect(mockPush).toHaveBeenCalledWith('/blocked');
+  });
+
+  it('opens Help & support, Terms of Service and Community Guidelines from config', async () => {
+    const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
+    const config = readConfig({
+      EXPO_PUBLIC_SUPPORT_EMAIL: 'help@example.org',
+      EXPO_PUBLIC_TERMS_URL: 'https://example.org/t',
+      EXPO_PUBLIC_GUIDELINES_URL: 'https://example.org/g',
+    });
+    await setup(testServices({ config }));
+    await fireEvent.press(screen.getByRole('link', { name: 'Help & support' }));
+    expect(open).toHaveBeenLastCalledWith('mailto:help@example.org');
+    await fireEvent.press(screen.getByRole('link', { name: 'Terms of Service' }));
+    expect(open).toHaveBeenLastCalledWith('https://example.org/t');
+    await fireEvent.press(screen.getByRole('link', { name: 'Community Guidelines' }));
+    expect(open).toHaveBeenLastCalledWith('https://example.org/g');
+  });
+
+  it('uses the default support address', async () => {
+    const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
+    await setup();
+    await fireEvent.press(screen.getByRole('link', { name: 'Help & support' }));
+    expect(open).toHaveBeenCalledWith('mailto:support@echoes.app');
+  });
+
+  it('shows generic copy when a link cannot be opened', async () => {
+    jest.spyOn(Linking, 'openURL').mockRejectedValue(new Error('no mail app'));
+    await setup();
+    await fireEvent.press(screen.getByRole('link', { name: 'Help & support' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Something went wrong. Please try again.');
   });
 
   it('Back goes back', async () => {

@@ -9,6 +9,7 @@ import { useServices } from '@/services/ServicesProvider';
 import { colors } from '@/ui/theme';
 
 import { PrivacyPicker, type PrivacyChoice } from './PrivacyPicker';
+import { askBeforeSavingProfanity } from './profanityCheck';
 import { MAX_MEMORY_LENGTH, submitMemory } from './submitMemory';
 import { VoiceRecorder } from './VoiceRecorder';
 
@@ -93,8 +94,9 @@ export function AddMemoryScreen() {
 
   const canSave = defaultResolved || touched;
 
-  const save = async () => {
+  const save = async (confirmed = false): Promise<void> => {
     if (!session || saving.current || queued || !canSave) return;
+    if (!confirmed && askBeforeSavingProfanity(text, () => void save(true))) return;
     saving.current = true;
     setError(null);
     setSubmitting(true);
@@ -203,7 +205,7 @@ export function AddMemoryScreen() {
         accessibilityRole="button"
         accessibilityState={{ disabled: submitting || !canSave }}
         disabled={submitting || !canSave}
-        onPress={save}
+        onPress={() => save()}
         style={[styles.save, (submitting || !canSave) && styles.saveDisabled]}
       >
         <Text style={styles.saveText}>{submitting ? 'Saving...' : 'Save memory'}</Text>

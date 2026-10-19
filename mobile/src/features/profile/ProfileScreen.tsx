@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 
 import { GENERIC_ERROR } from '@/data/errors';
 import { CUSTODIAN_FALLBACK_NAME, DISPLAY_NAME_ERROR, validateDisplayName } from '@/domain/profiles';
@@ -30,7 +30,7 @@ const CHOICES: { value: DefaultPrivacy; label: string }[] = [
 /** testIDs: default-privacy-{public|private}, custodian-place-{placeId} */
 export function ProfileScreen() {
   const router = useRouter();
-  const { repos, now } = useServices();
+  const { repos, now, config } = useServices();
   const { session } = useSession();
   const uid = session?.userId;
   const [user, setUser] = useState<AppUser | null>(null);
@@ -141,6 +141,21 @@ export function ProfileScreen() {
       setNameError(e instanceof Error && e.message === DISPLAY_NAME_ERROR ? DISPLAY_NAME_ERROR : GENERIC_ERROR);
     } finally {
       setSavingName(false);
+    }
+  };
+
+  // ADR-0008: support, terms and guidelines come from config (EXPO_PUBLIC_*).
+  const LINKS: { label: string; url: string }[] = [
+    { label: 'Help & support', url: `mailto:${config.supportEmail}` },
+    { label: 'Terms of Service', url: config.termsUrl },
+    { label: 'Community Guidelines', url: config.guidelinesUrl },
+  ];
+  const openLink = async (url: string) => {
+    setError(null);
+    try {
+      await Linking.openURL(url);
+    } catch {
+      setError(GENERIC_ERROR);
     }
   };
 
@@ -264,9 +279,26 @@ export function ProfileScreen() {
       <Pressable accessibilityRole="button" onPress={() => router.push('/communities')} style={styles.row}>
         <Text style={styles.rowText}>Communities</Text>
       </Pressable>
+      <Pressable accessibilityRole="button" onPress={() => router.push('/institutions')} style={styles.row}>
+        <Text style={styles.rowText}>Institutions</Text>
+      </Pressable>
+      <Pressable accessibilityRole="button" onPress={() => router.push('/blocked')} style={styles.row}>
+        <Text style={styles.rowText}>Blocked people</Text>
+      </Pressable>
       <Pressable accessibilityRole="button" onPress={() => router.push('/recently-deleted')} style={styles.row}>
         <Text style={styles.rowText}>Recently deleted</Text>
       </Pressable>
+      {LINKS.map((l) => (
+        <Pressable
+          key={l.label}
+          accessibilityRole="link"
+          accessibilityLabel={l.label}
+          onPress={() => void openLink(l.url)}
+          style={styles.row}
+        >
+          <Text style={styles.rowText}>{l.label}</Text>
+        </Pressable>
+      ))}
       <Pressable accessibilityRole="button" onPress={signOut} style={styles.row}>
         <Text style={styles.rowText}>Sign out</Text>
       </Pressable>

@@ -16,10 +16,13 @@ export interface AppConfig {
   /** ADR-0008: the Terms of Service and Community Guidelines pages linked from registration. */
   termsUrl: string;
   guidelinesUrl: string;
+  /** ADR-0008: the address behind the profile's `Help & support` link. */
+  supportEmail: string;
 }
 
 export const DEFAULT_TERMS_URL = 'https://echoes.app/terms';
 export const DEFAULT_GUIDELINES_URL = 'https://echoes.app/guidelines';
+export const DEFAULT_SUPPORT_EMAIL = 'support@echoes.app';
 
 const EMULATOR_FIREBASE: FirebaseConfig = {
   apiKey: 'demo-api-key',
@@ -70,5 +73,6 @@ export function readConfig(env: Record<string, string | undefined>): AppConfig {
     firebase,
     termsUrl: env.EXPO_PUBLIC_TERMS_URL || DEFAULT_TERMS_URL,
     guidelinesUrl: env.EXPO_PUBLIC_GUIDELINES_URL || DEFAULT_GUIDELINES_URL,
+    supportEmail: env.EXPO_PUBLIC_SUPPORT_EMAIL || DEFAULT_SUPPORT_EMAIL,
   };
 }

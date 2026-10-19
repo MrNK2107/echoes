@@ -20,6 +20,8 @@ export function MemoryCard({ memory, authorName }: { memory: Memory; authorName?
       {authorName ? <Text style={styles.author}>{authorName}</Text> : null}
       <Text style={styles.text}>{memory.textContent}</Text>
       {memory.audioUrl ? <Text style={styles.voice}>Voice note</Text> : null}
+      {/* Only the author can still read a hidden memory, so only they see this. */}
+      {memory.moderation === 'hidden' ? <Text style={styles.hidden}>Hidden after reports</Text> : null}
       <View style={styles.metaRow}>
         <Text style={styles.meta}>{memory.createdAt.toLocaleDateString()}</Text>
         {badge ? (
@@ -39,6 +41,7 @@ const styles = StyleSheet.create({
   text: { color: colors.text, fontSize: 16 },
   metaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 },
   voice: { color: colors.accent, fontSize: 12, marginTop: 8 },
+  hidden: { color: colors.danger, fontSize: 12, marginTop: 8 },
   meta: { color: colors.textSecondary },
   badge: { backgroundColor: colors.elevated, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2 },
   badgeText: { color: colors.gold, fontSize: 12 },

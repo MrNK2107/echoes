@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { Alert } from 'react-native';
 
 import { DEMO_USER } from '@/data/seed';
 import { fakeAudioRecorder, fakeConnectivity, fakeImagePicker, fakeLocation, testServices } from '@/device/fakes';
@@ -316,5 +317,65 @@ describe('AddMemoryScreen', () => {
       await waitFor(() => expect(mockReplace).toHaveBeenCalledTimes(1));
       expect(create).toHaveBeenCalledTimes(1);
     });
+  });
+});
+
+describe('AddMemoryScreen profanity check', () => {
+  const WARNING = 'This memory may contain offensive language. Save anyway?';
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.restoreAllMocks();
+  });
+
+  async function fillProfane() {
+    await fireEvent.changeText(screen.getByTestId('text-input'), 'What a sh1t day at the park');
+    await fireEvent.press(screen.getByTestId('use-location-button'));
+    await screen.findByText('Location captured');
+  }
+
+  function answer(label: string) {
+    return jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, buttons) => {
+      buttons?.find((b) => b.text === label)?.onPress?.();
+    });
+  }
+
+  it('Edit keeps the form and saves nothing', async () => {
+    const base = testServices();
+    const create = jest.spyOn(base.repos.memories, 'create');
+    const alert = answer('Edit');
+    await setup({ repos: base.repos });
+    await fillProfane();
+    await fireEvent.press(screen.getByTestId('save-button'));
+    expect(alert).toHaveBeenCalledWith(WARNING, undefined, [
+      expect.objectContaining({ text: 'Edit', style: 'cancel' }),
+      expect.objectContaining({ text: 'Save anyway' }),
+    ]);
+    expect(create).not.toHaveBeenCalled();
+    expect(mockReplace).not.toHaveBeenCalled();
+    expect(screen.getByTestId('text-input').props.value).toBe('What a sh1t day at the park');
+    expect(screen.getByTestId('save-button')).toBeEnabled();
+  });
+
+  it('Save anyway saves the memory', async () => {
+    const base = testServices();
+    const create = jest.spyOn(base.repos.memories, 'create');
+    answer('Save anyway');
+    await setup({ repos: base.repos });
+    await fillProfane();
+    await fireEvent.press(screen.getByTestId('save-button'));
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledTimes(1));
+    expect(create).toHaveBeenCalledTimes(1);
+    expect(create.mock.calls[0]![0].textContent).toBe('What a sh1t day at the park');
+  });
+
+  it('does not ask for clean text', async () => {
+    const alert = jest.spyOn(Alert, 'alert');
+    await setup();
+    await fireEvent.changeText(screen.getByTestId('text-input'), 'A lovely clean day');
+    await fireEvent.press(screen.getByTestId('use-location-button'));
+    await screen.findByText('Location captured');
+    await fireEvent.press(screen.getByTestId('save-button'));
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledTimes(1));
+    expect(alert).not.toHaveBeenCalled();
   });
 });

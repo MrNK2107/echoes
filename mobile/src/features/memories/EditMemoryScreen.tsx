@@ -12,6 +12,7 @@ import { useServices } from '@/services/ServicesProvider';
 import { colors } from '@/ui/theme';
 
 import { PrivacyPicker } from './PrivacyPicker';
+import { askBeforeSavingProfanity } from './profanityCheck';
 import { MAX_MEMORY_LENGTH, TimeoutError, withTimeout } from './submitMemory';
 import { useMemory } from './useMemory';
 
@@ -56,7 +57,7 @@ function EditForm({ memory }: { memory: Memory }) {
     if (lastWrite.current === w) lastWrite.current = null;
   };
 
-  const save = async () => {
+  const save = async (confirmed = false): Promise<void> => {
     if (busy.current) return;
     setError(null);
     const textError = validateMemoryText(text);
@@ -72,6 +73,9 @@ function EditForm({ memory }: { memory: Memory }) {
       taggedUserIds.some((id, i) => id !== memory.taggedUserIds[i]);
     const privacyError = privacyChanged ? validatePrivacy({ ...fields, now: at }) : null;
     if (privacyError) return setError(privacyError);
+    // Only new wording is checked: an unchanged text was already confirmed when it was saved.
+    const textChanged = text.trim() !== memory.textContent;
+    if (!confirmed && textChanged && askBeforeSavingProfanity(text, () => void save(true))) return;
 
     busy.current = true;
     setSaving(true);
@@ -150,7 +154,7 @@ function EditForm({ memory }: { memory: Memory }) {
         accessibilityRole="button"
         accessibilityState={{ disabled: saving }}
         disabled={saving}
-        onPress={save}
+        onPress={() => save()}
         style={[styles.save, saving && styles.saveDisabled]}
       >
         <Text style={styles.saveText}>{saving ? 'Saving...' : 'Save changes'}</Text>

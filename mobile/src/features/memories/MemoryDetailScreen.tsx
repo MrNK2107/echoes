@@ -2,9 +2,10 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { TIMEOUT_ERROR } from '@/data/errors';
+import { GENERIC_ERROR, TIMEOUT_ERROR } from '@/data/errors';
 import { useSession } from '@/features/auth/useSession';
 import { useAuthorNames } from '@/features/people/useAuthorNames';
+import { REPORT_THANKS, ReportSheet } from '@/features/safety/ReportSheet';
 import { useBlocksState } from '@/features/safety/useBlocks';
 import { useServices } from '@/services/ServicesProvider';
 import { privacyLabel } from '@/ui/privacyLabel';
@@ -15,6 +16,9 @@ import { useMemory } from './useMemory';
 import { VoiceNotePlayer } from './VoiceNotePlayer';
 
 const DELETE_FAILED = "Couldn't delete this memory. Try again.";
+/** Used in `Block {name}` while the author's profile is loading or missing. */
+const UNKNOWN_AUTHOR = 'this person';
+export const HIDDEN_BADGE = 'Hidden after reports';
 
 export function MemoryDetailScreen({ memoryId }: { memoryId: string }) {
   const router = useRouter();
@@ -23,6 +27,8 @@ export function MemoryDetailScreen({ memoryId }: { memoryId: string }) {
   const { status, memory, reload } = useMemory(memoryId);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [reporting, setReporting] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const deletingRef = useRef(false);
   const focusedOnce = useRef(false);
   const blocks = useBlocksState();
@@ -68,6 +74,27 @@ export function MemoryDetailScreen({ memoryId }: { memoryId: string }) {
   const isAuthor = session?.userId === memory.userId;
   const authorName = names.get(memory.userId);
 
+  const blockName = authorName ?? UNKNOWN_AUTHOR;
+  const confirmBlock = () => {
+    if (!session) return;
+    Alert.alert(`Block ${blockName}?`, "You won't see their memories, and they can't tag, invite or transfer to you.", [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Block',
+        style: 'destructive',
+        onPress: async () => {
+          setError(null);
+          try {
+            // The live block list hides this memory (and the author's others) as soon as it updates.
+            await repos.safety.block(session.userId, memory.userId, now());
+          } catch {
+            setError(GENERIC_ERROR);
+          }
+        },
+      },
+    ]);
+  };
+
   const confirmDelete = () => {
     Alert.alert('Delete this memory?', 'You can restore it from Recently deleted for 30 days.', [
       { text: 'Cancel', style: 'cancel' },
@@ -108,6 +135,16 @@ export function MemoryDetailScreen({ memoryId }: { memoryId: string }) {
             </View>
           ) : null}
         </View>
+        {isAuthor && memory.moderation === 'hidden' ? (
+          <View style={[styles.badge, styles.hiddenBadge]}>
+            <Text style={styles.hiddenBadgeText}>{HIDDEN_BADGE}</Text>
+          </View>
+        ) : null}
+        {notice ? (
+          <Text role="status" style={styles.notice}>
+            {notice}
+          </Text>
+        ) : null}
         {error ? (
           <Text accessibilityRole="alert" style={styles.error}>
             {error}
@@ -131,8 +168,33 @@ export function MemoryDetailScreen({ memoryId }: { memoryId: string }) {
               <Text style={[styles.actionText, styles.destructive]}>Delete</Text>
             </Pressable>
           </View>
-        ) : null}
+        ) : (
+          <View style={styles.actions}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                setNotice(null);
+                setReporting(true);
+              }}
+              style={styles.action}
+            >
+              <Text style={styles.actionText}>Report</Text>
+            </Pressable>
+            <Pressable accessibilityRole="button" onPress={confirmBlock} style={styles.action}>
+              <Text style={[styles.actionText, styles.destructive]}>{`Block ${blockName}`}</Text>
+            </Pressable>
+          </View>
+        )}
       </ScrollView>
+      <ReportSheet
+        visible={reporting}
+        memoryId={memory.id}
+        onClose={() => setReporting(false)}
+        onReported={() => {
+          setReporting(false);
+          setNotice(REPORT_THANKS);
+        }}
+      />
     </View>
   );
 }
@@ -152,7 +214,10 @@ const styles = StyleSheet.create({
   badge: { backgroundColor: colors.elevated, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2 },
   badgeText: { color: colors.gold, fontSize: 12 },
   error: { color: colors.danger, marginTop: 12 },
-  actions: { flexDirection: 'row', gap: 12, marginTop: 24 },
+  notice: { color: colors.gold, marginTop: 12 },
+  hiddenBadge: { alignSelf: 'flex-start', marginTop: 12, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.danger },
+  hiddenBadgeText: { color: colors.danger, fontSize: 12 },
+  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginTop: 24 },
   action: { backgroundColor: colors.surface, borderRadius: 10, paddingHorizontal: 20, paddingVertical: 12 },
   actionText: { color: colors.accent, fontSize: 16, fontWeight: '600' },
   destructive: { color: colors.danger },

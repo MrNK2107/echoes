@@ -227,7 +227,117 @@ describe('MemoryDetailScreen delete and focus', () => {
   });
 });
 
+describe('MemoryDetailScreen safety', () => {
+  const ASHA_TEXT = /I love this park/;
+
+  it('offers Report and Block {name} to non-authors only', async () => {
+    await setup('memory-1');
+    expect(await screen.findByRole('button', { name: 'Block Asha Rao' })).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Report' })).toBeOnTheScreen();
+  });
+
+  it('offers neither Report nor Block to the author', async () => {
+    await setup('memory-2');
+    await screen.findByText('Edit');
+    expect(screen.queryByRole('button', { name: 'Report' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /^Block/ })).toBeNull();
+  });
+
+  it('reports a memory and thanks the reporter', async () => {
+    const services = testServices();
+    const report = jest.spyOn(services.repos.safety, 'reportMemory');
+    await setup('memory-1', services);
+    await fireEvent.press(await screen.findByRole('button', { name: 'Report' }));
+    expect(screen.getByText('Why are you reporting this?')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByRole('radio', { name: 'Spam' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Send report' }));
+    expect(await screen.findByText("Thanks — we'll review it.")).toBeOnTheScreen();
+    expect(report).toHaveBeenCalledWith({ memoryId: 'memory-1', reason: 'spam', note: null });
+    expect(screen.queryByText('Why are you reporting this?')).toBeNull();
+  });
+
+  it('a second report shows the duplicate copy', async () => {
+    const services = testServices();
+    await act(async () => {
+      await services.repos.auth.signIn(DEMO_USER.email, DEMO_USER.password);
+      await services.repos.safety.reportMemory({ memoryId: 'memory-1', reason: 'hate', note: null });
+    });
+    await setup('memory-1', services);
+    await fireEvent.press(await screen.findByRole('button', { name: 'Report' }));
+    await fireEvent.press(screen.getByRole('radio', { name: 'Spam' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Send report' }));
+    expect(await screen.findByText('You already reported this memory.')).toBeOnTheScreen();
+  });
+
+  it('confirms Block and hides the memory immediately', async () => {
+    const services = testServices();
+    const block = jest.spyOn(services.repos.safety, 'block');
+    const alert = pressConfirm('Block');
+    await setup('memory-1', services);
+    await fireEvent.press(await screen.findByRole('button', { name: 'Block Asha Rao' }));
+    expect(alert).toHaveBeenCalledWith(
+      'Block Asha Rao?',
+      "You won't see their memories, and they can't tag, invite or transfer to you.",
+      [
+        expect.objectContaining({ text: 'Cancel', style: 'cancel' }),
+        expect.objectContaining({ text: 'Block', style: 'destructive' }),
+      ],
+    );
+    expect(await screen.findByText('This memory is no longer available.')).toBeOnTheScreen();
+    expect(screen.queryByText(ASHA_TEXT)).toBeNull();
+    expect(block).toHaveBeenCalledWith('user-demo', 'user-asha', services.now());
+  });
+
+  it('Cancel does not block', async () => {
+    const services = testServices();
+    const block = jest.spyOn(services.repos.safety, 'block');
+    pressConfirm('Cancel');
+    await setup('memory-1', services);
+    await fireEvent.press(await screen.findByRole('button', { name: 'Block Asha Rao' }));
+    expect(block).not.toHaveBeenCalled();
+    expect(screen.getByText(ASHA_TEXT)).toBeOnTheScreen();
+  });
+
+  it('shows generic copy when blocking fails', async () => {
+    const services = testServices();
+    jest.spyOn(services.repos.safety, 'block').mockRejectedValue(new Error('offline'));
+    pressConfirm('Block');
+    await setup('memory-1', services);
+    await fireEvent.press(await screen.findByRole('button', { name: 'Block Asha Rao' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Something went wrong. Please try again.');
+    expect(screen.getByText(ASHA_TEXT)).toBeOnTheScreen();
+  });
+
+  it('shows the author a Hidden after reports badge', async () => {
+    const services = testServices();
+    const real = services.repos.memories.findById.bind(services.repos.memories);
+    jest.spyOn(services.repos.memories, 'findById').mockImplementation(async (id) => {
+      const m = await real(id);
+      return m ? { ...m, moderation: 'hidden' } : m;
+    });
+    await setup('memory-2', services);
+    expect(await screen.findByText('Hidden after reports')).toBeOnTheScreen();
+  });
+
+  it('shows no hidden badge for an unmoderated memory', async () => {
+    await setup('memory-2');
+    await screen.findByText('Edit');
+    expect(screen.queryByText('Hidden after reports')).toBeNull();
+  });
+});
+
 describe('MemoryCard', () => {
+  it('shows Hidden after reports on a hidden memory', async () => {
+    const services = testServices();
+    await services.repos.auth.signIn(DEMO_USER.email, DEMO_USER.password);
+    const memory = (await services.repos.memories.findById('memory-2'))!;
+    const view = await render(<MemoryCard memory={{ ...memory, moderation: 'hidden' }} />);
+    expect(screen.getByText('Hidden after reports')).toBeOnTheScreen();
+    await view.unmount();
+    await render(<MemoryCard memory={memory} />);
+    expect(screen.queryByText('Hidden after reports')).toBeNull();
+  });
+
   it('navigates to the memory detail when pressed', async () => {
     const services = testServices();
     await services.repos.auth.signIn(DEMO_USER.email, DEMO_USER.password);

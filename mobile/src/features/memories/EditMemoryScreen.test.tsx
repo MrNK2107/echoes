@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { Alert } from 'react-native';
 
 import { DEMO_USER } from '@/data/seed';
 import { testServices } from '@/device/fakes';
@@ -260,5 +261,60 @@ describe('EditMemoryScreen', () => {
     await waitFor(() => expect(mockBack).toHaveBeenCalled());
     expect(screen.queryByText('Edit memory')).toBeNull();
     expect(screen.queryByTestId('text-input')).toBeNull();
+  });
+});
+
+describe('EditMemoryScreen profanity check', () => {
+  const WARNING = 'This memory may contain offensive language. Save anyway?';
+  beforeEach(() => {
+    jest.clearAllMocks();
+    jest.restoreAllMocks();
+  });
+
+  function answer(label: string) {
+    return jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, buttons) => {
+      buttons?.find((b) => b.text === label)?.onPress?.();
+    });
+  }
+
+  it('Edit keeps the form and saves nothing', async () => {
+    const alert = answer('Edit');
+    const services = await setup();
+    const update = jest.spyOn(services.repos.memories, 'update');
+    await fireEvent.changeText(await screen.findByTestId('text-input'), 'Such a bullshit Sunday');
+    await fireEvent.press(screen.getByText('Save changes'));
+    expect(alert).toHaveBeenCalledWith(WARNING, undefined, [
+      expect.objectContaining({ text: 'Edit', style: 'cancel' }),
+      expect.objectContaining({ text: 'Save anyway' }),
+    ]);
+    expect(update).not.toHaveBeenCalled();
+    expect(mockBack).not.toHaveBeenCalled();
+    expect(screen.getByTestId('text-input').props.value).toBe('Such a bullshit Sunday');
+  });
+
+  it('Save anyway saves the edit', async () => {
+    answer('Save anyway');
+    const services = await setup();
+    await fireEvent.changeText(await screen.findByTestId('text-input'), 'Such a bullshit Sunday');
+    await fireEvent.press(screen.getByText('Save changes'));
+    await waitFor(() => expect(mockBack).toHaveBeenCalled());
+    expect((await services.repos.memories.findById('memory-2'))?.textContent).toBe('Such a bullshit Sunday');
+  });
+
+  it('does not ask when the text did not change', async () => {
+    const alert = jest.spyOn(Alert, 'alert');
+    await setup('memory-2', async (s) => {
+      const m = (await s.repos.memories.findById('memory-2'))!;
+      await s.repos.memories.update(
+        'memory-2',
+        { ...m, textContent: 'Such a bullshit Sunday' },
+        s.now(),
+      );
+    });
+    await screen.findByDisplayValue('Such a bullshit Sunday');
+    await fireEvent.press(screen.getByTestId('privacy-private'));
+    await fireEvent.press(screen.getByText('Save changes'));
+    await waitFor(() => expect(mockBack).toHaveBeenCalled());
+    expect(alert).not.toHaveBeenCalled();
   });
 });

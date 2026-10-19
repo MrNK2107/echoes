@@ -71,6 +71,11 @@ describe('readConfig', () => {
     expect(c.guidelinesUrl).toBe('https://example.org/g');
   });
 
+  it('defaults the support email and honours EXPO_PUBLIC_SUPPORT_EMAIL (ADR-0008)', () => {
+    expect(readConfig({}).supportEmail).toBe('support@echoes.app');
+    expect(readConfig({ EXPO_PUBLIC_SUPPORT_EMAIL: 'help@example.org' }).supportEmail).toBe('help@example.org');
+  });
+
   it('throws on an unknown backend', () => {
     expect(() => readConfig({ EXPO_PUBLIC_BACKEND: 'x' })).toThrow('Unknown EXPO_PUBLIC_BACKEND: x');
   });
