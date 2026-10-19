@@ -230,7 +230,7 @@
 
 **Files:** Modify `status.md` (Plan 4 section on top), `README.md` (EAS development build steps: `npx eas-cli build --profile development --platform android`, install, then `npx expo start --dev-client`; push smoke test; AR device checklist) and `docs/release-readiness.md` (EAS credentials, Expo push, ARCore/ARKit device matrix).
 
-- [ ] **Step 1: Run all gates:**
+- [x] **Step 1: Run all gates:**
   - mobile tests three times, plus `--randomize`;
   - typecheck and lint;
   - functions;
@@ -240,5 +240,29 @@
   - android and ios export.
 
   All must exit 0.
-- [ ] **Step 2: Update `status.md`** with the gate table, the device-only checklist, and known follow-ups: an EAS build needs the owner's Expo account; AR has been validated only on mocks until a device run.
-- [ ] **Step 3: Commit** `docs: record Expo Plan 4 verification`.
+- [x] **Step 2: Update `status.md`** with the gate table, the device-only checklist, and known follow-ups: an EAS build needs the owner's Expo account; AR has been validated only on mocks until a device run.
+- [x] **Step 3: Commit** `docs: record Expo Plan 4 verification`.
+
+---
+
+## Execution rulings (from the SDD ledger)
+
+- Ruling R-P4-1: PushTokenRepository.register = create the doc if missing; if it exists, update only lastSeenAt (and only when >24h old). Firestore: getDoc then setDoc/updateDoc (or transaction). tokenId = first 32 hex chars of SHA-256(token) per spec. — rules stay tight — cost if wrong: one extra read per sign-in.
+- Ruling R-P4-2: useHeading lives in mobile/src/features/ar/useHeading.ts, created in Task 5; returns { heading: number, unavailable: boolean }. — keeps device layer pure — cost: none.
+- Ruling R-P4-3: Task 5 ArRenderer exposes `Scene: React.ComponentType<ArSceneProps> | null` where the Expo impl returns null until Task 7 sets it to ViroArScene bound to the dynamically-required module; ArSceneProps is defined in Task 5 (places: ArScenePlace[] + names/colors/memoryIds, heading, onPressPlace, onPressOrb, onTrackingError). Task 6 ArScreen renders renderer.Scene when non-null && status available && camera granted, else radar. — breaks the T6/T7 cycle — cost: small prop-shape rework in T7.
+- Ruling R-P4-4: AR button placed so it doesn't collide with the existing top row (e.g. bottom-left floating button above the add-memory control, or wherever MapScreen has free space); verify with a layout-free test only (device check in Plan 5). — cost: cosmetic.
+- Ruling R-P4-5: Push messages include only title, body, data {type, ...notification.data}, sound 'default'; never expireAt/readAt; channelId 'default' on Android created client-side via setNotificationChannelAsync. — cost: none.
+- Ruling R-P4-6 (Task 2): iOS has one NSCameraUsageDescription, and expo-image-picker's cameraPermission already writes it. Use one combined string everywhere (image-picker cameraPermission, ios.infoPlist, viro plugin cameraUsagePermission): "ECHOES uses the camera to attach photos to your memories and to show memories around you in AR." — spec's AR-only string would wrongly describe photo capture (App Review risk) — cost if wrong: copy tweak.
+- Ruling R-P4-7 (Task 2): expo-notifications plugin gets `color` only (no icon asset exists; default app icon used) — cost: generic Android notification icon until Plan 5 store assets.
+- Ruling R-P4-8 (Task 2): app.config.ts becomes `export default ({ config }: ConfigContext): ExpoConfig => ...` reading process.env at call time so tests can stub env.
+- Ruling R-P4-9: ADR-0010 risk realised. Ship the radar fallback as the AR experience for now. Task 5's ArRenderer keeps the guarded require (reports 'missing'); Task 7 is still implemented against a minimal local typed interface of the ViroReact API with a virtual jest mock, so camera AR switches on automatically once a compatible viro release installs (re-evaluate in Plan 5: viro version bump or alternative renderer). Status/README must say camera AR is not yet available. — keeps the user-facing feature working everywhere — cost if wrong: Task 7 code may need API adjustments when viro lands.
+- Ruling R-P4-10 (Task 3): push message = { to, title, body, data: { type, notificationId, ...doc.data }, sound: 'default', channelId: 'default' }; never expireAt/readAt. Send to at most the 10 most recently seen tokens per user (bounds fan-out; rules can't cap token count). Optional EXPO_ACCESS_TOKEN env → Authorization: Bearer header (documented in release-readiness). Ticket-level DeviceNotRegistered pruning only; receipt polling deferred to Plan 5 backlog. — cost if wrong: users with >10 devices miss pushes on stale ones.
+- Ruling R-P4-11 (Task 4): getExpoPushTokenAsync needs the EAS projectId; when Constants expoConfig.extra.eas.projectId is absent, availability() returns 'expo-go'-equivalent unavailable (same copy) and never throws. Android: setNotificationChannelAsync('default') before requesting a token. Foreground: setNotificationHandler shows banner+list, no sound badge changes beyond default. Cold-start tap: also read getLastNotificationResponseAsync once after sign-in and route. — cost: none.
+- Ruling R-P4-12: Add server trigger onPushTokenCreated (users/{uid}/pushTokens/{tokenId}) deleting same-token docs under other uids via collectionGroup('pushTokens').where('token','==',token) + collection-group field override in firestore.indexes.json — the only enforceable shared-phone guarantee under owner-only rules — cost: one query per registration.
+- Ruling R-P4-13: Radar is the shipping AR experience (R-P4-9), so polish it now: place target rendered last (on top); orb ring radius ≥ 44 px from centre; orb hit boxes sized to not overlap the place box (reduce hitSlop; accessibility labels still give screen-reader access); place names drawn as small labels; heading updates thresholded (≥1°) + React.memo radar; live-region mode notice; media-only orb labels; camera-request error → denied copy; tests strengthened (positive control for blocked orbs, exact heading position, seed-distance comment). Deferred: Firestore union listener cost note (Plan 5 budgets), safe-area back button → Plan 5 a11y pass. — cost if wrong: layout rework on device.
+- Ruling R-P4-14: Scene data via a per-instance subscription store (useSyncExternalStore) — independent of navigator re-render semantics; latch start heading on first real sample; camera mode requires compass (headingUnavailable → radar + compass copy); UNAVAILABLE and LIMITED share the 5 s grace timer (flag for device check); revert formatting churn to single quotes. Normalise colour case for materials. — cost if wrong: device-time adjustments in Plan 5.
+- Ruling R-P4-15: fold F3 (prod/preview backend=firebase) and F8 (EXPO_ACCESS_TOKEN required) into this wave — a store build silently shipping demo mode is a launch blocker; cost: owner must set EAS env vars before builds.
+
+## Final review
+
+Final whole-branch review (opus): Ready after fixes. Fix wave 5dfcdbf (bounded push token reads orderBy lastSeenAt desc limit 10, trim to 10 newest on registration, Expo token format in rules), de7ce2e (push tap marks read, author's hidden memories excluded from AR orbs, viro never required in Expo Go), aed0a4d (preview/production builds use the firebase backend, required EAS env vars, EXPO_ACCESS_TOKEN required for launch). Re-review: Approved. Gates: mobile 939/68, functions 256, rules 46, emulator 68+1, exports. Camera AR stays dormant until @reactvision/react-viro supports RN 0.88 (R-P4-9); the radar is the AR experience. Remaining items are in docs/superpowers/plan5-backlog.md (plus: bound the onPushTokenCreated collection-group dedupe query with a limit).
