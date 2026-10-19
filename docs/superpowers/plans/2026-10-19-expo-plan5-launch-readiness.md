@@ -287,12 +287,12 @@
 - `checkBundleSize(distDirs: string[], maxBytes = 7864320): { ok: boolean; sizes: Record<string, number> }`. It reads each `metadata.json` bundle path. The CLI exits 1 and names the platform when a bundle is over the limit.
 - `countingRepos(repos): { repos; open(): number }` (test helper in `listenerBudget.test.tsx`). It wraps every `subscribe*` method and counts the unsubscribes not yet called.
 
-- [ ] **Step 1: Write failing tests:**
+- [x] **Step 1: Write failing tests:**
   - the bundle checker passes under the limit, fails over it, and fails on a missing metadata file;
   - listener budgets with seeded memory services: Map ≤ 4, Place ≤ 4, Community ≤ 4, AR ≤ 7, and 0 open after unmount.
   - If a screen exceeds its budget, reduce its subscriptions. Never raise a budget without a spec change.
-- [ ] **Step 2–4:** FAIL → implement → PASS. Run `npx expo export` for both platforms, then `npm run check:bundle`.
-- [ ] **Step 5: Commit** `test(mobile): bundle-size and listener budgets`.
+- [x] **Step 2–4:** FAIL → implement → PASS. Run `npx expo export` for both platforms, then `npm run check:bundle`.
+- [x] **Step 5: Commit** `test(mobile): bundle-size and listener budgets`.
 
 ---
 
