@@ -1,8 +1,9 @@
 import { useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { GENERIC_ERROR } from '@/data/errors';
+import { messageOf } from '@/data/errors';
 import { useServices } from '@/services/ServicesProvider';
+import { NAME_REQUIRED } from '@/ui/copy';
 import { colors } from '@/ui/theme';
 
 const NAME_MAX = 60;
@@ -14,9 +15,6 @@ interface Props {
   /** Called with the new community's id once the server has created it. */
   onCreated: (id: string) => void;
 }
-
-/** The repository rejects with user-facing copy (callable errors are mapped there). */
-const messageOf = (e: unknown) => (e instanceof Error && e.message ? e.message : GENERIC_ERROR);
 
 export function CreateCommunitySheet({ visible, onClose, onCreated }: Props) {
   const { repos } = useServices();
@@ -79,7 +77,7 @@ export function CreateCommunitySheet({ visible, onClose, onCreated }: Props) {
             style={[styles.input, submitted && nameMissing && styles.inputError]}
             placeholderTextColor={colors.textSecondary}
           />
-          {submitted && nameMissing ? <Text style={styles.error}>Name is required</Text> : null}
+          {submitted && nameMissing ? <Text style={styles.error}>{NAME_REQUIRED}</Text> : null}
 
           <Text style={styles.label}>Description</Text>
           <TextInput

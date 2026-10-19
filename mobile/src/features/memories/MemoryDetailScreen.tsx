@@ -5,10 +5,11 @@ import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'rea
 import { GENERIC_ERROR, TIMEOUT_ERROR } from '@/data/errors';
 import { useSession } from '@/features/auth/useSession';
 import { useAuthorNames } from '@/features/people/useAuthorNames';
-import { REPORT_THANKS, ReportSheet } from '@/features/safety/ReportSheet';
+import { ReportSheet } from '@/features/safety/ReportSheet';
 import { useBlocksState } from '@/features/safety/useBlocks';
 import { useServices } from '@/services/ServicesProvider';
 import { privacyLabel } from '@/ui/privacyLabel';
+import { HIDDEN_BADGE, REPORT_THANKS, THIS_PERSON } from '@/ui/copy';
 import { colors } from '@/ui/theme';
 
 import { TimeoutError, withTimeout } from './submitMemory';
@@ -16,9 +17,6 @@ import { useMemory } from './useMemory';
 import { VoiceNotePlayer } from './VoiceNotePlayer';
 
 const DELETE_FAILED = "Couldn't delete this memory. Try again.";
-/** Used in `Block {name}` while the author's profile is loading or missing. */
-const UNKNOWN_AUTHOR = 'this person';
-export const HIDDEN_BADGE = 'Hidden after reports';
 
 export function MemoryDetailScreen({ memoryId }: { memoryId: string }) {
   const router = useRouter();
@@ -30,6 +28,8 @@ export function MemoryDetailScreen({ memoryId }: { memoryId: string }) {
   const [reporting, setReporting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const deletingRef = useRef(false);
+  const [blocking, setBlocking] = useState(false);
+  const blockingRef = useRef(false);
   const focusedOnce = useRef(false);
   const blocks = useBlocksState();
   const authorIds = useMemo(() => (memory ? [memory.userId] : []), [memory]);
@@ -74,21 +74,27 @@ export function MemoryDetailScreen({ memoryId }: { memoryId: string }) {
   const isAuthor = session?.userId === memory.userId;
   const authorName = names.get(memory.userId);
 
-  const blockName = authorName ?? UNKNOWN_AUTHOR;
+  const blockName = authorName ?? THIS_PERSON;
   const confirmBlock = () => {
-    if (!session) return;
+    if (!session || blockingRef.current) return;
     Alert.alert(`Block ${blockName}?`, "You won't see their memories, and they can't tag, invite or transfer to you.", [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Block',
         style: 'destructive',
         onPress: async () => {
+          if (blockingRef.current) return;
+          blockingRef.current = true;
+          setBlocking(true);
           setError(null);
           try {
             // The live block list hides this memory (and the author's others) as soon as it updates.
             await repos.safety.block(session.userId, memory.userId, now());
           } catch {
             setError(GENERIC_ERROR);
+          } finally {
+            blockingRef.current = false;
+            setBlocking(false);
           }
         },
       },
@@ -180,7 +186,13 @@ export function MemoryDetailScreen({ memoryId }: { memoryId: string }) {
             >
               <Text style={styles.actionText}>Report</Text>
             </Pressable>
-            <Pressable accessibilityRole="button" onPress={confirmBlock} style={styles.action}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ disabled: blocking, busy: blocking }}
+              disabled={blocking}
+              onPress={confirmBlock}
+              style={[styles.action, blocking && styles.disabled]}
+            >
               <Text style={[styles.actionText, styles.destructive]}>{`Block ${blockName}`}</Text>
             </Pressable>
           </View>

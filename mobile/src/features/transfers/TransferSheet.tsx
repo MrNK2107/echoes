@@ -1,16 +1,13 @@
 import { useRef, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { GENERIC_ERROR } from '@/data/errors';
+import { messageOf } from '@/data/errors';
 import type { Place } from '@/domain/types';
 import { UserSearchField } from '@/features/people/UserSearchField';
 import { useServices } from '@/services/ServicesProvider';
 import { colors } from '@/ui/theme';
 
 export const REQUEST_SENT = 'Request sent.';
-
-/** The repository rejects with user-facing copy (initiate maps the duplicate; the rest is generic). */
-const messageOf = (e: unknown) => (e instanceof Error && e.message ? e.message : GENERIC_ERROR);
 
 interface Props {
   place: Place;

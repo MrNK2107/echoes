@@ -368,6 +368,27 @@ describe('AddMemoryScreen profanity check', () => {
     expect(create.mock.calls[0]![0].textContent).toBe('What a sh1t day at the park');
   });
 
+  it('runs the form validation before asking about the wording', async () => {
+    const alert = jest.spyOn(Alert, 'alert');
+    await setup();
+    await fireEvent.changeText(screen.getByTestId('text-input'), 'What a sh1t day at the park');
+    await fireEvent.press(screen.getByTestId('save-button'));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Capture location before saving.');
+    expect(alert).not.toHaveBeenCalled();
+  });
+
+  it('reports an invalid privacy choice before asking about the wording', async () => {
+    const alert = jest.spyOn(Alert, 'alert');
+    await setup();
+    await fireEvent.changeText(screen.getByTestId('text-input'), 'What a sh1t day at the park');
+    await fireEvent.press(screen.getByTestId('use-location-button'));
+    await screen.findByText('Location captured');
+    await fireEvent.press(screen.getByTestId('privacy-tagged'));
+    await fireEvent.press(screen.getByTestId('save-button'));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Add at least one tagged user.');
+    expect(alert).not.toHaveBeenCalled();
+  });
+
   it('does not ask for clean text', async () => {
     const alert = jest.spyOn(Alert, 'alert');
     await setup();

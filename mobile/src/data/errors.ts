@@ -16,3 +16,11 @@ export const OWNER_CANNOT_LEAVE = "Owners can't leave their community.";
 export const TRANSFER_DUPLICATE = 'A request to this person is already pending.';
 export const VERIFY_EMAIL_FIRST = 'Verify your email address first.';
 export const EMAIL_DOMAIN_NOT_APPROVED = "Your email domain isn't approved for this institution.";
+
+/**
+ * The copy to show for a rejection. Repositories reject with user-facing copy (see
+ * ./callableErrors), so the message is used as is; anything else becomes GENERIC_ERROR.
+ */
+export function messageOf(e: unknown): string {
+  return e instanceof Error && e.message ? e.message : GENERIC_ERROR;
+}

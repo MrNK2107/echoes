@@ -3,6 +3,7 @@ import { Alert } from 'react-native';
 
 import { DEMO_USER } from '@/data/seed';
 import { fakeAudioPlayer, testServices } from '@/device/fakes';
+import type { Memory } from '@/domain/types';
 import { MemoryCard } from '@/features/places/MemoryCard';
 import { ServicesProvider } from '@/services/ServicesProvider';
 import type { Services } from '@/services/services';
@@ -269,6 +270,27 @@ describe('MemoryDetailScreen safety', () => {
     expect(await screen.findByText('You already reported this memory.')).toBeOnTheScreen();
   });
 
+  it('ignores another Block while one is in flight and disables the button', async () => {
+    const services = testServices();
+    let release!: () => void;
+    const block = jest
+      .spyOn(services.repos.safety, 'block')
+      .mockImplementation(() => new Promise<void>((r) => (release = r)));
+    const alert = pressConfirm('Block');
+    await setup('memory-1', services);
+    const button = await screen.findByRole('button', { name: 'Block Asha Rao' });
+    await fireEvent.press(button);
+    expect(screen.getByRole('button', { name: 'Block Asha Rao' })).toBeDisabled();
+    // A second tap that still reaches the handler (same tick) is ignored as well.
+    await act(async () => {
+      (button.props.onClick as () => void)();
+    });
+    expect(block).toHaveBeenCalledTimes(1);
+    expect(alert).toHaveBeenCalledTimes(1);
+    await act(async () => release());
+    expect(screen.getByRole('button', { name: 'Block Asha Rao' })).toBeEnabled();
+  });
+
   it('confirms Block and hides the memory immediately', async () => {
     const services = testServices();
     const block = jest.spyOn(services.repos.safety, 'block');
@@ -327,42 +349,61 @@ describe('MemoryDetailScreen safety', () => {
 });
 
 describe('MemoryCard', () => {
-  it('shows Hidden after reports on a hidden memory', async () => {
+  async function renderCard(services: Services, memory: Memory, authorName?: string) {
+    return render(
+      <ServicesProvider services={services}>
+        <MemoryCard memory={memory} authorName={authorName} />
+      </ServicesProvider>,
+    );
+  }
+
+  async function signedIn() {
     const services = testServices();
-    await services.repos.auth.signIn(DEMO_USER.email, DEMO_USER.password);
-    const memory = (await services.repos.memories.findById('memory-2'))!;
-    const view = await render(<MemoryCard memory={{ ...memory, moderation: 'hidden' }} />);
-    expect(screen.getByText('Hidden after reports')).toBeOnTheScreen();
+    await act(async () => {
+      await services.repos.auth.signIn(DEMO_USER.email, DEMO_USER.password);
+    });
+    return services;
+  }
+
+  it('shows Hidden after reports on a hidden memory to its author only', async () => {
+    const services = await signedIn();
+    const own = (await services.repos.memories.findById('memory-2'))!;
+    let view = await renderCard(services, { ...own, moderation: 'hidden' });
+    expect(await screen.findByText('Hidden after reports')).toBeOnTheScreen();
     await view.unmount();
-    await render(<MemoryCard memory={memory} />);
+    view = await renderCard(services, own);
+    expect(screen.queryByText('Hidden after reports')).toBeNull();
+    await view.unmount();
+    // Someone else's hidden memory (e.g. a stale list entry) never shows the author-only badge.
+    const other = (await services.repos.memories.findById('memory-1'))!;
+    await renderCard(services, { ...other, moderation: 'hidden' });
+    await act(async () => {});
+    expect(screen.getByTestId('memory-memory-1')).toBeOnTheScreen();
     expect(screen.queryByText('Hidden after reports')).toBeNull();
   });
 
   it('navigates to the memory detail when pressed', async () => {
-    const services = testServices();
-    await services.repos.auth.signIn(DEMO_USER.email, DEMO_USER.password);
+    const services = await signedIn();
     const memory = await services.repos.memories.findById('memory-2');
-    await render(<MemoryCard memory={memory!} />);
+    await renderCard(services, memory!);
     await fireEvent.press(screen.getByTestId('memory-memory-2'));
     expect(mockPush).toHaveBeenCalledWith('/memory/memory-2');
   });
 
   it('shows the author name it is given', async () => {
-    const services = testServices();
-    await services.repos.auth.signIn(DEMO_USER.email, DEMO_USER.password);
+    const services = await signedIn();
     const memory = (await services.repos.memories.findById('memory-2'))!;
-    await render(<MemoryCard memory={memory} authorName="Demo Custodian" />);
+    await renderCard(services, memory, 'Demo Custodian');
     expect(screen.getByText('Demo Custodian')).toBeOnTheScreen();
   });
 
   it('shows a Voice note indicator only with audio', async () => {
-    const services = testServices();
-    await services.repos.auth.signIn(DEMO_USER.email, DEMO_USER.password);
+    const services = await signedIn();
     const memory = (await services.repos.memories.findById('memory-2'))!;
-    const view = await render(<MemoryCard memory={{ ...memory, audioUrl: 'https://audio/2.m4a' }} />);
+    const view = await renderCard(services, { ...memory, audioUrl: 'https://audio/2.m4a' });
     expect(screen.getByText('Voice note')).toBeOnTheScreen();
     await view.unmount();
-    await render(<MemoryCard memory={{ ...memory, audioUrl: null }} />);
+    await renderCard(services, { ...memory, audioUrl: null });
     expect(screen.queryByText('Voice note')).toBeNull();
   });
 });

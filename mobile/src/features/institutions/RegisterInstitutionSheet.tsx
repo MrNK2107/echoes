@@ -1,8 +1,9 @@
 import { useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { GENERIC_ERROR } from '@/data/errors';
+import { messageOf } from '@/data/errors';
 import { useServices } from '@/services/ServicesProvider';
+import { NAME_REQUIRED } from '@/ui/copy';
 import { colors } from '@/ui/theme';
 
 /** functions/institutions.js limits. */
@@ -23,8 +24,6 @@ export function parseDomains(raw: string): string[] {
     .map((d) => d.trim())
     .filter((d) => d.length > 0);
 }
-
-const messageOf = (e: unknown) => (e instanceof Error && e.message ? e.message : GENERIC_ERROR);
 
 /** Staff only (the `staff` claim); the server refuses everyone else. */
 export function RegisterInstitutionSheet({ visible, onClose, onCreated }: Props) {
@@ -89,7 +88,7 @@ export function RegisterInstitutionSheet({ visible, onClose, onCreated }: Props)
             style={[styles.input, submitted && nameMissing && styles.inputError]}
             placeholderTextColor={colors.textSecondary}
           />
-          {submitted && nameMissing ? <Text style={styles.error}>Name is required</Text> : null}
+          {submitted && nameMissing ? <Text style={styles.error}>{NAME_REQUIRED}</Text> : null}
 
           <Text style={styles.label}>Email domains</Text>
           <TextInput

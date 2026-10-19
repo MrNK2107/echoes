@@ -1,14 +1,13 @@
 import { useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { GENERIC_ERROR } from '@/data/errors';
+import { messageOf } from '@/data/errors';
 import type { ReportReason } from '@/domain/types';
 import { useServices } from '@/services/ServicesProvider';
 import { colors } from '@/ui/theme';
 
 /** The reportMemory callable's note limit (functions/safety.js). */
 export const REPORT_NOTE_MAX = 280;
-export const REPORT_THANKS = "Thanks — we'll review it.";
 
 export const REPORT_REASONS: { value: ReportReason; label: string }[] = [
   { value: 'spam', label: 'Spam' },
@@ -26,9 +25,6 @@ interface Props {
   /** Called once the server accepted the report; the caller shows the thanks. */
   onReported: () => void;
 }
-
-/** The repository rejects with user-facing copy (REPORT_DUPLICATE, REPORT_RATE, timeout, generic). */
-const messageOf = (e: unknown) => (e instanceof Error && e.message ? e.message : GENERIC_ERROR);
 
 export function ReportSheet({ visible, memoryId, onClose, onReported }: Props) {
   const { repos } = useServices();

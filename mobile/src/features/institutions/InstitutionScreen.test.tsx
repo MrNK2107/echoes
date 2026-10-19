@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { AppState, type AppStateStatus } from 'react-native';
 
 import { EMAIL_DOMAIN_NOT_APPROVED, GENERIC_ERROR, VERIFY_EMAIL_FIRST } from '@/data/errors';
 import { DEMO_USER } from '@/data/seed';
@@ -40,12 +41,12 @@ async function setup(
       await services.repos.institutions.claimAdmin(id);
     });
   }
-  await render(
+  const view = await render(
     <ServicesProvider services={services}>
       <InstitutionScreen institutionId={id} />
     </ServicesProvider>,
   );
-  return { services, admin, id };
+  return { services, admin, id, view };
 }
 
 beforeEach(() => {
@@ -89,6 +90,30 @@ describe('InstitutionScreen', () => {
     expect(screen.queryByRole('button', { name: 'Send verification email' })).toBeNull();
     await fireEvent.press(screen.getByRole('button', { name: 'Verify as admin' }));
     expect(await screen.findByText(`You're now an admin of ${NAME}.`)).toBeOnTheScreen();
+  });
+
+  it('re-checks verification when the app returns to the foreground (e.g. from the mail app)', async () => {
+    let onAppState: ((s: AppStateStatus) => void) | undefined;
+    const remove = jest.fn();
+    jest.spyOn(AppState, 'addEventListener').mockImplementation((type, handler) => {
+      if (type === 'change') onAppState = handler as (s: AppStateStatus) => void;
+      return { remove };
+    });
+    const { services, admin, view } = await setup({ emailVerified: false });
+    const refresh = jest.spyOn(services.repos.auth, 'refreshUser');
+    await fireEvent.press(await screen.findByRole('button', { name: 'Verify as admin' }));
+    await screen.findByText(VERIFY_EMAIL_FIRST);
+    expect(onAppState).toBeDefined();
+    await act(async () => onAppState?.('background'));
+    expect(refresh).not.toHaveBeenCalled();
+    // The user taps the link in the mail app, then comes back.
+    admin.updateAccount(DEMO_UID, { emailVerified: true });
+    await act(async () => onAppState?.('active'));
+    expect(refresh).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(screen.queryByText(VERIFY_EMAIL_FIRST)).toBeNull());
+    expect(screen.queryByRole('button', { name: 'Send verification email' })).toBeNull();
+    await view.unmount();
+    expect(remove).toHaveBeenCalled();
   });
 
   it('keeps the verify prompt when the focus re-check says still unverified', async () => {

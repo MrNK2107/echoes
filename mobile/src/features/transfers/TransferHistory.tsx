@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { GENERIC_ERROR } from '@/data/errors';
+import { messageOf } from '@/data/errors';
 import type { Transfer } from '@/data/types';
 import { useSession } from '@/features/auth/useSession';
 import { useAuthorNames } from '@/features/people/useAuthorNames';
@@ -20,9 +20,6 @@ const STATUS_LABEL: Record<Transfer['status'], string> = {
   revoked: 'Revoked',
   expired: 'Expired',
 };
-
-/** The repository rejects with user-facing copy (generic or offline for revokeTransfer). */
-const messageOf = (e: unknown) => (e instanceof Error && e.message ? e.message : GENERIC_ERROR);
 
 /** The sender may revoke a pending or accepted transfer until revokeUntil (inclusive). */
 export function canRevoke(t: Transfer, uid: string, now: Date): boolean {

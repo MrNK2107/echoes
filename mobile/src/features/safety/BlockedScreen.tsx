@@ -6,12 +6,10 @@ import { GENERIC_ERROR } from '@/data/errors';
 import { useSession } from '@/features/auth/useSession';
 import { useAuthorNames } from '@/features/people/useAuthorNames';
 import { useServices } from '@/services/ServicesProvider';
+import { SOMEONE } from '@/ui/copy';
 import { colors } from '@/ui/theme';
 
 import { useBlocksState } from './useBlocks';
-
-/** Shown while a blocked person's profile is loading or missing. */
-const UNKNOWN_NAME = 'Someone';
 
 /** testIDs: blocked-{uid} */
 export function BlockedScreen() {
@@ -64,7 +62,7 @@ export function BlockedScreen() {
         keyExtractor={(id) => id}
         ListEmptyComponent={blocks.ready ? <Text style={styles.message}>{"You haven't blocked anyone."}</Text> : undefined}
         renderItem={({ item }) => {
-          const name = names.get(item) ?? UNKNOWN_NAME;
+          const name = names.get(item) ?? SOMEONE;
           const busy = pending.has(item);
           return (
             <View testID={`blocked-${item}`} style={styles.row}>

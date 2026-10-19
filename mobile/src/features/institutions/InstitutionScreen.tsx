@@ -1,16 +1,16 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, AppState, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { GENERIC_ERROR, VERIFY_EMAIL_FIRST } from '@/data/errors';
+import { GENERIC_ERROR, messageOf, VERIFY_EMAIL_FIRST } from '@/data/errors';
 import type { Institution } from '@/domain/types';
 import { useSession } from '@/features/auth/useSession';
 import { useServices } from '@/services/ServicesProvider';
+import { LOCATION_FAILED, NAME_REQUIRED } from '@/ui/copy';
 import { colors } from '@/ui/theme';
 
 const SUB_ZONE_NAME_MAX = 60;
 const LOCATION_PERMISSION = 'Location permission is needed to add a sub-zone here.';
-const LOCATION_FAILED = 'Could not get your location. Try again.';
 
 type LoadState =
   | { status: 'loading' | 'notFound' | 'error'; institution: null }
@@ -32,9 +32,6 @@ async function readInstitution(
 
 const keepOrFail = (next: LoadState | null) => (s: LoadState): LoadState =>
   next ?? (s.status === 'ready' ? s : { status: 'error', institution: null });
-
-/** Repositories reject with user-facing copy (callable errors are mapped there). */
-const messageOf = (e: unknown) => (e instanceof Error && e.message ? e.message : GENERIC_ERROR);
 
 export function InstitutionScreen({ institutionId }: { institutionId: string }) {
   const router = useRouter();
@@ -69,28 +66,38 @@ export function InstitutionScreen({ institutionId }: { institutionId: string }) 
     };
   }, [repos.institutions, institutionId, uid]);
 
-  // Coming back to the screen (e.g. from the mail app) re-reads the account, so a just-verified
-  // email clears the prompt, and re-reads the institution (admins and sub-zones may have changed).
+  /** Re-reads the account (verified email, fresh token); a verified email clears the prompt. */
+  const recheckAccount = useCallback(async () => {
+    try {
+      const account = await repos.auth.refreshUser();
+      setEmail(account.email);
+      if (account.emailVerified) setVerifyPrompt(false);
+    } catch (e) {
+      console.warn('Could not refresh the account', e);
+    }
+  }, [repos.auth]);
+
+  // Coming back to this screen re-reads the account and the institution (admins and sub-zones may
+  // have changed).
   const focusedOnce = useRef(false);
   useFocusEffect(
     useCallback(() => {
       if (!uid) return;
-      let active = true;
       if (focusedOnce.current) void load();
       focusedOnce.current = true;
-      repos.auth
-        .refreshUser()
-        .then((account) => {
-          if (!active) return;
-          setEmail(account.email);
-          if (account.emailVerified) setVerifyPrompt(false);
-        })
-        .catch((e: unknown) => console.warn('Could not refresh the account', e));
-      return () => {
-        active = false;
-      };
-    }, [repos.auth, load, uid]),
+      void recheckAccount();
+    }, [load, recheckAccount, uid]),
   );
+
+  // Returning to the app (e.g. from the mail app after tapping the verification link) does not
+  // refocus the screen, so the account is also re-read whenever the app becomes active.
+  useEffect(() => {
+    if (!uid) return;
+    const subscription = AppState.addEventListener('change', (next) => {
+      if (next === 'active') void recheckAccount();
+    });
+    return () => subscription.remove();
+  }, [recheckAccount, uid]);
 
   /** Runs one action at a time; the busy flag disables every action button. */
   const run = async (action: () => Promise<void>) => {
@@ -264,7 +271,7 @@ export function InstitutionScreen({ institutionId }: { institutionId: string }) 
               style={[styles.input, zoneNameMissing && styles.inputError]}
               placeholderTextColor={colors.textSecondary}
             />
-            {zoneNameMissing ? <Text style={styles.error}>Name is required</Text> : null}
+            {zoneNameMissing ? <Text style={styles.error}>{NAME_REQUIRED}</Text> : null}
             <Pressable
               accessibilityRole="button"
               accessibilityState={{ disabled: busy, busy }}

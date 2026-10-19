@@ -2,16 +2,13 @@ import { useRouter } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { GENERIC_ERROR } from '@/data/errors';
+import { messageOf } from '@/data/errors';
 import type { AppNotification } from '@/data/types';
 import { useIncomingTransfers } from '@/features/transfers/useTransfers';
 import { useServices } from '@/services/ServicesProvider';
 import { colors } from '@/ui/theme';
 
 import { useInbox } from './useInbox';
-
-/** The repository rejects with user-facing copy (generic or offline for respondToTransfer). */
-const messageOf = (e: unknown) => (e instanceof Error && e.message ? e.message : GENERIC_ERROR);
 
 /** Where a notification leads; transfer notifications are answered in the inbox itself. */
 function destination(n: AppNotification): string | null {

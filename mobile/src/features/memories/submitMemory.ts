@@ -98,15 +98,12 @@ export async function withTimeout<T>(work: Promise<T>, ms: number = SUBMIT_TIMEO
   }
 }
 
-/** Validates the form and fixes the draft's ids and timestamp once, so every replay writes the same data. */
-export function prepareDraft(
-  services: Services,
-  userId: string,
-  draft: MemoryDraft,
-): { ok: true; draft: OutboxDraft } | { ok: false; error: string } {
+const LOCATION_REQUIRED = 'Capture location before saving.';
+
+/** The form's local checks (text, privacy, location), in the order they are reported; null when valid. */
+export function validateDraft(draft: MemoryDraft, now: Date): string | null {
   const textError = validateMemoryText(draft.textContent);
-  if (textError) return { ok: false, error: textError };
-  const now = services.now();
+  if (textError) return textError;
   const privacyError = validatePrivacy({
     privacy: draft.privacy,
     taggedUserIds: draft.taggedUserIds,
@@ -114,8 +111,21 @@ export function prepareDraft(
     communityId: draft.communityId,
     now,
   });
-  if (privacyError) return { ok: false, error: privacyError };
-  if (!draft.location) return { ok: false, error: 'Capture location before saving.' };
+  if (privacyError) return privacyError;
+  if (!draft.location) return LOCATION_REQUIRED;
+  return null;
+}
+
+/** Validates the form and fixes the draft's ids and timestamp once, so every replay writes the same data. */
+export function prepareDraft(
+  services: Services,
+  userId: string,
+  draft: MemoryDraft,
+): { ok: true; draft: OutboxDraft } | { ok: false; error: string } {
+  const now = services.now();
+  const invalid = validateDraft(draft, now);
+  if (invalid) return { ok: false, error: invalid };
+  if (!draft.location) return { ok: false, error: LOCATION_REQUIRED }; // already checked; narrows the type
 
   const fields = normalizePrivacyFields(draft);
   const memoryId = services.newId();

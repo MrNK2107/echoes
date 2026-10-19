@@ -1,7 +1,8 @@
-import words from '../../../fixtures/domain/profanity.json';
+// A byte-for-byte copy of fixtures/domain/profanity.json (shared with functions; R30): Metro only
+// bundles files inside mobile/. profanity.test.ts keeps the two in sync.
+import words from './profanity.json';
 import { normalizeName } from './communities';
 
-// Single source of truth: fixtures/domain/profanity.json (shared with functions).
 export const PROFANITY_WORDS: readonly string[] = words;
 
 const WORD_SET = new Set(PROFANITY_WORDS);

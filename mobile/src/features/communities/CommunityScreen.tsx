@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { GENERIC_ERROR, OWNER_CANNOT_LEAVE } from '@/data/errors';
+import { messageOf, OWNER_CANNOT_LEAVE } from '@/data/errors';
 import { useSession } from '@/features/auth/useSession';
 import { UserSearchField } from '@/features/people/UserSearchField';
 import { useAuthorNames } from '@/features/people/useAuthorNames';
@@ -17,9 +17,6 @@ import { useCommunity } from './useCommunity';
 const FEED_ERROR = "Couldn't load memories.";
 const FEED_EMPTY = 'No memories shared with this community yet.';
 const INVITES_SENT = 'Invitations sent.';
-
-/** The repository rejects with user-facing copy (callable errors are mapped there). */
-const messageOf = (e: unknown) => (e instanceof Error && e.message ? e.message : GENERIC_ERROR);
 
 export function CommunityScreen({ communityId }: { communityId: string }) {
   const router = useRouter();

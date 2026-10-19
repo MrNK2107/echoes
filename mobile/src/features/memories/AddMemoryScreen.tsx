@@ -6,11 +6,12 @@ import type { LatLng } from '@/domain/types';
 import { useSession } from '@/features/auth/useSession';
 import { useOutboxContext } from '@/features/outbox/useOutbox';
 import { useServices } from '@/services/ServicesProvider';
+import { LOCATION_FAILED } from '@/ui/copy';
 import { colors } from '@/ui/theme';
 
 import { PrivacyPicker, type PrivacyChoice } from './PrivacyPicker';
 import { askBeforeSavingProfanity } from './profanityCheck';
-import { MAX_MEMORY_LENGTH, submitMemory } from './submitMemory';
+import { MAX_MEMORY_LENGTH, submitMemory, validateDraft, type MemoryDraft } from './submitMemory';
 import { VoiceRecorder } from './VoiceRecorder';
 
 const PERMISSION_COPY = 'Location permission is needed to save a memory here.';
@@ -78,7 +79,7 @@ export function AddMemoryScreen() {
       }
       setLocation(await services.location.getCurrentPosition());
     } catch {
-      setError('Could not get your location. Try again.');
+      setError(LOCATION_FAILED);
     }
   };
 
@@ -96,27 +97,29 @@ export function AddMemoryScreen() {
 
   const save = async (confirmed = false): Promise<void> => {
     if (!session || saving.current || queued || !canSave) return;
+    const draft: MemoryDraft = {
+      textContent: text,
+      privacy,
+      releaseDate: privacy === 'timeRelease' ? releaseDate : null,
+      taggedUserIds: privacy === 'tagged' ? taggedUserIds : [],
+      communityId: privacy === 'community' ? communityId : null,
+      location,
+      imageUri,
+      audioUri,
+    };
+    // The form's own errors come first; the wording question only makes sense for a savable draft.
+    const invalid = validateDraft(draft, services.now());
+    if (invalid) {
+      setError(invalid);
+      return;
+    }
     if (!confirmed && askBeforeSavingProfanity(text, () => void save(true))) return;
     saving.current = true;
     setError(null);
     setSubmitting(true);
     let done = false;
     try {
-      const result = await submitMemory(
-        services,
-        session.userId,
-        {
-          textContent: text,
-          privacy,
-          releaseDate: privacy === 'timeRelease' ? releaseDate : null,
-          taggedUserIds: privacy === 'tagged' ? taggedUserIds : [],
-          communityId: privacy === 'community' ? communityId : null,
-          location,
-          imageUri,
-          audioUri,
-        },
-        outbox,
-      );
+      const result = await submitMemory(services, session.userId, draft, outbox);
       if (!result.ok) setError(result.error);
       else if (result.queued) {
         done = true;

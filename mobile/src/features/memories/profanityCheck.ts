@@ -1,8 +1,7 @@
 import { Alert } from 'react-native';
 
 import { containsProfanity } from '@/domain/profanity';
-
-export const PROFANITY_WARNING = 'This memory may contain offensive language. Save anyway?';
+import { PROFANITY_WARNING } from '@/ui/copy';
 
 /**
  * ADR-0008 soft check before saving: when the text may be offensive, asks `Edit` / `Save anyway`

@@ -1,4 +1,6 @@
-import * as copy from './errors';
+import * as errors from './errors';
+
+const { messageOf, ...copy } = errors;
 
 describe('shared error copy', () => {
   it('keeps the user-facing strings every layer agrees on', () => {
@@ -18,5 +20,17 @@ describe('shared error copy', () => {
       VERIFY_EMAIL_FIRST: 'Verify your email address first.',
       EMAIL_DOMAIN_NOT_APPROVED: "Your email domain isn't approved for this institution.",
     });
+  });
+});
+
+describe('messageOf', () => {
+  it("uses a rejection's message (repositories reject with user-facing copy)", () => {
+    expect(messageOf(new Error(errors.REPORT_RATE))).toBe(errors.REPORT_RATE);
+  });
+
+  it('falls back to generic copy for empty messages and non-errors', () => {
+    expect(messageOf(new Error(''))).toBe(errors.GENERIC_ERROR);
+    expect(messageOf('boom')).toBe(errors.GENERIC_ERROR);
+    expect(messageOf(undefined)).toBe(errors.GENERIC_ERROR);
   });
 });

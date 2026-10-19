@@ -2,13 +2,17 @@ import { useRouter } from 'expo-router';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { Memory } from '@/domain/types';
+import { useSession } from '@/features/auth/useSession';
+import { HIDDEN_BADGE } from '@/ui/copy';
 import { privacyLabel } from '@/ui/privacyLabel';
 import { colors } from '@/ui/theme';
 
 /** `authorName` comes from the list's useAuthorNames, so cards share one batched lookup. */
 export function MemoryCard({ memory, authorName }: { memory: Memory; authorName?: string }) {
   const router = useRouter();
+  const { session } = useSession();
   const badge = privacyLabel(memory);
+  const hiddenForAuthor = memory.moderation === 'hidden' && session?.userId === memory.userId;
   return (
     <Pressable
       accessibilityRole="button"
@@ -20,8 +24,8 @@ export function MemoryCard({ memory, authorName }: { memory: Memory; authorName?
       {authorName ? <Text style={styles.author}>{authorName}</Text> : null}
       <Text style={styles.text}>{memory.textContent}</Text>
       {memory.audioUrl ? <Text style={styles.voice}>Voice note</Text> : null}
-      {/* Only the author can still read a hidden memory, so only they see this. */}
-      {memory.moderation === 'hidden' ? <Text style={styles.hidden}>Hidden after reports</Text> : null}
+      {/* The badge is for the author only; anyone else should never be shown a hidden memory. */}
+      {hiddenForAuthor ? <Text style={styles.hidden}>{HIDDEN_BADGE}</Text> : null}
       <View style={styles.metaRow}>
         <Text style={styles.meta}>{memory.createdAt.toLocaleDateString()}</Text>
         {badge ? (
