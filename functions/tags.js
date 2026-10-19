@@ -3,7 +3,7 @@ const { Timestamp } = require("firebase-admin/firestore");
 const { onDocumentCreated } = require("firebase-functions/v2/firestore");
 const { onSchedule } = require("firebase-functions/v2/scheduler");
 const { logger } = require("firebase-functions");
-const { notify } = require("./lib/notify");
+const { notify, skipReason } = require("./lib/notify");
 const { tryConsumeRateLimit } = require("./lib/rateLimit");
 
 // Rules cap taggedUserIds at 20; the server enforces the same cap for Admin/legacy writes.
@@ -55,7 +55,12 @@ async function notifyTaggedUsers(db, memoryId, memory, now = new Date(), { skipE
     const user = await db.collection("users").doc(to).get();
     if (!user.exists) continue;
     const id = `memoryTagged_${memoryId}_${to}`;
-    if (skipExisting && (await db.doc(`users/${to}/notifications/${id}`).get()).exists) continue;
+    if (skipExisting) {
+      if ((await db.doc(`users/${to}/notifications/${id}`).get()).exists) continue;
+      // Blocked or pref-off recipients would be skipped by notify anyway; do not charge the
+      // author's budget for them on every overlapping run.
+      if (await skipReason(db, { to, type: "memoryTagged", actorId: author })) continue;
+    }
     if (typeof author === "string" && author) {
       if (!(await tryConsumeRateLimit(db, author, "tagNotify", TAG_NOTIFY_PER_DAY, now))) {
         logger.warn("Tag notification budget exhausted", { author, memoryId });
@@ -107,6 +112,10 @@ async function releasedTagsHandler(
     if (last) query = query.startAfter(last);
     const snapshot = await query.limit(pageSize).get();
     for (const doc of snapshot.docs) {
+      if (processed > 0 && clock() - startedAt >= budgetMs) {
+        log("Released tags time budget spent; the next run's window covers the rest", { processed });
+        return processed;
+      }
       await notifyTaggedUsers(db, doc.id, doc.data(), now, { skipExisting: true });
       processed += 1;
     }

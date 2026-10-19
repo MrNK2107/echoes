@@ -11,7 +11,7 @@ const communities = require("./communities");
 const transfers = require("./transfers");
 const institutions = require("./institutions");
 const safety = require("./safety");
-const { cleanupUserSocialData } = require("./accountCleanup");
+const { cleanupUserSocialData, deleteNotificationsFrom } = require("./accountCleanup");
 const { onMemoryCreatedTags, notifyReleasedTags } = require("./tags");
 const { createOnNotificationCreated, createOnPushTokenCreated } = require("./push");
 const {
@@ -141,10 +141,13 @@ exports.cleanupDeletedUser = functionsV1
   // Memberships elsewhere are removed with their memberCount decremented; owned communities
   // pass to their earliest-joined member, or are deleted when no one else is left (R24, R25).
   await communities.cleanupUserCommunities(db, userId);
-  // Public profile, notifications the user caused, institution admin roles and reports the user filed.
+  // Public profile, institution admin roles and reports the user filed.
   await cleanupUserSocialData(db, userId);
 
   await writer.close();
+  // After the writer closes: the deleted user's own memories are gone first, so no notification
+  // trigger or retry can re-create a notification from this user once these are removed.
+  await deleteNotificationsFrom(db, userId);
   await db.recursiveDelete(db.collection("users").doc(userId));
 
   const bucket = admin.storage().bucket();

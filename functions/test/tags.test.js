@@ -169,7 +169,7 @@ test("stops after the budget", async () => {
     clock: () => (t += 1500),
     log: (msg, data) => logs.push([msg, data]),
   });
-  assert.equal(count, 2);
+  assert.equal(count, 1);
   assert.equal(logs.length, 1);
   assert.match(logs[0][0], /budget/);
 });
@@ -184,4 +184,49 @@ test("a timeRelease memory notifies only once released when run through notifyTa
   assert.equal(inbox(db, "bob").length, 0);
   await notifyTaggedUsers(db, "m1", memory(["bob"], { privacy: "timeRelease", releaseDate: at(-HOUR) }), NOW);
   assert.equal(inbox(db, "bob").length, 1);
+});
+
+test("stops mid-page once the budget is spent, logging once", async () => {
+  const docs = {};
+  for (let i = 0; i < 4; i++) docs[`memories/m${i}`] = released(-(i + 1) * 60 * 1000, { taggedUserIds: [`t${i}`] });
+  for (let i = 0; i < 4; i++) docs[`users/t${i}`] = {};
+  const db = seed(docs);
+  let t = 0;
+  const logs = [];
+  const count = await releasedTagsHandler(db, NOW, {
+    pageSize: 10,
+    budgetMs: 1000,
+    clock: () => (t += 600),
+    log: (msg) => logs.push(msg),
+  });
+  assert.equal(count, 2);
+  assert.equal(logs.length, 1);
+});
+
+test("the scheduled path does not charge the budget for blocked or pref-off recipients", async () => {
+  const day = NOW.toISOString().slice(0, 10);
+  const db = seed({
+    "memories/m1": released(-HOUR / 2, { taggedUserIds: ["bob", "carol"] }),
+    "users/bob": { notificationPrefs: { tags: false } },
+    "users/carol/blocks/alice": { createdAt: "x" },
+  });
+  await releasedTagsHandler(db, NOW);
+  await releasedTagsHandler(db, new Date(NOW.getTime() + HOUR / 2));
+  assert.equal(inbox(db, "bob").length + inbox(db, "carol").length, 0);
+  assert.equal(db._get(`rateLimits/alice_tagNotify_${day}`), undefined);
+});
+
+test("a legacy ISO-string releaseDate fails closed in the scheduled path but the trigger parses it", async () => {
+  const iso = new Date(NOW.getTime() - HOUR / 2).toISOString();
+  const db = seed({ "memories/legacy": released(0, { releaseDate: iso }) });
+  assert.equal(await releasedTagsHandler(db, NOW), 0);
+  assert.equal(inbox(db, "bob").length, 0);
+  await notifyTaggedUsers(db, "legacy", memory(["bob"], { privacy: "timeRelease", releaseDate: iso }), NOW);
+  assert.equal(inbox(db, "bob").length, 1);
+});
+
+test("notifyReleasedTags runs hourly with a 540 s timeout", () => {
+  const endpoint = require("../index").notifyReleasedTags.__endpoint;
+  assert.equal(endpoint.scheduleTrigger.schedule, "every 60 minutes");
+  assert.equal(endpoint.timeoutSeconds, 540);
 });

@@ -27,6 +27,10 @@ function sortable(v) {
   }
   return v;
 }
+// Firestore range filters match only values of the same type (a number never satisfies a string
+// bound); Dates and Timestamps are one type.
+const kind = (v) => (v instanceof Date || (v && typeof v === "object" && (typeof v.toMillis === "function" || typeof v._seconds === "number")) ? "time" : typeof v);
+const sameKind = (a, b) => a !== undefined && a !== null && kind(a) === kind(b);
 const compare = (a, b) => {
   const x = sortable(a);
   const y = sortable(b);
@@ -156,11 +160,11 @@ function createFakeFirestore(initial = {}) {
     const x = getPath(data, field);
     switch (op) {
       case "==": return eq(sortable(x), sortable(value));
-      case "!=": return !eq(x, value);
-      case "<": return x !== undefined && compare(x, value) < 0;
-      case "<=": return x !== undefined && compare(x, value) <= 0;
-      case ">": return x !== undefined && compare(x, value) > 0;
-      case ">=": return x !== undefined && compare(x, value) >= 0;
+      case "!=": return !eq(sortable(x), sortable(value));
+      case "<": return sameKind(x, value) && compare(x, value) < 0;
+      case "<=": return sameKind(x, value) && compare(x, value) <= 0;
+      case ">": return sameKind(x, value) && compare(x, value) > 0;
+      case ">=": return sameKind(x, value) && compare(x, value) >= 0;
       case "in": return value.some((v) => eq(v, x));
       case "array-contains": return Array.isArray(x) && x.some((e) => eq(e, value));
       default: throw new Error(`unsupported op ${op}`);
@@ -193,18 +197,19 @@ function createFakeFirestore(initial = {}) {
         });
       }
       if (after) {
+        // A snapshot cursor is its values on the order-by fields plus its path (the implicit
+        // __name__ tie-break), so it works even when that doc no longer matches or exists.
         const [first] = after;
-        if (first && typeof first === "object" && first.ref) {
-          rows = rows.slice(rows.findIndex(([p]) => p === first.ref.path) + 1);
-        } else {
-          rows = rows.filter(([, d]) => {
-            for (let i = 0; i < orders.length && i < after.length; i++) {
-              const c = compare(getPath(d, orders[i].field), after[i]) * (orders[i].dir === "desc" ? -1 : 1);
-              if (c !== 0) return c > 0;
-            }
-            return false;
-          });
-        }
+        const isSnap = first && typeof first === "object" && first.ref;
+        const values = isSnap ? orders.map((o) => getPath(first.data(), o.field)) : after;
+        const cursorPath = isSnap ? first.ref.path : undefined;
+        rows = rows.filter(([p, d]) => {
+          for (let i = 0; i < orders.length && i < values.length; i++) {
+            const c = compare(getPath(d, orders[i].field), values[i]) * (orders[i].dir === "desc" ? -1 : 1);
+            if (c !== 0) return c > 0;
+          }
+          return cursorPath !== undefined && p > cursorPath;
+        });
       }
       if (max !== undefined) rows = rows.slice(0, max);
       const docs = rows.map(([p]) => snap(p));

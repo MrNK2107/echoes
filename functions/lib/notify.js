@@ -43,6 +43,18 @@ async function displayNameOf(db, uid) {
   return typeof name === "string" && name.trim() ? name : "Someone";
 }
 
+// Dry run of notify's skip checks: the reason a notification would not be sent, or null.
+async function skipReason(db, { to, type, actorId }) {
+  const template = TEMPLATES[type];
+  if (!template) throw new Error(`Unknown notification type: ${type}`);
+  if (to === actorId) return "self";
+  if (actorId && (await isBlocked(db, to, actorId))) return "blocked";
+  const user = await db.doc(`users/${to}`).get();
+  const prefs = (user.exists && user.data().notificationPrefs) || {};
+  if (prefs[template.pref] === false) return "pref";
+  return null;
+}
+
 // notify(db, { to, type, actorId, params: { place?, community? }, data?, id? })
 // -> { sent: true, id } or { sent: false, reason: "self" | "blocked" | "pref" | "duplicate" }
 // With a deterministic `id` the write is a create(), so a retried trigger never duplicates.
@@ -85,4 +97,4 @@ async function notify(db, { to, type, actorId, params = {}, data = {}, id }) {
   return { sent: true, id: ref.id };
 }
 
-module.exports = { notify, TEMPLATES };
+module.exports = { notify, skipReason, TEMPLATES };

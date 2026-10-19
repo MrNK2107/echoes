@@ -23,7 +23,6 @@ async function deleteNotificationsFrom(db, uid, { batchSize = BATCH_SIZE } = {})
 // trigger (see cleanupUserCommunities). Idempotent, so a retried run is safe.
 async function cleanupUserSocialData(db, uid, { batchSize = BATCH_SIZE } = {}) {
   await db.collection("publicProfiles").doc(uid).delete();
-  await deleteNotificationsFrom(db, uid, { batchSize });
 
   const institutions = await db.collection("institutions").where("adminUserIds", "array-contains", uid).get();
   for (let i = 0; i < institutions.docs.length; i += batchSize) {

@@ -38,7 +38,7 @@ test("cleanup is safe to re-run and for a user with nothing to clean", async () 
   assert.ok(db._get("publicProfiles/bob"));
 });
 
-test("cleanup deletes other users' notifications from the deleted user, and keeps those without an actorId", async () => {
+test("deleteNotificationsFrom deletes other users' notifications from the deleted user, and keeps those without an actorId", async () => {
   const db = createFakeFirestore({
     "users/bob/notifications/fromAlice": { type: "memoryTagged", actorId: "alice" },
     "users/bob/notifications/fromCarol": { type: "memoryTagged", actorId: "carol" },
@@ -46,7 +46,7 @@ test("cleanup deletes other users' notifications from the deleted user, and keep
     "users/bob/notifications/system": { type: "memoryTagged", actorId: null },
     "users/carol/notifications/fromAlice": { type: "communityInvite", actorId: "alice" },
   });
-  await cleanupUserSocialData(db, "alice", { batchSize: 1 });
+  await deleteNotificationsFrom(db, "alice", { batchSize: 1 });
   assert.deepEqual(db._list("users/").sort(), [
     "users/bob/notifications/fromCarol",
     "users/bob/notifications/legacy",
