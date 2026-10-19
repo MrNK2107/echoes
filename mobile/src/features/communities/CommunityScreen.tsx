@@ -19,6 +19,7 @@ import {
   REPORT_THANKS,
   RETRY_LABEL,
 } from '@/ui/copy';
+import { Notice } from '@/ui/Notice';
 import { colors } from '@/ui/theme';
 
 import { communityTypeLabel, formatMembers, hasHumanOwner } from './labels';
@@ -220,11 +221,7 @@ export function CommunityScreen({ communityId }: { communityId: string }) {
           {error}
         </Text>
       ) : null}
-      {notice ? (
-        <Text accessibilityLiveRegion="polite" style={styles.notice}>
-          {notice}
-        </Text>
-      ) : null}
+      <Notice message={notice} style={styles.notice} />
       {feedError ? <Text style={styles.message}>{FEED_LOAD_ERROR}</Text> : null}
       {!feedReady && !feedError && !membershipError ? <ActivityIndicator style={styles.spinner} color={colors.accent} /> : null}
     </View>
@@ -316,7 +313,7 @@ const styles = StyleSheet.create({
   secondaryText: { color: colors.accent, fontWeight: '600' },
   disabled: { opacity: 0.5 },
   error: { color: colors.danger, marginTop: 8 },
-  notice: { color: colors.textSecondary, marginTop: 8 },
+  notice: { marginTop: 8, padding: 0, textAlign: 'left' },
   list: { padding: 16 },
   spinner: { marginTop: 16 },
   message: { color: colors.textSecondary, textAlign: 'center', padding: 16 },

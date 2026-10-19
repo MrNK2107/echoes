@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { messageOf } from '@/data/errors';
 import { useServices } from '@/services/ServicesProvider';
@@ -27,6 +28,7 @@ export function parseDomains(raw: string): string[] {
 
 /** Staff only (the `staff` claim); the server refuses everyone else. */
 export function RegisterInstitutionSheet({ visible, onClose, onCreated }: Props) {
+  const insets = useSafeAreaInsets();
   const { repos } = useServices();
   const [name, setName] = useState('');
   const [domains, setDomains] = useState('');
@@ -74,7 +76,7 @@ export function RegisterInstitutionSheet({ visible, onClose, onCreated }: Props)
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={close}>
       <View style={styles.backdrop}>
-        <View style={styles.sheet}>
+        <View style={[styles.sheet, { paddingBottom: 16 + Math.max(insets.bottom, 16) }]}>
           <Text accessibilityRole="header" style={styles.title}>
             Register institution
           </Text>

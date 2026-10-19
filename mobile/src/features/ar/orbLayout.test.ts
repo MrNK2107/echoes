@@ -1,4 +1,4 @@
-import { MAX_ORB_EXTENT, ORB_HIT, PLACE_HIT, orbLabel, orbLayout, plotPosition, truncateName } from './orbLayout';
+import { MAX_ORB_EXTENT, ORB_HIT, PLACE_HIT, orbLabel, orbLayout, plotPosition, separateOrbs, truncateName } from './orbLayout';
 
 type Box = { l: number; t: number; r: number; b: number };
 const box = (cx: number, cy: number, size: number): Box => ({
@@ -66,5 +66,37 @@ describe('radar bounds', () => {
 
   it('reserves the largest possible orb extent as padding', () => {
     expect(MAX_ORB_EXTENT).toBeGreaterThanOrEqual(orbLayout(20, 8).ring + ORB_HIT / 2);
+  });
+});
+
+describe('separateOrbs', () => {
+  const dist = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.hypot(a.x - b.x, a.y - b.y);
+  const cluster = [
+    { x: 100, y: 100 },
+    { x: 100, y: 100 },
+    { x: 103, y: 101 },
+    { x: 99, y: 106 },
+    { x: 110, y: 100 },
+    { x: 100, y: 95 },
+  ];
+
+  it('leaves no pair closer than 12', () => {
+    const out = separateOrbs(cluster);
+    expect(out).toHaveLength(cluster.length);
+    for (let i = 0; i < out.length; i++)
+      for (let j = i + 1; j < out.length; j++) expect(dist(out[i]!, out[j]!)).toBeGreaterThanOrEqual(12);
+  });
+
+  it('is deterministic and does not mutate its input', () => {
+    const copy = cluster.map((p) => ({ ...p }));
+    expect(separateOrbs(cluster)).toEqual(separateOrbs(cluster));
+    expect(cluster).toEqual(copy);
+  });
+
+  it('keeps already separated points and honours minDistance', () => {
+    const far = [{ x: 0, y: 0 }, { x: 50, y: 0 }];
+    expect(separateOrbs(far)).toEqual(far);
+    const out = separateOrbs(far, 80);
+    expect(dist(out[0]!, out[1]!)).toBeGreaterThanOrEqual(80);
   });
 });

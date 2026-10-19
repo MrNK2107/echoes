@@ -1,4 +1,5 @@
 import type { ComponentProps } from 'react';
+import { StyleSheet } from 'react-native';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 
 import { GENERIC_ERROR, REPORT_DUPLICATE, REPORT_RATE } from '@/data/errors';
@@ -8,6 +9,10 @@ import { ServicesProvider } from '@/services/ServicesProvider';
 import type { Services } from '@/services/services';
 
 import { REPORT_NOTE_MAX, REPORT_REASONS, ReportSheet } from './ReportSheet';
+
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 47, bottom: 34, left: 0, right: 0 }),
+}));
 
 const onClose = jest.fn();
 const onReported = jest.fn();
@@ -31,6 +36,12 @@ beforeEach(() => {
 });
 
 describe('ReportSheet', () => {
+  it('keeps its actions above the bottom safe-area inset', async () => {
+    await setup();
+    const sheet = screen.getByRole('header', { name: 'Why are you reporting this?' }).parent!;
+    expect(StyleSheet.flatten(sheet.props.style).paddingBottom).toBeGreaterThanOrEqual(34);
+  });
+
   it('offers the six reasons as a radio group, unchecked, with Send report disabled', async () => {
     await setup();
     expect(screen.getByRole('header', { name: 'Why are you reporting this?' })).toBeOnTheScreen();

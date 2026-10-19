@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Marker } from 'react-native-maps';
 
 import { distanceMeters } from '@/domain/geo';
@@ -7,13 +8,17 @@ import type { Place } from '@/domain/types';
 import { InboxBell } from '@/features/inbox/InboxBell';
 import { OutboxBanner } from '@/features/outbox/OutboxBanner';
 import { formatCount, formatDistance } from '@/ui/format';
-import { AR_BUTTON, AR_BUTTON_LABEL } from '@/ui/copy';
+import { AR_BUTTON, AR_BUTTON_LABEL, MAP_COMMUNITIES_SHORT, MAP_PROFILE_SHORT } from '@/ui/copy';
 import { colors } from '@/ui/theme';
 
 import { useNearbyPlaces } from './useNearbyPlaces';
 
 export function MapScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { width, fontScale } = useWindowDimensions();
+  // Below 360dp or at large font scales the pills collapse to short labels; accessibility labels stay full.
+  const compact = width < 360 || fontScale > 1.3;
   const { status, center, places, retry } = useNearbyPlaces();
   const openPlace = (id: string) => router.push(`/place/${id}`);
 
@@ -60,26 +65,27 @@ export function MapScreen() {
           />
         ))}
       </MapView>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Profile"
-        onPress={() => router.push('/profile')}
-        style={styles.profile}
-      >
-        <Text style={styles.buttonText}>Profile</Text>
-      </Pressable>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Communities"
-        onPress={() => router.push('/communities')}
-        style={styles.communities}
-      >
-        <Text style={styles.buttonText}>Communities</Text>
-      </Pressable>
-      <View style={styles.bell}>
+      <View testID="map-top-row" style={[styles.topRow, { top: insets.top + 8 }]}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Communities"
+          onPress={() => router.push('/communities')}
+          style={[styles.pill, compact && styles.pillCompact]}
+        >
+          <Text style={styles.buttonText}>{compact ? MAP_COMMUNITIES_SHORT : 'Communities'}</Text>
+        </Pressable>
+        <View style={styles.spacer} />
         <InboxBell />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Profile"
+          onPress={() => router.push('/profile')}
+          style={[styles.pill, compact && styles.pillCompact]}
+        >
+          <Text style={styles.buttonText}>{compact ? MAP_PROFILE_SHORT : 'Profile'}</Text>
+        </Pressable>
       </View>
-      <View style={styles.banner}>
+      <View style={[styles.banner, { top: insets.top + 64 }]}>
         <OutboxBanner />
       </View>
       <FlatList
@@ -118,26 +124,17 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background, padding: 24 },
   map: { flex: 1 },
-  banner: { position: 'absolute', top: 96, left: 16, right: 16 },
-  bell: { position: 'absolute', top: 48, right: 112 },
-  communities: {
-    position: 'absolute',
-    top: 48,
-    left: 16,
+  banner: { position: 'absolute', left: 16, right: 16 },
+  topRow: { position: 'absolute', left: 16, right: 16, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  spacer: { flex: 1 },
+  pill: {
+    minHeight: 44,
+    justifyContent: 'center',
     backgroundColor: colors.accent,
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: 22,
   },
-  profile: {
-    position: 'absolute',
-    top: 48,
-    right: 16,
-    backgroundColor: colors.accent,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
+  pillCompact: { minWidth: 44, alignItems: 'center', paddingHorizontal: 12 },
   list: { flex: 1, backgroundColor: colors.surface },
   row: { padding: 16, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.elevated },
   name: { color: colors.text, fontSize: 16 },

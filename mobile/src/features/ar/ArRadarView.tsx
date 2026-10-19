@@ -5,7 +5,7 @@ import Svg, { Circle } from 'react-native-svg';
 import { formatDistance } from '@/ui/format';
 import { colors } from '@/ui/theme';
 
-import { MAX_ORB_EXTENT, ORB_DOT, PLACE_HIT, orbLabel, orbLayout, plotPosition, truncateName } from './orbLayout';
+import { MAX_ORB_EXTENT, ORB_DOT, PLACE_HIT, orbLabel, orbLayout, plotPosition, separateOrbs, truncateName } from './orbLayout';
 import { AR_RADIUS_METERS, type ArPlace } from './useArScene';
 
 const RINGS = [250, 500, 1000];
@@ -28,7 +28,9 @@ function ArRadarViewBase({
   const c = size / 2;
   const radius = c - MAX_ORB_EXTENT;
   const at = (distance: number, bearing: number) => plotPosition(size, distance, bearing, heading);
-  const placed = places.map((p) => ({ p, pos: at(p.distanceMeters, p.bearingDegrees), aura: auraPixels(p.auraRadius) }));
+  const positions = separateOrbs(places.map((p) => at(p.distanceMeters, p.bearingDegrees)));
+  const placed = places.map((p, i) => ({ p, pos: positions[i]!, aura: auraPixels(p.auraRadius) }));
+  const showRingLabels = size >= 280;
 
   return (
     <View testID="radar" style={[styles.radar, { width: size, height: size }]}>
@@ -50,7 +52,7 @@ function ArRadarViewBase({
           <Circle key={p.placeId} cx={pos.x} cy={pos.y} r={aura} fill={p.color} fillOpacity={Math.min(1, p.auraOpacity + 0.3)} />
         ))}
       </Svg>
-      {RINGS.map((m) => (
+      {(showRingLabels ? RINGS : []).map((m) => (
         <Text
           key={m}
           accessible={false}

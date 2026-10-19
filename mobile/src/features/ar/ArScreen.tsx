@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { AccessibilityInfo, ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useServices } from '@/services/ServicesProvider';
 import {
@@ -13,6 +14,7 @@ import {
   AR_TRACKING_ERROR,
   AR_UNSUPPORTED,
 } from '@/ui/copy';
+import { Notice } from '@/ui/Notice';
 import { colors } from '@/ui/theme';
 
 import { ArRadarView } from './ArRadarView';
@@ -22,6 +24,7 @@ type Capability = 'checking' | 'unsupported' | 'denied' | 'ready';
 
 export function ArScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { arRenderer } = useServices();
   const scene = useArScene();
   const [capability, setCapability] = useState<Capability>('checking');
@@ -71,13 +74,13 @@ export function ArScreen() {
           ? AR_TRACKING_ERROR
           : null;
 
-  useEffect(() => {
-    // iOS ignores accessibilityLiveRegion, so announce notice changes explicitly.
-    if (notice) AccessibilityInfo.announceForAccessibility(notice);
-  }, [notice]);
-
   const back = (
-    <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => router.back()} style={styles.back}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Back"
+      onPress={() => router.back()}
+      style={[styles.back, { paddingTop: insets.top + 8 }]}
+    >
       <Text style={styles.backText}>{'< Back'}</Text>
     </Pressable>
   );
@@ -109,11 +112,7 @@ export function ArScreen() {
   } else {
     body = (
       <>
-        {scene.headingUnavailable ? (
-          <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={styles.message}>
-            {AR_HEADING_UNAVAILABLE}
-          </Text>
-        ) : null}
+        <Notice message={scene.headingUnavailable ? AR_HEADING_UNAVAILABLE : null} />
         <ArRadarView
           places={scene.places}
           heading={scene.headingUnavailable ? 0 : scene.heading}
@@ -127,11 +126,7 @@ export function ArScreen() {
   return (
     <View style={styles.container}>
       {back}
-      {notice && scene.places.length > 0 ? (
-        <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={styles.message}>
-          {notice}
-        </Text>
-      ) : null}
+      <Notice message={scene.places.length > 0 ? notice : null} />
       {canCamera && scene.places.length > 0 && !trackingLost ? (
         <Pressable
           accessibilityRole="button"

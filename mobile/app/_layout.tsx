@@ -1,4 +1,5 @@
 import { Stack } from 'expo-router';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { readConfig } from '@/services/config';
 import { createServices } from '@/services/createServices';
@@ -22,8 +23,10 @@ const services = createServices(config);
 
 export default function RootLayout() {
   return (
-    <ServicesProvider services={services}>
-      <Stack screenOptions={{ headerShown: false }} />
-    </ServicesProvider>
+    <SafeAreaProvider>
+      <ServicesProvider services={services}>
+        <Stack screenOptions={{ headerShown: false }} />
+      </ServicesProvider>
+    </SafeAreaProvider>
   );
 }

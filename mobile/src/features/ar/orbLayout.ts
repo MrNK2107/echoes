@@ -53,3 +53,41 @@ export function plotPosition(
   const a = ((bearingDegrees - headingDegrees) * Math.PI) / 180;
   return { x: c + r * Math.sin(a), y: c - r * Math.cos(a) };
 }
+
+/**
+ * Pushes points apart until none are closer than `minDistance`. Pure and deterministic:
+ * pairs are visited in index order and coincident points separate along an index-derived angle.
+ */
+export function separateOrbs(
+  points: { x: number; y: number }[],
+  minDistance = 12,
+): { x: number; y: number }[] {
+  const out = points.map((p) => ({ x: p.x, y: p.y }));
+  for (let pass = 0; pass < 200; pass++) {
+    let moved = false;
+    for (let i = 0; i < out.length; i++) {
+      for (let j = i + 1; j < out.length; j++) {
+        const a = out[i]!;
+        const b = out[j]!;
+        let dx = b.x - a.x;
+        let dy = b.y - a.y;
+        let d = Math.hypot(dx, dy);
+        if (d >= minDistance) continue;
+        if (d < 1e-6) {
+          const angle = (i * 7 + j * 13) * 2.399963; // golden angle spreads coincident points
+          dx = Math.cos(angle);
+          dy = Math.sin(angle);
+          d = 1;
+        }
+        const push = (minDistance - d) / 2 + 0.01;
+        a.x -= (dx / d) * push;
+        a.y -= (dy / d) * push;
+        b.x += (dx / d) * push;
+        b.y += (dy / d) * push;
+        moved = true;
+      }
+    }
+    if (!moved) break;
+  }
+  return out;
+}

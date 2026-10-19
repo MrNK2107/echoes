@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { messageOf } from '@/data/errors';
 import type { Place } from '@/domain/types';
@@ -23,6 +24,7 @@ interface Props {
  * a custodianship request for the place.
  */
 export function TransferSheet({ place, visible, onClose, onSent }: Props) {
+  const insets = useSafeAreaInsets();
   const { repos } = useServices();
   const [selected, setSelected] = useState<string[]>([]);
   const [sending, setSending] = useState(false);
@@ -63,7 +65,7 @@ export function TransferSheet({ place, visible, onClose, onSent }: Props) {
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={close}>
       <View style={styles.backdrop}>
-        <View style={styles.sheet}>
+        <View style={[styles.sheet, { paddingBottom: 16 + Math.max(insets.bottom, 16) }]}>
           <Text accessibilityRole="header" style={styles.title}>
             Choose the new custodian
           </Text>

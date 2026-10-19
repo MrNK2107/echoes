@@ -32,3 +32,7 @@ export const AR_BUTTON = 'AR';
 export const AR_BUTTON_LABEL = 'Explore in AR';
 export const AR_LOADING = 'Finding memories around you...';
 export const AR_TRACKING_ERROR = 'AR tracking was lost. Showing radar instead.';
+export const CHART_AXIS_OLDEST = 'Oldest';
+export const CHART_AXIS_LATEST = 'Latest';
+export const MAP_COMMUNITIES_SHORT = 'C';
+export const MAP_PROFILE_SHORT = 'P';

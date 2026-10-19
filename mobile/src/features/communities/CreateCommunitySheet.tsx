@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { messageOf } from '@/data/errors';
 import { useServices } from '@/services/ServicesProvider';
@@ -17,6 +18,7 @@ interface Props {
 }
 
 export function CreateCommunitySheet({ visible, onClose, onCreated }: Props) {
+  const insets = useSafeAreaInsets();
   const { repos } = useServices();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -63,7 +65,7 @@ export function CreateCommunitySheet({ visible, onClose, onCreated }: Props) {
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={close}>
       <View style={styles.backdrop}>
-        <View style={styles.sheet}>
+        <View style={[styles.sheet, { paddingBottom: 16 + Math.max(insets.bottom, 16) }]}>
           <Text accessibilityRole="header" style={styles.title}>
             Create community
           </Text>

@@ -20,6 +20,10 @@ import {
 
 import { ArScreen } from './ArScreen';
 
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 47, bottom: 0, left: 0, right: 0 }),
+}));
+
 const mockPush = jest.fn();
 const mockBack = jest.fn();
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush, back: mockBack }) }));
@@ -353,5 +357,13 @@ describe('ArScreen', () => {
       fireEvent.press(orb);
     });
     expect(mockPush).toHaveBeenCalledWith('/memory/memory-11');
+  });
+});
+
+describe('ArScreen back button inset', () => {
+  it('applies the top safe-area inset', async () => {
+    await setup();
+    const back = screen.getByLabelText('Back');
+    expect(StyleSheet.flatten(back.props.style).paddingTop).toBeGreaterThanOrEqual(47 + 8);
   });
 });

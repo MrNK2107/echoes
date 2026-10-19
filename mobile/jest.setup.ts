@@ -23,3 +23,6 @@ jest.mock('expo-audio', () => ({
   createAudioPlayer: jest.fn(),
   setAudioModeAsync: jest.fn(),
 }));
+
+// No SafeAreaProvider in unit tests; the library's mock supplies zero insets (tests override via jest.mock).
+jest.mock('react-native-safe-area-context', () => jest.requireActual('react-native-safe-area-context/jest/mock').default);

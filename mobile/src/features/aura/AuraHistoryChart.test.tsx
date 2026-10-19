@@ -1,8 +1,9 @@
 import { act, render, screen } from '@testing-library/react-native';
-import { processColor } from 'react-native';
+import { processColor, StyleSheet } from 'react-native';
 
 import type { AuraHistoryEntry, SentimentCategory } from '@/domain/types';
 import { testServices } from '@/device/fakes';
+import { colors } from '@/ui/theme';
 import { ServicesProvider } from '@/services/ServicesProvider';
 
 import { AuraHistoryChart } from './AuraHistoryChart';
@@ -32,7 +33,24 @@ async function setup() {
   return { handlers, unsubscribe, view };
 }
 
+const mockDims = { width: 400 };
+jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
+  __esModule: true,
+  default: () => ({ width: mockDims.width, height: 800, scale: 2, fontScale: 1 }),
+}));
+
 describe('AuraHistoryChart', () => {
+  it('sizes the chart 16:9 from the available width and uses secondary text for axis labels', async () => {
+    const { handlers } = await setup();
+    await act(async () =>
+      handlers.cb([entry('a', 'peaceful', 0.5, '#111111'), entry('b', 'positive', 0.9, '#222222')]),
+    );
+    expect(screen.getByTestId('aura-chart').props.height).toBe(Math.round((400 - 32) * 9 / 16));
+    const axis = screen.getByText('Oldest');
+    expect(StyleSheet.flatten(axis.props.style).color).toBe(colors.textSecondary);
+    expect(screen.getByText('Latest')).toBeOnTheScreen();
+  });
+
   it('is hidden with fewer than two entries', async () => {
     const { handlers } = await setup();
     expect(screen.queryByText('Aura history')).toBeNull();
