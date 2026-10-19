@@ -1,0 +1,30 @@
+# Plan 5 backlog (carried from Plan 3 final review)
+
+Launch-readiness items deferred from Plan 3's final whole-branch review. Plan 5's plan must cover or explicitly drop each one.
+
+## Safety and moderation
+- Report brigading: only count reporters with a verified email toward auto-hide (3 throwaway accounts can hide any memory today).
+- Community names, community descriptions and display names cannot be reported (App Store Guideline 1.2).
+- `visibility.js` lacks the own-read clause (no caller needs it yet).
+- Tags on time-release memories never notify after release.
+- Deterministic invite notification ids drop re-invites while the old notification exists (up to 90 days).
+
+## Privacy and scale
+- `publicProfiles` can be listed without a limit (scraping): require `request.query.limit <= 25` in rules and in client queries.
+- `institutions.adminUserIds` is world-readable and ties uids to an email domain; consider a self-read admins subcollection.
+- Hot documents: `time-<year>.memberCount`, `joinCommunity` increments on busy communities; consider distributed counters.
+- A deleted user's display name stays in other users' notification bodies.
+- Prod rules accept loopback media hosts; add a `--prod` build flag that drops them.
+- `rateLimits` and `notifications` TTL policies must be enabled in the console (fields exist since 21dabd1).
+- Legacy data backfill: `moderation: null`, legacy string `releaseDate`, Flutter member docs missing `userId`.
+
+## Client polish and accessibility
+- Standard `<Notice>` live-region component (Android live region + iOS announce).
+- `BlocksProvider` under `(app)/_layout` instead of per-screen `useBlocksState`.
+- Map top row crowding on 320dp / large fonts (Communities, bell, AR).
+- Aura history chart dark-mode contrast and aspect.
+- Partial registration (Auth account without users doc) repair step.
+- Old inbox items show blocked actors' names.
+- Debounce forced token refresh on institution screens.
+- Membership load error shows Join.
+- TransferSheet dedicated test for its remove label.

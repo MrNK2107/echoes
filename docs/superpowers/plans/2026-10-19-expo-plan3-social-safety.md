@@ -409,12 +409,36 @@ AuthRepository: sendEmailVerification(): Promise<void>; refreshUser(): Promise<{
 
 **Files:** Modify `status.md` (Plan 3 section on top), `README.md` (features, staff claim instructions: `firebase auth:import`/Admin SDK snippet to set `staff` custom claim; Terms/Guidelines/support env vars).
 
-- [ ] **Step 1: Run every gate** (all exit 0):
+- [x] **Step 1: Run every gate** (all exit 0):
   - `npm --prefix mobile test` three times, plus `--randomize`;
   - typecheck and lint;
   - `npm test --prefix functions`;
   - emulator contracts (`--only auth,firestore,storage,functions`);
   - rules tests (`--only firestore,storage`);
   - expo export for android and ios.
-- [ ] **Step 2: Update `status.md`** with the gate table, a manual Expo Go checklist for every Plan 3 flow, and known follow-ups (push delivery in Plan 4; staff review UI; Terms/Guidelines page content).
-- [ ] **Step 3: Commit** `docs: record Expo Plan 3 verification`.
+- [x] **Step 2: Update `status.md`** with the gate table, a manual Expo Go checklist for every Plan 3 flow, and known follow-ups (push delivery in Plan 4; staff review UI; Terms/Guidelines page content).
+- [x] **Step 3: Commit** `docs: record Expo Plan 3 verification`.
+
+---
+
+## Execution rulings (from the SDD ledger)
+
+- Ruling R19: Task 2 may add `moderation == null` to client visibility queries only if needed to keep the emulator suite green (minimal), otherwise Task 7 owns it — cost if wrong: none.
+- Ruling R20: move `useBlocks` (subscribeBlocks hook) and the blocked-author filter into Task 9 (People), so Task 11's "hides blocked authors" test can rely on it; Task 13 keeps block/unblock UI + BlockedScreen — cost if wrong: small task re-scope.
+- Ruling R21: Task 6 adds `functions/lib/profanity.json` (copy) + containsProfanity in functions/lib/domain.js, with a functions test asserting the copy equals fixtures/domain/profanity.json; Task 3 un-ignores functions/lib/*.js in functions/.gitignore — cost if wrong: a synced copy to maintain.
+- Ruling R22: strip only Latin combining diacritics U+0300–U+036F in both mirrors, with fixtures for an Indic name and a kana name; drop high-false-positive words (dick, cock, cum, fag) from the profanity list since it is warn-only — cost if wrong: accented non-Latin scripts outside that block keep marks (correct behaviour).
+- Ruling R23: Task 3 adds `onPublicProfileWritten` (Admin) that recomputes `displayNameLower = normalizeName(displayName)` and overwrites if mismatched — rules can't normalise — cost if wrong: one extra trigger write on profile edits.
+- Ruling R24: tag cap MAX_TAGS = 20 (rules + client + trigger; copy `You can tag up to 20 people.`); member docs include `userId` (functions write it) with a `fieldOverrides` COLLECTION_GROUP index on members.userId, and cleanupDeletedUser's members cleanup is fixed in Task 3 — cost if wrong: cap may feel low for big groups.
+- Ruling R25: auto communities (timeBased, geographic, institution) have ownerId 'system' (all human members incl. author are 'member'/'guardian' and may leave); on account deletion, thematic communities owned by the user transfer ownership to the earliest-joined remaining member (role owner), deleted only if no members remain; memories shared with a deleted community stay author-visible (acceptable) — cost if wrong: 'system' needs special-casing in UI (no owner name).
+- Ruling R26: leaving a community is sticky for auto-join — leaveCommunity arrayUnions the id into users/{uid}.leftCommunityIds; auto-join skips ids in that list; explicit joinCommunity arrayRemoves it — cost if wrong: one more user field.
+- Ruling R27: invite rate limit counts invitees: 200 invitees/day (consume N units per call) — cost if wrong: power users may hit it.
+- Ruling R28: Task 7 fix round runs after Task 8 lands (same files) and centralises callable invocation in one helper: callable timeout 15 s, offline (connectivity.isOnline() false) or deadline-exceeded/unavailable → TIMEOUT_ERROR, applied to ALL callables (Task 7 + Task 8); folds minor 2 (control chars in names) and 4 (markRead errors mapped). Profile-repair-on-session-start → Task 9 — cost if wrong: slight delay to Task 7 completion.
+- Ruling R29: accept Task 11's extra copy (type badges Place/Interest/Time/Institution, `Owned by {name}`, empty/error/not-found, invite sheet `Invite to {name}` / `Send invitations` / `Invitations sent.`) and add invite-context copy `You can invite up to 20 people at a time.` + `Remove invited person` via UserSearchField props in the final fix wave — cost if wrong: copy edits.
+- Ruling R30: replace mobile/metro.config.js watchFolders with a synced copy `mobile/src/domain/profanity.json` + Jest byte-equality test against fixtures/domain/profanity.json (same pattern as functions) — builds must not depend on files outside mobile/ — cost if wrong: one more synced copy.
+- Ruling R31: Final fix wave = client C1..C8 + backend B1..B9; everything else in the two findings files is deferred to Plan 5 (listed there) — public-launch blockers are moderation integrity, spam fan-out, data growth (TTL fields) and deletion reliability; the rest is hardening — cost if wrong: Plan 5 picks them up anyway.
+- Ruling R32: Tag-notification budget 100/author/day, silent skip — mirrors invite budget 200/day scale and avoids leaking limits to tagger; cost if wrong: a prolific legit author's tags beyond 100/day don't notify (inbox only, memory still tagged).
+- Final fix wave backend: DONE_WITH_CONCERNS 21dabd1 (functions 238). Ruling R33: tag budget consumed pre-notify (incl. blocked/pref-skipped/retries) accepted — conservative for spam; cost: slightly fewer legit notifications for very heavy taggers. Ruling R34: history change check on aura fields only accepted — history stores aura. Concern 1 (expireAt vs rules/client) → client wave verifies mapper tolerance; re-run rules + emulator in re-review gate.
+
+## Final review
+
+Final whole-branch review (backend + client, opus): Ready after fixes. Fix wave 21dabd1 (backend B1–B9: hidden-aware aggregates and recompute gating, tag-notification budget 100/day, idempotent invite notifications, TTL expireAt on rateLimits/notifications, transfer block-probe ordering, time-community year bound, cleanup timeout/retry, runbook) and 602a173 (client C1–C9: invite copy, invite double-submit guard, offline timeouts on name/block/unblock, inbox load error, mark-all-read guard, copy single-sourcing, a11y headers/labels). Re-review: Approved. Gates after the wave: functions 238, mobile 769/55, tsc and eslint clean, rules 44. Deferred to Plan 5: see docs/release-readiness.md and the Plan 5 backlog (report brigading, reporting community/display names, publicProfiles list limit, adminUserIds privacy, hot memberCount docs, names in others' inboxes after deletion, visibility.js own-read clause, time-release tag notifications, live-region Notice component, BlocksProvider, map top-row crowding, chart contrast, partial-registration repair).
