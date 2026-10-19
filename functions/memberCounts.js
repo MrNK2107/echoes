@@ -43,6 +43,7 @@ async function rollupHandler(
   const since = new Date(now.getTime() - LOOKBACK_MS);
   const startedAt = clock();
   const seen = new Set();
+  let recounted = 0;
   let cursor;
   for (;;) {
     let q = db
@@ -60,21 +61,26 @@ async function rollupHandler(
       ids.push(community);
     }
     for (const community of ids) {
+      if (clock() - startedAt >= budgetMs) {
+        logger.warn("Member count rollup budget spent; the next run continues", { recounted });
+        return { communities: recounted };
+      }
       const { count } = (await community.collection("members").count().get()).data();
       try {
         await community.update({ memberCount: count });
       } catch (error) {
         if (error?.code !== NOT_FOUND) throw error; // deleted meanwhile
       }
+      recounted += 1;
     }
     if (page.docs.length < pageSize) break;
     cursor = page.docs[page.docs.length - 1];
     if (clock() - startedAt >= budgetMs) {
-      logger.warn("Member count rollup budget spent; the next run continues", { recounted: seen.size });
+      logger.warn("Member count rollup budget spent; the next run continues", { recounted });
       break;
     }
   }
-  return { communities: seen.size };
+  return { communities: recounted };
 }
 
 const rollupMemberCounts = onSchedule(

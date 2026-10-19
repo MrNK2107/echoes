@@ -204,6 +204,9 @@ test("a year community deleted mid-join is a quiet no-op", async () => {
     };
     return b;
   };
-  // The shard write has no precondition on the community doc, so the join does not fail.
+  // The shard write has no precondition on the community doc, so the join commits; the trigger
+  // then notices the community is gone and removes the orphan membership and the user link.
   await createMemory(db);
+  assert.equal(db._get("communities/time-2024/members/alice"), undefined);
+  assert.deepEqual(db._get("users/alice").communityIds, []);
 });

@@ -174,14 +174,32 @@ test("rollup pages through shards and skips communities deleted meanwhile", asyn
   assert.equal(result.communities, 8);
 });
 
-test("rollup stops starting new pages once the budget is spent", async () => {
+// A clock that returns the given readings in order, then the last one forever.
+const readings = (...values) => {
+  let i = 0;
+  return () => values[Math.min(i++, values.length - 1)];
+};
+const budgetSeed = () => {
   const db = seed();
   for (let i = 0; i < 4; i++) {
     db._put(`communities/time-${2000 + i}`, { memberCount: 0 });
     db._put(`communities/time-${2000 + i}/members/a`, { userId: "a" });
     db._put(`communities/time-${2000 + i}/counterShards/0`, { count: 1, updatedAt: minutesAgo(i + 1) });
   }
-  let t = 0;
-  const result = await rollupHandler(db, now, { pageSize: 2, budgetMs: 10, clock: () => (t += 20) });
+  return db;
+};
+
+test("rollup stops starting new pages once the budget is spent", async () => {
+  const db = budgetSeed();
+  // start, two community checks, then the page check is over budget.
+  const result = await rollupHandler(db, now, { pageSize: 2, budgetMs: 10, clock: readings(0, 0, 0, 100) });
   assert.equal(result.communities, 2);
+});
+
+test("rollup checks the budget before each community recount, not only between pages", async () => {
+  const db = budgetSeed();
+  const result = await rollupHandler(db, now, { pageSize: 100, budgetMs: 10, clock: readings(0, 0, 100) });
+  assert.equal(result.communities, 1);
+  const counts = [0, 1, 2, 3].map((i) => db._get(`communities/time-${2000 + i}`).memberCount);
+  assert.equal(counts.filter((c) => c === 1).length, 1);
 });

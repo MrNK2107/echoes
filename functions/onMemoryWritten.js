@@ -181,6 +181,20 @@ async function ensureTimeCommunities(db, authorId, createdAt, now) {
     if (error?.code === NOT_FOUND) return; // the community or users doc vanished: nothing to join
     throw error;
   }
+  // The shard write has no precondition on the community doc: if it was deleted meanwhile the
+  // join committed as an orphan. Best-effort cleanup of the membership and the user's link.
+  if (!(await yearRef.get()).exists) {
+    logger.warn("Year community vanished mid-join; removing the orphan membership", {
+      communityId: year.id,
+      userId: authorId,
+    });
+    try {
+      await memberRef.delete();
+      if (userSnap.exists) await userRef.update({ communityIds: FieldValue.arrayRemove(year.id) });
+    } catch (error) {
+      if (error?.code !== NOT_FOUND) logger.error("Orphan join cleanup failed", { error });
+    }
+  }
 }
 
 // Creates `geo-<placeId>` (owner "system", R25) once the place has GEO_THRESHOLD public
