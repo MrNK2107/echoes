@@ -1,4 +1,3 @@
-import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -9,6 +8,8 @@ import { useBlocksState, withoutBlocked } from '@/features/safety/useBlocks';
 import { REQUEST_SENT, TransferSheet } from '@/features/transfers/TransferSheet';
 import { capitalise, formatCount } from '@/ui/format';
 import { FEED_LOAD_ERROR } from '@/ui/copy';
+import { Notice } from '@/ui/Notice';
+import { BackButton } from '@/ui/BackButton';
 import { colors } from '@/ui/theme';
 
 import { MemoryCard } from './MemoryCard';
@@ -16,7 +17,6 @@ import { usePlaceMemories } from './usePlaceMemories';
 
 
 export function PlaceScreen({ placeId }: { placeId: string }) {
-  const router = useRouter();
   const { session } = useSession();
   const { status, place, memories: visible } = usePlaceMemories(placeId);
   const [transferring, setTransferring] = useState(false);
@@ -33,9 +33,7 @@ export function PlaceScreen({ placeId }: { placeId: string }) {
   const names = useAuthorNames(authorIds);
 
   const back = (
-    <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => router.back()} style={styles.back}>
-      <Text style={styles.backText}>{'< Back'}</Text>
-    </Pressable>
+    <BackButton />
   );
 
   if (!place) {
@@ -56,7 +54,9 @@ export function PlaceScreen({ placeId }: { placeId: string }) {
     <View style={styles.container}>
       {back}
       <View style={styles.header}>
-        <Text style={styles.title}>{place.name}</Text>
+        <Text accessibilityRole="header" style={styles.title}>
+          {place.name}
+        </Text>
         <View style={styles.metaRow}>
           <View testID="aura-chip" style={[styles.chip, { backgroundColor: place.aura.colorHex }]}>
             <Text style={styles.chipText}>{capitalise(place.aura.dominantSentiment)}</Text>
@@ -76,11 +76,7 @@ export function PlaceScreen({ placeId }: { placeId: string }) {
             <Text style={styles.actionText}>Transfer custodianship</Text>
           </Pressable>
         ) : null}
-        {notice ? (
-          <Text role="status" style={styles.notice}>
-            {notice}
-          </Text>
-        ) : null}
+        <Notice message={notice} style={styles.notice} />
       </View>
       {listError ? <Text style={styles.message}>{FEED_LOAD_ERROR}</Text> : null}
       {!listReady && !listError ? <ActivityIndicator style={styles.spinner} color={colors.accent} /> : null}
@@ -110,8 +106,6 @@ export function PlaceScreen({ placeId }: { placeId: string }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  back: { paddingHorizontal: 16, paddingTop: 48, paddingBottom: 8 },
-  backText: { color: colors.accent, fontSize: 16 },
   header: { paddingHorizontal: 16, paddingBottom: 12 },
   title: { color: colors.text, fontSize: 24, fontWeight: '600' },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 8 },

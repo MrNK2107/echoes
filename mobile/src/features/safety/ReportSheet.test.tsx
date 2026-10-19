@@ -39,7 +39,7 @@ describe('ReportSheet', () => {
   it('keeps its actions above the bottom safe-area inset', async () => {
     await setup();
     const sheet = screen.getByRole('header', { name: 'Why are you reporting this?' }).parent!;
-    expect(StyleSheet.flatten(sheet.props.style).paddingBottom).toBeGreaterThanOrEqual(34);
+    expect(StyleSheet.flatten(sheet.props.style).paddingBottom).toBe(16 + 34);
   });
 
   it('offers the six reasons as a radio group, unchecked, with Send report disabled', async () => {

@@ -293,7 +293,8 @@ describe('AddMemoryScreen', () => {
         await jest.advanceTimersByTimeAsync(SUBMIT_TIMEOUT_MS);
       });
       expect(await screen.findByText("Saved offline. It will upload when you're back online.")).toBeOnTheScreen();
-      expect(screen.queryByRole('alert')).toBeNull();
+      // The only alert is the offline notice itself, not an error.
+      expect(screen.getAllByRole('alert')).toHaveLength(1);
       expect(mockReplace).not.toHaveBeenCalled();
       const queued = JSON.parse((await services.keyValue.get('outbox:user-demo'))!) as { memoryId: string }[];
       expect(queued.map((d) => d.memoryId)).toEqual([create.mock.calls[0]![0].id]);

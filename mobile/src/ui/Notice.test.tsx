@@ -28,6 +28,7 @@ describe('Notice', () => {
   it('renders nothing without a message', async () => {
     await render(<Notice message={null} />);
     expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.queryByText(/./)).toBeNull();
   });
 
   it('is a polite alert live region', async () => {
@@ -35,6 +36,18 @@ describe('Notice', () => {
     const el = screen.getByRole('alert');
     expect(el.props.accessibilityLiveRegion).toBe('polite');
     expect(screen.getByText('Saved')).toBeOnTheScreen();
+  });
+
+  it('keeps the live-region host mounted while empty and across the first message', async () => {
+    const view = await render(<Notice message={null} />);
+    const host = screen.getByTestId('notice-region');
+    expect(host.props.accessibilityLiveRegion).toBe('polite');
+    await view.rerender(<Notice message="Hello" />);
+    expect(screen.getByTestId('notice-region')).toBe(host);
+    expect(screen.getByText('Hello')).toBeOnTheScreen();
+    await view.rerender(<Notice message={null} />);
+    expect(screen.getByTestId('notice-region')).toBe(host);
+    expect(screen.queryByText('Hello')).toBeNull();
   });
 
   it('announces on iOS only when the message changes', async () => {
@@ -56,10 +69,10 @@ describe('Notice', () => {
     expect(announce).not.toHaveBeenCalled();
   });
 
-  it('has no raw accessibilityLiveRegion outside Notice', () => {
+  it('has no raw live-region, status or alert text outside Notice', () => {
     const root = join(__dirname, '..', '..');
     const offenders = [...sources(join(root, 'src')), ...sources(join(root, 'app'))].filter(
-      (f) => !f.endsWith('Notice.tsx') && readFileSync(f, 'utf8').includes('accessibilityLiveRegion'),
+      (f) => !f.endsWith('Notice.tsx') && /accessibilityLiveRegion|role="status"|accessibilityRole="alert"/.test(readFileSync(f, 'utf8')),
     );
     expect(offenders).toEqual([]);
   });

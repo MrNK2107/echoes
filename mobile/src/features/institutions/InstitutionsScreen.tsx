@@ -5,6 +5,8 @@ import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from '
 import type { Institution } from '@/domain/types';
 import { useSession } from '@/features/auth/useSession';
 import { useServices } from '@/services/ServicesProvider';
+import { Notice } from '@/ui/Notice';
+import { BackButton } from '@/ui/BackButton';
 import { colors } from '@/ui/theme';
 
 import { RegisterInstitutionSheet } from './RegisterInstitutionSheet';
@@ -54,9 +56,7 @@ export function InstitutionsScreen() {
 
   return (
     <View style={styles.container}>
-      <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => router.back()} style={styles.back}>
-        <Text style={styles.backText}>{'< Back'}</Text>
-      </Pressable>
+      <BackButton />
       <View style={styles.headerRow}>
         <Text accessibilityRole="header" style={styles.title}>
           Institutions
@@ -69,11 +69,7 @@ export function InstitutionsScreen() {
       </View>
 
       {list.status === 'loading' ? <ActivityIndicator style={styles.spinner} color={colors.accent} /> : null}
-      {list.status === 'error' ? (
-        <Text accessibilityRole="alert" style={styles.message}>
-          {"Couldn't load institutions."}
-        </Text>
-      ) : null}
+      <Notice tone="error" message={list.status === 'error' ? "Couldn't load institutions." : null} style={styles.message} />
       <FlatList
         contentContainerStyle={styles.list}
         data={list.institutions}
@@ -109,8 +105,6 @@ export function InstitutionsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  back: { paddingHorizontal: 16, paddingTop: 48, paddingBottom: 8 },
-  backText: { color: colors.accent, fontSize: 16 },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',

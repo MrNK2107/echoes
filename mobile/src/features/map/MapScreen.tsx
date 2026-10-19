@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Marker } from 'react-native-maps';
@@ -8,7 +9,8 @@ import type { Place } from '@/domain/types';
 import { InboxBell } from '@/features/inbox/InboxBell';
 import { OutboxBanner } from '@/features/outbox/OutboxBanner';
 import { formatCount, formatDistance } from '@/ui/format';
-import { AR_BUTTON, AR_BUTTON_LABEL, MAP_COMMUNITIES_SHORT, MAP_PROFILE_SHORT } from '@/ui/copy';
+import { AR_BUTTON, AR_BUTTON_LABEL } from '@/ui/copy';
+import { CommunitiesIcon, ProfileIcon } from '@/ui/icons';
 import { colors } from '@/ui/theme';
 
 import { useNearbyPlaces } from './useNearbyPlaces';
@@ -17,8 +19,9 @@ export function MapScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width, fontScale } = useWindowDimensions();
-  // Below 360dp or at large font scales the pills collapse to short labels; accessibility labels stay full.
-  const compact = width < 360 || fontScale > 1.3;
+  // Below 360 effective dp (width over font scale) the pills collapse to icons; accessibility labels stay full.
+  const compact = width / fontScale < 360;
+  const [rowHeight, setRowHeight] = useState(44);
   const { status, center, places, retry } = useNearbyPlaces();
   const openPlace = (id: string) => router.push(`/place/${id}`);
 
@@ -65,27 +68,31 @@ export function MapScreen() {
           />
         ))}
       </MapView>
-      <View testID="map-top-row" style={[styles.topRow, { top: insets.top + 8 }]}>
+      <View
+        testID="map-top-row"
+        onLayout={(e) => setRowHeight(e.nativeEvent.layout.height)}
+        style={[styles.topRow, { top: insets.top + 8 }]}
+      >
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Communities"
           onPress={() => router.push('/communities')}
           style={[styles.pill, compact && styles.pillCompact]}
         >
-          <Text style={styles.buttonText}>{compact ? MAP_COMMUNITIES_SHORT : 'Communities'}</Text>
+          {compact ? <CommunitiesIcon /> : <Text style={styles.buttonText}>Communities</Text>}
         </Pressable>
         <View style={styles.spacer} />
-        <InboxBell />
+        <InboxBell compact={compact} />
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Profile"
           onPress={() => router.push('/profile')}
           style={[styles.pill, compact && styles.pillCompact]}
         >
-          <Text style={styles.buttonText}>{compact ? MAP_PROFILE_SHORT : 'Profile'}</Text>
+          {compact ? <ProfileIcon /> : <Text style={styles.buttonText}>Profile</Text>}
         </Pressable>
       </View>
-      <View style={[styles.banner, { top: insets.top + 64 }]}>
+      <View testID="map-banner" style={[styles.banner, { top: insets.top + 8 + rowHeight + 8 }]}>
         <OutboxBanner />
       </View>
       <FlatList
@@ -109,11 +116,12 @@ export function MapScreen() {
         accessibilityRole="button"
         accessibilityLabel={AR_BUTTON_LABEL}
         onPress={() => router.push('/ar')}
-        style={styles.ar}
+        style={[styles.ar, { bottom: insets.bottom + 16 }]}
       >
         <Text style={styles.buttonText}>{AR_BUTTON}</Text>
       </Pressable>
-      <Pressable accessibilityRole="button" onPress={() => router.push('/add-memory')} style={styles.fab}>
+      <Pressable accessibilityRole="button" onPress={() => router.push('/add-memory')} style={[styles.fab, { bottom: insets.bottom + 16 }]}
+      >
         <Text style={styles.buttonText}>Add memory</Text>
       </Pressable>
     </View>
@@ -125,7 +133,16 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background, padding: 24 },
   map: { flex: 1 },
   banner: { position: 'absolute', left: 16, right: 16 },
-  topRow: { position: 'absolute', left: 16, right: 16, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  topRow: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 8,
+    rowGap: 8,
+  },
   spacer: { flex: 1 },
   pill: {
     minHeight: 44,
@@ -146,7 +163,7 @@ const styles = StyleSheet.create({
   ar: {
     position: 'absolute',
     left: 16,
-    bottom: 24,
+    
     minWidth: 56,
     minHeight: 48,
     alignItems: 'center',
@@ -158,7 +175,7 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     right: 16,
-    bottom: 24,
+    
     backgroundColor: colors.accent,
     paddingHorizontal: 20,
     paddingVertical: 14,

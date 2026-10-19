@@ -7,6 +7,7 @@ import type { AppNotification } from '@/data/types';
 import { useIncomingTransfers } from '@/features/transfers/useTransfers';
 import { useServices } from '@/services/ServicesProvider';
 import { INBOX_LOAD_ERROR } from '@/ui/copy';
+import { Notice } from '@/ui/Notice';
 import { colors } from '@/ui/theme';
 
 import { inboxDestination } from './routeForNotification';
@@ -92,22 +93,10 @@ export function InboxScreen() {
           </Pressable>
         ) : null}
       </View>
-      {error ? (
-        <Text accessibilityRole="alert" style={styles.error}>
-          {error}
-        </Text>
-      ) : null}
-      {loadFailed ? (
-        <Text accessibilityRole="alert" style={styles.error}>
-          {INBOX_LOAD_ERROR}
-        </Text>
-      ) : null}
+      <Notice tone="error" message={error} style={styles.error} />
+      <Notice tone="error" message={loadFailed ? INBOX_LOAD_ERROR : null} style={styles.error} />
       {!loaded && !loadFailed ? <ActivityIndicator testID="inbox-loading" color={colors.accent} /> : null}
-      {answerError ? (
-        <Text accessibilityRole="alert" style={styles.error}>
-          {answerError}
-        </Text>
-      ) : null}
+      <Notice tone="error" message={answerError} style={styles.error} />
       <FlatList
         data={items}
         keyExtractor={(n) => n.id}

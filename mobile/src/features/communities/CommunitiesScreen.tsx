@@ -5,6 +5,8 @@ import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from '
 import type { Community } from '@/domain/types';
 import { useSession } from '@/features/auth/useSession';
 import { useServices } from '@/services/ServicesProvider';
+import { Notice } from '@/ui/Notice';
+import { BackButton } from '@/ui/BackButton';
 import { colors } from '@/ui/theme';
 
 import { CreateCommunitySheet } from './CreateCommunitySheet';
@@ -53,9 +55,7 @@ export function CommunitiesScreen() {
 
   return (
     <View style={styles.container}>
-      <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => router.back()} style={styles.back}>
-        <Text style={styles.backText}>{'< Back'}</Text>
-      </Pressable>
+      <BackButton />
       <View style={styles.headerRow}>
         <Text accessibilityRole="header" style={styles.title}>
           Communities
@@ -80,11 +80,7 @@ export function CommunitiesScreen() {
       </View>
 
       {status === 'loading' ? <ActivityIndicator style={styles.spinner} color={colors.accent} /> : null}
-      {status === 'error' ? (
-        <Text accessibilityRole="alert" style={styles.message}>
-          {"Couldn't load communities."}
-        </Text>
-      ) : null}
+      <Notice tone="error" message={status === 'error' ? "Couldn't load communities." : null} style={styles.message} />
       <FlatList
         contentContainerStyle={styles.list}
         data={communities}
@@ -133,8 +129,6 @@ export function CommunitiesScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  back: { paddingHorizontal: 16, paddingTop: 48, paddingBottom: 8 },
-  backText: { color: colors.accent, fontSize: 16 },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',

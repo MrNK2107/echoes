@@ -7,6 +7,7 @@ import { useSession } from '@/features/auth/useSession';
 import { useOutboxContext } from '@/features/outbox/useOutbox';
 import { useServices } from '@/services/ServicesProvider';
 import { LOCATION_FAILED } from '@/ui/copy';
+import { Notice } from '@/ui/Notice';
 import { colors } from '@/ui/theme';
 
 import { PrivacyPicker, type PrivacyChoice } from './PrivacyPicker';
@@ -192,11 +193,7 @@ export function AddMemoryScreen() {
 
       <VoiceRecorder onChange={(r) => setAudioUri(r ? r.uri : null)} />
 
-      {queued ? (
-        <Text role="status" style={styles.notice}>
-          {QUEUED_COPY}
-        </Text>
-      ) : null}
+      <Notice message={queued ? QUEUED_COPY : null} style={styles.notice} />
       {error ? (
         <Text role="alert" style={styles.error}>
           {error}

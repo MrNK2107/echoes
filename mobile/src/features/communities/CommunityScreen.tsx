@@ -1,4 +1,3 @@
-import { useRouter } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -20,6 +19,7 @@ import {
   RETRY_LABEL,
 } from '@/ui/copy';
 import { Notice } from '@/ui/Notice';
+import { BackButton } from '@/ui/BackButton';
 import { colors } from '@/ui/theme';
 
 import { communityTypeLabel, formatMembers, hasHumanOwner } from './labels';
@@ -29,7 +29,6 @@ const FEED_EMPTY = 'No memories shared with this community yet.';
 const INVITES_SENT = 'Invitations sent.';
 
 export function CommunityScreen({ communityId }: { communityId: string }) {
-  const router = useRouter();
   const { repos } = useServices();
   const { session } = useSession();
   const { status, community, membership, membershipError, retryMembership, feed } = useCommunity(communityId);
@@ -59,9 +58,7 @@ export function CommunityScreen({ communityId }: { communityId: string }) {
   const ownerNames = useAuthorNames(ownerIds);
 
   const back = (
-    <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => router.back()} style={styles.back}>
-      <Text style={styles.backText}>{'< Back'}</Text>
-    </Pressable>
+    <BackButton />
   );
 
   if (!community) {
@@ -192,11 +189,9 @@ export function CommunityScreen({ communityId }: { communityId: string }) {
           ) : null}
         </View>
       ) : null}
+      <Notice tone="error" message={membershipError ? MEMBERSHIP_ERROR : null} style={styles.error} />
       {membershipError ? (
         <View style={styles.actions}>
-          <Text accessibilityRole="alert" style={styles.error}>
-            {MEMBERSHIP_ERROR}
-          </Text>
           <Pressable accessibilityRole="button" onPress={retryMembership} style={styles.secondary}>
             <Text style={styles.secondaryText}>{RETRY_LABEL}</Text>
           </Pressable>
@@ -216,11 +211,7 @@ export function CommunityScreen({ communityId }: { communityId: string }) {
           </Pressable>
         </View>
       ) : null}
-      {error ? (
-        <Text accessibilityRole="alert" style={styles.error}>
-          {error}
-        </Text>
-      ) : null}
+      <Notice tone="error" message={error} style={styles.error} />
       <Notice message={notice} style={styles.notice} />
       {feedError ? <Text style={styles.message}>{FEED_LOAD_ERROR}</Text> : null}
       {!feedReady && !feedError && !membershipError ? <ActivityIndicator style={styles.spinner} color={colors.accent} /> : null}
@@ -262,11 +253,7 @@ export function CommunityScreen({ communityId }: { communityId: string }) {
               capMessage={INVITE_CAP_ERROR}
               removeFallbackLabel={REMOVE_INVITED_LABEL}
             />
-            {inviteError ? (
-              <Text accessibilityRole="alert" style={styles.error}>
-                {inviteError}
-              </Text>
-            ) : null}
+            <Notice tone="error" message={inviteError} style={styles.error} />
             <View style={styles.sheetActions}>
               <Pressable
                 accessibilityRole="button"
@@ -297,8 +284,6 @@ export function CommunityScreen({ communityId }: { communityId: string }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  back: { paddingHorizontal: 16, paddingTop: 48, paddingBottom: 8 },
-  backText: { color: colors.accent, fontSize: 16 },
   header: { paddingBottom: 12 },
   title: { color: colors.text, fontSize: 24, fontWeight: '600' },
   description: { color: colors.text, fontSize: 16, marginTop: 6 },
@@ -313,7 +298,7 @@ const styles = StyleSheet.create({
   secondaryText: { color: colors.accent, fontWeight: '600' },
   disabled: { opacity: 0.5 },
   error: { color: colors.danger, marginTop: 8 },
-  notice: { marginTop: 8, padding: 0, textAlign: 'left' },
+  notice: { marginTop: 8 },
   list: { padding: 16 },
   spinner: { marginTop: 16 },
   message: { color: colors.textSecondary, textAlign: 'center', padding: 16 },

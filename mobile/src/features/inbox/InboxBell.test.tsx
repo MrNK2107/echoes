@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 
 import { BlocksProvider } from '@/features/safety/BlocksProvider';
 import { ServicesProvider } from '@/services/ServicesProvider';
@@ -10,7 +11,7 @@ import { inboxServices, note } from './testInbox';
 const mockPush = jest.fn();
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush }) }));
 
-async function setup(unread: number, read = 0) {
+async function setup(unread: number, read = 0, compact = false) {
   const list = Array.from({ length: unread + read }, (_, i) =>
     note({ id: `n${i}`, readAt: i < unread ? null : new Date() }),
   );
@@ -18,7 +19,7 @@ async function setup(unread: number, read = 0) {
   await render(
     <ServicesProvider services={s.services}>
       <BlocksProvider>
-        <InboxBell />
+        <InboxBell compact={compact} />
       </BlocksProvider>
     </ServicesProvider>,
   );
@@ -27,6 +28,23 @@ async function setup(unread: number, read = 0) {
 
 describe('InboxBell', () => {
   beforeEach(() => mockPush.mockClear());
+
+  it('is a 44dp touch target', async () => {
+    await setup(0);
+    const style = StyleSheet.flatten((await screen.findByLabelText('Notifications')).props.style);
+    expect(style).toMatchObject({ minHeight: 44, minWidth: 44, justifyContent: 'center', borderRadius: 22 });
+  });
+
+  it('shows the label normally and only the icon when compact', async () => {
+    await setup(0);
+    expect(await screen.findByText('Alerts')).toBeOnTheScreen();
+    expect(screen.queryByTestId('icon-bell')).toBeNull();
+    await screen.unmount();
+    await setup(0, 0, true);
+    expect(await screen.findByTestId('icon-bell')).toBeOnTheScreen();
+    expect(screen.queryByText('Alerts')).toBeNull();
+    expect(screen.getByLabelText('Notifications')).toBeOnTheScreen();
+  });
 
   it('shows no badge when nothing is unread', async () => {
     await setup(0, 2);

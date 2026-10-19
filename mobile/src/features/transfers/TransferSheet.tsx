@@ -7,6 +7,7 @@ import type { Place } from '@/domain/types';
 import { UserSearchField } from '@/features/people/UserSearchField';
 import { useServices } from '@/services/ServicesProvider';
 import { REMOVE_PERSON_LABEL } from '@/ui/copy';
+import { Notice } from '@/ui/Notice';
 import { colors } from '@/ui/theme';
 
 export const REQUEST_SENT = 'Request sent.';
@@ -79,11 +80,7 @@ export function TransferSheet({ place, visible, onClose, onSent }: Props) {
             }}
             excludeIds={place.custodianIds}
           />
-          {error ? (
-            <Text accessibilityRole="alert" style={styles.error}>
-              {error}
-            </Text>
-          ) : null}
+          <Notice tone="error" message={error} style={styles.error} />
           <View style={styles.actions}>
             <Pressable
               accessibilityRole="button"

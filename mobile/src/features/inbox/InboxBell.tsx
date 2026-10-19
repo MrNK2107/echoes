@@ -1,12 +1,13 @@
 import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { BellIcon } from '@/ui/icons';
 import { colors } from '@/ui/theme';
 
 import { useInbox } from './useInbox';
 
 /** Header button for the inbox; the badge shows the unread count, capped at 9+. */
-export function InboxBell() {
+export function InboxBell({ compact = false }: { compact?: boolean }) {
   const router = useRouter();
   const { unread } = useInbox();
   return (
@@ -17,7 +18,7 @@ export function InboxBell() {
       onPress={() => router.push('/notifications' as never)}
       style={styles.bell}
     >
-      <Text style={styles.text}>Alerts</Text>
+      {compact ? <BellIcon /> : <Text style={styles.text}>Alerts</Text>}
       {unread > 0 ? (
         <View testID="inbox-badge" style={styles.badge}>
           <Text style={styles.badgeText}>{unread > 9 ? '9+' : String(unread)}</Text>
@@ -28,7 +29,15 @@ export function InboxBell() {
 }
 
 const styles = StyleSheet.create({
-  bell: { backgroundColor: colors.accent, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
+  bell: {
+    backgroundColor: colors.accent,
+    minHeight: 44,
+    minWidth: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    borderRadius: 22,
+  },
   text: { color: colors.background, fontWeight: '600' },
   badge: {
     position: 'absolute',

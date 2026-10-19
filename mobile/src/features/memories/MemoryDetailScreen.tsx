@@ -10,6 +10,8 @@ import { useBlocksState } from '@/features/safety/useBlocks';
 import { useServices } from '@/services/ServicesProvider';
 import { privacyLabel } from '@/ui/privacyLabel';
 import { HIDDEN_BADGE, REPORT_THANKS, reportProfileLabel, THIS_PERSON } from '@/ui/copy';
+import { Notice } from '@/ui/Notice';
+import { BackButton } from '@/ui/BackButton';
 import { colors } from '@/ui/theme';
 
 import { TimeoutError, withTimeout } from './submitMemory';
@@ -44,9 +46,7 @@ export function MemoryDetailScreen({ memoryId }: { memoryId: string }) {
   );
 
   const back = (
-    <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => router.back()} style={styles.back}>
-      <Text style={styles.backText}>{'< Back'}</Text>
-    </Pressable>
+    <BackButton />
   );
 
   // ADR-0008: memories by people you blocked are hidden everywhere, including by direct link.
@@ -146,16 +146,8 @@ export function MemoryDetailScreen({ memoryId }: { memoryId: string }) {
             <Text style={styles.hiddenBadgeText}>{HIDDEN_BADGE}</Text>
           </View>
         ) : null}
-        {notice ? (
-          <Text role="status" style={styles.notice}>
-            {notice}
-          </Text>
-        ) : null}
-        {error ? (
-          <Text accessibilityRole="alert" style={styles.error}>
-            {error}
-          </Text>
-        ) : null}
+        <Notice message={notice} style={styles.notice} />
+        <Notice tone="error" message={error} style={styles.error} />
         {isAuthor ? (
           <View style={styles.actions}>
             <Pressable
@@ -226,8 +218,6 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   message: { color: colors.textSecondary, textAlign: 'center', padding: 16 },
-  back: { paddingHorizontal: 16, paddingTop: 48, paddingBottom: 8 },
-  backText: { color: colors.accent, fontSize: 16 },
   content: { padding: 16 },
   image: { width: '100%', height: 240, borderRadius: 12, marginBottom: 16 },
   author: { color: colors.gold, fontSize: 14, fontWeight: '600', marginBottom: 6 },

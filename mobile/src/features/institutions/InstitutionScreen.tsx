@@ -1,4 +1,4 @@
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, AppState, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
@@ -7,6 +7,8 @@ import type { Institution } from '@/domain/types';
 import { useSession } from '@/features/auth/useSession';
 import { useServices } from '@/services/ServicesProvider';
 import { LOCATION_FAILED, NAME_REQUIRED } from '@/ui/copy';
+import { Notice } from '@/ui/Notice';
+import { BackButton } from '@/ui/BackButton';
 import { colors } from '@/ui/theme';
 
 const SUB_ZONE_NAME_MAX = 60;
@@ -34,7 +36,6 @@ const keepOrFail = (next: LoadState | null) => (s: LoadState): LoadState =>
   next ?? (s.status === 'ready' ? s : { status: 'error', institution: null });
 
 export function InstitutionScreen({ institutionId }: { institutionId: string }) {
-  const router = useRouter();
   const services = useServices();
   const { repos } = services;
   const { session } = useSession();
@@ -131,9 +132,7 @@ export function InstitutionScreen({ institutionId }: { institutionId: string }) 
   };
 
   const back = (
-    <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => router.back()} style={styles.back}>
-      <Text style={styles.backText}>{'< Back'}</Text>
-    </Pressable>
+    <BackButton />
   );
 
   if (state.status !== 'ready') {
@@ -221,16 +220,8 @@ export function InstitutionScreen({ institutionId }: { institutionId: string }) 
         <Text style={styles.label}>Approved email domains</Text>
         <Text style={styles.meta}>{institution.allowedEmailDomains.join(', ')}</Text>
 
-        {notice ? (
-          <Text role="status" style={styles.notice}>
-            {notice}
-          </Text>
-        ) : null}
-        {error ? (
-          <Text accessibilityRole="alert" style={styles.error}>
-            {error}
-          </Text>
-        ) : null}
+        <Notice message={notice} style={styles.notice} />
+        <Notice tone="error" message={error} style={styles.error} />
 
         {isAdmin ? null : (
           <>
@@ -245,9 +236,7 @@ export function InstitutionScreen({ institutionId }: { institutionId: string }) 
             </Pressable>
             {verifyPrompt ? (
               <View style={styles.prompt}>
-                <Text accessibilityRole="alert" style={styles.error}>
-                  {VERIFY_EMAIL_FIRST}
-                </Text>
+                <Notice tone="error" message={VERIFY_EMAIL_FIRST} style={styles.error} />
                 <Pressable
                   accessibilityRole="button"
                   accessibilityState={{ disabled: busy }}
@@ -306,8 +295,6 @@ export function InstitutionScreen({ institutionId }: { institutionId: string }) 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  back: { paddingHorizontal: 16, paddingTop: 48, paddingBottom: 8 },
-  backText: { color: colors.accent, fontSize: 16 },
   content: { padding: 16, paddingBottom: 48 },
   title: { color: colors.text, fontSize: 24, fontWeight: '600', marginBottom: 8 },
   label: { color: colors.textSecondary, marginTop: 8, marginBottom: 4 },

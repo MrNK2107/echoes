@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { processColor, StyleSheet } from 'react-native';
 
 import type { AuraHistoryEntry, SentimentCategory } from '@/domain/types';
@@ -33,19 +33,32 @@ async function setup() {
   return { handlers, unsubscribe, view };
 }
 
-const mockDims = { width: 400 };
-jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
-  __esModule: true,
-  default: () => ({ width: mockDims.width, height: 800, scale: 2, fontScale: 1 }),
-}));
+const layout = (width: number) =>
+  act(async () => {
+    fireEvent(screen.getByTestId('aura-chart-root'), 'layout', { nativeEvent: { layout: { x: 0, y: 0, width, height: 0 } } });
+  });
 
 describe('AuraHistoryChart', () => {
+  it('renders nothing until its width is measured', async () => {
+    const { handlers } = await setup();
+    await act(async () =>
+      handlers.cb([entry('a', 'peaceful', 0.5, '#111111'), entry('b', 'positive', 0.9, '#222222')]),
+    );
+    expect(screen.queryByTestId('aura-chart')).toBeNull();
+    expect(screen.queryByText('Aura history')).toBeNull();
+    await layout(300);
+    expect(screen.getByTestId('aura-chart')).toBeOnTheScreen();
+  });
+
   it('sizes the chart 16:9 from the available width and uses secondary text for axis labels', async () => {
     const { handlers } = await setup();
     await act(async () =>
       handlers.cb([entry('a', 'peaceful', 0.5, '#111111'), entry('b', 'positive', 0.9, '#222222')]),
     );
-    expect(screen.getByTestId('aura-chart').props.height).toBe(Math.round((400 - 32) * 9 / 16));
+    await layout(400);
+    expect(screen.getByTestId('aura-chart').props.height).toBe(Math.round((400 * 9) / 16));
+    await layout(333);
+    expect(screen.getByTestId('aura-chart').props.height).toBe(Math.round((333 * 9) / 16));
     const axis = screen.getByText('Oldest');
     expect(StyleSheet.flatten(axis.props.style).color).toBe(colors.textSecondary);
     expect(screen.getByText('Latest')).toBeOnTheScreen();
@@ -68,6 +81,7 @@ describe('AuraHistoryChart', () => {
         entry('c', 'heavy', 0.5, '#333333'),
       ]),
     );
+    await layout(300);
     expect(screen.getByText('Aura history')).toBeOnTheScreen();
     const bars = screen.getAllByTestId(/^aura-bar-/);
     expect(bars.map((b) => b.props.testID)).toEqual(['aura-bar-0', 'aura-bar-1', 'aura-bar-2']);
@@ -83,6 +97,7 @@ describe('AuraHistoryChart', () => {
     await act(async () =>
       handlers.cb([entry('a', 'peaceful', 0.2, '#111111'), entry('b', 'positive', 0.4, '#222222'), entry('c', 'heavy', 0.6, '#333333')]),
     );
+    await layout(300);
     expect(screen.getByLabelText('Aura history: Peaceful to Heavy over 3 updates')).toBeOnTheScreen();
   });
 
@@ -91,6 +106,7 @@ describe('AuraHistoryChart', () => {
     await act(async () =>
       handlers.cb([entry('a', 'peaceful', 0.2, '#111111'), entry('b', 'positive', 0.4, '#222222')]),
     );
+    await layout(300);
     await act(async () => handlers.onError?.(new Error('denied')));
     expect(screen.queryByText('Aura history')).toBeNull();
     await view.unmount();

@@ -118,7 +118,9 @@ function EditForm({ memory }: { memory: Memory }) {
       >
         <Text style={styles.backText}>{'< Back'}</Text>
       </Pressable>
-      <Text style={styles.title}>Edit memory</Text>
+      <Text accessibilityRole="header" style={styles.title}>
+        Edit memory
+      </Text>
       <TextInput
         testID="text-input"
         style={styles.input}

@@ -5,6 +5,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { GENERIC_ERROR, INCORRECT_PASSWORD } from '@/data/errors';
 import { useOutboxContext } from '@/features/outbox/useOutbox';
 import { useServices } from '@/services/ServicesProvider';
+import { Notice } from '@/ui/Notice';
 import { colors } from '@/ui/theme';
 
 export function DeleteAccountScreen() {
@@ -68,11 +69,7 @@ export function DeleteAccountScreen() {
         editable={!busy}
         style={styles.input}
       />
-      {error ? (
-        <Text accessibilityRole="alert" style={styles.error}>
-          {error}
-        </Text>
-      ) : null}
+      <Notice tone="error" message={error} style={styles.error} />
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Delete permanently"

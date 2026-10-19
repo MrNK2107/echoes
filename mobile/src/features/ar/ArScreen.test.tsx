@@ -324,7 +324,7 @@ describe('ArScreen', () => {
 
   it('announces the mode notice politely', async () => {
     await setup();
-    const notice = await screen.findByText(AR_UNSUPPORTED);
+    const notice = (await screen.findByText(AR_UNSUPPORTED)).parent!;
     expect(notice.props.accessibilityLiveRegion).toBe('polite');
     expect(notice.props.accessibilityRole).toBe('alert');
   });
@@ -363,7 +363,6 @@ describe('ArScreen', () => {
 describe('ArScreen back button inset', () => {
   it('applies the top safe-area inset', async () => {
     await setup();
-    const back = screen.getByLabelText('Back');
-    expect(StyleSheet.flatten(back.props.style).paddingTop).toBeGreaterThanOrEqual(47 + 8);
+    expect(StyleSheet.flatten(screen.getByTestId('back-wrapper').props.style).paddingTop).toBe(47);
   });
 });

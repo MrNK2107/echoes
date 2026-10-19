@@ -58,6 +58,11 @@ describe('EditMemoryScreen', () => {
     expect(screen.getByTestId('privacy-public')).toBeSelected();
   });
 
+  it('marks the title as a header', async () => {
+    await setup();
+    expect(await screen.findByRole('header', { name: 'Edit memory' })).toBeOnTheScreen();
+  });
+
   it('saves updated text and goes back', async () => {
     const services = await setup();
     await fireEvent.changeText(await screen.findByTestId('text-input'), '  Edited words  ');

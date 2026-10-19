@@ -33,6 +33,11 @@ const press = (id: string) =>
   });
 
 describe('SignInScreen', () => {
+  it('marks the title as a header', async () => {
+    await setup();
+    expect(screen.getByRole('header', { name: 'ECHOES' })).toBeOnTheScreen();
+  });
+
   it('shows required errors on empty submit', async () => {
     await setup();
     await press('submit-button');

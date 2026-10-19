@@ -30,6 +30,11 @@ async function setup(id: string, services: Services = testServices()) {
 }
 
 describe('PlaceScreen', () => {
+  it('marks the place name as a header', async () => {
+    await setup('place-2');
+    expect(await screen.findByRole('header', { name: 'Vidhana Soudha' })).toBeOnTheScreen();
+  });
+
   it('shows public and own private memories newest first with a Private badge', async () => {
     await setup('place-2');
     expect(await screen.findByText('Vidhana Soudha')).toBeOnTheScreen();
@@ -244,6 +249,9 @@ describe('PlaceScreen', () => {
       return () => {};
     };
     await setup('place-2', services);
+    await act(async () => {
+      fireEvent(screen.getByTestId('aura-chart-root'), 'layout', { nativeEvent: { layout: { x: 0, y: 0, width: 300, height: 0 } } });
+    });
     expect(await screen.findByText('Aura history')).toBeOnTheScreen();
     expect(screen.getAllByTestId(/^aura-bar-/)).toHaveLength(2);
   });

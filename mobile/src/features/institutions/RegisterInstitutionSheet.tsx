@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { messageOf } from '@/data/errors';
 import { useServices } from '@/services/ServicesProvider';
 import { NAME_REQUIRED } from '@/ui/copy';
+import { Notice } from '@/ui/Notice';
 import { colors } from '@/ui/theme';
 
 /** functions/institutions.js limits. */
@@ -108,11 +109,7 @@ export function RegisterInstitutionSheet({ visible, onClose, onCreated }: Props)
           />
           {submitted && domainsMissing ? <Text style={styles.error}>Add at least one email domain.</Text> : null}
 
-          {error ? (
-            <Text accessibilityRole="alert" style={styles.error}>
-              {error}
-            </Text>
-          ) : null}
+          <Notice tone="error" message={error} style={styles.error} />
 
           <View style={styles.actions}>
             <Pressable

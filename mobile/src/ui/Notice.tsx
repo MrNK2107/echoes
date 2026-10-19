@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { AccessibilityInfo, Platform, StyleSheet, Text, type StyleProp, type TextStyle } from 'react-native';
+import { AccessibilityInfo, Platform, StyleSheet, Text, View, type StyleProp, type TextStyle } from 'react-native';
 
 import { colors } from './theme';
 
@@ -20,20 +20,21 @@ export function Notice({
     if (message && Platform.OS === 'ios') AccessibilityInfo.announceForAccessibility(message);
   }, [message]);
 
-  if (!message) return null;
+  // The host stays mounted so assistive tech registers the live region before text arrives.
   return (
-    <Text
-      accessibilityRole="alert"
+    <View
+      testID="notice-region"
       accessibilityLiveRegion="polite"
-      style={[styles.base, tone === 'error' ? styles.error : styles.info, style]}
+      accessibilityRole={message ? 'alert' : undefined}
+      accessible={!!message}
     >
-      {message}
-    </Text>
+      {message ? <Text style={[styles.base, tone === 'error' ? styles.error : styles.info, style]}>{message}</Text> : null}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  base: { textAlign: 'center', padding: 16 },
+  base: {},
   info: { color: colors.textSecondary },
   error: { color: colors.danger },
 });

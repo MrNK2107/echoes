@@ -93,6 +93,21 @@ describe('separateOrbs', () => {
     expect(cluster).toEqual(copy);
   });
 
+  it('keeps points inside the disc when bounds are given', () => {
+    const disc = { cx: 100, cy: 100, r: 60 };
+    const edge = [
+      { x: 160, y: 100 },
+      { x: 161, y: 100 },
+      { x: 159, y: 102 },
+      { x: 100, y: 40 },
+      { x: 100, y: 41 },
+    ];
+    const out = separateOrbs(edge, 12, disc);
+    for (const p of out) expect(Math.hypot(p.x - disc.cx, p.y - disc.cy)).toBeLessThanOrEqual(disc.r + 1e-6);
+    for (let i = 0; i < out.length; i++)
+      for (let j = i + 1; j < out.length; j++) expect(dist(out[i]!, out[j]!)).toBeGreaterThanOrEqual(12 - 1e-6);
+  });
+
   it('keeps already separated points and honours minDistance', () => {
     const far = [{ x: 0, y: 0 }, { x: 50, y: 0 }];
     expect(separateOrbs(far)).toEqual(far);

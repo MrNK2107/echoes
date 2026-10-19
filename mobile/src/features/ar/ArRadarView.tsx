@@ -28,7 +28,11 @@ function ArRadarViewBase({
   const c = size / 2;
   const radius = c - MAX_ORB_EXTENT;
   const at = (distance: number, bearing: number) => plotPosition(size, distance, bearing, heading);
-  const positions = separateOrbs(places.map((p) => at(p.distanceMeters, p.bearingDegrees)));
+  const positions = separateOrbs(
+    places.map((p) => at(p.distanceMeters, p.bearingDegrees)),
+    12,
+    { cx: c, cy: c, r: radius },
+  );
   const placed = places.map((p, i) => ({ p, pos: positions[i]!, aura: auraPixels(p.auraRadius) }));
   const showRingLabels = size >= 280;
 

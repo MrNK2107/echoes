@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Rect } from 'react-native-svg';
 
 import type { AuraHistoryEntry } from '@/domain/types';
@@ -14,8 +14,7 @@ const GAP = 4;
 
 export function AuraHistoryChart({ placeId }: { placeId: string }) {
   const { repos } = useServices();
-  const { width } = useWindowDimensions();
-  const chartHeight = Math.round((Math.min(width, 520) - 32) * (9 / 16));
+  const [width, setWidth] = useState(0);
   const [entries, setEntries] = useState<AuraHistoryEntry[]>([]);
 
   useEffect(() => {
@@ -26,14 +25,20 @@ export function AuraHistoryChart({ placeId }: { placeId: string }) {
     );
   }, [repos, placeId]);
 
-  if (entries.length < 2) return null;
+  const root = (children: React.ReactNode) => (
+    <View testID="aura-chart-root" onLayout={(e) => setWidth(e.nativeEvent.layout.width)}>
+      {children}
+    </View>
+  );
+  if (entries.length < 2 || width <= 0) return root(null);
+  const chartHeight = Math.round((width * 9) / 16);
 
   const first = entries[0]!;
   const last = entries[entries.length - 1]!;
   const barW = (VIEW_W - GAP * (entries.length - 1)) / entries.length;
   const label = `Aura history: ${capitalise(first.aura.dominantSentiment)} to ${capitalise(last.aura.dominantSentiment)} over ${entries.length} updates`;
 
-  return (
+  return root(
     <View style={styles.container}>
       <Text style={styles.heading}>Aura history</Text>
       <View accessible accessibilityRole="image" accessibilityLabel={label}>

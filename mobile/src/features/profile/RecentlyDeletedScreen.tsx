@@ -1,4 +1,3 @@
-import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -8,6 +7,8 @@ import type { Memory } from '@/domain/types';
 import { useSession } from '@/features/auth/useSession';
 import { TimeoutError, withTimeout } from '@/features/memories/submitMemory';
 import { useServices } from '@/services/ServicesProvider';
+import { Notice } from '@/ui/Notice';
+import { BackButton } from '@/ui/BackButton';
 import { colors } from '@/ui/theme';
 
 function restoreErrorCopy(e: unknown): string {
@@ -16,7 +17,6 @@ function restoreErrorCopy(e: unknown): string {
 }
 
 export function RecentlyDeletedScreen() {
-  const router = useRouter();
   const { repos, now } = useServices();
   const { session } = useSession();
   const uid = session?.userId;
@@ -69,17 +69,11 @@ export function RecentlyDeletedScreen() {
 
   return (
     <View style={styles.container}>
-      <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => router.back()} style={styles.back}>
-        <Text style={styles.backText}>{'< Back'}</Text>
-      </Pressable>
+      <BackButton />
       <Text accessibilityRole="header" style={styles.title}>
         Recently deleted
       </Text>
-      {error ? (
-        <Text accessibilityRole="alert" style={styles.error}>
-          {error}
-        </Text>
-      ) : null}
+      <Notice tone="error" message={error} style={styles.error} />
       <FlatList
         data={visible}
         keyExtractor={(m) => m.id}
@@ -119,8 +113,6 @@ export function RecentlyDeletedScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  back: { paddingHorizontal: 16, paddingTop: 48, paddingBottom: 8 },
-  backText: { color: colors.accent, fontSize: 16 },
   title: {
     color: colors.text,
     fontSize: 24,

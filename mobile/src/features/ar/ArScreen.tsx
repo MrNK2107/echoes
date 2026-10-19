@@ -1,7 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useServices } from '@/services/ServicesProvider';
 import {
@@ -15,6 +14,7 @@ import {
   AR_UNSUPPORTED,
 } from '@/ui/copy';
 import { Notice } from '@/ui/Notice';
+import { BackButton } from '@/ui/BackButton';
 import { colors } from '@/ui/theme';
 
 import { ArRadarView } from './ArRadarView';
@@ -24,7 +24,6 @@ type Capability = 'checking' | 'unsupported' | 'denied' | 'ready';
 
 export function ArScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const { arRenderer } = useServices();
   const scene = useArScene();
   const [capability, setCapability] = useState<Capability>('checking');
@@ -75,14 +74,7 @@ export function ArScreen() {
           : null;
 
   const back = (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel="Back"
-      onPress={() => router.back()}
-      style={[styles.back, { paddingTop: insets.top + 8 }]}
-    >
-      <Text style={styles.backText}>{'< Back'}</Text>
-    </Pressable>
+    <BackButton />
   );
 
   let body;
@@ -112,7 +104,7 @@ export function ArScreen() {
   } else {
     body = (
       <>
-        <Notice message={scene.headingUnavailable ? AR_HEADING_UNAVAILABLE : null} />
+        <Notice message={scene.headingUnavailable ? AR_HEADING_UNAVAILABLE : null} style={styles.message} />
         <ArRadarView
           places={scene.places}
           heading={scene.headingUnavailable ? 0 : scene.heading}
@@ -126,7 +118,7 @@ export function ArScreen() {
   return (
     <View style={styles.container}>
       {back}
-      <Notice message={scene.places.length > 0 ? notice : null} />
+      <Notice message={scene.places.length > 0 ? notice : null} style={styles.message} />
       {canCamera && scene.places.length > 0 && !trackingLost ? (
         <Pressable
           accessibilityRole="button"
@@ -146,8 +138,6 @@ const styles = StyleSheet.create({
   body: { flex: 1, justifyContent: 'center' },
   center: { alignItems: 'center', padding: 24 },
   spinner: { alignSelf: 'center' },
-  back: { paddingHorizontal: 16, paddingTop: 48, paddingBottom: 8, minHeight: 44 },
-  backText: { color: colors.accent, fontSize: 16 },
   message: { color: colors.textSecondary, textAlign: 'center', padding: 16 },
   button: { backgroundColor: colors.accent, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 24, marginTop: 12 },
   buttonText: { color: colors.background, fontWeight: '600' },

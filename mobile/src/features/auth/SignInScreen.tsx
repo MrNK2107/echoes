@@ -91,7 +91,9 @@ export function SignInScreen() {
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
-        <Text style={styles.title}>ECHOES</Text>
+        <Text accessibilityRole="header" style={styles.title}>
+          ECHOES
+        </Text>
 
         {register && (
           <Field

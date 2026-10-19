@@ -37,8 +37,8 @@ describe('shared UI copy', () => {
       AR_TRACKING_ERROR: 'AR tracking was lost. Showing radar instead.',
       CHART_AXIS_OLDEST: 'Oldest',
       CHART_AXIS_LATEST: 'Latest',
-      MAP_COMMUNITIES_SHORT: 'C',
-      MAP_PROFILE_SHORT: 'P',
+      BACK_LABEL: 'Back',
+      BACK_TEXT: '< Back',
     });
   });
 });

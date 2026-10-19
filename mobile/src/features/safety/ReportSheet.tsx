@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { messageOf } from '@/data/errors';
 import type { ReportReason } from '@/domain/types';
 import { useServices } from '@/services/ServicesProvider';
+import { Notice } from '@/ui/Notice';
 import { colors } from '@/ui/theme';
 
 /** The reportMemory callable's note limit (functions/safety.js). */
@@ -113,11 +114,7 @@ export function ReportSheet({ visible, target, onClose, onReported }: Props) {
           />
           <Text style={styles.counter}>{`${note.length}/${REPORT_NOTE_MAX}`}</Text>
 
-          {error ? (
-            <Text accessibilityRole="alert" style={styles.error}>
-              {error}
-            </Text>
-          ) : null}
+          <Notice tone="error" message={error} style={styles.error} />
 
           <View style={styles.actions}>
             <Pressable

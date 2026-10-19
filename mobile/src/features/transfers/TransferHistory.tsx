@@ -6,6 +6,7 @@ import type { Transfer } from '@/data/types';
 import { useSession } from '@/features/auth/useSession';
 import { useAuthorNames } from '@/features/people/useAuthorNames';
 import { useServices } from '@/services/ServicesProvider';
+import { Notice } from '@/ui/Notice';
 import { colors } from '@/ui/theme';
 
 import { usePlaceNames, useTransferHistory } from './useTransfers';
@@ -72,16 +73,8 @@ export function TransferHistory() {
       <Text accessibilityRole="header" style={styles.section}>
         Transfer history
       </Text>
-      {notice ? (
-        <Text role="status" style={styles.notice}>
-          {notice}
-        </Text>
-      ) : null}
-      {error ? (
-        <Text accessibilityRole="alert" style={styles.error}>
-          {error}
-        </Text>
-      ) : null}
+      <Notice message={notice} style={styles.notice} />
+      <Notice tone="error" message={error} style={styles.error} />
       {history.error ? <Text style={styles.meta}>{LOAD_ERROR}</Text> : null}
       {history.loaded && history.items.length === 0 ? <Text style={styles.meta}>{EMPTY}</Text> : null}
       {history.items.map((t) => {

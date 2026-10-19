@@ -22,6 +22,7 @@ import {
   PUSH_UNAVAILABLE,
 } from '@/ui/copy';
 import type { PushPermission } from '@/device/types';
+import { Notice } from '@/ui/Notice';
 import { colors } from '@/ui/theme';
 
 /** subscribeForUser returns at most this many memories. */
@@ -273,11 +274,7 @@ export function ProfileScreen() {
       </Text>
       <Text style={styles.name}>{name}</Text>
       {email ? <Text style={styles.meta}>{email}</Text> : null}
-      {error ? (
-        <Text accessibilityRole="alert" style={styles.error}>
-          {error}
-        </Text>
-      ) : null}
+      <Notice tone="error" message={error} style={styles.error} />
 
       <Text accessibilityRole="header" style={styles.section}>
         Display name

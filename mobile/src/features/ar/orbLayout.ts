@@ -57,10 +57,12 @@ export function plotPosition(
 /**
  * Pushes points apart until none are closer than `minDistance`. Pure and deterministic:
  * pairs are visited in index order and coincident points separate along an index-derived angle.
+ * With `bounds`, points are clamped back into that disc after every pass.
  */
 export function separateOrbs(
   points: { x: number; y: number }[],
   minDistance = 12,
+  bounds?: { cx: number; cy: number; r: number },
 ): { x: number; y: number }[] {
   const out = points.map((p) => ({ x: p.x, y: p.y }));
   for (let pass = 0; pass < 200; pass++) {
@@ -85,6 +87,15 @@ export function separateOrbs(
         b.x += (dx / d) * push;
         b.y += (dy / d) * push;
         moved = true;
+      }
+    }
+    if (bounds) {
+      for (const p of out) {
+        const d = Math.hypot(p.x - bounds.cx, p.y - bounds.cy);
+        if (d > bounds.r) {
+          p.x = bounds.cx + ((p.x - bounds.cx) / d) * bounds.r;
+          p.y = bounds.cy + ((p.y - bounds.cy) / d) * bounds.r;
+        }
       }
     }
     if (!moved) break;
