@@ -25,6 +25,8 @@ describe('validators', () => {
     ['', 'Name is required'],
     ['  ', 'Name is required'],
     ['Ada', null],
+    ['A', 'Use 2 to 40 characters.'],
+    ['x'.repeat(41), 'Use 2 to 40 characters.'],
   ])('validateDisplayName(%j)', (v, expected) => {
     expect(validateDisplayName(v)).toBe(expected);
   });

@@ -58,6 +58,15 @@ export function profileRepositoryContract(name: string, make: ContractFactory): 
       expect(await ctx.repos.profiles.get('author')).toBeNull();
     });
 
+    it('setDisplayName keeps the users doc name in sync, and works without a users doc', async () => {
+      await ctx.signInAs('author');
+      await ctx.repos.users.create(appUser('author'));
+      await ctx.repos.profiles.setDisplayName('author', ' Renamed Author ', new Date());
+      expect((await ctx.repos.users.get('author'))?.displayName).toBe('Renamed Author');
+      await setName('viewer', 'No Users Doc');
+      expect(await ctx.repos.profiles.get('viewer')).toEqual({ id: 'viewer', displayName: 'No Users Doc' });
+    });
+
     it('getMany returns the profiles that exist, keyed by id', async () => {
       await setName('author', 'Ana');
       await setName('viewer', 'Vik');

@@ -183,6 +183,40 @@ describe('EditMemoryScreen', () => {
     });
   });
 
+  it('shows tagged people as chips and saves an added tag', async () => {
+    const services = await setup('memory-2', prepareWith({ privacy: 'tagged', taggedUserIds: ['user-asha'] }));
+    expect(await screen.findByTestId('chip-user-asha')).toHaveTextContent(/Asha Rao/);
+    await fireEvent.changeText(screen.getByLabelText('Search people'), 'Ro');
+    await fireEvent.press(await screen.findByText('Rohan Mehta'));
+    await fireEvent.press(screen.getByText('Save changes'));
+    await waitFor(() => expect(mockBack).toHaveBeenCalled());
+    expect(await services.repos.memories.findById('memory-2')).toMatchObject({
+      privacy: 'tagged',
+      taggedUserIds: ['user-asha', 'user-rohan'],
+    });
+  });
+
+  it('removing the last tag is refused with the tagged copy', async () => {
+    await setup('memory-2', prepareWith({ privacy: 'tagged', taggedUserIds: ['user-asha'] }));
+    await fireEvent.press(await screen.findByLabelText('Remove Asha Rao'));
+    await fireEvent.press(screen.getByText('Save changes'));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Add at least one tagged user.');
+    expect(mockBack).not.toHaveBeenCalled();
+  });
+
+  it('switches a public memory to a community', async () => {
+    const services = await setup();
+    await fireEvent.press(await screen.findByText('Community'));
+    await fireEvent.press(await screen.findByText('Cubbon Park Walkers'));
+    await fireEvent.press(screen.getByText('Save changes'));
+    await waitFor(() => expect(mockBack).toHaveBeenCalled());
+    expect(await services.repos.memories.findById('memory-2')).toMatchObject({
+      privacy: 'community',
+      communityId: 'community-cubbon-walkers',
+      taggedUserIds: [],
+    });
+  });
+
   it('a new save waits for a timed-out update so a late write cannot clobber it', async () => {
     const services = await setup();
     const real = services.repos.memories.update.bind(services.repos.memories);

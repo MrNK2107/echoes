@@ -17,7 +17,7 @@ const QUEUED_COPY = "Saved offline. It will upload when you're back online.";
 /** How long the queued notice stays up before returning to the map. */
 export const QUEUED_NOTICE_MS = 2_500;
 
-/** testIDs: text-input, privacy-{value}, release-date-button, use-location-button, add-photo-button, photo-thumbnail, save-button, back-button */
+/** testIDs: text-input, privacy-{value}, release-date-button, community-{id}, chip-{uid}, use-location-button, add-photo-button, photo-thumbnail, save-button, back-button */
 export function AddMemoryScreen() {
   const router = useRouter();
   const services = useServices();
@@ -26,6 +26,8 @@ export function AddMemoryScreen() {
   const [privacy, setPrivacy] = useState<PrivacyChoice>('private');
   const [defaultResolved, setDefaultResolved] = useState(false);
   const [releaseDate, setReleaseDate] = useState<Date | null>(null);
+  const [taggedUserIds, setTaggedUserIds] = useState<string[]>([]);
+  const [communityId, setCommunityId] = useState<string | null>(null);
   const [location, setLocation] = useState<LatLng | null>(null);
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [audioUri, setAudioUri] = useState<string | null>(null);
@@ -105,8 +107,8 @@ export function AddMemoryScreen() {
           textContent: text,
           privacy,
           releaseDate: privacy === 'timeRelease' ? releaseDate : null,
-          taggedUserIds: [],
-          communityId: null,
+          taggedUserIds: privacy === 'tagged' ? taggedUserIds : [],
+          communityId: privacy === 'community' ? communityId : null,
           location,
           imageUri,
           audioUri,
@@ -159,6 +161,10 @@ export function AddMemoryScreen() {
         }}
         releaseDate={releaseDate}
         onReleaseDateChange={setReleaseDate}
+        taggedUserIds={taggedUserIds}
+        onTaggedUserIdsChange={setTaggedUserIds}
+        communityId={communityId}
+        onCommunityChange={setCommunityId}
         now={services.now()}
       />
 

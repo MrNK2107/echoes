@@ -25,7 +25,7 @@ export function createFirestoreBackend(deps: {
 }): Repositories {
   const callables = { functions: deps.functions, isOnline: deps.isOnline };
   const users = createUserRepository(deps.db);
-  const profiles = createProfileRepository(deps.db);
+  const profiles = createProfileRepository(deps.db, deps.auth);
   return {
     places: createPlaceRepository(deps.db),
     memories: createMemoryRepository(deps.db),

@@ -72,6 +72,21 @@ describe('memory backend specifics', () => {
     });
   });
 
+  it('setDisplayName updates the signed-in session name', async () => {
+    const repos = createMemoryBackend({
+      places: [], memories: [], users: [],
+      credentials: [{ userId: 'u1', email: 'd@x.com', password: 'pw123456', displayName: 'Demo' }],
+    });
+    await repos.auth.signIn('d@x.com', 'pw123456');
+    const sessions: (string | null)[] = [];
+    const off = repos.auth.subscribe((s) => sessions.push(s?.displayName ?? null));
+    await repos.profiles.setDisplayName('u1', ' New Name ', new Date());
+    off();
+    expect(sessions).toEqual(['Demo', 'New Name']);
+    await repos.auth.signOut();
+    expect((await repos.auth.signIn('d@x.com', 'pw123456')).displayName).toBe('New Name');
+  });
+
   it('uses injectable clock for aggregation updatedAt', async () => {
     const now = new Date('2026-03-03T00:00:00Z');
     const repos = createMemoryBackend(undefined, { now: () => now });

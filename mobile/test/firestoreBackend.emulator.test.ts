@@ -265,6 +265,25 @@ describe('firestore backend specifics', () => {
     });
   });
 
+  it('register emits the signed-in session only after the profile is written', async () => {
+    const seen: { name: string | null; hasProfile: Promise<boolean> }[] = [];
+    const off = ctx.repos.auth.subscribe((s) => {
+      if (s) seen.push({ name: s.displayName, hasProfile: ctx.repos.profiles.get(s.userId).then((p) => p !== null) });
+    });
+    await ctx.repos.auth.register('o@example.com', 'secret12', 'Ola', new Date());
+    off();
+    expect(seen.length).toBeGreaterThan(0);
+    expect(seen.map((x) => x.name)).toEqual(seen.map(() => 'Ola'));
+    expect(await Promise.all(seen.map((x) => x.hasProfile))).toEqual(seen.map(() => true));
+  });
+
+  it('setDisplayName updates the Auth profile name of the signed-in user', async () => {
+    const s = await ctx.repos.auth.register('n@example.com', 'secret12', 'Nia', new Date());
+    await ctx.repos.profiles.setDisplayName(s.userId, 'Nia Renamed', new Date());
+    expect(ctx.auth.currentUser?.displayName).toBe('Nia Renamed');
+    expect((await ctx.repos.users.get(s.userId))?.displayName).toBe('Nia Renamed');
+  });
+
   it('uploads a memory image to memory-images/{uid}/{memoryId}.jpg and returns a URL', async () => {
     await ctx.signInAs('author');
     // Node cannot fetch a device file path; a data: URI exercises the same fetch -> blob path.

@@ -13,7 +13,13 @@ export interface AppConfig {
   backend: BackendMode;
   emulatorHost: string;
   firebase: FirebaseConfig | null;
+  /** ADR-0008: the Terms of Service and Community Guidelines pages linked from registration. */
+  termsUrl: string;
+  guidelinesUrl: string;
 }
+
+export const DEFAULT_TERMS_URL = 'https://echoes.app/terms';
+export const DEFAULT_GUIDELINES_URL = 'https://echoes.app/guidelines';
 
 const EMULATOR_FIREBASE: FirebaseConfig = {
   apiKey: 'demo-api-key',
@@ -58,5 +64,11 @@ export function readConfig(env: Record<string, string | undefined>): AppConfig {
     }
     firebase = out;
   }
-  return { backend: raw, emulatorHost, firebase };
+  return {
+    backend: raw,
+    emulatorHost,
+    firebase,
+    termsUrl: env.EXPO_PUBLIC_TERMS_URL || DEFAULT_TERMS_URL,
+    guidelinesUrl: env.EXPO_PUBLIC_GUIDELINES_URL || DEFAULT_GUIDELINES_URL,
+  };
 }

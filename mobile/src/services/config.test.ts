@@ -56,6 +56,21 @@ describe('readConfig', () => {
     ).toThrow('Missing EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID');
   });
 
+  it('defaults the Terms and Guidelines links (ADR-0008)', () => {
+    const c = readConfig({});
+    expect(c.termsUrl).toBe('https://echoes.app/terms');
+    expect(c.guidelinesUrl).toBe('https://echoes.app/guidelines');
+  });
+
+  it('honours EXPO_PUBLIC_TERMS_URL and EXPO_PUBLIC_GUIDELINES_URL', () => {
+    const c = readConfig({
+      EXPO_PUBLIC_TERMS_URL: 'https://example.org/t',
+      EXPO_PUBLIC_GUIDELINES_URL: 'https://example.org/g',
+    });
+    expect(c.termsUrl).toBe('https://example.org/t');
+    expect(c.guidelinesUrl).toBe('https://example.org/g');
+  });
+
   it('throws on an unknown backend', () => {
     expect(() => readConfig({ EXPO_PUBLIC_BACKEND: 'x' })).toThrow('Unknown EXPO_PUBLIC_BACKEND: x');
   });

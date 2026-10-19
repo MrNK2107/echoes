@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
-import { Text } from 'react-native';
+import { Linking, Text } from 'react-native';
 
 import { DEMO_USER } from '@/data/seed';
 import { testServices } from '@/device/fakes';
@@ -12,8 +12,7 @@ function Status() {
   return <Text testID="status">{useSession().status}</Text>;
 }
 
-async function setup() {
-  const services = testServices();
+async function setup(services = testServices()) {
   const register = jest.spyOn(services.repos.auth, 'register');
   await render(
     <ServicesProvider services={services}>
@@ -21,7 +20,7 @@ async function setup() {
       <Status />
     </ServicesProvider>,
   );
-  return { register };
+  return { register, services };
 }
 
 const type = (id: string, value: string) =>
@@ -53,17 +52,73 @@ describe('SignInScreen', () => {
     expect(register).not.toHaveBeenCalled();
   });
 
-  it('registers once the age box is checked', async () => {
-    const { register } = await setup();
+  it('registers once the age and terms boxes are checked, with the time terms were accepted', async () => {
+    let tick = 0;
+    const services = testServices({ now: () => new Date(Date.UTC(2026, 9, 19, 9, 0, tick++)) });
+    const { register } = await setup(services);
     await press('mode-toggle');
     await type('name-input', 'Ada');
     await type('email-input', 'ada@example.com');
     await type('password-input', 'longenough');
     await press('age-checkbox');
     expect(screen.getByTestId('age-checkbox').props.accessibilityState).toEqual({ checked: true });
+    await press('terms-checkbox');
+    expect(screen.getByTestId('terms-checkbox').props.accessibilityState).toEqual({ checked: true });
+    const ticked = tick - 1;
     await press('submit-button');
-    expect(register).toHaveBeenCalledWith('ada@example.com', 'longenough', 'Ada', expect.any(Date));
+    expect(register).toHaveBeenCalledWith(
+      'ada@example.com',
+      'longenough',
+      'Ada',
+      new Date(Date.UTC(2026, 9, 19, 9, 0, ticked)),
+    );
     expect(screen.getByTestId('status')).toHaveTextContent('signedIn');
+  });
+
+  it('blocks registration without the terms box with the exact copy', async () => {
+    const { register } = await setup();
+    await press('mode-toggle');
+    expect(screen.getByText('I agree to the Terms of Service and Community Guidelines.')).toBeOnTheScreen();
+    await type('name-input', 'Ada');
+    await type('email-input', 'ada@example.com');
+    await type('password-input', 'longenough');
+    await press('age-checkbox');
+    await press('submit-button');
+    expect(screen.getByText('Please accept the Terms of Service and Community Guidelines.')).toBeOnTheScreen();
+    expect(register).not.toHaveBeenCalled();
+    // Unticking after ticking is refused the same way.
+    await press('terms-checkbox');
+    await press('terms-checkbox');
+    await press('submit-button');
+    expect(register).not.toHaveBeenCalled();
+  });
+
+  it('shows the profile name rule for a one-letter name', async () => {
+    const { register } = await setup();
+    await press('mode-toggle');
+    await type('name-input', 'A');
+    await type('email-input', 'ada@example.com');
+    await type('password-input', 'longenough');
+    await press('age-checkbox');
+    await press('terms-checkbox');
+    await press('submit-button');
+    expect(screen.getByText('Use 2 to 40 characters.')).toBeOnTheScreen();
+    expect(register).not.toHaveBeenCalled();
+  });
+
+  it('opens the configured Terms and Guidelines pages', async () => {
+    const open = jest.spyOn(Linking, 'openURL').mockResolvedValue(undefined);
+    await setup();
+    await press('mode-toggle');
+    await act(async () => {
+      fireEvent.press(screen.getByRole('link', { name: 'Terms of Service' }));
+    });
+    await act(async () => {
+      fireEvent.press(screen.getByRole('link', { name: 'Community Guidelines' }));
+    });
+    expect(open.mock.calls).toEqual([['https://echoes.app/terms'], ['https://echoes.app/guidelines']]);
+    expect(screen.getByTestId('terms-checkbox').props.accessibilityState).toEqual({ checked: false });
+    open.mockRestore();
   });
 
   it('signs in with the demo credentials', async () => {

@@ -1,6 +1,9 @@
 import { useRouter } from 'expo-router';
+import { useMemo } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { useAuthorNames } from '@/features/people/useAuthorNames';
+import { useBlocks, withoutBlocked } from '@/features/safety/useBlocks';
 import { formatCount } from '@/ui/format';
 import { colors } from '@/ui/theme';
 
@@ -12,7 +15,11 @@ const ERROR_COPY = "Couldn't load memories.";
 
 export function PlaceScreen({ placeId }: { placeId: string }) {
   const router = useRouter();
-  const { status, place, memories } = usePlaceMemories(placeId);
+  const { status, place, memories: visible } = usePlaceMemories(placeId);
+  const blocked = useBlocks();
+  const memories = useMemo(() => withoutBlocked(visible, blocked), [visible, blocked]);
+  const authorIds = useMemo(() => memories.map((m) => m.userId), [memories]);
+  const names = useAuthorNames(authorIds);
 
   const back = (
     <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => router.back()} style={styles.back}>
@@ -49,7 +56,8 @@ export function PlaceScreen({ placeId }: { placeId: string }) {
         contentContainerStyle={styles.list}
         data={memories}
         keyExtractor={(m) => m.id}
-        renderItem={({ item }) => <MemoryCard memory={item} />}
+        extraData={names}
+        renderItem={({ item }) => <MemoryCard memory={item} authorName={names.get(item.userId)} />}
         ListEmptyComponent={<Text style={styles.message}>{status === 'ready' ? 'No memories here yet.' : ''}</Text>}
       />
     </View>

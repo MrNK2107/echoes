@@ -1,11 +1,14 @@
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { GENERIC_ERROR } from '@/data/errors';
+import { DISPLAY_NAME_ERROR, validateDisplayName } from '@/domain/profiles';
 import type { AppUser, Memory } from '@/domain/types';
 import { useSession } from '@/features/auth/useSession';
+import { rememberName } from '@/features/people/useAuthorNames';
 import { MemoryCard } from '@/features/places/MemoryCard';
+import { useBlocks, withoutBlocked } from '@/features/safety/useBlocks';
 import { useServices } from '@/services/ServicesProvider';
 import { colors } from '@/ui/theme';
 
@@ -24,7 +27,13 @@ export function ProfileScreen() {
   const { session } = useSession();
   const uid = session?.userId;
   const [user, setUser] = useState<AppUser | null>(null);
-  const [memories, setMemories] = useState<Memory[]>([]);
+  const [ownMemories, setMemories] = useState<Memory[]>([]);
+  const blocked = useBlocks();
+  // Own memories are never by a blocked author; the filter keeps every memory list consistent (R20).
+  const memories = useMemo(() => withoutBlocked(ownMemories, blocked), [ownMemories, blocked]);
+  const [nameDraft, setNameDraft] = useState<string | null>(null);
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [savingName, setSavingName] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [privacy, setPrivacy] = useState<DefaultPrivacy>('public');
   const [error, setError] = useState<string | null>(null);
@@ -46,6 +55,20 @@ export function ProfileScreen() {
       cancelled = true;
     };
   }, [repos.users, uid]);
+
+  useEffect(() => {
+    if (!uid) return;
+    let cancelled = false;
+    repos.profiles
+      .get(uid)
+      .then((p) => {
+        if (!cancelled && p) setNameDraft((d) => d ?? p.displayName);
+      })
+      .catch((e: unknown) => console.warn('Could not load the public profile', e));
+    return () => {
+      cancelled = true;
+    };
+  }, [repos.profiles, uid]);
 
   useEffect(() => {
     if (!uid) return;
@@ -75,6 +98,29 @@ export function ProfileScreen() {
     }
   };
 
+  const saveName = async () => {
+    if (!uid || savingName) return;
+    const draft = nameDraft ?? '';
+    const invalid = validateDisplayName(draft);
+    if (invalid) {
+      setNameError(invalid);
+      return;
+    }
+    const next = draft.trim();
+    setNameError(null);
+    setSavingName(true);
+    try {
+      await repos.profiles.setDisplayName(uid, next, now());
+      rememberName(repos.profiles, uid, next);
+      setNameDraft(next);
+      setUser((u) => (u ? { ...u, displayName: next } : u));
+    } catch (e) {
+      setNameError(e instanceof Error && e.message === DISPLAY_NAME_ERROR ? DISPLAY_NAME_ERROR : GENERIC_ERROR);
+    } finally {
+      setSavingName(false);
+    }
+  };
+
   const signOut = async () => {
     try {
       await repos.auth.signOut();
@@ -101,6 +147,29 @@ export function ProfileScreen() {
           {error}
         </Text>
       ) : null}
+
+      <Text style={styles.section}>Display name</Text>
+      <TextInput
+        style={[styles.input, nameError ? styles.inputError : null]}
+        value={nameDraft ?? ''}
+        onChangeText={(t) => {
+          setNameDraft(t);
+          setNameError(null);
+        }}
+        accessibilityLabel="Display name"
+        autoCapitalize="words"
+        placeholderTextColor={colors.textSecondary}
+      />
+      {nameError ? <Text style={styles.error}>{nameError}</Text> : null}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ disabled: savingName, busy: savingName }}
+        disabled={savingName}
+        onPress={saveName}
+        style={[styles.row, savingName && styles.disabled]}
+      >
+        <Text style={styles.rowText}>Save name</Text>
+      </Pressable>
 
       <View style={styles.stat}>
         <Text style={styles.statValue}>{memories.length >= LIMIT ? `${LIMIT}+` : String(memories.length)}</Text>
@@ -170,4 +239,16 @@ const styles = StyleSheet.create({
   row: { backgroundColor: colors.surface, borderRadius: 12, padding: 14, marginTop: 8 },
   rowText: { color: colors.accent, fontSize: 16 },
   dangerText: { color: colors.danger, fontSize: 16 },
+  input: {
+    backgroundColor: colors.surface,
+    borderColor: colors.elevated,
+    borderWidth: 1,
+    borderRadius: 10,
+    color: colors.text,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
+  },
+  inputError: { borderColor: colors.danger },
+  disabled: { opacity: 0.5 },
 });

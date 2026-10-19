@@ -5,7 +5,8 @@ import type { Memory } from '@/domain/types';
 import { privacyLabel } from '@/ui/privacyLabel';
 import { colors } from '@/ui/theme';
 
-export function MemoryCard({ memory }: { memory: Memory }) {
+/** `authorName` comes from the list's useAuthorNames, so cards share one batched lookup. */
+export function MemoryCard({ memory, authorName }: { memory: Memory; authorName?: string }) {
   const router = useRouter();
   const badge = privacyLabel(memory);
   return (
@@ -16,6 +17,7 @@ export function MemoryCard({ memory }: { memory: Memory }) {
       onPress={() => router.push(`/memory/${memory.id}` as never)}
     >
       {memory.imageUrl ? <Image source={{ uri: memory.imageUrl }} style={styles.image} /> : null}
+      {authorName ? <Text style={styles.author}>{authorName}</Text> : null}
       <Text style={styles.text}>{memory.textContent}</Text>
       {memory.audioUrl ? <Text style={styles.voice}>Voice note</Text> : null}
       <View style={styles.metaRow}>
@@ -33,6 +35,7 @@ export function MemoryCard({ memory }: { memory: Memory }) {
 const styles = StyleSheet.create({
   card: { backgroundColor: colors.surface, borderRadius: 12, padding: 16, marginBottom: 12 },
   image: { width: '100%', height: 180, borderRadius: 8, marginBottom: 12 },
+  author: { color: colors.gold, fontSize: 13, fontWeight: '600', marginBottom: 4 },
   text: { color: colors.text, fontSize: 16 },
   metaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 },
   voice: { color: colors.accent, fontSize: 12, marginTop: 8 },

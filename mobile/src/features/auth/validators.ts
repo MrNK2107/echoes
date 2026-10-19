@@ -1,3 +1,5 @@
+import { validateDisplayName as validateProfileName } from '@/domain/profiles';
+
 export function validateEmail(v: string): string | null {
   const t = v.trim();
   if (!t) return 'Email is required';
@@ -12,6 +14,7 @@ export function validatePassword(v: string): string | null {
   return null;
 }
 
+/** Required, then the public profile rule (2 to 40 characters, domain/profiles). */
 export function validateDisplayName(v: string): string | null {
-  return v.trim() ? null : 'Name is required';
+  return v.trim() ? validateProfileName(v) : 'Name is required';
 }

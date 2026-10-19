@@ -1,9 +1,11 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { TIMEOUT_ERROR } from '@/data/errors';
 import { useSession } from '@/features/auth/useSession';
+import { useAuthorNames } from '@/features/people/useAuthorNames';
+import { useBlocks } from '@/features/safety/useBlocks';
 import { useServices } from '@/services/ServicesProvider';
 import { privacyLabel } from '@/ui/privacyLabel';
 import { colors } from '@/ui/theme';
@@ -23,6 +25,9 @@ export function MemoryDetailScreen({ memoryId }: { memoryId: string }) {
   const [deleting, setDeleting] = useState(false);
   const deletingRef = useRef(false);
   const focusedOnce = useRef(false);
+  const blocked = useBlocks();
+  const authorIds = useMemo(() => (memory ? [memory.userId] : []), [memory]);
+  const names = useAuthorNames(authorIds);
 
   // Refetch when returning to this screen (e.g. from Edit); the first focus is covered by the mount fetch.
   useFocusEffect(
@@ -38,12 +43,16 @@ export function MemoryDetailScreen({ memoryId }: { memoryId: string }) {
     </Pressable>
   );
 
-  if (!memory) {
+  // ADR-0008: memories by people you blocked are hidden everywhere, including by direct link.
+  const hiddenByBlock = memory !== null && memory.userId !== session?.userId && blocked.has(memory.userId);
+  if (!memory || hiddenByBlock) {
     return (
       <View style={styles.container}>
         {back}
         <View style={styles.center}>
-          {status === 'notFound' ? <Text style={styles.message}>This memory is no longer available.</Text> : null}
+          {status === 'notFound' || hiddenByBlock ? (
+            <Text style={styles.message}>This memory is no longer available.</Text>
+          ) : null}
           {status === 'error' ? <Text style={styles.message}>{"Couldn't load this memory."}</Text> : null}
         </View>
       </View>
@@ -52,6 +61,7 @@ export function MemoryDetailScreen({ memoryId }: { memoryId: string }) {
 
   const badge = privacyLabel(memory);
   const isAuthor = session?.userId === memory.userId;
+  const authorName = names.get(memory.userId);
 
   const confirmDelete = () => {
     Alert.alert('Delete this memory?', 'You can restore it from Recently deleted for 30 days.', [
@@ -82,6 +92,7 @@ export function MemoryDetailScreen({ memoryId }: { memoryId: string }) {
       {back}
       <ScrollView contentContainerStyle={styles.content}>
         {memory.imageUrl ? <Image source={{ uri: memory.imageUrl }} style={styles.image} /> : null}
+        {authorName ? <Text style={styles.author}>{authorName}</Text> : null}
         <Text style={styles.text}>{memory.textContent}</Text>
         {memory.audioUrl ? <VoiceNotePlayer url={memory.audioUrl} /> : null}
         <View style={styles.metaRow}>
@@ -129,6 +140,7 @@ const styles = StyleSheet.create({
   backText: { color: colors.accent, fontSize: 16 },
   content: { padding: 16 },
   image: { width: '100%', height: 240, borderRadius: 12, marginBottom: 16 },
+  author: { color: colors.gold, fontSize: 14, fontWeight: '600', marginBottom: 6 },
   text: { color: colors.text, fontSize: 18 },
   metaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 },
   meta: { color: colors.textSecondary },

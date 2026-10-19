@@ -40,6 +40,17 @@ export function createProfileRepository(store: Store): ProfileRepository {
       const error = validateDisplayName(name);
       if (error !== null) throw new Error(error);
       store.setProfile(uid, name, at);
+      // Keep the users doc, the account and the live session on the same name (the Firestore
+      // backend updates the users doc and the Auth profile).
+      const displayName = name.trim();
+      const user = store.users.get(uid);
+      if (user) store.users.set(uid, { ...user, displayName, updatedAt: at });
+      const account = store.accountOf(uid);
+      if (account) account.displayName = displayName;
+      if (store.session?.userId === uid) {
+        store.session = { ...store.session, displayName };
+        store.notify(store.authListeners);
+      }
     },
   };
 }

@@ -47,12 +47,52 @@ export function createAuthRepository(
   profiles: ProfileRepository,
   now: () => Date = () => new Date(),
 ): AuthRepository {
-  // onAuthStateChanged fires before updateProfile during register; re-emit once the name is set.
+  // onAuthStateChanged fires as soon as the account exists, before the name, the users doc and the
+  // public profile are written. A session emitted then would mount the signed-in app mid-register
+  // (and its profile repair could race the real name), so sign-ins are held back while registering
+  // and the current session is emitted once register settles, whether it succeeded or not.
   const listeners = new Set<(s: AuthSession | null) => void>();
+  let registering = false;
+
+  async function createAccount(
+    email: string,
+    password: string,
+    displayName: string,
+    acceptedTermsAt: Date,
+  ): Promise<AuthSession> {
+    let user: User;
+    try {
+      user = (await createUserWithEmailAndPassword(auth, email, password)).user;
+    } catch (e) {
+      if (errorCode(e) === 'auth/email-already-in-use') throw new Error(EMAIL_IN_USE);
+      throw e;
+    }
+    await updateProfile(user, { displayName });
+    const at = now();
+    await users.create({
+      id: user.uid,
+      displayName,
+      email: user.email,
+      photoUrl: null,
+      defaultPrivacy: 'public',
+      managedPlaceIds: [],
+      communityIds: [],
+      notificationPrefs: { ...DEFAULT_NOTIFICATION_PREFS },
+      acceptedTermsAt,
+      createdAt: at,
+      updatedAt: at,
+    });
+    await profiles.setDisplayName(user.uid, displayName, at);
+    return { userId: user.uid, email: user.email ?? email, displayName };
+  }
+
   return {
     subscribe(cb) {
       listeners.add(cb);
-      const unsub = onAuthStateChanged(auth, (u) => cb(u ? toSession(u) : null));
+      const unsub = onAuthStateChanged(auth, (u) => {
+        if (registering && u) return;
+        cb(u ? toSession(u) : null);
+      });
       return () => {
         listeners.delete(cb);
         unsub();
@@ -72,32 +112,15 @@ export function createAuthRepository(
       const nameError = validateDisplayName(rawName);
       if (nameError !== null) throw new Error(nameError);
       const displayName = rawName.trim();
-      let user: User;
+      registering = true;
       try {
-        user = (await createUserWithEmailAndPassword(auth, email, password)).user;
-      } catch (e) {
-        if (errorCode(e) === 'auth/email-already-in-use') throw new Error(EMAIL_IN_USE);
-        throw e;
+        return await createAccount(email, password, displayName, acceptedTermsAt);
+      } finally {
+        registering = false;
+        const current = auth.currentUser;
+        const session = current ? toSession(current) : null;
+        for (const cb of listeners) cb(session);
       }
-      await updateProfile(user, { displayName });
-      const at = now();
-      await users.create({
-        id: user.uid,
-        displayName,
-        email: user.email,
-        photoUrl: null,
-        defaultPrivacy: 'public',
-        managedPlaceIds: [],
-        communityIds: [],
-        notificationPrefs: { ...DEFAULT_NOTIFICATION_PREFS },
-        acceptedTermsAt,
-        createdAt: at,
-        updatedAt: at,
-      });
-      await profiles.setDisplayName(user.uid, displayName, at);
-      const session: AuthSession = { userId: user.uid, email: user.email ?? email, displayName };
-      if (auth.currentUser?.uid === user.uid) for (const cb of listeners) cb(session);
-      return session;
     },
     async signOut() {
       await signOut(auth);

@@ -72,6 +72,19 @@ describe('MemoryDetailScreen', () => {
     expect(screen.queryByText('Delete')).toBeNull();
   });
 
+  it("shows the author's display name", async () => {
+    await setup('memory-1');
+    expect(await screen.findByText('Asha Rao')).toBeOnTheScreen();
+  });
+
+  it('treats a memory by someone you blocked as not available', async () => {
+    const services = testServices();
+    await services.repos.safety.block('user-demo', 'user-asha', services.now());
+    await setup('memory-1', services);
+    expect(await screen.findByText('This memory is no longer available.')).toBeOnTheScreen();
+    expect(screen.queryByText(/I love this park/)).toBeNull();
+  });
+
   it('Edit navigates to the edit route', async () => {
     await setup('memory-2');
     await fireEvent.press(await screen.findByText('Edit'));
@@ -192,6 +205,14 @@ describe('MemoryCard', () => {
     await render(<MemoryCard memory={memory!} />);
     await fireEvent.press(screen.getByTestId('memory-memory-2'));
     expect(mockPush).toHaveBeenCalledWith('/memory/memory-2');
+  });
+
+  it('shows the author name it is given', async () => {
+    const services = testServices();
+    await services.repos.auth.signIn(DEMO_USER.email, DEMO_USER.password);
+    const memory = (await services.repos.memories.findById('memory-2'))!;
+    await render(<MemoryCard memory={memory} authorName="Demo Custodian" />);
+    expect(screen.getByText('Demo Custodian')).toBeOnTheScreen();
   });
 
   it('shows a Voice note indicator only with audio', async () => {

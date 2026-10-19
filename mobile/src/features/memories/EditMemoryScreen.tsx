@@ -37,13 +37,15 @@ export function EditMemoryScreen({ memoryId }: { memoryId: string }) {
   return <EditForm memory={memory} />;
 }
 
-/** testIDs: text-input, privacy-{value}, release-date-button, save-button, back-button */
+/** testIDs: text-input, privacy-{value}, release-date-button, community-{id}, chip-{uid}, save-button, back-button */
 function EditForm({ memory }: { memory: Memory }) {
   const router = useRouter();
   const { repos, now } = useServices();
   const [text, setText] = useState(memory.textContent);
   const [privacy, setPrivacy] = useState<PrivacyType>(memory.privacy);
   const [releaseDate, setReleaseDate] = useState<Date | null>(memory.releaseDate);
+  const [taggedUserIds, setTaggedUserIds] = useState<string[]>(memory.taggedUserIds);
+  const [communityId, setCommunityId] = useState<string | null>(memory.communityId);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const busy = useRef(false);
@@ -60,9 +62,14 @@ function EditForm({ memory }: { memory: Memory }) {
     const textError = validateMemoryText(text);
     if (textError) return setError(textError);
     const at = now();
-    const fields = { privacy, taggedUserIds: memory.taggedUserIds, releaseDate, communityId: memory.communityId };
-    // A released time-release memory keeps its past date; only a changed privacy or date needs a future one.
-    const privacyChanged = privacy !== memory.privacy || releaseDate?.getTime() !== memory.releaseDate?.getTime();
+    const fields = { privacy, taggedUserIds, releaseDate, communityId };
+    // A released time-release memory keeps its past date; only changed privacy fields are re-validated.
+    const privacyChanged =
+      privacy !== memory.privacy ||
+      releaseDate?.getTime() !== memory.releaseDate?.getTime() ||
+      communityId !== memory.communityId ||
+      taggedUserIds.length !== memory.taggedUserIds.length ||
+      taggedUserIds.some((id, i) => id !== memory.taggedUserIds[i]);
     const privacyError = privacyChanged ? validatePrivacy({ ...fields, now: at }) : null;
     if (privacyError) return setError(privacyError);
 
@@ -125,6 +132,10 @@ function EditForm({ memory }: { memory: Memory }) {
         onPrivacyChange={setPrivacy}
         releaseDate={releaseDate}
         onReleaseDateChange={setReleaseDate}
+        taggedUserIds={taggedUserIds}
+        onTaggedUserIdsChange={setTaggedUserIds}
+        communityId={communityId}
+        onCommunityChange={setCommunityId}
         now={now()}
       />
 

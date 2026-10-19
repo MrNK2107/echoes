@@ -180,6 +180,71 @@ describe('AddMemoryScreen', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Location permission is needed to save a memory here.');
   });
 
+  it('offers all five privacy segments', async () => {
+    await setup();
+    for (const label of ['Public', 'Private', 'Time release', 'Tagged', 'Community']) {
+      expect(screen.getByText(label)).toBeOnTheScreen();
+    }
+  });
+
+  it('saves a tagged memory with the picked taggedUserIds', async () => {
+    const base = testServices();
+    const create = jest.spyOn(base.repos.memories, 'create');
+    await setup({ repos: base.repos });
+    await fireEvent.changeText(screen.getByTestId('text-input'), 'Coffee with Rohan');
+    await fireEvent.press(screen.getByText('Tagged'));
+    await fireEvent.press(screen.getByTestId('use-location-button'));
+    await screen.findByText('Location captured');
+    await fireEvent.press(screen.getByTestId('save-button'));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Add at least one tagged user.');
+    expect(create).not.toHaveBeenCalled();
+
+    await fireEvent.changeText(screen.getByLabelText('Search people'), 'Ro');
+    await fireEvent.press(await screen.findByText('Rohan Mehta'));
+    expect(screen.getByTestId('chip-user-rohan')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByTestId('save-button'));
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledTimes(1));
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({ privacy: 'tagged', taggedUserIds: ['user-rohan'], communityId: null }),
+    );
+  });
+
+  it('saves a community memory with the chosen communityId', async () => {
+    const base = testServices();
+    const create = jest.spyOn(base.repos.memories, 'create');
+    await setup({ repos: base.repos });
+    await fireEvent.changeText(screen.getByTestId('text-input'), 'Walkers meet-up');
+    await fireEvent.press(screen.getByText('Community'));
+    expect(await screen.findByText('Choose a community')).toBeOnTheScreen();
+    await fireEvent.press(screen.getByTestId('use-location-button'));
+    await screen.findByText('Location captured');
+    await fireEvent.press(screen.getByTestId('save-button'));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Choose a community.');
+
+    await fireEvent.press(await screen.findByText('Cubbon Park Walkers'));
+    expect(screen.getByTestId('community-community-cubbon-walkers')).toBeSelected();
+    await fireEvent.press(screen.getByTestId('save-button'));
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledTimes(1));
+    expect(create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        privacy: 'community',
+        communityId: 'community-cubbon-walkers',
+        taggedUserIds: [],
+      }),
+    );
+  });
+
+  it('asks to join a community first when the user has none', async () => {
+    const base = testServices();
+    jest.spyOn(base.repos.communities, 'subscribeMine').mockImplementation((_uid, cb) => {
+      cb([]);
+      return () => {};
+    });
+    await setup({ repos: base.repos });
+    await fireEvent.press(screen.getByText('Community'));
+    expect(await screen.findByText('Join a community first.')).toBeOnTheScreen();
+  });
+
   it('requires a future release date for time release', async () => {
     await setup();
     await fireEvent.changeText(screen.getByTestId('text-input'), 'for later');

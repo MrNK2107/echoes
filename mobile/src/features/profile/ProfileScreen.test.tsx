@@ -143,4 +143,45 @@ describe('ProfileScreen', () => {
     await fireEvent.press(screen.getByLabelText('Back'));
     expect(mockBack).toHaveBeenCalled();
   });
+
+  describe('display name', () => {
+    it('prefills the public profile name', async () => {
+      await setup();
+      expect(screen.getByText('Display name')).toBeOnTheScreen();
+      expect(await screen.findByDisplayValue(DEMO_USER.displayName)).toBeOnTheScreen();
+    });
+
+    it('rejects names outside 2 to 40 characters without saving', async () => {
+      const services = testServices();
+      const set = jest.spyOn(services.repos.profiles, 'setDisplayName');
+      await setup(services);
+      const input = await screen.findByDisplayValue(DEMO_USER.displayName);
+      await fireEvent.changeText(input, ' A ');
+      await fireEvent.press(screen.getByText('Save name'));
+      expect(await screen.findByText('Use 2 to 40 characters.')).toBeOnTheScreen();
+      await fireEvent.changeText(input, 'x'.repeat(41));
+      await fireEvent.press(screen.getByText('Save name'));
+      expect(screen.getByText('Use 2 to 40 characters.')).toBeOnTheScreen();
+      expect(set).not.toHaveBeenCalled();
+    });
+
+    it('saves a trimmed name and shows it as the profile name', async () => {
+      const services = await setup();
+      const input = await screen.findByDisplayValue(DEMO_USER.displayName);
+      await fireEvent.changeText(input, '  Kavya N  ');
+      await fireEvent.press(screen.getByText('Save name'));
+      expect(await screen.findByText('Kavya N')).toBeOnTheScreen();
+      expect(await services.repos.profiles.get('user-demo')).toEqual({ id: 'user-demo', displayName: 'Kavya N' });
+      expect(screen.queryByText('Use 2 to 40 characters.')).toBeNull();
+    });
+
+    it('shows generic copy when saving fails', async () => {
+      const services = testServices();
+      jest.spyOn(services.repos.profiles, 'setDisplayName').mockRejectedValue(new Error('boom'));
+      await setup(services);
+      await fireEvent.changeText(await screen.findByDisplayValue(DEMO_USER.displayName), 'Kavya');
+      await fireEvent.press(screen.getByText('Save name'));
+      expect(await screen.findByText('Something went wrong. Please try again.')).toBeOnTheScreen();
+    });
+  });
 });

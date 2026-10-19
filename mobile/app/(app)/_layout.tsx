@@ -3,10 +3,13 @@ import { ActivityIndicator, View } from 'react-native';
 
 import { useSession } from '@/features/auth/useSession';
 import { OutboxProvider } from '@/features/outbox/useOutbox';
+import { useEnsurePublicProfile } from '@/features/people/ensureProfile';
 import { colors } from '@/ui/theme';
 
 export default function AppLayout() {
   const { status, session } = useSession();
+  // Accounts from before Plan 3 (or a half-finished registration) get their public profile here.
+  useEnsurePublicProfile(session);
   if (status === 'signedOut') return <Redirect href="/sign-in" />;
   if (status === 'loading' || !session) {
     return (

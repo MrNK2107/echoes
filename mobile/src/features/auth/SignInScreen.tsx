@@ -2,6 +2,7 @@ import { useState, type ComponentProps } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -29,7 +30,13 @@ function authErrorCopy(e: unknown): string {
   return code === 'auth/network-request-failed' ? TIMEOUT_ERROR : GENERIC_ERROR;
 }
 
-type Errors = { email?: string; password?: string; name?: string; age?: string };
+type Errors = { email?: string; password?: string; name?: string; age?: string; terms?: string };
+
+export const TERMS_REQUIRED = 'Please accept the Terms of Service and Community Guidelines.';
+
+function openLink(url: string) {
+  Linking.openURL(url).catch((e: unknown) => console.warn('Could not open link', e));
+}
 
 export function SignInScreen() {
   const { repos, config, now } = useServices();
@@ -38,6 +45,8 @@ export function SignInScreen() {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [ageOk, setAgeOk] = useState(false);
+  /** When the terms box was ticked; stored as users/{uid}.acceptedTermsAt (ADR-0008). */
+  const [termsAcceptedAt, setTermsAcceptedAt] = useState<Date | null>(null);
   const [errors, setErrors] = useState<Errors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -61,6 +70,7 @@ export function SignInScreen() {
       const nameErr = validateDisplayName(name);
       if (nameErr) next.name = nameErr;
       if (!ageOk) next.age = 'You must be at least 13 to create an account.';
+      if (!termsAcceptedAt) next.terms = TERMS_REQUIRED;
     }
     setErrors(next);
     setFormError(null);
@@ -68,9 +78,7 @@ export function SignInScreen() {
 
     setBusy(true);
     try {
-      // TODO(Plan 3 Task 9): pass the time the terms checkbox was ticked; until that checkbox
-      // exists, registering is taken as accepting the terms now.
-      if (register) await repos.auth.register(email.trim(), password, name.trim(), now());
+      if (register && termsAcceptedAt) await repos.auth.register(email.trim(), password, name.trim(), termsAcceptedAt);
       else await repos.auth.signIn(email.trim(), password);
     } catch (e) {
       setFormError(authErrorCopy(e));
@@ -128,6 +136,34 @@ export function SignInScreen() {
               <Text style={styles.checkLabel}>I confirm that I am at least 13 years old.</Text>
             </Pressable>
             {errors.age ? <Text style={styles.error}>{errors.age}</Text> : null}
+          </View>
+        )}
+
+        {register && (
+          <View style={styles.fieldGap}>
+            <Pressable
+              testID="terms-checkbox"
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: termsAcceptedAt !== null }}
+              onPress={() => setTermsAcceptedAt(termsAcceptedAt ? null : now())}
+              style={styles.checkRow}
+            >
+              <View style={[styles.box, termsAcceptedAt && styles.boxChecked]}>
+                {termsAcceptedAt && <Text style={styles.tick}>✓</Text>}
+              </View>
+              <Text style={styles.checkLabel}>
+                I agree to the{' '}
+                <Text accessibilityRole="link" style={styles.link} onPress={() => openLink(config.termsUrl)}>
+                  Terms of Service
+                </Text>{' '}
+                and{' '}
+                <Text accessibilityRole="link" style={styles.link} onPress={() => openLink(config.guidelinesUrl)}>
+                  Community Guidelines
+                </Text>
+                .
+              </Text>
+            </Pressable>
+            {errors.terms ? <Text style={styles.error}>{errors.terms}</Text> : null}
           </View>
         )}
 
@@ -215,6 +251,7 @@ const styles = StyleSheet.create({
   boxChecked: { backgroundColor: colors.accent, borderColor: colors.accent },
   tick: { color: colors.background, fontSize: 14, fontWeight: '700' },
   checkLabel: { color: colors.text, flex: 1, fontSize: 14 },
+  link: { color: colors.accent, textDecorationLine: 'underline' },
   submit: {
     backgroundColor: colors.accent,
     borderRadius: 8,

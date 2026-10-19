@@ -46,6 +46,21 @@ describe('PlaceScreen', () => {
     expect(screen.getByText('2 memories')).toBeOnTheScreen();
   });
 
+  it('shows author display names on the cards', async () => {
+    await setup('place-2');
+    expect(await screen.findByText('Asha Rao')).toBeOnTheScreen();
+    expect(screen.getAllByText('Demo Custodian')).toHaveLength(2);
+  });
+
+  it('hides memories by people you blocked', async () => {
+    const services = testServices();
+    await services.repos.safety.block('user-demo', 'user-asha', services.now());
+    await setup('place-2', services);
+    expect(await screen.findByTestId('memory-memory-7')).toBeOnTheScreen();
+    expect(screen.queryByTestId('memory-memory-6')).toBeNull();
+    expect(screen.getByText('2 memories')).toBeOnTheScreen();
+  });
+
   it('shows the aura chip and community badge', async () => {
     await setup('place-1');
     expect(await screen.findByText('Cubbon Park')).toBeOnTheScreen();
