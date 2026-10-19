@@ -305,13 +305,13 @@ AuthRepository: sendEmailVerification(): Promise<void>; refreshUser(): Promise<{
 - Community segment lists my communities (`Choose a community`, empty `Join a community first.`).
 - Registration requires the terms checkbox. The links open `EXPO_PUBLIC_TERMS_URL` / `EXPO_PUBLIC_GUIDELINES_URL` (defaults per ADR-0008) via `expo-web-browser` or `Linking`.
 
-- [ ] **Step 1: Failing tests:**
+- [x] **Step 1: Failing tests:**
   - **`requires two characters`**; debounce (fake timers); picking adds a chip; tagged memory saves `taggedUserIds`;
   - community privacy saves `communityId`;
   - display name validation copy; author names render;
   - registration blocked without terms → exact error copy.
-- [ ] **Step 2–4:** FAIL → implement → PASS.
-- [ ] **Step 5: Commit** `feat(people): names, search, tagged and community privacy, terms`.
+- [x] **Step 2–4:** FAIL → implement → PASS.
+- [x] **Step 5: Commit** `feat(people): names, search, tagged and community privacy, terms`.
 
 ---
 
