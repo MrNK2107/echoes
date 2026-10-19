@@ -42,3 +42,18 @@ Launch-readiness items deferred from Plan 3's final whole-branch review. Plan 5'
 - AR listener cost budget (per-place memory subscriptions).
 - When viro installs: verify plugin options, API shapes and tracking-grace behaviour.
 - Remove the device-to-feature import in arRenderer (ViroArScene).
+
+## Post-launch (from Plan 5 final review)
+- Incremental place aggregates or a dirty-marker sweep instead of a full per-place recompute on every memory write.
+- Per-user daily memory-creation cap.
+- High-water mark for notifyReleasedTags (replace the overlapping 2 h window).
+- Page the account-deletion queries.
+- Push-receipt throughput scaling.
+- maxInstances and concurrency tuning.
+- Push-token creation throttle.
+- publicProfiles search callable with a budget.
+- Report id prefix scheme.
+- Shared-budget test for the memory backend.
+- rolledUpAt skip.
+- BulkWriter for push receipts.
+- Single-pass backfill.

@@ -83,7 +83,7 @@ Run in this order against the production project (always `--project <id>` or `FI
 7. Optional cleanup: `node functions/tools/backfill.js deleteLegacyNotificationRequests --apply --project <id>`.
 8. **Follow-up (C11):** once a `migrateInstitutionAdmins` dry run shows `changed=0`, ship a change that drops the legacy `adminUserIds` fallback in `functions/institutions.js` and the cleanup `arrayRemove`.
 
-Cost: each task is a full collection scan (reads = documents scanned); `all` scans `memories` twice and `members` once. Every updated memory fires `onMemoryWritten` once, so a large `--apply` produces that many function invocations and aggregate recomputes; run off-peak. `--resume-after <doc path>` (single task only, path must be in that task collection) continues an interrupted run; every task is idempotent, so a plain re-run also works. No member-count backfill exists: `rollupMemberCounts` derives `memberCount` from a `count()` of `members`.
+Cost: each task is a full collection scan (reads = documents scanned); `all` scans `memories` twice and `members` once. Every updated memory fires `onMemoryWritten` once, so a large `--apply` produces that many function invocations (billed), but no place aggregate recomputes: the backfilled fields are not aggregate inputs, so the trigger skips the recompute; run off-peak. `--resume-after <doc path>` (single task only, path must be in that task collection) continues an interrupted run; every task is idempotent, so a plain re-run also works. No member-count backfill exists: `rollupMemberCounts` derives `memberCount` from a `count()` of `members`.
 
 ## Expo Plan 4 push and AR runbook
 
