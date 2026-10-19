@@ -107,7 +107,10 @@ export function useArScene(): ArSceneState {
     () =>
       scene.map(({ scene: s, place }) => {
         const visible = blocks.ready ? withoutBlocked(memoriesByPlace[s.placeId] ?? [], blocks.blocked) : [];
-        const orbs = visible.slice(0, AR_MAX_ORBS).map((m) => ({
+        const orbs = visible
+          // The author's own moderated (hidden) memories stay listable to them but never become orbs.
+          .filter((m) => m.moderation !== 'hidden')
+          .slice(0, AR_MAX_ORBS).map((m) => ({
           id: m.id,
           text: m.textContent,
           media: m.imageUrl ? ('photo' as const) : m.audioUrl ? ('voice note' as const) : null,

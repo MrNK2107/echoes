@@ -106,6 +106,29 @@ describe('ArScreen', () => {
     expect(await screen.findByText('camera scene')).toBeOnTheScreen();
   });
 
+  it("never makes an orb of the author's own hidden (moderated) memory", async () => {
+    const services = testServices({ heading: fakeHeading([0]), arRenderer: availableRenderer() });
+    const original = services.repos.memories.subscribeVisibleForPlace.bind(services.repos.memories);
+    let hiddenId: string | null = null;
+    jest.spyOn(services.repos.memories, 'subscribeVisibleForPlace').mockImplementation((q, cb, err) =>
+      original(
+        q,
+        (memories) => {
+          if (q.placeId === 'place-4' && memories.length > 0) {
+            hiddenId = memories[0].id;
+            cb(memories.map((m, i) => (i === 0 ? { ...m, moderation: 'hidden' as const } : m)));
+          } else cb(memories);
+        },
+        err,
+      ),
+    );
+    await setupWith(services);
+    await waitFor(() => expect(hiddenId).not.toBeNull());
+    await waitFor(() => expect(sceneSpy.mock.lastCall?.[0].places.length).toBe(5));
+    const place4 = lastScene().places.find((p) => p.placeId === 'place-4')!;
+    expect(place4.memoryIds).not.toContain(hiddenId);
+  });
+
   it('mounts the camera scene only after a real compass sample and latches that heading', async () => {
     let emit: (d: number) => void = () => {};
     await setup({

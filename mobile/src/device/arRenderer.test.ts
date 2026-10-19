@@ -28,6 +28,22 @@ describe('expoArRenderer', () => {
     expect(expoArRenderer.Scene).toBeNull();
   });
 
+  it('does not even require viro inside Expo Go', async () => {
+    jest.resetModules();
+    const viroFactory = jest.fn(() => ({ ViroUtils: { isARSupportedOnDevice: (_n: unknown, yes: () => void) => yes() } }));
+    jest.doMock('@reactvision/react-viro', viroFactory, { virtual: true });
+    jest.doMock('expo-constants', () => ({
+      __esModule: true,
+      default: { appOwnership: 'expo', executionEnvironment: 'storeClient' },
+      ExecutionEnvironment: { StoreClient: 'storeClient', Standalone: 'standalone', Bare: 'bare' },
+    }));
+    const { expoArRenderer } = require('./arRenderer');
+    await expect(expoArRenderer.status()).resolves.toBe('missing');
+    expect(expoArRenderer.Scene).toBeNull();
+    expect(viroFactory).not.toHaveBeenCalled();
+    jest.dontMock('expo-constants');
+  });
+
   it("is 'available' when the supported callback fires", async () => {
     const r = mockViro((_no, yes) => yes());
     await expect(r.status()).resolves.toBe('available');

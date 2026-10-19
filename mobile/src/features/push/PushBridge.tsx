@@ -24,7 +24,20 @@ export function PushBridge({ uid }: { uid: string }) {
     };
   }, [push, services, uid]);
 
-  useEffect(() => push.onResponse((data) => router.push(routeForNotification(data))), [push, router]);
+  const { repos, now } = services;
+  useEffect(
+    () =>
+      push.onResponse((data) => {
+        // Best effort: a failed read receipt never blocks routing.
+        if (data.notificationId) {
+          void repos.notifications
+            .markRead(uid, data.notificationId, now())
+            .catch((e: unknown) => console.warn('Could not mark the notification read', e));
+        }
+        router.push(routeForNotification(data));
+      }),
+    [push, router, repos.notifications, now, uid],
+  );
 
   return null;
 }
