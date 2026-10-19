@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 
 import { GENERIC_ERROR } from '@/data/errors';
+import { INBOX_LOAD_ERROR } from '@/ui/copy';
 import type { Transfer } from '@/data/types';
 import { ServicesProvider } from '@/services/ServicesProvider';
 import type { Services } from '@/services/services';
@@ -116,6 +117,47 @@ describe('InboxScreen', () => {
       fireEvent.press(await screen.findByText('Mark all read'));
     });
     expect(await screen.findByRole('alert')).toBeOnTheScreen();
+  });
+
+  it('shows a load error (not the empty state) when the inbox fails to load', async () => {
+    const s = await inboxServices([]);
+    s.services.repos.notifications.subscribe = jest.fn((_u, _cb, onError) => {
+      onError?.(new Error('denied'));
+      return () => {};
+    });
+    await render(
+      <ServicesProvider services={s.services}>
+        <InboxScreen />
+      </ServicesProvider>,
+    );
+    expect(await screen.findByRole('alert')).toHaveTextContent(INBOX_LOAD_ERROR);
+    expect(screen.queryByText("You're all caught up.")).toBeNull();
+  });
+
+  it('shows a spinner until the first snapshot arrives', async () => {
+    const s = await inboxServices([]);
+    s.services.repos.notifications.subscribe = jest.fn(() => () => {});
+    await render(
+      <ServicesProvider services={s.services}>
+        <InboxScreen />
+      </ServicesProvider>,
+    );
+    expect(screen.getByTestId('inbox-loading')).toBeOnTheScreen();
+    expect(screen.queryByText("You're all caught up.")).toBeNull();
+  });
+
+  it('runs Mark all read once and disables it while running', async () => {
+    const { notifications } = await setup([note({ id: 'a' })]);
+    let release!: () => void;
+    (notifications.markAllRead as jest.Mock).mockImplementationOnce(() => new Promise<void>((r) => (release = r)));
+    const button = await screen.findByRole('button', { name: 'Mark all read' });
+    await act(async () => {
+      (button.props.onClick as () => void)();
+      (button.props.onClick as () => void)();
+    });
+    expect(notifications.markAllRead).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', { name: 'Mark all read' })).toBeDisabled();
+    await act(async () => release());
   });
 
   describe('custodianship requests', () => {

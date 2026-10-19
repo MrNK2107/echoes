@@ -1,9 +1,10 @@
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { GENERIC_ERROR } from '@/data/errors';
+import { GENERIC_ERROR, TIMEOUT_ERROR } from '@/data/errors';
 import { useSession } from '@/features/auth/useSession';
+import { TimeoutError, withTimeout } from '@/features/memories/submitMemory';
 import { useAuthorNames } from '@/features/people/useAuthorNames';
 import { useServices } from '@/services/ServicesProvider';
 import { SOMEONE } from '@/ui/copy';
@@ -23,16 +24,20 @@ export function BlockedScreen() {
   const [pending, setPending] = useState<ReadonlySet<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
 
+  const unblocking = useRef(new Set<string>());
+
   const unblock = async (other: string) => {
-    if (!session || pending.has(other)) return;
+    if (!session || unblocking.current.has(other)) return;
+    unblocking.current.add(other);
     setError(null);
     setPending((p) => new Set(p).add(other));
     try {
       // The live block list drops the row and restores the person's memories everywhere.
-      await repos.safety.unblock(session.userId, other);
-    } catch {
-      setError(GENERIC_ERROR);
+      await withTimeout(repos.safety.unblock(session.userId, other));
+    } catch (e) {
+      setError(e instanceof TimeoutError ? TIMEOUT_ERROR : GENERIC_ERROR);
     } finally {
+      unblocking.current.delete(other);
       setPending((p) => {
         const next = new Set(p);
         next.delete(other);

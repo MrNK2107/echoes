@@ -162,6 +162,28 @@ describe('CommunityScreen', () => {
       expect(screen.queryByLabelText('Search people')).toBeNull();
     });
 
+    it('sends once when Send is invoked twice in the same tick', async () => {
+      const services = testServices();
+      let release!: () => void;
+      const invite = jest
+        .spyOn(services.repos.communities, 'invite')
+        .mockImplementation(() => new Promise<void>((r) => (release = r)));
+      await setup(WALKERS, services);
+      await fireEvent.press(await screen.findByRole('button', { name: 'Invite' }));
+      await fireEvent.changeText(screen.getByLabelText('Search people'), 'As');
+      await act(async () => {
+        await jest.advanceTimersByTimeAsync(400);
+      });
+      await fireEvent.press(screen.getByTestId('person-user-asha'));
+      const send = screen.getByRole('button', { name: 'Send invitations' });
+      await act(async () => {
+        (send.props.onClick as () => void)();
+        (send.props.onClick as () => void)();
+      });
+      expect(invite).toHaveBeenCalledTimes(1);
+      await act(async () => release());
+    });
+
     it('keeps the picks and shows the timeout copy when offline', async () => {
       const services = testServices();
       jest.spyOn(services.repos.communities, 'invite').mockRejectedValue(new Error(TIMEOUT_ERROR));

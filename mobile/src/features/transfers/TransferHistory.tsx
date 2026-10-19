@@ -100,6 +100,7 @@ export function TransferHistory() {
               <Pressable
                 testID={`revoke-${t.id}`}
                 accessibilityRole="button"
+                accessibilityLabel={`Revoke transfer of ${placeNames.get(t.placeId) ?? 'this place'}`}
                 accessibilityState={{ disabled: busy, busy: revoking === t.id }}
                 disabled={busy}
                 onPress={() => void revoke(t.id)}

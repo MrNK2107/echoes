@@ -8,6 +8,7 @@ import type { PublicProfile } from '@/domain/types';
 import { useSession } from '@/features/auth/useSession';
 import { useBlocks } from '@/features/safety/useBlocks';
 import { useServices } from '@/services/ServicesProvider';
+import { REMOVE_TAGGED_LABEL } from '@/ui/copy';
 import { colors } from '@/ui/theme';
 
 import { rememberName, useAuthorNames } from './useAuthorNames';
@@ -23,6 +24,12 @@ interface Props {
   onChange: (ids: string[]) => void;
   /** People never offered, e.g. a place's existing custodians. */
   excludeIds?: readonly string[];
+  /** Shown when a pick would exceed `max`. Default: the tagging copy. */
+  capMessage?: string;
+  /** Accessibility label for a chip's remove button while the name is unknown. */
+  removeFallbackLabel?: string;
+  /** Most people that may be picked. Default: MAX_TAGS. */
+  max?: number;
 }
 
 /**
@@ -30,7 +37,14 @@ interface Props {
  * signed-in user, people they blocked, people already picked, or `excludeIds`.
  * testIDs: person-{uid}, chip-{uid}
  */
-export function UserSearchField({ selectedIds, onChange, excludeIds = [] }: Props) {
+export function UserSearchField({
+  selectedIds,
+  onChange,
+  excludeIds = [],
+  capMessage = TAG_CAP_ERROR,
+  removeFallbackLabel = REMOVE_TAGGED_LABEL,
+  max = MAX_TAGS,
+}: Props) {
   const { repos } = useServices();
   const { session } = useSession();
   const uid = session?.userId;
@@ -72,7 +86,7 @@ export function UserSearchField({ selectedIds, onChange, excludeIds = [] }: Prop
       : null;
 
   const pick = (person: PublicProfile) => {
-    if (selectedIds.length >= MAX_TAGS) {
+    if (selectedIds.length >= max) {
       setCapError(true);
       return;
     }
@@ -100,7 +114,7 @@ export function UserSearchField({ selectedIds, onChange, excludeIds = [] }: Prop
                 <Text style={styles.chipText}>{name}</Text>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={known ? `Remove ${known}` : 'Remove tagged person'}
+                  accessibilityLabel={known ? `Remove ${known}` : removeFallbackLabel}
                   hitSlop={8}
                   onPress={() => remove(id)}
                 >
@@ -142,7 +156,7 @@ export function UserSearchField({ selectedIds, onChange, excludeIds = [] }: Prop
             </Pressable>
           ))
         : null}
-      {capError ? <Text style={styles.error}>{TAG_CAP_ERROR}</Text> : null}
+      {capError ? <Text style={styles.error}>{capMessage}</Text> : null}
     </View>
   );
 }

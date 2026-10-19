@@ -8,12 +8,12 @@ import { useAuthorNames } from '@/features/people/useAuthorNames';
 import { useBlocksState, withoutBlocked } from '@/features/safety/useBlocks';
 import { REQUEST_SENT, TransferSheet } from '@/features/transfers/TransferSheet';
 import { capitalise, formatCount } from '@/ui/format';
+import { FEED_LOAD_ERROR } from '@/ui/copy';
 import { colors } from '@/ui/theme';
 
 import { MemoryCard } from './MemoryCard';
 import { usePlaceMemories } from './usePlaceMemories';
 
-const ERROR_COPY = "Couldn't load memories.";
 
 export function PlaceScreen({ placeId }: { placeId: string }) {
   const router = useRouter();
@@ -44,7 +44,7 @@ export function PlaceScreen({ placeId }: { placeId: string }) {
         {back}
         <View style={styles.center}>
           {status === 'notFound' ? <Text style={styles.message}>This place no longer exists.</Text> : null}
-          {status === 'error' ? <Text style={styles.message}>{ERROR_COPY}</Text> : null}
+          {status === 'error' ? <Text style={styles.message}>{FEED_LOAD_ERROR}</Text> : null}
         </View>
       </View>
     );
@@ -82,7 +82,7 @@ export function PlaceScreen({ placeId }: { placeId: string }) {
           </Text>
         ) : null}
       </View>
-      {listError ? <Text style={styles.message}>{ERROR_COPY}</Text> : null}
+      {listError ? <Text style={styles.message}>{FEED_LOAD_ERROR}</Text> : null}
       {!listReady && !listError ? <ActivityIndicator style={styles.spinner} color={colors.accent} /> : null}
       <FlatList
         contentContainerStyle={styles.list}

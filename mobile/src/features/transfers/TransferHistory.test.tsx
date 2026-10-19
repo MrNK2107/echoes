@@ -88,17 +88,22 @@ describe('TransferHistory', () => {
     }
   });
 
+  it('names the place in the Revoke button label', async () => {
+    await setup(testServices(), withHistory([transfer({ id: 'open', status: 'accepted' })]));
+    expect(await screen.findByRole('button', { name: 'Revoke transfer of Vidhana Soudha' })).toBeOnTheScreen();
+  });
+
   it('revokes a sent request and confirms it', async () => {
     await setup(testServices(), async (s) => {
       await s.repos.transfers.initiate({ placeId: 'place-2', toUserId: 'user-asha' });
     });
-    const revoke = await screen.findByRole('button', { name: 'Revoke' });
+    const revoke = await screen.findByRole('button', { name: /^Revoke transfer of/ });
     await act(async () => {
       fireEvent.press(revoke);
     });
     expect(await screen.findByText('Transfer revoked.')).toBeOnTheScreen();
     expect(screen.getByText('To Asha Rao · Revoked')).toBeOnTheScreen();
-    expect(screen.queryByRole('button', { name: 'Revoke' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /^Revoke transfer of/ })).toBeNull();
   });
 
   it('revokes once however often Revoke is pressed', async () => {
@@ -107,7 +112,7 @@ describe('TransferHistory', () => {
       withHistory([transfer({ id: 't1' })])(s);
       jest.spyOn(s.repos.transfers, 'revoke').mockImplementation(() => new Promise<void>((r) => (finish = r)));
     });
-    const revoke = await screen.findByRole('button', { name: 'Revoke' });
+    const revoke = await screen.findByRole('button', { name: /^Revoke transfer of/ });
     await act(async () => {
       fireEvent.press(revoke);
       fireEvent.press(revoke);
@@ -123,7 +128,7 @@ describe('TransferHistory', () => {
       jest.spyOn(s.repos.transfers, 'revoke').mockRejectedValue(new Error(GENERIC_ERROR));
     });
     await act(async () => {
-      fireEvent.press(await screen.findByRole('button', { name: 'Revoke' }));
+      fireEvent.press(await screen.findByRole('button', { name: /^Revoke transfer of/ }));
     });
     expect(await screen.findByText(GENERIC_ERROR)).toBeOnTheScreen();
     expect(screen.queryByText('Transfer revoked.')).toBeNull();

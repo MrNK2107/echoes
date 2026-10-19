@@ -1,8 +1,9 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 
-import { GENERIC_ERROR } from '@/data/errors';
+import { GENERIC_ERROR, TIMEOUT_ERROR } from '@/data/errors';
 import { DEMO_USER } from '@/data/seed';
 import { testServices } from '@/device/fakes';
+import { SUBMIT_TIMEOUT_MS } from '@/features/memories/submitMemory';
 import { PlaceScreen } from '@/features/places/PlaceScreen';
 import { ServicesProvider } from '@/services/ServicesProvider';
 import type { Services } from '@/services/services';
@@ -86,6 +87,50 @@ describe('BlockedScreen', () => {
     await fireEvent.press(await screen.findByRole('button', { name: 'Unblock Asha Rao' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(GENERIC_ERROR);
     await waitFor(() => expect(screen.getByRole('button', { name: 'Unblock Asha Rao' })).toBeEnabled());
+  });
+
+  it('shows timeout copy and re-enables Unblock when the server does not answer', async () => {
+    const services = testServices();
+    jest.spyOn(services.repos.safety, 'unblock').mockImplementation(() => new Promise(() => {}));
+    await signInAndBlock(services, ['user-asha']);
+    await render(
+      <ServicesProvider services={services}>
+        <BlockedScreen />
+      </ServicesProvider>,
+    );
+    const button = await screen.findByRole('button', { name: 'Unblock Asha Rao' });
+    jest.useFakeTimers();
+    try {
+      await fireEvent.press(button);
+      await act(async () => {
+        await jest.advanceTimersByTimeAsync(SUBMIT_TIMEOUT_MS);
+      });
+      expect(screen.getByRole('alert')).toHaveTextContent(TIMEOUT_ERROR);
+      expect(screen.getByRole('button', { name: 'Unblock Asha Rao' })).toBeEnabled();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('ignores a second Unblock in the same tick', async () => {
+    const services = testServices();
+    let release!: () => void;
+    const unblock = jest
+      .spyOn(services.repos.safety, 'unblock')
+      .mockImplementation(() => new Promise<void>((r) => (release = r)));
+    await signInAndBlock(services, ['user-asha']);
+    await render(
+      <ServicesProvider services={services}>
+        <BlockedScreen />
+      </ServicesProvider>,
+    );
+    const button = await screen.findByRole('button', { name: 'Unblock Asha Rao' });
+    await act(async () => {
+      (button.props.onClick as () => void)();
+      (button.props.onClick as () => void)();
+    });
+    expect(unblock).toHaveBeenCalledTimes(1);
+    await act(async () => release());
   });
 
   it('Back goes back', async () => {

@@ -191,6 +191,18 @@ describe('notification mapper', () => {
       readAt: null,
     });
   });
+  it('ignores the server-written expireAt TTL Timestamp', () => {
+    const expireAt = { seconds: 1_800_000_000, nanoseconds: 0, toDate: () => new Date(1_800_000_000_000) };
+    const n = notificationFromDoc('n1', {
+      type: 'memoryTagged', title: 't', body: 'b', data: { memoryId: 'm1' },
+      createdAt: '2026-05-01T00:00:00.000Z', readAt: null, expireAt,
+    });
+    expect(n).toEqual({
+      id: 'n1', type: 'memoryTagged', title: 't', body: 'b', data: { memoryId: 'm1' },
+      createdAt: d('2026-05-01T00:00:00.000Z'), readAt: null,
+    });
+    expect('expireAt' in n).toBe(false);
+  });
   it('maps readAt when set', () => {
     const n = notificationFromDoc('n1', {
       type: 'communityInvite', title: 't', body: 'b', createdAt: '2026-05-01T00:00:00.000Z',

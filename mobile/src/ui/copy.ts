@@ -7,3 +7,9 @@ export const REPORT_THANKS = "Thanks — we'll review it.";
 /** Fallback names while a person's public profile is loading or missing. */
 export const SOMEONE = 'Someone';
 export const THIS_PERSON = 'this person';
+export const INVITE_CAP_ERROR = 'You can invite up to 20 people at a time.';
+export const REMOVE_INVITED_LABEL = 'Remove invited person';
+export const REMOVE_PERSON_LABEL = 'Remove person';
+export const REMOVE_TAGGED_LABEL = 'Remove tagged person';
+export const FEED_LOAD_ERROR = "Couldn't load memories.";
+export const INBOX_LOAD_ERROR = "Couldn't load notifications.";

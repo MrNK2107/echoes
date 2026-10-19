@@ -1,6 +1,7 @@
 import { MAX_TAGS } from '@/domain/privacy';
 import type { Memory, NotificationPrefs, NotificationType } from '@/domain/types';
 import type { Store } from './store';
+import { SOMEONE } from '@/ui/copy';
 
 /**
  * In-process emulation of functions/lib/notify.js: the same templates, and the same skips for
@@ -57,7 +58,7 @@ export function emulateNotify(store: Store, input: NotifyInput): boolean {
   const inbox = store.notifications.get(input.to) ?? new Map();
   const id = input.id ?? store.nextNotificationId();
   if (inbox.has(id)) return false;
-  const name = store.profiles.get(input.actorId)?.displayName ?? 'Someone';
+  const name = store.profiles.get(input.actorId)?.displayName ?? SOMEONE;
   inbox.set(id, {
     id,
     type: input.type,

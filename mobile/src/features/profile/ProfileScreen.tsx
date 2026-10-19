@@ -1,11 +1,12 @@
 import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 
-import { GENERIC_ERROR } from '@/data/errors';
+import { GENERIC_ERROR, TIMEOUT_ERROR } from '@/data/errors';
 import { CUSTODIAN_FALLBACK_NAME, DISPLAY_NAME_ERROR, validateDisplayName } from '@/domain/profiles';
 import type { AppUser, Memory, NotificationPrefs } from '@/domain/types';
 import { useSession } from '@/features/auth/useSession';
+import { TimeoutError, withTimeout } from '@/features/memories/submitMemory';
 import { rememberName } from '@/features/people/useAuthorNames';
 import { MemoryCard } from '@/features/places/MemoryCard';
 import { useBlocks, withoutBlocked } from '@/features/safety/useBlocks';
@@ -42,6 +43,7 @@ export function ProfileScreen() {
   const [nameDraft, setNameDraft] = useState<string | null>(null);
   const [nameError, setNameError] = useState<string | null>(null);
   const [savingName, setSavingName] = useState(false);
+  const savingNameRef = useRef(false);
   const [loaded, setLoaded] = useState(false);
   const [privacy, setPrivacy] = useState<DefaultPrivacy>('public');
   const [error, setError] = useState<string | null>(null);
@@ -122,7 +124,7 @@ export function ProfileScreen() {
   };
 
   const saveName = async () => {
-    if (!uid || savingName) return;
+    if (!uid || savingNameRef.current) return;
     const draft = nameDraft ?? '';
     const invalid = validateDisplayName(draft);
     if (invalid) {
@@ -131,15 +133,23 @@ export function ProfileScreen() {
     }
     const next = draft.trim();
     setNameError(null);
+    savingNameRef.current = true;
     setSavingName(true);
     try {
-      await repos.profiles.setDisplayName(uid, next, now());
+      await withTimeout(repos.profiles.setDisplayName(uid, next, now()));
       rememberName(repos.profiles, uid, next);
       setNameDraft(next);
       setUser((u) => (u ? { ...u, displayName: next } : u));
     } catch (e) {
-      setNameError(e instanceof Error && e.message === DISPLAY_NAME_ERROR ? DISPLAY_NAME_ERROR : GENERIC_ERROR);
+      setNameError(
+        e instanceof TimeoutError
+          ? TIMEOUT_ERROR
+          : e instanceof Error && e.message === DISPLAY_NAME_ERROR
+            ? DISPLAY_NAME_ERROR
+            : GENERIC_ERROR,
+      );
     } finally {
+      savingNameRef.current = false;
       setSavingName(false);
     }
   };
@@ -186,7 +196,9 @@ export function ProfileScreen() {
         </Text>
       ) : null}
 
-      <Text style={styles.section}>Display name</Text>
+      <Text accessibilityRole="header" style={styles.section}>
+        Display name
+      </Text>
       <TextInput
         style={[styles.input, nameError ? styles.inputError : null]}
         value={nameDraft ?? ''}
@@ -231,7 +243,9 @@ export function ProfileScreen() {
         ))}
       </View>
 
-      <Text style={styles.section}>Notifications</Text>
+      <Text accessibilityRole="header" style={styles.section}>
+        Notifications
+      </Text>
       {PREF_TOGGLES.map((t) => (
         <View key={t.key} style={styles.toggleRow}>
           <Text style={styles.toggleLabel}>{t.label}</Text>
@@ -265,7 +279,9 @@ export function ProfileScreen() {
 
       <TransferHistory />
 
-      <Text style={styles.section}>Your memories</Text>
+      <Text accessibilityRole="header" style={styles.section}>
+        Your memories
+      </Text>
       {memories.map((m) => (
         <MemoryCard key={m.id} memory={m} />
       ))}

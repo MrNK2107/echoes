@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
-import { useState } from 'react';
+import { useState, type ComponentProps } from 'react';
 
 import { DEMO_USER } from '@/data/seed';
 import { testServices } from '@/device/fakes';
@@ -7,14 +7,17 @@ import { MAX_TAGS, TAG_CAP_ERROR } from '@/domain/privacy';
 import { ServicesProvider } from '@/services/ServicesProvider';
 import type { Services } from '@/services/services';
 
+import { INVITE_CAP_ERROR, REMOVE_INVITED_LABEL } from '@/ui/copy';
+
 import { UserSearchField } from './UserSearchField';
 
 const onChangeSpy = jest.fn();
 
-function Harness({ initial }: { initial: string[] }) {
+function Harness({ initial, extra }: { initial: string[]; extra?: Partial<ComponentProps<typeof UserSearchField>> }) {
   const [ids, setIds] = useState(initial);
   return (
     <UserSearchField
+      {...extra}
       selectedIds={ids}
       onChange={(next) => {
         onChangeSpy(next);
@@ -24,7 +27,11 @@ function Harness({ initial }: { initial: string[] }) {
   );
 }
 
-async function setup(initial: string[] = [], prepare?: (s: Services) => Promise<void>) {
+async function setup(
+  initial: string[] = [],
+  prepare?: (s: Services) => Promise<void>,
+  extra?: ComponentProps<typeof Harness>['extra'],
+) {
   const services = testServices();
   await act(async () => {
     await services.repos.auth.signIn(DEMO_USER.email, DEMO_USER.password);
@@ -33,7 +40,7 @@ async function setup(initial: string[] = [], prepare?: (s: Services) => Promise<
   const search = jest.spyOn(services.repos.profiles, 'search');
   await render(
     <ServicesProvider services={services}>
-      <Harness initial={initial} />
+      <Harness initial={initial} extra={extra} />
     </ServicesProvider>,
   );
   return { services, search };
@@ -152,5 +159,24 @@ describe('UserSearchField', () => {
     expect(onChangeSpy).not.toHaveBeenCalled();
     expect(screen.getByText('You can tag up to 20 people.')).toBeOnTheScreen();
     expect(TAG_CAP_ERROR).toBe('You can tag up to 20 people.');
+  });
+  it("uses the caller's cap message and limit", async () => {
+    await setup(['u0', 'u1'], undefined, { max: 2, capMessage: INVITE_CAP_ERROR });
+    await typeQuery('Ro');
+    await wait(300);
+    await act(async () => {
+      fireEvent.press(screen.getByText('Rohan Mehta'));
+    });
+    expect(onChangeSpy).not.toHaveBeenCalled();
+    expect(screen.getByText(INVITE_CAP_ERROR)).toBeOnTheScreen();
+    expect(screen.queryByText(TAG_CAP_ERROR)).toBeNull();
+    expect(INVITE_CAP_ERROR).toBe('You can invite up to 20 people at a time.');
+  });
+
+  it("uses the caller's remove label when the name is unknown", async () => {
+    await setup(['nobody'], undefined, { removeFallbackLabel: REMOVE_INVITED_LABEL });
+    await wait(0);
+    expect(screen.getByLabelText('Remove invited person')).toBeOnTheScreen();
+    expect(screen.queryByLabelText('Remove tagged person')).toBeNull();
   });
 });

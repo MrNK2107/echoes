@@ -1,11 +1,12 @@
 import { useRouter } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { messageOf } from '@/data/errors';
 import type { AppNotification } from '@/data/types';
 import { useIncomingTransfers } from '@/features/transfers/useTransfers';
 import { useServices } from '@/services/ServicesProvider';
+import { INBOX_LOAD_ERROR } from '@/ui/copy';
 import { colors } from '@/ui/theme';
 
 import { useInbox } from './useInbox';
@@ -26,11 +27,13 @@ function destination(n: AppNotification): string | null {
 export function InboxScreen() {
   const router = useRouter();
   const { repos } = useServices();
-  const { items, loaded, unread, error, markRead, markAllRead } = useInbox();
+  const { items, loaded, loadFailed, unread, error, markRead, markAllRead } = useInbox();
   const incoming = useIncomingTransfers();
   const pendingIds = useMemo(() => new Set(incoming.items.map((t) => t.id)), [incoming.items]);
   const [answering, setAnswering] = useState<string | null>(null);
   const answeringRef = useRef(false);
+  const markingAllRef = useRef(false);
+  const [markingAll, setMarkingAll] = useState(false);
   const [answerError, setAnswerError] = useState<string | null>(null);
   const rowState = useMemo(
     () => ({ pendingIds, answering, failed: incoming.error }),
@@ -61,6 +64,18 @@ export function InboxScreen() {
     }
   };
 
+  const markAll = async () => {
+    if (markingAllRef.current) return;
+    markingAllRef.current = true;
+    setMarkingAll(true);
+    try {
+      await markAllRead();
+    } finally {
+      markingAllRef.current = false;
+      setMarkingAll(false);
+    }
+  };
+
   const open = async (n: AppNotification) => {
     // Opening never waits on, or fails because of, the read receipt.
     if (n.readAt === null) void markRead(n.id);
@@ -78,8 +93,13 @@ export function InboxScreen() {
           Notifications
         </Text>
         {unread > 0 ? (
-          <Pressable accessibilityRole="button" onPress={markAllRead}>
-            <Text style={styles.link}>Mark all read</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityState={{ disabled: markingAll, busy: markingAll }}
+            disabled={markingAll}
+            onPress={() => void markAll()}
+          >
+            <Text style={[styles.link, markingAll && styles.disabled]}>Mark all read</Text>
           </Pressable>
         ) : null}
       </View>
@@ -88,6 +108,12 @@ export function InboxScreen() {
           {error}
         </Text>
       ) : null}
+      {loadFailed ? (
+        <Text accessibilityRole="alert" style={styles.error}>
+          {INBOX_LOAD_ERROR}
+        </Text>
+      ) : null}
+      {!loaded && !loadFailed ? <ActivityIndicator testID="inbox-loading" color={colors.accent} /> : null}
       {answerError ? (
         <Text accessibilityRole="alert" style={styles.error}>
           {answerError}
@@ -97,7 +123,7 @@ export function InboxScreen() {
         data={items}
         keyExtractor={(n) => n.id}
         extraData={rowState}
-        ListEmptyComponent={loaded ? <Text style={styles.empty}>{"You're all caught up."}</Text> : undefined}
+        ListEmptyComponent={loaded && !loadFailed ? <Text style={styles.empty}>{"You're all caught up."}</Text> : undefined}
         renderItem={({ item }) => {
           const isUnread = item.readAt === null;
           const transferId = answerable(item);

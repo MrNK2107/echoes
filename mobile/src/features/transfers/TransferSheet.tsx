@@ -5,6 +5,7 @@ import { messageOf } from '@/data/errors';
 import type { Place } from '@/domain/types';
 import { UserSearchField } from '@/features/people/UserSearchField';
 import { useServices } from '@/services/ServicesProvider';
+import { REMOVE_PERSON_LABEL } from '@/ui/copy';
 import { colors } from '@/ui/theme';
 
 export const REQUEST_SENT = 'Request sent.';
@@ -67,6 +68,7 @@ export function TransferSheet({ place, visible, onClose, onSent }: Props) {
             Choose the new custodian
           </Text>
           <UserSearchField
+            removeFallbackLabel={REMOVE_PERSON_LABEL}
             selectedIds={selected}
             // One recipient: picking someone else replaces the current pick.
             onChange={(ids) => {

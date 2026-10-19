@@ -89,9 +89,9 @@ export function MemoryDetailScreen({ memoryId }: { memoryId: string }) {
           setError(null);
           try {
             // The live block list hides this memory (and the author's others) as soon as it updates.
-            await repos.safety.block(session.userId, memory.userId, now());
-          } catch {
-            setError(GENERIC_ERROR);
+            await withTimeout(repos.safety.block(session.userId, memory.userId, now()));
+          } catch (e) {
+            setError(e instanceof TimeoutError ? TIMEOUT_ERROR : GENERIC_ERROR);
           } finally {
             blockingRef.current = false;
             setBlocking(false);

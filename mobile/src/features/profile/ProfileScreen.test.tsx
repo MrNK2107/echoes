@@ -1,10 +1,12 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { Linking, Text } from 'react-native';
 
+import { TIMEOUT_ERROR } from '@/data/errors';
 import { DEMO_USER } from '@/data/seed';
 import { testServices } from '@/device/fakes';
 import { readConfig } from '@/services/config';
 import type { Memory } from '@/domain/types';
+import { SUBMIT_TIMEOUT_MS } from '@/features/memories/submitMemory';
 import { OutboxProvider } from '@/features/outbox/useOutbox';
 import { AddMemoryScreen } from '@/features/memories/AddMemoryScreen';
 import { useSession } from '@/features/auth/useSession';
@@ -228,6 +230,50 @@ describe('ProfileScreen', () => {
       await fireEvent.press(screen.getByText('Save name'));
       expect(await screen.findByText('Something went wrong. Please try again.')).toBeOnTheScreen();
     });
+  });
+
+  describe('saving the display name, reliably', () => {
+    it('shows timeout copy and re-enables Save when the server does not answer', async () => {
+      const services = testServices();
+      jest.spyOn(services.repos.profiles, 'setDisplayName').mockImplementation(() => new Promise(() => {}));
+      await setup(services);
+      await fireEvent.changeText(await screen.findByDisplayValue(DEMO_USER.displayName), 'Kavya');
+      jest.useFakeTimers();
+      try {
+        await act(async () => {
+          fireEvent.press(screen.getByText('Save name'));
+          await jest.advanceTimersByTimeAsync(SUBMIT_TIMEOUT_MS);
+        });
+        expect(screen.getByText(TIMEOUT_ERROR)).toBeOnTheScreen();
+        expect(screen.getByRole('button', { name: 'Save name' })).toBeEnabled();
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    it('saves once when pressed twice in the same tick', async () => {
+      const services = testServices();
+      let release!: () => void;
+      const set = jest
+        .spyOn(services.repos.profiles, 'setDisplayName')
+        .mockImplementation(() => new Promise<void>((r) => (release = r)));
+      await setup(services);
+      await fireEvent.changeText(await screen.findByDisplayValue(DEMO_USER.displayName), 'Kavya');
+      const button = screen.getByRole('button', { name: 'Save name' });
+      await act(async () => {
+        (button.props.onClick as () => void)();
+        (button.props.onClick as () => void)();
+      });
+      expect(set).toHaveBeenCalledTimes(1);
+      await act(async () => release());
+    });
+  });
+
+  it('marks its section titles as headers', async () => {
+    await setup();
+    for (const name of ['Notifications', 'Display name', 'Your memories']) {
+      expect(await screen.findByRole('header', { name })).toBeOnTheScreen();
+    }
   });
 
   describe('notification preferences', () => {

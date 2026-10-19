@@ -9,12 +9,12 @@ import { useAuthorNames } from '@/features/people/useAuthorNames';
 import { MemoryCard } from '@/features/places/MemoryCard';
 import { useBlocksState, withoutBlocked } from '@/features/safety/useBlocks';
 import { useServices } from '@/services/ServicesProvider';
+import { FEED_LOAD_ERROR, INVITE_CAP_ERROR, REMOVE_INVITED_LABEL } from '@/ui/copy';
 import { colors } from '@/ui/theme';
 
 import { communityTypeLabel, formatMembers, hasHumanOwner } from './labels';
 import { useCommunity } from './useCommunity';
 
-const FEED_ERROR = "Couldn't load memories.";
 const FEED_EMPTY = 'No memories shared with this community yet.';
 const INVITES_SENT = 'Invitations sent.';
 
@@ -32,6 +32,7 @@ export function CommunityScreen({ communityId }: { communityId: string }) {
   const [inviting, setInviting] = useState(false);
   const [invitees, setInvitees] = useState<string[]>([]);
   const [sending, setSending] = useState(false);
+  const sendingRef = useRef(false);
   const [inviteError, setInviteError] = useState<string | null>(null);
 
   // Nothing renders until the block list is known, so a blocked author's memory never flashes.
@@ -101,14 +102,15 @@ export function CommunityScreen({ communityId }: { communityId: string }) {
   };
 
   const closeInvite = () => {
-    if (sending) return;
+    if (sendingRef.current) return;
     setInviting(false);
     setInvitees([]);
     setInviteError(null);
   };
 
   const sendInvites = async () => {
-    if (sending || invitees.length === 0) return;
+    if (sendingRef.current || invitees.length === 0) return;
+    sendingRef.current = true;
     setSending(true);
     setInviteError(null);
     try {
@@ -119,6 +121,7 @@ export function CommunityScreen({ communityId }: { communityId: string }) {
     } catch (e) {
       setInviteError(messageOf(e));
     } finally {
+      sendingRef.current = false;
       setSending(false);
     }
   };
@@ -186,7 +189,7 @@ export function CommunityScreen({ communityId }: { communityId: string }) {
           {notice}
         </Text>
       ) : null}
-      {feedError ? <Text style={styles.message}>{FEED_ERROR}</Text> : null}
+      {feedError ? <Text style={styles.message}>{FEED_LOAD_ERROR}</Text> : null}
       {!feedReady && !feedError ? <ActivityIndicator style={styles.spinner} color={colors.accent} /> : null}
     </View>
   );
@@ -210,7 +213,12 @@ export function CommunityScreen({ communityId }: { communityId: string }) {
             <Text accessibilityRole="header" style={styles.sheetTitle}>
               {`Invite to ${community.name}`}
             </Text>
-            <UserSearchField selectedIds={invitees} onChange={setInvitees} />
+            <UserSearchField
+              selectedIds={invitees}
+              onChange={setInvitees}
+              capMessage={INVITE_CAP_ERROR}
+              removeFallbackLabel={REMOVE_INVITED_LABEL}
+            />
             {inviteError ? (
               <Text accessibilityRole="alert" style={styles.error}>
                 {inviteError}

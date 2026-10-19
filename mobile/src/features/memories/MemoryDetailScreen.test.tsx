@@ -291,6 +291,25 @@ describe('MemoryDetailScreen safety', () => {
     expect(screen.getByRole('button', { name: 'Block Asha Rao' })).toBeEnabled();
   });
 
+  it('shows timeout copy and re-enables Block when the server does not answer', async () => {
+    const services = testServices();
+    jest.spyOn(services.repos.safety, 'block').mockImplementation(() => new Promise(() => {}));
+    pressConfirm('Block');
+    await setup('memory-1', services);
+    const button = await screen.findByRole('button', { name: 'Block Asha Rao' });
+    jest.useFakeTimers();
+    try {
+      await fireEvent.press(button);
+      await act(async () => {
+        await jest.advanceTimersByTimeAsync(SUBMIT_TIMEOUT_MS);
+      });
+      expect(screen.getByRole('alert')).toHaveTextContent('Could not reach the server. Check your connection and try again.');
+      expect(screen.getByRole('button', { name: 'Block Asha Rao' })).toBeEnabled();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
   it('confirms Block and hides the memory immediately', async () => {
     const services = testServices();
     const block = jest.spyOn(services.repos.safety, 'block');

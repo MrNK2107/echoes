@@ -9,6 +9,8 @@ export interface Inbox {
   /** Newest first, at most 50. */
   items: AppNotification[];
   loaded: boolean;
+  /** True when the live list could not be loaded. */
+  loadFailed: boolean;
   unread: number;
   error: string | null;
   /** Marks one read; resolves false when saving fails (silently: the row stays unread, no error is set). */
@@ -23,13 +25,17 @@ export function useInbox(): Inbox {
   const uid = session?.userId ?? null;
   const [state, setState] = useState<{ uid: string | null; items: AppNotification[] }>({ uid: null, items: [] });
   const [error, setError] = useState<string | null>(null);
+  const [failedUid, setFailedUid] = useState<string | null>(null);
 
   useEffect(() => {
     if (!uid) return;
     return repos.notifications.subscribe(
       uid,
       (items) => setState({ uid, items }),
-      (e) => console.warn('Could not load notifications', e),
+      (e) => {
+        console.warn('Could not load notifications', e);
+        setFailedUid(uid);
+      },
     );
   }, [repos.notifications, uid]);
 
@@ -59,5 +65,5 @@ export function useInbox(): Inbox {
     }
   }, [repos.notifications, uid, now]);
 
-  return { items, loaded: !!uid && state.uid === uid, unread, error, markRead, markAllRead };
+  return { items, loaded: !!uid && state.uid === uid, loadFailed: failedUid === uid, unread, error, markRead, markAllRead };
 }
