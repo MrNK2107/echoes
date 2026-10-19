@@ -354,9 +354,9 @@
   - moderation (reviewing `reports`, restoring with `moderation: null`, 24 h response target), with incident severity levels and kill switches (disable a function, revoke `EXPO_ACCESS_TOKEN`, roll the rules back to the previous release);
   - Sentry and Expo token rotation.
 
-- [ ] **Step 1: Cross-check** every data type in `privacy-labels.md` against `mobile/src/domain/types.ts`, the `app.config.ts` permissions and `crashReporter.ts`. Record anything found in the code but not in the labels as a defect and fix it.
-- [ ] **Step 2: Verify** that each command in the runbook exists (`npm run deploy:rules`, `node functions/tools/backfill.js --help`).
-- [ ] **Step 3: Commit** `docs: store listing, privacy labels and ops runbook`.
+- [x] **Step 1: Cross-check** every data type in `privacy-labels.md` against `mobile/src/domain/types.ts`, the `app.config.ts` permissions and `crashReporter.ts`. Record anything found in the code but not in the labels as a defect and fix it.
+- [x] **Step 2: Verify** that each command in the runbook exists (`npm run deploy:rules`, `node functions/tools/backfill.js --help`).
+- [x] **Step 3: Commit** `docs: store listing, privacy labels and ops runbook`.
 
 ---
 
