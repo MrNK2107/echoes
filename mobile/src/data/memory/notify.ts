@@ -62,6 +62,7 @@ export function emulateNotify(store: Store, input: NotifyInput): boolean {
   inbox.set(id, {
     id,
     type: input.type,
+    actorId: input.actorId,
     title: template.title,
     body: template.body({ ...input.params, name }),
     data: { ...input.data },
@@ -78,11 +79,41 @@ export function emulateNotify(store: Store, input: NotifyInput): boolean {
  * or tagged), so a notification never leaks a memory its recipient cannot open.
  */
 export function emulateTagNotifications(store: Store, memory: Memory): void {
-  const readable =
-    !memory.isDeleted &&
-    memory.moderation !== 'hidden' &&
-    (memory.privacy === 'public' || memory.privacy === 'tagged');
-  if (!readable) return;
+  if (tagNotificationsForMemory(store, memory)) store.notify(store.notificationListeners);
+}
+
+const RELEASE_WINDOW_MS = 2 * 60 * 60 * 1000;
+
+/**
+ * functions/tags.js taggedUsersCanRead: a memory notifies when live, not hidden, and public or
+ * tagged, or time-release once its releaseDate has passed.
+ */
+function canNotify(memory: Memory, now: Date): boolean {
+  if (memory.isDeleted || memory.moderation === 'hidden') return false;
+  if (memory.privacy === 'public' || memory.privacy === 'tagged') return true;
+  return memory.privacy === 'timeRelease' && memory.releaseDate !== null && memory.releaseDate <= now;
+}
+
+/**
+ * functions/tags.js notifyReleasedTags: time-release memories whose releaseDate fell in
+ * (now - 2 h, now] notify their tagged users (deterministic ids make repeats a no-op). Demo mode
+ * has no scheduler, so the inbox runs this on every emit, with the store's clock. Does not notify
+ * listeners (it runs inside one); returns whether anything was written.
+ */
+export function emulateReleasedTagNotifications(store: Store): boolean {
+  const now = store.now();
+  let sent = false;
+  for (const memory of store.memories.values()) {
+    if (memory.privacy !== 'timeRelease' || memory.releaseDate === null) continue;
+    const at = memory.releaseDate.getTime();
+    if (at <= now.getTime() - RELEASE_WINDOW_MS || at > now.getTime()) continue;
+    sent = tagNotificationsForMemory(store, memory) || sent;
+  }
+  return sent;
+}
+
+function tagNotificationsForMemory(store: Store, memory: Memory): boolean {
+  if (!canNotify(memory, store.now())) return false;
   let sent = false;
   for (const to of [...new Set(memory.taggedUserIds)].slice(0, MAX_TAGS)) {
     if (to === memory.userId || !store.users.has(to)) continue;
@@ -95,5 +126,5 @@ export function emulateTagNotifications(store: Store, memory: Memory): void {
         id: `memoryTagged_${memory.id}_${to}`,
       }) || sent;
   }
-  if (sent) store.notify(store.notificationListeners);
+  return sent;
 }

@@ -1,6 +1,7 @@
 import type { AppNotification } from '@/domain/types';
 import { GENERIC_ERROR } from '../errors';
 import type { NotificationRepository } from '../types';
+import { emulateReleasedTagNotifications } from './notify';
 import type { Store } from './store';
 
 const LIST_LIMIT = 50;
@@ -18,7 +19,9 @@ export function createNotificationRepository(store: Store): NotificationReposito
   };
   return {
     subscribe(uid, cb) {
-      const emit = () =>
+      const emit = () => {
+        // The scheduled notifyReleasedTags job, run lazily (demo mode has no scheduler).
+        emulateReleasedTagNotifications(store);
         cb(
           // Reversed first so that, within one millisecond, the later notification still leads.
           [...inbox(uid).values()]
@@ -26,6 +29,7 @@ export function createNotificationRepository(store: Store): NotificationReposito
             .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
             .slice(0, LIST_LIMIT),
         );
+      };
       store.notificationListeners.add(emit);
       emit();
       return () => { store.notificationListeners.delete(emit); };

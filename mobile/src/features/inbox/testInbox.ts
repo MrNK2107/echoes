@@ -6,6 +6,7 @@ import type { Services } from '@/services/services';
 export function note(over: Partial<AppNotification> & { id: string }): AppNotification {
   return {
     type: 'memoryTagged',
+    actorId: null,
     title: 'Tagged in a memory',
     body: 'Someone tagged you in a memory.',
     data: {},

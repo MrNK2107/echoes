@@ -309,5 +309,22 @@ test("inviteToCommunity is idempotent: re-inviting never duplicates the notifica
   await call(db, "inviteToCommunity", "alice", { communityId: id, userIds: ["bob"] });
   const n = inbox(db, "bob");
   assert.equal(n.length, 1);
-  assert.ok(db._get(`users/bob/notifications/communityInvite_${id}_bob`));
+  assert.match(db._list("users/bob/notifications/")[0], new RegExp(`communityInvite_${id}_bob_[0-9]{8}$`));
+});
+
+test("a same-day re-invite collapses, the next UTC day notifies again", async () => {
+  const db = seed();
+  const id = await created(db);
+  const invite = (now) =>
+    definitions.inviteToCommunity.handler({ uid: "alice", data: { communityId: id, userIds: ["bob"] }, db, now });
+  await invite(new Date("2026-10-19T01:00:00Z"));
+  await invite(new Date("2026-10-19T23:59:00Z"));
+  assert.equal(inbox(db, "bob").length, 1);
+  await invite(new Date("2026-10-20T00:01:00Z"));
+  assert.equal(inbox(db, "bob").length, 2);
+  assert.deepEqual(db._list("users/bob/notifications/").sort(), [
+    `users/bob/notifications/communityInvite_${id}_bob_20261019`,
+    `users/bob/notifications/communityInvite_${id}_bob_20261020`,
+  ]);
+  assert.equal(inbox(db, "bob")[0].actorId, "alice");
 });

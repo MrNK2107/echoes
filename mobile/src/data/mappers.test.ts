@@ -180,10 +180,12 @@ describe('notification mapper', () => {
         data: { memoryId: 'm1', placeId: null },
         createdAt: '2026-05-01T00:00:00.000Z',
         readAt: null,
+        actorId: 'ana',
       }),
     ).toEqual({
       id: 'n1',
       type: 'memoryTagged',
+      actorId: 'ana',
       title: 'Tagged in a memory',
       body: 'Ana tagged you in a memory.',
       data: { memoryId: 'm1' },
@@ -198,7 +200,7 @@ describe('notification mapper', () => {
       createdAt: '2026-05-01T00:00:00.000Z', readAt: null, expireAt,
     });
     expect(n).toEqual({
-      id: 'n1', type: 'memoryTagged', title: 't', body: 'b', data: { memoryId: 'm1' },
+      id: 'n1', type: 'memoryTagged', actorId: null, title: 't', body: 'b', data: { memoryId: 'm1' },
       createdAt: d('2026-05-01T00:00:00.000Z'), readAt: null,
     });
     expect('expireAt' in n).toBe(false);
@@ -210,6 +212,13 @@ describe('notification mapper', () => {
     });
     expect(n.readAt).toEqual(d('2026-05-02T00:00:00.000Z'));
     expect(n.data).toEqual({});
+  });
+  it('reads a missing or non-string actorId as null (legacy and system notifications)', () => {
+    const base = { type: 'memoryTagged', title: 't', body: 'b', createdAt: '2026-05-01T00:00:00.000Z', readAt: null };
+    expect(notificationFromDoc('n1', base).actorId).toBeNull();
+    expect(notificationFromDoc('n1', { ...base, actorId: null }).actorId).toBeNull();
+    expect(notificationFromDoc('n1', { ...base, actorId: 5 }).actorId).toBeNull();
+    expect(notificationFromDoc('n1', { ...base, actorId: 'ana' }).actorId).toBe('ana');
   });
 });
 

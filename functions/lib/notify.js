@@ -62,6 +62,8 @@ async function notify(db, { to, type, actorId, params = {}, data = {}, id }) {
   const createdAt = new Date();
   const doc = {
     type,
+    // Who caused it (null for system notifications): account deletion removes these.
+    actorId: actorId ?? null,
     title: template.title,
     body: template.body({ ...params, name }),
     data,

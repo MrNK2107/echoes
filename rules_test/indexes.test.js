@@ -67,3 +67,24 @@ test("indexes the Plan 3 queries need are present", () => {
     assert.ok(has(group, fields), `${group}: ${JSON.stringify(fields)}`);
   }
 });
+
+test("notifications.actorId has a collection-group index (account-deletion cleanup, Plan 5)", () => {
+  const override = config.fieldOverrides.find(
+    (o) => o.collectionGroup === "notifications" && o.fieldPath === "actorId",
+  );
+  assert.ok(override, "fieldOverrides entry for notifications.actorId");
+  assert.ok(
+    override.indexes.some((i) => i.queryScope === "COLLECTION_GROUP" && i.order === "ASCENDING"),
+  );
+});
+
+test("notifyReleasedTags has its memories (privacy, releaseDate) composite index", () => {
+  const found = config.indexes.some(
+    (i) =>
+      i.collectionGroup === "memories" &&
+      i.queryScope === "COLLECTION" &&
+      JSON.stringify(i.fields.map((f) => [f.fieldPath, f.order])) ===
+        JSON.stringify([["privacy", "ASCENDING"], ["releaseDate", "ASCENDING"]]),
+  );
+  assert.ok(found);
+});

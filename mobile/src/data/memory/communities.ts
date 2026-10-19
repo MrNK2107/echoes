@@ -139,6 +139,8 @@ export function createCommunityRepository(store: Store): CommunityRepository {
             emulateNotify(store, {
               to, type: 'communityInvite', actorId: uid, params: { community: community.name },
               data: { communityId: id },
+              // As the server: one invite per person per UTC day.
+              id: `communityInvite_${id}_${to}_${store.now().toISOString().slice(0, 10).replace(/-/g, '')}`,
             }) || sent;
         }
         if (sent) store.notify(store.notificationListeners);

@@ -415,6 +415,59 @@ describe('memory backend communities, transfers and institutions emulation', () 
     expect(inbox('friend').map((n) => n.body)).toEqual(['author invited you to join Club.']);
   });
 
+  it('a same-day re-invite collapses and the next UTC day notifies again', async () => {
+    await signInAs('author');
+    const id = await repos.communities.create({ name: 'Club', description: 'd' });
+    await repos.communities.invite(id, ['friend']);
+    await repos.communities.invite(id, ['friend']);
+    expect(inbox('friend')).toHaveLength(1);
+    now = new Date(T.getTime() + DAY);
+    await repos.communities.invite(id, ['friend']);
+    expect(inbox('friend')).toHaveLength(2);
+  });
+
+  it('notifications carry the actorId, and deleting the actor removes them from other inboxes', async () => {
+    await signInAs('author');
+    await repos.memories.create(mem({ privacy: 'tagged', taggedUserIds: ['friend'] }));
+    expect(inbox('friend').map((n) => n.actorId)).toEqual(['author']);
+    await repos.auth.deleteAccount('pw-test');
+    expect(inbox('friend')).toEqual([]);
+  });
+
+  describe('released time-release tags (functions/tags.js notifyReleasedTags)', () => {
+    const HOUR = 60 * 60 * 1000;
+    const tagged = (releaseDate: Date | null) =>
+      mem({ privacy: 'timeRelease', taggedUserIds: ['friend'], releaseDate });
+
+    it('notifies once a tagged time-release memory is released, and only once', async () => {
+      await signInAs('author');
+      await repos.memories.create(tagged(new Date(T.getTime() + HOUR)));
+      expect(inbox('friend')).toEqual([]);
+      now = new Date(T.getTime() + HOUR + 60_000);
+      expect(inbox('friend').map((n) => n.body)).toEqual(['author tagged you in a memory.']);
+      expect(inbox('friend')[0]?.actorId).toBe('author');
+      now = new Date(T.getTime() + 2 * HOUR);
+      expect(inbox('friend')).toHaveLength(1);
+    });
+
+    it('skips releases older than two hours, deleted and unreleased memories', async () => {
+      await signInAs('author');
+      await repos.memories.create(tagged(new Date(T.getTime() + HOUR)));
+      await repos.memories.create({ ...tagged(new Date(T.getTime() + HOUR)), isDeleted: true, deletedAt: T });
+      await repos.memories.create(tagged(null));
+      now = new Date(T.getTime() + 4 * HOUR);
+      expect(inbox('friend')).toEqual([]);
+    });
+
+    it('honours blocks', async () => {
+      await signInAs('author');
+      await repos.safety.block('friend', 'author', T);
+      await repos.memories.create(tagged(new Date(T.getTime() + HOUR)));
+      now = new Date(T.getTime() + HOUR + 60_000);
+      expect(inbox('friend')).toEqual([]);
+    });
+  });
+
   it('the invite limit counts unique invitees, 200 a day (R27)', async () => {
     await signInAs('author');
     const id = await repos.communities.create({ name: 'Club', description: 'd' });

@@ -83,7 +83,10 @@ async function leaveCommunity({ uid, data: { communityId }, db }) {
   return {};
 }
 
-async function inviteToCommunity({ uid, data: { communityId, userIds }, db }) {
+// UTC day as yyyymmdd: the invite id's suffix, so a re-invite on a later day notifies again.
+const utcDay = (now) => now.toISOString().slice(0, 10).replace(/-/g, "");
+
+async function inviteToCommunity({ uid, data: { communityId, userIds }, db, now = new Date() }) {
   if (userIds.some((id) => !ID_PATTERN.test(id))) {
     throw new HttpsError("invalid-argument", "Invalid userIds: bad format.");
   }
@@ -110,8 +113,8 @@ async function inviteToCommunity({ uid, data: { communityId, userIds }, db }) {
       actorId: uid,
       params: { community: name },
       data: { communityId },
-      // Deterministic id: re-inviting the same person never stacks notifications.
-      id: `communityInvite_${communityId}_${to}`,
+      // Deterministic id per UTC day: repeats within a day never stack; a later day notifies again.
+      id: `communityInvite_${communityId}_${to}_${utcDay(now)}`,
     });
   }
   return {};

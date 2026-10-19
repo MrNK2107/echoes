@@ -94,3 +94,94 @@ test("each tag notification consumes one unit of the daily budget", async () => 
   assert.equal(inbox(db, "bob").length + inbox(db, "carol").length, 1);
   assert.equal(db._get(`rateLimits/alice_tagNotify_${day}`).count, 100);
 });
+
+// --- notifyReleasedTags (scheduled) ---
+
+const { Timestamp } = require("firebase-admin/firestore");
+const { releasedTagsHandler } = require("../tags");
+
+const NOW = new Date("2026-10-19T12:00:00Z");
+const HOUR = 3600 * 1000;
+const at = (offsetMs) => Timestamp.fromDate(new Date(NOW.getTime() + offsetMs));
+const released = (offsetMs, over = {}) => ({
+  userId: "alice", placeId: "p1", privacy: "timeRelease", taggedUserIds: ["bob"], releaseDate: at(offsetMs), ...over,
+});
+
+test("a released time-release memory notifies its tagged users once", async () => {
+  const db = seed({ "memories/m1": released(-30 * 60 * 1000) });
+  await releasedTagsHandler(db, NOW);
+  assert.equal(inbox(db, "bob").length, 1);
+  assert.equal(inbox(db, "bob")[0].actorId, "alice");
+  assert.deepEqual(db._list("users/bob/notifications/"), ["users/bob/notifications/memoryTagged_m1_bob"]);
+});
+
+test("overlapping windows notify once and do not spend the budget twice", async () => {
+  const day = NOW.toISOString().slice(0, 10);
+  const db = seed({ "memories/m1": released(-30 * 60 * 1000) });
+  await releasedTagsHandler(db, NOW);
+  await releasedTagsHandler(db, new Date(NOW.getTime() + HOUR));
+  assert.equal(inbox(db, "bob").length, 1);
+  assert.equal(db._get(`rateLimits/alice_tagNotify_${day}`).count, 1);
+});
+
+test("unreleased, out-of-window, hidden, deleted and non-timeRelease memories are skipped", async () => {
+  const db = seed({
+    "memories/future": released(HOUR),
+    "memories/old": released(-3 * HOUR),
+    "memories/hidden": released(-HOUR / 2, { moderation: "hidden" }),
+    "memories/deleted": released(-HOUR / 2, { isDeleted: true }),
+    "memories/public": released(-HOUR / 2, { privacy: "public" }),
+  });
+  await releasedTagsHandler(db, NOW);
+  assert.equal(inbox(db, "bob").length, 0);
+});
+
+test("the window is (now - 2h, now]: the upper bound is inclusive, the lower exclusive", async () => {
+  const db = seed({
+    "memories/edgeNow": released(0),
+    "memories/edgeOld": released(-2 * HOUR, { taggedUserIds: ["carol"] }),
+  });
+  await releasedTagsHandler(db, NOW);
+  assert.equal(inbox(db, "bob").length, 1);
+  assert.equal(inbox(db, "carol").length, 0);
+});
+
+test("pages through every released memory", async () => {
+  const docs = {};
+  for (let i = 0; i < 5; i++) docs[`memories/m${i}`] = released(-(i + 1) * 60 * 1000, { taggedUserIds: [`t${i}`] });
+  for (let i = 0; i < 5; i++) docs[`users/t${i}`] = {};
+  const db = seed(docs);
+  const count = await releasedTagsHandler(db, NOW, { pageSize: 2 });
+  assert.equal(count, 5);
+  for (let i = 0; i < 5; i++) assert.equal(inbox(db, `t${i}`).length, 1, `t${i}`);
+});
+
+test("stops after the budget", async () => {
+  const docs = {};
+  for (let i = 0; i < 4; i++) docs[`memories/m${i}`] = released(-(i + 1) * 60 * 1000, { taggedUserIds: [`t${i}`] });
+  for (let i = 0; i < 4; i++) docs[`users/t${i}`] = {};
+  const db = seed(docs);
+  let t = 0;
+  const logs = [];
+  const count = await releasedTagsHandler(db, NOW, {
+    pageSize: 2,
+    budgetMs: 1000,
+    clock: () => (t += 1500),
+    log: (msg, data) => logs.push([msg, data]),
+  });
+  assert.equal(count, 2);
+  assert.equal(logs.length, 1);
+  assert.match(logs[0][0], /budget/);
+});
+
+test("the notify scheduler is a job exported from index", () => {
+  assert.ok(require("../index").notifyReleasedTags);
+});
+
+test("a timeRelease memory notifies only once released when run through notifyTaggedUsers", async () => {
+  const db = seed();
+  await notifyTaggedUsers(db, "m1", memory(["bob"], { privacy: "timeRelease", releaseDate: at(HOUR) }), NOW);
+  assert.equal(inbox(db, "bob").length, 0);
+  await notifyTaggedUsers(db, "m1", memory(["bob"], { privacy: "timeRelease", releaseDate: at(-HOUR) }), NOW);
+  assert.equal(inbox(db, "bob").length, 1);
+});

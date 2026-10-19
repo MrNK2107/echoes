@@ -63,6 +63,10 @@ export function createAuthRepository(store: Store): AuthRepository {
       store.users.delete(session.userId);
       store.profiles.delete(session.userId);
       store.notifications.delete(session.userId);
+      // deleteNotificationsFrom: their name leaves everyone else's inbox too.
+      for (const inbox of store.notifications.values()) {
+        for (const [nid, n] of [...inbox]) if (n.actorId === session.userId) inbox.delete(nid);
+      }
       store.pushTokens.delete(session.userId);
       store.blocks.delete(session.userId);
       cleanupUserCommunities(store, session.userId);

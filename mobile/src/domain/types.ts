@@ -73,6 +73,8 @@ export type NotificationType =
 export interface AppNotification {
   id: string;
   type: NotificationType;
+  /** Who caused it; null for system notifications and docs older than Plan 5. */
+  actorId: string | null;
   title: string;
   body: string;
   /** Ids only (memoryId, placeId, transferId, communityId…). */

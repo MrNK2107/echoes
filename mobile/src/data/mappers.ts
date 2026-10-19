@@ -226,6 +226,7 @@ export function notificationFromDoc(id: string, d: DocumentData): AppNotificatio
   return {
     id,
     type: d.type as NotificationType,
+    actorId: typeof d.actorId === 'string' ? d.actorId : null,
     title: String(d.title),
     body: String(d.body),
     data,

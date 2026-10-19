@@ -12,7 +12,7 @@ const transfers = require("./transfers");
 const institutions = require("./institutions");
 const safety = require("./safety");
 const { cleanupUserSocialData } = require("./accountCleanup");
-const { onMemoryCreatedTags } = require("./tags");
+const { onMemoryCreatedTags, notifyReleasedTags } = require("./tags");
 const { createOnNotificationCreated, createOnPushTokenCreated } = require("./push");
 const {
   purgeDeletedMemories,
@@ -28,6 +28,7 @@ exports.onMemoryWritten = onMemoryWritten;
 exports.onPublicProfileWritten = onPublicProfileWritten;
 exports.purgeDeletedMemories = purgeDeletedMemories;
 exports.onMemoryCreatedTags = onMemoryCreatedTags;
+exports.notifyReleasedTags = notifyReleasedTags;
 exports.onNotificationCreated = createOnNotificationCreated(() => db);
 exports.onPushTokenCreated = createOnPushTokenCreated(() => db);
 exports.createCommunity = communities.createCommunity;
@@ -140,7 +141,7 @@ exports.cleanupDeletedUser = functionsV1
   // Memberships elsewhere are removed with their memberCount decremented; owned communities
   // pass to their earliest-joined member, or are deleted when no one else is left (R24, R25).
   await communities.cleanupUserCommunities(db, userId);
-  // Public profile, institution admin roles and reports the user filed.
+  // Public profile, notifications the user caused, institution admin roles and reports the user filed.
   await cleanupUserSocialData(db, userId);
 
   await writer.close();

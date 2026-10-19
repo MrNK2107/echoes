@@ -114,3 +114,18 @@ test("notifications carry a Timestamp expireAt 90 days after createdAt", async (
   const created = Date.parse(n.createdAt);
   assert.ok(Math.abs(n.expireAt._seconds * 1000 - (created + 90 * 86400000)) < 1000);
 });
+
+test("stores the actorId, and null for a system notification", async () => {
+  const db = base();
+  await notify(db, { to: "bob", type: "memoryTagged", actorId: "alice", data: {}, id: "n-actor" });
+  await notify(db, { to: "bob", type: "memoryTagged", data: {}, id: "n-system" });
+  assert.equal(db._get("users/bob/notifications/n-actor").actorId, "alice");
+  assert.equal(db._get("users/bob/notifications/n-system").actorId, null);
+});
+
+test("a repeated deterministic id reports duplicate", async () => {
+  const db = base();
+  const args = { to: "bob", type: "communityInvite", actorId: "alice", params: { community: "C" }, id: "same" };
+  assert.equal((await notify(db, args)).sent, true);
+  assert.deepEqual(await notify(db, args), { sent: false, reason: "duplicate" });
+});

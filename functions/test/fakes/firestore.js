@@ -1,9 +1,37 @@
 // In-memory Firestore stand-in for unit tests: doc get/set/update/delete, collection and
-// collection-group queries (where/orderBy/limit), ref.parent, recursiveDelete, transactions,
+// collection-group queries (where/orderBy/limit/startAfter, Timestamp-aware ordering), ref.parent, recursiveDelete, transactions,
 // batches (atomic) and the FieldValue transforms. Docs live in one Map keyed by full path
 // ("users/u1/blocks/u2").
-const clone = (v) => (v === undefined ? v : structuredClone(v));
+const { Timestamp } = require("firebase-admin/firestore");
+
+// Deep copy that keeps Timestamps real (structuredClone would strip the class), as the Admin SDK
+// returns them. Other class instances (FieldValue transforms, Dates) go through structuredClone.
+function clone(v) {
+  if (v === undefined) return v;
+  if (v instanceof Timestamp) return new Timestamp(v.seconds, v.nanoseconds);
+  if (Array.isArray(v)) return v.map(clone);
+  if (v && typeof v === "object" && Object.getPrototypeOf(v) === Object.prototype) {
+    return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, clone(x)]));
+  }
+  return structuredClone(v);
+}
 const name = (v) => v?.constructor?.name;
+
+// Timestamps (live or structuredClone'd to {_seconds,_nanoseconds}) and Dates compare by their
+// instant, like Firestore; every other value compares as itself.
+function sortable(v) {
+  if (v instanceof Date) return v.getTime();
+  if (v && typeof v === "object") {
+    if (typeof v.toMillis === "function") return v.toMillis();
+    if (typeof v._seconds === "number") return v._seconds * 1000 + (v._nanoseconds ?? 0) / 1e6;
+  }
+  return v;
+}
+const compare = (a, b) => {
+  const x = sortable(a);
+  const y = sortable(b);
+  return x < y ? -1 : x > y ? 1 : 0;
+};
 
 function applyTransform(current, value, now) {
   switch (name(value)) {
@@ -127,12 +155,12 @@ function createFakeFirestore(initial = {}) {
   const matches = (data, { field, op, value }) => {
     const x = getPath(data, field);
     switch (op) {
-      case "==": return eq(x, value);
+      case "==": return eq(sortable(x), sortable(value));
       case "!=": return !eq(x, value);
-      case "<": return x < value;
-      case "<=": return x <= value;
-      case ">": return x > value;
-      case ">=": return x >= value;
+      case "<": return x !== undefined && compare(x, value) < 0;
+      case "<=": return x !== undefined && compare(x, value) <= 0;
+      case ">": return x !== undefined && compare(x, value) > 0;
+      case ">=": return x !== undefined && compare(x, value) >= 0;
       case "in": return value.some((v) => eq(v, x));
       case "array-contains": return Array.isArray(x) && x.some((e) => eq(e, value));
       default: throw new Error(`unsupported op ${op}`);
@@ -149,20 +177,34 @@ function createFakeFirestore(initial = {}) {
     return parts.length % 2 === 0 && parts[parts.length - 2] === id;
   };
 
-  const query = (inScope, filters = [], orders = [], max) => ({
-    where: (field, op, value) => query(inScope, [...filters, { field, op, value }], orders, max),
-    orderBy: (field, dir = "asc") => query(inScope, filters, [...orders, { field, dir }], max),
-    limit: (n) => query(inScope, filters, orders, n),
+  // `after`: startAfter cursor, a doc snapshot or the order-by values.
+  const query = (inScope, filters = [], orders = [], max, after) => ({
+    where: (field, op, value) => query(inScope, [...filters, { field, op, value }], orders, max, after),
+    orderBy: (field, dir = "asc") => query(inScope, filters, [...orders, { field, dir }], max, after),
+    limit: (n) => query(inScope, filters, orders, n, after),
+    startAfter: (...cursor) => query(inScope, filters, orders, max, cursor),
     async get() {
       let rows = [...store.entries()].filter(
         ([p, d]) => inScope(p) && filters.every((f) => matches(d, f)),
       );
       for (const { field, dir } of [...orders].reverse()) {
         rows.sort(([, a], [, b]) => {
-          const x = getPath(a, field);
-          const y = getPath(b, field);
-          return (x < y ? -1 : x > y ? 1 : 0) * (dir === "desc" ? -1 : 1);
+          return compare(getPath(a, field), getPath(b, field)) * (dir === "desc" ? -1 : 1);
         });
+      }
+      if (after) {
+        const [first] = after;
+        if (first && typeof first === "object" && first.ref) {
+          rows = rows.slice(rows.findIndex(([p]) => p === first.ref.path) + 1);
+        } else {
+          rows = rows.filter(([, d]) => {
+            for (let i = 0; i < orders.length && i < after.length; i++) {
+              const c = compare(getPath(d, orders[i].field), after[i]) * (orders[i].dir === "desc" ? -1 : 1);
+              if (c !== 0) return c > 0;
+            }
+            return false;
+          });
+        }
       }
       if (max !== undefined) rows = rows.slice(0, max);
       const docs = rows.map(([p]) => snap(p));
